@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+
+import socket
+import threading
+import time
+
+from proton_py.signal_pb2 import Signal
+from proton_py.proton_pb2 import Proton
+
+UDP_IP = '127.0.0.1'
+PROTON_UDP_PORT = 11411
+SDO_UDP_PORT = 11412
+
+sock = socket.socket(socket.AF_INET, # Internet
+                     socket.SOCK_DGRAM) # UDP
+sock.bind((UDP_IP, PROTON_UDP_PORT))
+
+
+class ProtonProcess():
+    def __init__(self):
+        self.t = threading.Thread(target=self.send_sdo_request, daemon=True)
+        self.t.start()
+        self.sock_read()
+
+    def send_sdo_request(self):
+        while(True):
+            proton = Proton()
+            proton.id = 0x1234
+            proton.signals.extend([
+                Signal(string_value='request')
+            ])
+
+            sock.sendto(proton.SerializeToString(), (UDP_IP, SDO_UDP_PORT))
+            time.sleep(1)
+
+    def sock_read(self):
+      while(True):
+          data, addr = sock.recvfrom(1000)
+          print('~~~ Protobuf Received ~~~')
+          print(data)
+          print()
+
+          proton = Proton()
+          Proton.ParseFromString(proton, data)
+          print('~~~ Deserialized to protobuf ~~~')
+          print(proton)
+          print(f'Length {proton.ByteSize()}')
+          print()
+
+          # print('~~~ Indexed ~~~')
+          # i = 0
+          # for data in pb.data:
+          #     value = None
+          #     match data.WhichOneof('data'):
+          #         case 'float_value':
+          #             value = data.float_value
+          #         case 'string_value':
+          #             value = data.string_value
+          #         case 'bool_value':
+          #             value = data.bool_value
+
+          #     print(f'Index: {i} Type: {data.WhichOneof('data')} Data: {value}')
+          #     i += 1
+
+          print('---------------------------------------')
+
+
+if __name__ == '__main__':
+    proton = ProtonProcess()

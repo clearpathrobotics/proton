@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package proton;
+
+message ListDoubles {
+  repeated double doubles = 1;
+}
+
+message ListFloats {
+  repeated float floats = 1;
+}
+
+message ListInt32s {
+  repeated int32 int32s = 1;
+}
+
+message ListInt64s {
+  repeated int64 int64s = 1;
+}
+
+message ListUint32s {
+  repeated uint32 uint32s = 1;
+}
+
+message ListUint64s {
+  repeated uint64 uint64s = 1;
+}
+
+message ListBools {
+  repeated bool bools = 1;
+}
+
+message ListStrings {
+  repeated string strings = 1;
+}
+
+message Signal {
+  oneof signal {
+    double double_value = 1;
+    float float_value = 2;
+    int32 int32_value = 3;
+    int64 int64_value = 4;
+    uint32 uint32_value = 5;
+    uint64 uint64_value = 6;
+    bool bool_value = 7;
+    string string_value = 8;
+    bytes bytes_value = 9;
+
+    ListDoubles list_double_value = 10;
+    ListFloats list_float_value = 11;
+    ListInt32s list_int32_value = 12;
+    ListInt64s list_int64_value = 13;
+    ListUint32s list_uint32_value = 14;
+    ListUint32s list_uint64_value = 15;
+    ListBools list_bool_value = 16;
+    ListStrings list_string_value = 17;
+  }
+}
