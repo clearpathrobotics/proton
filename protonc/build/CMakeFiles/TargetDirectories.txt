@@ -1,8 +1,0 @@
-/home/rkreinin/proto_ws/src/proton/protonc/build/CMakeFiles/generate_protos.dir
-/home/rkreinin/proto_ws/src/proton/protonc/build/CMakeFiles/proton.dir
-/home/rkreinin/proto_ws/src/proton/protonc/build/CMakeFiles/edit_cache.dir
-/home/rkreinin/proto_ws/src/proton/protonc/build/CMakeFiles/rebuild_cache.dir
-/home/rkreinin/proto_ws/src/proton/protonc/build/tests/CMakeFiles/receive.dir
-/home/rkreinin/proto_ws/src/proton/protonc/build/tests/CMakeFiles/send.dir
-/home/rkreinin/proto_ws/src/proton/protonc/build/tests/CMakeFiles/edit_cache.dir
-/home/rkreinin/proto_ws/src/proton/protonc/build/tests/CMakeFiles/rebuild_cache.dir

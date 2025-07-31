@@ -1,5 +1,10 @@
 # Proton
 
+Cloning:
+
+```
+git clone --recurse-submodules git@gitlab.clearpathrobotics.com:research/proton.git
+```
 
 ## Protonc
 

@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/send.dir/send.c.o -o send  ../libproton.a 
