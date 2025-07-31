@@ -51,7 +51,7 @@ message Signal {
     ListInt32s list_int32_value = 12;
     ListInt64s list_int64_value = 13;
     ListUint32s list_uint32_value = 14;
-    ListUint32s list_uint64_value = 15;
+    ListUint64s list_uint64_value = 15;
     ListBools list_bool_value = 16;
     ListStrings list_string_value = 17;
   }

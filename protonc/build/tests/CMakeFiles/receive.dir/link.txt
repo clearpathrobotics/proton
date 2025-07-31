@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/receive.dir/receive.c.o -o receive  ../libproton.a 

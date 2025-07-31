@@ -85,8 +85,8 @@ class Signal(_message.Message):
     list_int64_value: ListInt64s
     list_string_value: ListStrings
     list_uint32_value: ListUint32s
-    list_uint64_value: ListUint32s
+    list_uint64_value: ListUint64s
     string_value: str
     uint32_value: int
     uint64_value: int
-    def __init__(self, double_value: _Optional[float] = ..., float_value: _Optional[float] = ..., int32_value: _Optional[int] = ..., int64_value: _Optional[int] = ..., uint32_value: _Optional[int] = ..., uint64_value: _Optional[int] = ..., bool_value: bool = ..., string_value: _Optional[str] = ..., bytes_value: _Optional[bytes] = ..., list_double_value: _Optional[_Union[ListDoubles, _Mapping]] = ..., list_float_value: _Optional[_Union[ListFloats, _Mapping]] = ..., list_int32_value: _Optional[_Union[ListInt32s, _Mapping]] = ..., list_int64_value: _Optional[_Union[ListInt64s, _Mapping]] = ..., list_uint32_value: _Optional[_Union[ListUint32s, _Mapping]] = ..., list_uint64_value: _Optional[_Union[ListUint32s, _Mapping]] = ..., list_bool_value: _Optional[_Union[ListBools, _Mapping]] = ..., list_string_value: _Optional[_Union[ListStrings, _Mapping]] = ...) -> None: ...
+    def __init__(self, double_value: _Optional[float] = ..., float_value: _Optional[float] = ..., int32_value: _Optional[int] = ..., int64_value: _Optional[int] = ..., uint32_value: _Optional[int] = ..., uint64_value: _Optional[int] = ..., bool_value: bool = ..., string_value: _Optional[str] = ..., bytes_value: _Optional[bytes] = ..., list_double_value: _Optional[_Union[ListDoubles, _Mapping]] = ..., list_float_value: _Optional[_Union[ListFloats, _Mapping]] = ..., list_int32_value: _Optional[_Union[ListInt32s, _Mapping]] = ..., list_int64_value: _Optional[_Union[ListInt64s, _Mapping]] = ..., list_uint32_value: _Optional[_Union[ListUint32s, _Mapping]] = ..., list_uint64_value: _Optional[_Union[ListUint64s, _Mapping]] = ..., list_bool_value: _Optional[_Union[ListBools, _Mapping]] = ..., list_string_value: _Optional[_Union[ListStrings, _Mapping]] = ...) -> None: ...

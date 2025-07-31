@@ -1,0 +1,2 @@
+/usr/bin/ar qc libproton.a CMakeFiles/proton.dir/Src/proton.c.o CMakeFiles/proton.dir/Src/proton_field_callbacks.c.o CMakeFiles/proton.dir/nanopb/pb_common.c.o CMakeFiles/proton.dir/nanopb/pb_decode.c.o CMakeFiles/proton.dir/nanopb/pb_encode.c.o CMakeFiles/proton.dir/generated/proton.pb.c.o CMakeFiles/proton.dir/generated/signal.pb.c.o
+/usr/bin/ranlib libproton.a
