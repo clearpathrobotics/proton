@@ -91,12 +91,16 @@ class CWriter:
 
     def write_variable(self, variable: Variable, indent_level=0):
         if isinstance(variable.length, int):
-            if variable.length == 0:
+            if variable.length == 0 and variable.width == 0:
                 self.write(f"{variable.type} {variable.name};", indent_level)
             else:
                 if variable.width == 0:
                     self.write(
                         f"{variable.type} {variable.name}[{variable.length}];", indent_level
+                    )
+                elif variable.length == 0:
+                    self.write(
+                        f"{variable.type} {variable.name}[{variable.width}];", indent_level
                     )
                 else:
                     self.write(

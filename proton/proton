@@ -23,7 +23,7 @@ from google.protobuf.message import DecodeError
 
 UDP_IP = '127.0.0.1'
 MCU_IP = '127.0.0.1'
-PROTON_UDP_PORT = 11416
+PROTON_UDP_PORT = 11417
 PROTON_SEND_PORT = 11417
 
 sock = socket.socket(socket.AF_INET, # Internet
@@ -34,7 +34,7 @@ sock.bind((UDP_IP, PROTON_UDP_PORT))
 class ProtonProcess():
     def __init__(self):
         self.t = threading.Thread(target=self.send_float_list, daemon=True)
-        self.t.start()
+        #self.t.start()
         self.sock_read()
 
     def send_float_list(self):

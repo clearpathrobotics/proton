@@ -119,6 +119,15 @@ class ProtonCGenerator:
             )
         self.header_writer.write_newline()
 
+    def generate_extern_proton(self):
+        self.header_writer.write_comment("External Protons", indent_level=0)
+        self.header_writer.write_newline()
+        for m in self.config.messages:
+            self.header_writer.write_extern_variable(
+                Variable(f"{m.name}_proton", "proton_t")
+            )
+        self.header_writer.write_newline()
+
     def generate_signal_enums(self):
         self.header_writer.write_comment("Signal Enums", indent_level=0)
         self.header_writer.write_newline()
@@ -204,7 +213,18 @@ class ProtonCGenerator:
                     case (
                         ProtonConfig.Signal.SignalTypes.STRING
                         | ProtonConfig.Signal.SignalTypes.BYTES
-                        | ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
+                    ):
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.values = {m.name}.{s.signal};"
+                        )
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.capacity = {s.capacity};"
+                        )
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.size = 0;"
+                        )
+                    case (
+                        ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
                         | ProtonConfig.Signal.SignalTypes.LIST_FLOAT
                         | ProtonConfig.Signal.SignalTypes.LIST_INT32
                         | ProtonConfig.Signal.SignalTypes.LIST_INT64
@@ -253,11 +273,11 @@ class ProtonCGenerator:
         generated_filename = f"proton__{name}"
 
         self.src_writer = CWriter(
-            os.path.join(os.getcwd(), "../build/generated/"), f"{generated_filename}.c"
+            os.path.join(os.getcwd(), "../tests/sample/generated/"), f"{generated_filename}.c"
         )
 
         self.header_writer = CWriter(
-            os.path.join(os.getcwd(), "../build/generated/"), f"{generated_filename}.h"
+            os.path.join(os.getcwd(), "../tests/sample/generated/"), f"{generated_filename}.h"
         )
 
         self.header_writer.write_header_guard_open()
@@ -272,6 +292,7 @@ class ProtonCGenerator:
         self.generate_signal_enums()
         self.generate_message_struct_typedefs()
         self.generate_extern_message_structs()
+        self.generate_extern_proton()
         self.generate_message_structs()
         self.generate_signal_variables()
         self.generate_signal_schema_variables()
@@ -298,5 +319,6 @@ if __name__ == "__main__":
 
     # args = parser.parse_args(sys.argv)
 
-    generator = ProtonCGenerator(os.path.join(os.getcwd(), "../../config/test.yaml"))
-    generator.generate("test")
+    file = os.path.join(os.getcwd(), "../../config/sample.yaml")
+    generator = ProtonCGenerator(file)
+    generator.generate(file.split("/")[-1].split(".")[0])
