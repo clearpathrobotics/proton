@@ -42,7 +42,6 @@ class Variable:
         self.length = length
         self.width = width
 
-
 class Struct:
     def __init__(self, name, vars):
         self.name = name
@@ -91,18 +90,23 @@ class CWriter:
         self.write(f'#endif  // PROTONC__{self.header_guard}', indent_level=0)
 
     def write_variable(self, variable: Variable, indent_level=0):
-        if variable.length == 0:
-            self.write(f"{variable.type} {variable.name};", indent_level)
-        else:
-            if variable.width == 0:
-                self.write(
-                    f"{variable.type} {variable.name}[{variable.length}];", indent_level
-                )
+        if isinstance(variable.length, int):
+            if variable.length == 0:
+                self.write(f"{variable.type} {variable.name};", indent_level)
             else:
-                self.write(
-                    f"{variable.type} {variable.name}[{variable.length}][{variable.width}];",
-                    indent_level,
-                )
+                if variable.width == 0:
+                    self.write(
+                        f"{variable.type} {variable.name}[{variable.length}];", indent_level
+                    )
+                else:
+                    self.write(
+                        f"{variable.type} {variable.name}[{variable.length}][{variable.width}];",
+                        indent_level,
+                    )
+        else:
+            self.write(
+                f"{variable.type} {variable.name}[{variable.length}];", indent_level
+            )
 
     def write_struct(self, struct: Struct, indent_level=1):
         self.write("struct {", indent_level)
@@ -134,7 +138,7 @@ class CWriter:
                 parameters += f', {p.type, p.name}'
         self.write(f'{function.ret} {function.name}({parameters});', indent_level)
 
-    def write_function(self, function: Function, content: str, indent_level=0):
+    def write_function_start(self, function: Function, indent_level=0):
         parameters = ''
         for p in function.parameters:
             if len(parameters) == 0:
@@ -143,24 +147,24 @@ class CWriter:
                 parameters += f', {p.type, p.name}'
         self.write(f'{function.ret} {function.name}({parameters})', indent_level)
         self.write('{', indent_level)
-        self.write(content, indent_level + 1)
+
+    def write_function_end(self, indent_level=0):
         self.write('}', indent_level)
         self.write_newline()
 
     def write_enum(self, name: str, enum: List[str], indent_level=0):
         self.write(f'typedef enum {name} {{', indent_level)
         for e in enum:
-            self.write(f'{name.upper() + '_' + e.upper()},', indent_level + 1)
+            self.write(f'{name.upper() + '__' + e.upper()},', indent_level + 1)
         self.write(f'{name.upper()}_COUNT', indent_level + 1)
         self.write(f'}} {name}_e;', indent_level)
 
-    def get_for_loop(self, count, content, iter_type='int', iter_name='i', start=0, incr=1, indent_level=1) -> str:
-        loop: str = ''
-        loop += f'for ({iter_type} {iter_name} = {start}; {iter_name} < {count}; {iter_name} += {incr})\n'
-        loop += f'{self.tab * indent_level}{{\n'
-        loop += f'{self.tab * indent_level}{self.tab * indent_level}{content}\n'
-        loop += f'{self.tab * indent_level}}}'
-        return loop
+    def write_for_loop_start(self, count, iter_type='int', iter_name='i', start=0, incr=1, indent_level=1):
+        self.write(f'for ({iter_type} {iter_name} = {start}; {iter_name} < {count}; {iter_name} += {incr})', indent_level)
+        self.write('{', indent_level)
+
+    def write_for_loop_end(self, indent_level=0):
+        self.write('}', indent_level)
 
     def initialize_file(self):
         self.write(

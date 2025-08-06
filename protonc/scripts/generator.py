@@ -81,10 +81,12 @@ class ProtonCGenerator:
         return config
 
     def get_message_struct_name(self, name) -> str:
-        return f'PROTON_MESSAGE_STRUCT__{name}'
+        return f"PROTON_MESSAGE_STRUCT__{name}"
 
     def generate_message_struct_typedefs(self):
-        self.header_writer.write_comment('Message Structure Definitions', indent_level=0)
+        self.header_writer.write_comment(
+            "Message Structure Definitions", indent_level=0
+        )
         self.header_writer.write_newline()
         for m in self.config.messages:
             vars = []
@@ -109,62 +111,146 @@ class ProtonCGenerator:
             self.header_writer.write_newline()
 
     def generate_extern_message_structs(self):
-        self.header_writer.write_comment('External Message Structures', indent_level=0)
+        self.header_writer.write_comment("External Message Structures", indent_level=0)
         self.header_writer.write_newline()
         for m in self.config.messages:
-          self.header_writer.write_extern_variable(Variable(m.name, f'{self.get_message_struct_name(m.name)}_t'))
+            self.header_writer.write_extern_variable(
+                Variable(m.name, f"{self.get_message_struct_name(m.name)}_t")
+            )
         self.header_writer.write_newline()
 
     def generate_signal_enums(self):
-        self.header_writer.write_comment('Signal Enums', indent_level=0)
+        self.header_writer.write_comment("Signal Enums", indent_level=0)
         self.header_writer.write_newline()
         for m in self.config.messages:
             e = [s.signal for s in m.signals]
-            self.header_writer.write_enum(f'PROTON_SIGNAL_ENUM__{m.name}', e)
+            self.header_writer.write_enum(f"PROTON_SIGNAL__{m.name}", e)
             self.header_writer.write_newline()
         self.header_writer.write_newline()
 
-    def generate_message_structs(self):
-        self.src_writer.write_comment('Message Structures', indent_level=0)
+    def generate_signal_variables(self):
+        self.src_writer.write_comment("Signals", indent_level=0)
         self.src_writer.write_newline()
         for m in self.config.messages:
-          self.src_writer.write_variable(Variable(m.name, f'{self.get_message_struct_name(m.name)}_t'))
+            signals = Variable(
+                f"{m.name}_signals",
+                "proton_Signal",
+                length=f"PROTON_SIGNAL__{m.name.upper()}_COUNT",
+            )
+            self.src_writer.write_variable(signals)
+        self.src_writer.write_newline()
+
+    def generate_signal_schema_variables(self):
+        self.src_writer.write_comment("Signal schemas", indent_level=0)
+        self.src_writer.write_newline()
+        for m in self.config.messages:
+            signals = Variable(
+                f"{m.name}_signal_schema",
+                "proton_signal_schema_t",
+                length=f"PROTON_SIGNAL__{m.name.upper()}_COUNT",
+            )
+            self.src_writer.write_variable(signals)
+        self.src_writer.write_newline()
+
+    def generate_proton_variables(self):
+        self.src_writer.write_comment("Protons", indent_level=0)
+        self.src_writer.write_newline()
+        for m in self.config.messages:
+            proton = Variable(f"{m.name}_proton", "proton_t")
+            self.src_writer.write_variable(proton)
+        self.src_writer.write_newline()
+
+    def generate_message_structs(self):
+        self.src_writer.write_comment("Message Structures", indent_level=0)
+        self.src_writer.write_newline()
+        for m in self.config.messages:
+            self.src_writer.write_variable(
+                Variable(m.name, f"{self.get_message_struct_name(m.name)}_t")
+            )
         self.src_writer.write_newline()
 
     def generate_message_init_prototypes(self):
-        self.header_writer.write_comment('Message Init Prototypes', indent_level=0)
-        self.header_writer.write_newline()
+        self.src_writer.write_comment("Message Init Prototypes", indent_level=0)
+        self.src_writer.write_newline()
         for m in self.config.messages:
-            if m.needs_init:
-                self.header_writer.write_function_prototype(Function(f'PROTON_MESSAGE_init_{m.name}', [], 'void'))
+            self.src_writer.write_function_prototype(
+                Function(f"PROTON_MESSAGE_init_{m.name}", [], "void")
+            )
+        self.src_writer.write_newline()
 
-        self.header_writer.write_function_prototype(Function('PROTON_MESSAGE_init', [], 'void'))
+        self.header_writer.write_comment("Message Init Prototypes", indent_level=0)
+        self.header_writer.write_newline()
+        self.header_writer.write_function_prototype(
+            Function("PROTON_MESSAGE_init", [], "void")
+        )
         self.header_writer.write_newline()
 
     def generate_message_init_functions(self):
-        self.src_writer.write_comment('Message Init Functions', indent_level=0)
+        self.src_writer.write_comment("Message Init Functions", indent_level=0)
         self.src_writer.write_newline()
         for m in self.config.messages:
-            if m.needs_init:
-                content: str = ''
-                for s in m.signals:
-                    if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
-                        content += self.src_writer.get_for_loop(s.length,
-                                                                f'{m.name}.{s.signal}.list[i] = {m.name}.{s.signal}.strings[i];')
-                self.src_writer.write_function(Function(f'PROTON_MESSAGE_init_{m.name}', [], 'void'), content)
-        self.src_writer.write_newline()
+            self.src_writer.write_function_start(
+                Function(f"PROTON_MESSAGE_init_{m.name}", [], "void")
+            )
+            for s in m.signals:
+                self.src_writer.write(
+                    f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].type = PROTON_SIGNAL_TYPE_{s.type.upper()}_VALUE;"
+                )
+                match s.type:
+                    # case (ProtonConfig.Signal.SignalTypes.DOUBLE | ProtonConfig.Signal.SignalTypes.FLOAT | ProtonConfig.Signal.SignalTypes.INT32 |
+                    #      ProtonConfig.Signal.SignalTypes.INT64 | ProtonConfig.Signal.SignalTypes.UINT32 | ProtonConfig.Signal.SignalTypes.UINT64 |
+                    #      ProtonConfig.Signal.SignalTypes.BOOL):
+                    #     self.src_writer.write(f'{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg = proton_list_arg_init_default;')
+                    case (
+                        ProtonConfig.Signal.SignalTypes.STRING
+                        | ProtonConfig.Signal.SignalTypes.BYTES
+                        | ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
+                        | ProtonConfig.Signal.SignalTypes.LIST_FLOAT
+                        | ProtonConfig.Signal.SignalTypes.LIST_INT32
+                        | ProtonConfig.Signal.SignalTypes.LIST_INT64
+                        | ProtonConfig.Signal.SignalTypes.LIST_UINT32
+                        | ProtonConfig.Signal.SignalTypes.LIST_UINT64
+                        | ProtonConfig.Signal.SignalTypes.LIST_BOOL
+                    ):
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.values = {m.name}.{s.signal};"
+                        )
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.capacity = {s.length};"
+                        )
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.size = 0;"
+                        )
+                    case ProtonConfig.Signal.SignalTypes.LIST_STRING:
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.values = {m.name}.{s.signal}.list;"
+                        )
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.capacity = {s.length};"
+                        )
+                        self.src_writer.write(
+                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.size = 0;"
+                        )
+                        self.src_writer.write_for_loop_start(s.length, indent_level=1)
+                        self.src_writer.write(
+                            f"{m.name}.{s.signal}.list[i] = {m.name}.{s.signal}.strings[i];",
+                            indent_level=2,
+                        )
+                        self.src_writer.write_for_loop_end(indent_level=1)
+            self.src_writer.write(
+                f"PROTON_InitProton(&{m.name}_proton, {m.id}, {m.name}_signals, {m.name}_signal_schema, PROTON_SIGNAL__{m.name.upper()}_COUNT);"
+            )
+            self.src_writer.write_function_end()
 
-        init_contents = ''
+        self.src_writer.write_function_start(
+            Function("PROTON_MESSAGE_init", [], "void")
+        )
         for m in self.config.messages:
-            if m.needs_init:
-                if len(init_contents) > 0:
-                    init_contents += '\n  '
-                init_contents += f'PROTON_MESSAGE_init_{m.name}();'
-
-        self.src_writer.write_function(Function('PROTON_MESSAGE_init', [], 'void'), init_contents)
+            self.src_writer.write(f"PROTON_MESSAGE_init_{m.name}();", indent_level=1)
+        self.src_writer.write_function_end()
 
     def generate(self, name: str):
-        generated_filename = f'proton__{name}'
+        generated_filename = f"proton__{name}"
 
         self.src_writer = CWriter(
             os.path.join(os.getcwd(), "../build/generated/"), f"{generated_filename}.c"
@@ -175,9 +261,9 @@ class ProtonCGenerator:
         )
 
         self.header_writer.write_header_guard_open()
-        self.header_writer.write_include('stdint.h')
-        self.header_writer.write_include('stdbool.h')
-        self.header_writer.write_include('proton.h')
+        self.header_writer.write_include("stdint.h")
+        self.header_writer.write_include("stdbool.h")
+        self.header_writer.write_include("proton.h")
         self.header_writer.write_newline()
 
         self.src_writer.write_include(generated_filename)
@@ -187,6 +273,9 @@ class ProtonCGenerator:
         self.generate_message_struct_typedefs()
         self.generate_extern_message_structs()
         self.generate_message_structs()
+        self.generate_signal_variables()
+        self.generate_signal_schema_variables()
+        self.generate_proton_variables()
 
         self.generate_message_init_prototypes()
         self.generate_message_init_functions()
@@ -210,4 +299,4 @@ if __name__ == "__main__":
     # args = parser.parse_args(sys.argv)
 
     generator = ProtonCGenerator(os.path.join(os.getcwd(), "../../config/test.yaml"))
-    generator.generate('test')
+    generator.generate("test")
