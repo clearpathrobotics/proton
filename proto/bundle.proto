@@ -4,7 +4,7 @@ package proton;
 
 import "signal.proto";
 
-message Proton {
+message Bundle {
   uint32 id = 1;
   repeated Signal signals = 2;
 }

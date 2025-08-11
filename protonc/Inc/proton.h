@@ -12,7 +12,7 @@
 #ifndef INC_PROTON_PROTON_H_
 #define INC_PROTON_PROTON_H_
 
-#include "proton.pb.h"
+#include "bundle.pb.h"
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
@@ -52,24 +52,24 @@ typedef struct {
 } proton_signal_schema_t;
 
 typedef struct Proton {
-  proton_Proton proton;
+  proton_Bundle bundle;
   proton_list_arg_t arg;
-} proton_t;
+} proton_bundle_t;
 
 
-#define INIT_PROTON(id, schema) (proton_t){ \
+#define INIT_PROTON(id, schema) (proton_bundle_t){ \
   .proton.id = id,                           \
   .proton.signals.                                      \
 }
 
-void PROTON_InitProton(proton_t * proton, uint32_t id, proton_Signal * signals, proton_signal_schema_t * schema, uint32_t signal_count);
+void PROTON_InitProton(proton_bundle_t * proton, uint32_t id, proton_Signal * signals, proton_signal_schema_t * schema, uint32_t signal_count);
 void PROTON_InitSignal(proton_Signal * signal, proton_signal_schema_t * schema);
 
 bool PROTON_CopyStringToSignal(proton_Signal * signal, const char * string);
 bool PROTON_CopyStringToListString(proton_Signal * signal, const char * string, size_t index);
 
-int PROTON_Encode(proton_Proton * msg, uint8_t * buffer, size_t buffer_length);
-int PROTON_Decode(proton_Proton * msg, const uint8_t * buffer, const size_t buffer_length);
+int PROTON_Encode(proton_bundle_t * bundle, uint8_t * buffer, size_t buffer_length);
+int PROTON_Decode(proton_bundle_t * bundle, const uint8_t * buffer, const size_t buffer_length);
 
 // Struct: {{(proton_Signal){pb_size_t, (union){signal}}, {(proton_list_arg_t{void *, size_t}}
 #define proton_bool_signal_init_default {{proton_Signal_bool_value_tag, {false}}, {NULL, 0}}

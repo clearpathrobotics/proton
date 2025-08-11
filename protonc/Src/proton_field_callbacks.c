@@ -14,14 +14,14 @@
 #include "pb_encode.h"
 #include <stdio.h>
 
-bool proton_Proton_callback(pb_istream_t *istream, pb_ostream_t *ostream, const pb_field_t *field)
+bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const pb_field_t *field)
 {
   if (!field)
   {
     return false;
   }
 
-  proton_Proton * msg = (proton_Proton *)field->message;
+  proton_Bundle * msg = (proton_Bundle *)field->message;
 
   if (!msg)
   {
@@ -38,7 +38,7 @@ bool proton_Proton_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   // Decode
   if (istream)
   {
-    if (field->tag == proton_Proton_signals_tag)
+    if (field->tag == proton_Bundle_signals_tag)
     {
       // No signals to decode
       if (!signals)
@@ -90,7 +90,7 @@ bool proton_Proton_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   // Encode
   else if (ostream)
   {
-    if (field->tag == proton_Proton_signals_tag)
+    if (field->tag == proton_Bundle_signals_tag)
     {
       // No signals to decode
       if (!signals)

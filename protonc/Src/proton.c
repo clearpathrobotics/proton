@@ -12,7 +12,7 @@
 #include "proton.h"
 #include <stdio.h>
 
-void PROTON_InitProton(proton_t * proton, uint32_t id, proton_Signal * signals, proton_signal_schema_t * schema, uint32_t signal_count)
+void PROTON_InitProton(proton_bundle_t * proton, uint32_t id, proton_Signal * signals, proton_signal_schema_t * schema, uint32_t signal_count)
 {
   if (signals && schema)
   {
@@ -24,8 +24,8 @@ void PROTON_InitProton(proton_t * proton, uint32_t id, proton_Signal * signals, 
     proton->arg.values = signals;
     proton->arg.capacity = signal_count;
     proton->arg.size = 0;
-    proton->proton.id = id;
-    proton->proton.signals = &proton->arg;
+    proton->bundle.id = id;
+    proton->bundle.signals = &proton->arg;
   }
   else
   {
@@ -296,10 +296,10 @@ bool PROTON_CopyStringToListString(proton_Signal * signal, const char * string, 
   return true;
 }
 
-int PROTON_Encode(proton_Proton * msg, uint8_t * buffer, size_t buffer_length)
+int PROTON_Encode(proton_bundle_t * bundle, uint8_t * buffer, size_t buffer_length)
 {
   pb_ostream_t stream = pb_ostream_from_buffer((pb_byte_t *)buffer, buffer_length);
-  bool status = pb_encode(&stream, proton_Proton_fields, msg);
+  bool status = pb_encode(&stream, proton_Bundle_fields, &bundle->bundle);
   size_t bytes_written = stream.bytes_written;
 
   if (status)
@@ -313,10 +313,10 @@ int PROTON_Encode(proton_Proton * msg, uint8_t * buffer, size_t buffer_length)
   }
 }
 
-int PROTON_Decode(proton_Proton * msg, const uint8_t * buffer, size_t buffer_length)
+int PROTON_Decode(proton_bundle_t * bundle, const uint8_t * buffer, size_t buffer_length)
 {
   pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer, buffer_length);
-  bool status = pb_decode(&stream, proton_Proton_fields, msg);
+  bool status = pb_decode(&stream, proton_Bundle_fields, &bundle->bundle);
   size_t bytes_left = stream.bytes_left;
 
   if (status)

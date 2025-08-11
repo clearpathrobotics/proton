@@ -2,7 +2,7 @@
 
 import socket
 from proton_py.signal_pb2 import Signal
-from proton_py.proton_pb2 import Proton
+from proton_py.bundle_pb2 import Bundle
 
 UDP_IP = '127.0.0.1'
 PROTON_UDP_PORT = 11411
@@ -19,15 +19,15 @@ if __name__ == '__main__':
           print(data)
           print()
 
-          proton = Proton()
-          Proton.ParseFromString(proton, data)
+          proton = Bundle()
+          Bundle.ParseFromString(proton, data)
 
           print('~~~ Deserialized to protobuf ~~~')
           print()
           print(proton)
           print()
 
-          proton2 = Proton()
+          proton2 = Bundle()
           proton2.id = proton.id + 1
           proton2.signals.extend([Signal(string_value='response')])
           sock.sendto(proton2.SerializeToString(), (UDP_IP, PROTON_UDP_PORT))

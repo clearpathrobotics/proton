@@ -119,12 +119,12 @@ class ProtonCGenerator:
             )
         self.header_writer.write_newline()
 
-    def generate_extern_proton(self):
-        self.header_writer.write_comment("External Protons", indent_level=0)
+    def generate_extern_bundle(self):
+        self.header_writer.write_comment("External Bundles", indent_level=0)
         self.header_writer.write_newline()
         for m in self.config.messages:
             self.header_writer.write_extern_variable(
-                Variable(f"{m.name}_proton", "proton_t")
+                Variable(f"{m.name}_bundle", "proton_bundle_t")
             )
         self.header_writer.write_newline()
 
@@ -161,11 +161,11 @@ class ProtonCGenerator:
             self.src_writer.write_variable(signals)
         self.src_writer.write_newline()
 
-    def generate_proton_variables(self):
-        self.src_writer.write_comment("Protons", indent_level=0)
+    def generate_bundle_variable(self):
+        self.src_writer.write_comment("Bundles", indent_level=0)
         self.src_writer.write_newline()
         for m in self.config.messages:
-            proton = Variable(f"{m.name}_proton", "proton_t")
+            proton = Variable(f"{m.name}_bundle", "proton_bundle_t")
             self.src_writer.write_variable(proton)
         self.src_writer.write_newline()
 
@@ -258,7 +258,7 @@ class ProtonCGenerator:
                         )
                         self.src_writer.write_for_loop_end(indent_level=1)
             self.src_writer.write(
-                f"PROTON_InitProton(&{m.name}_proton, {m.id}, {m.name}_signals, {m.name}_signal_schema, PROTON_SIGNAL__{m.name.upper()}_COUNT);"
+                f"PROTON_InitProton(&{m.name}_bundle, {m.id}, {m.name}_signals, {m.name}_signal_schema, PROTON_SIGNAL__{m.name.upper()}_COUNT);"
             )
             self.src_writer.write_function_end()
 
@@ -292,11 +292,11 @@ class ProtonCGenerator:
         self.generate_signal_enums()
         self.generate_message_struct_typedefs()
         self.generate_extern_message_structs()
-        self.generate_extern_proton()
+        self.generate_extern_bundle()
         self.generate_message_structs()
         self.generate_signal_variables()
         self.generate_signal_schema_variables()
-        self.generate_proton_variables()
+        self.generate_bundle_variable()
 
         self.generate_message_init_prototypes()
         self.generate_message_init_functions()
@@ -319,6 +319,6 @@ if __name__ == "__main__":
 
     # args = parser.parse_args(sys.argv)
 
-    file = os.path.join(os.getcwd(), "../../config/sample.yaml")
+    file = os.path.join(os.getcwd(), "../tests/sample/config/sample.yaml")
     generator = ProtonCGenerator(file)
     generator.generate(file.split("/")[-1].split(".")[0])

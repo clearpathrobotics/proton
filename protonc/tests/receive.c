@@ -74,13 +74,13 @@ proton_signal_schema_t signal_schema[PROTON_SIGNAL_COUNT] = {
 };
 
 proton_Signal signals[PROTON_SIGNAL_COUNT];
-proton_t proton;
+proton_bundle_t proton;
 
 int sockfd;
 
 
 void print_signal(proton_Signal signal);
-void print_proton(proton_Proton proton);
+void print_proton(proton_Bundle proton);
 
 
 int socket_init()
@@ -113,7 +113,7 @@ void TASKS_PROTON_Init()
   PROTON_InitProton(&proton, PROTON_MESSAGE, signals, signal_schema, PROTON_SIGNAL_COUNT);
 }
 
-void print_proton(proton_Proton proton)
+void print_proton(proton_Bundle proton)
 {
   proton_list_arg_t * args = (proton_list_arg_t *)proton.signals;
   printf("Proton message { \r\n");
@@ -392,7 +392,7 @@ int main()
     printf("\r\n~~~~~~~~~~~~~~~~~~~~~~~~~\r\n\r\n");
     int s = recv(sockfd, read_buf_, sizeof(read_buf_), 0);
     printf("Received %d bytes\r\n", s);
-    int left = PROTON_Decode(&proton.proton, read_buf_, s);
+    int left = PROTON_Decode(&proton, read_buf_, s);
     if (left == -1)
     {
       printf("Decode failed\r\n");
@@ -400,7 +400,7 @@ int main()
     else
     {
       printf("Decoded %d bytes\r\n", s - left);
-      print_proton(proton.proton);
+      print_proton(proton.bundle);
     }
   }
 

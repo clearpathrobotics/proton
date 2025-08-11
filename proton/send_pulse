@@ -2,7 +2,7 @@
 
 import socket
 from proton_py.signal_pb2 import Signal, ListDoubles, ListStrings
-from proton_py.proton_pb2 import Proton
+from proton_py.bundle_pb2 import Bundle
 
 UDP_IP = '127.0.0.1'
 UDP_PORT = 11411
@@ -10,7 +10,7 @@ UDP_PORT = 11411
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def make_pb():
-    proton = Proton(id=0x01)
+    proton = Bundle(id=0x01)
 
     float_data = Signal(float_value=123.456)
     string_data = Signal(string_value='test')

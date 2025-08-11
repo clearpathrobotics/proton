@@ -75,7 +75,7 @@ proton_signal_schema_t signal_schema[PROTON_SIGNAL_COUNT] = {
 };
 
 proton_Signal signals[PROTON_SIGNAL_COUNT];
-proton_t proton;
+proton_bundle_t proton;
 
 int sockfd;
 
@@ -211,7 +211,7 @@ int fill_proton_message()
   PROTON_CopyStringToListString(&signals[PROTON_SIGNAL_LIST_STRING_TEST], "TEST9", 8);
   PROTON_CopyStringToListString(&signals[PROTON_SIGNAL_LIST_STRING_TEST], "TEST110", 9);
 
-  return PROTON_Encode(&proton.proton, write_buf_, sizeof(write_buf_));
+  return PROTON_Encode(&proton, write_buf_, sizeof(write_buf_));
 }
 
 int main()

@@ -20,6 +20,9 @@
 // Signal Enums
 
 typedef enum PROTON_SIGNAL__imu {
+  PROTON_SIGNAL__IMU__IMU_FRAME_ID,
+  PROTON_SIGNAL__IMU__IMU_STAMP_SEC,
+  PROTON_SIGNAL__IMU__IMU_STAMP_NSEC,
   PROTON_SIGNAL__IMU__LINEAR_ACCEL_X,
   PROTON_SIGNAL__IMU__LINEAR_ACCEL_Y,
   PROTON_SIGNAL__IMU__LINEAR_ACCEL_Z,
@@ -42,19 +45,19 @@ typedef enum PROTON_SIGNAL__joints {
   PROTON_SIGNAL__JOINTS_COUNT
 } PROTON_SIGNAL__joints_e;
 
-typedef enum PROTON_SIGNAL__test_proton {
-  PROTON_SIGNAL__TEST_PROTON__STRING_MESSAGE,
-  PROTON_SIGNAL__TEST_PROTON__BYTES_MESSAGE,
-  PROTON_SIGNAL__TEST_PROTON__DOUBLE_LIST,
-  PROTON_SIGNAL__TEST_PROTON__FLOAT_LIST,
-  PROTON_SIGNAL__TEST_PROTON__INT32_LIST,
-  PROTON_SIGNAL__TEST_PROTON__INT64_LIST,
-  PROTON_SIGNAL__TEST_PROTON__UINT32_LIST,
-  PROTON_SIGNAL__TEST_PROTON__UINT64_LIST,
-  PROTON_SIGNAL__TEST_PROTON__BOOL_LIST,
-  PROTON_SIGNAL__TEST_PROTON__STRING_LIST,
-  PROTON_SIGNAL__TEST_PROTON_COUNT
-} PROTON_SIGNAL__test_proton_e;
+typedef enum PROTON_SIGNAL__test {
+  PROTON_SIGNAL__TEST__STRING_MESSAGE,
+  PROTON_SIGNAL__TEST__BYTES_MESSAGE,
+  PROTON_SIGNAL__TEST__DOUBLE_LIST,
+  PROTON_SIGNAL__TEST__FLOAT_LIST,
+  PROTON_SIGNAL__TEST__INT32_LIST,
+  PROTON_SIGNAL__TEST__INT64_LIST,
+  PROTON_SIGNAL__TEST__UINT32_LIST,
+  PROTON_SIGNAL__TEST__UINT64_LIST,
+  PROTON_SIGNAL__TEST__BOOL_LIST,
+  PROTON_SIGNAL__TEST__STRING_LIST,
+  PROTON_SIGNAL__TEST_COUNT
+} PROTON_SIGNAL__test_e;
 
 typedef enum PROTON_SIGNAL__needs_reset_button {
   PROTON_SIGNAL__NEEDS_RESET_BUTTON__NEEDS_RESET_BUTTON_STATE,
@@ -75,6 +78,9 @@ typedef enum PROTON_SIGNAL__get_firmware_version_response {
 // Message Structure Definitions
 
 typedef struct PROTON_MESSAGE_STRUCT__imu {
+  char imu_frame_id[64];
+  uint32_t imu_stamp_sec;
+  uint32_t imu_stamp_nsec;
   double linear_accel_x;
   double linear_accel_y;
   double linear_accel_z;
@@ -84,10 +90,10 @@ typedef struct PROTON_MESSAGE_STRUCT__imu {
 } PROTON_MESSAGE_STRUCT__imu_t;
 
 typedef struct PROTON_MESSAGE_STRUCT__lights {
-  uint32_t front_left_light[3];
-  uint32_t front_right_light[3];
-  uint32_t rear_left_light[3];
-  uint32_t rear_right_light[3];
+  uint8_t front_left_light[3];
+  uint8_t front_right_light[3];
+  uint8_t rear_left_light[3];
+  uint8_t rear_right_light[3];
 } PROTON_MESSAGE_STRUCT__lights_t;
 
 typedef struct PROTON_MESSAGE_STRUCT__joints {
@@ -97,7 +103,7 @@ typedef struct PROTON_MESSAGE_STRUCT__joints {
   } joint_states;
 } PROTON_MESSAGE_STRUCT__joints_t;
 
-typedef struct PROTON_MESSAGE_STRUCT__test_proton {
+typedef struct PROTON_MESSAGE_STRUCT__test {
   char string_message[64];
   uint8_t bytes_message[64];
   double double_list[10];
@@ -111,7 +117,7 @@ typedef struct PROTON_MESSAGE_STRUCT__test_proton {
     char * list[10];
     char strings[10][64];
   } string_list;
-} PROTON_MESSAGE_STRUCT__test_proton_t;
+} PROTON_MESSAGE_STRUCT__test_t;
 
 typedef struct PROTON_MESSAGE_STRUCT__needs_reset_button {
   bool needs_reset_button_state;
@@ -130,20 +136,20 @@ typedef struct PROTON_MESSAGE_STRUCT__get_firmware_version_response {
 extern PROTON_MESSAGE_STRUCT__imu_t imu;
 extern PROTON_MESSAGE_STRUCT__lights_t lights;
 extern PROTON_MESSAGE_STRUCT__joints_t joints;
-extern PROTON_MESSAGE_STRUCT__test_proton_t test_proton;
+extern PROTON_MESSAGE_STRUCT__test_t test;
 extern PROTON_MESSAGE_STRUCT__needs_reset_button_t needs_reset_button;
 extern PROTON_MESSAGE_STRUCT__get_firmware_version_t get_firmware_version;
 extern PROTON_MESSAGE_STRUCT__get_firmware_version_response_t get_firmware_version_response;
 
-// External Protons
+// External Bundles
 
-extern proton_t imu_proton;
-extern proton_t lights_proton;
-extern proton_t joints_proton;
-extern proton_t test_proton_proton;
-extern proton_t needs_reset_button_proton;
-extern proton_t get_firmware_version_proton;
-extern proton_t get_firmware_version_response_proton;
+extern proton_bundle_t imu_bundle;
+extern proton_bundle_t lights_bundle;
+extern proton_bundle_t joints_bundle;
+extern proton_bundle_t test_bundle;
+extern proton_bundle_t needs_reset_button_bundle;
+extern proton_bundle_t get_firmware_version_bundle;
+extern proton_bundle_t get_firmware_version_response_bundle;
 
 // Message Init Prototypes
 

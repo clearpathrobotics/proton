@@ -17,7 +17,7 @@ from proton_py.signal_pb2 import (
   ListUint32s,
   ListUint64s
 )
-from proton_py.proton_pb2 import Proton
+from proton_py.bundle_pb2 import Bundle
 
 from google.protobuf.message import DecodeError
 
@@ -39,7 +39,7 @@ class ProtonProcess():
 
     def send_float_list(self):
         while(True):
-            proton = Proton()
+            proton = Bundle()
             proton.id = 0x200
             proton.signals.extend([
               Signal(
@@ -97,9 +97,9 @@ class ProtonProcess():
           print(f'Data len {len(data)}')
           print()
 
-          proton = Proton()
+          proton = Bundle()
           try:
-            Proton.ParseFromString(proton, data)
+            Bundle.ParseFromString(proton, data)
             print('~~~ Deserialized to protobuf ~~~')
             print(proton)
             print(f'Length {proton.ByteSize()}')

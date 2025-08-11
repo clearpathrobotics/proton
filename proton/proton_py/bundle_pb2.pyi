@@ -6,7 +6,7 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class Proton(_message.Message):
+class Bundle(_message.Message):
     __slots__ = ["id", "signals"]
     ID_FIELD_NUMBER: _ClassVar[int]
     SIGNALS_FIELD_NUMBER: _ClassVar[int]

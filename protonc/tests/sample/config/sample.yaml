@@ -16,6 +16,9 @@ messages:
       producer: mcu
       consumer: pc
       schema:
+        - {signal: imu_frame_id, type: string, capacity: 64}
+        - {signal: imu_stamp_sec, type: uint32}
+        - {signal: imu_stamp_nsec, type: uint32}
         - {signal: linear_accel_x, type: double}
         - {signal: linear_accel_y, type: double}
         - {signal: linear_accel_z, type: double}
@@ -27,17 +30,17 @@ messages:
       producer: pc
       consumer: mcu
       schema:
-        - {signal: front_left_light, type: uint32, length: 3}
-        - {signal: front_right_light, type: uint32, length: 3}
-        - {signal: rear_left_light, type: uint32, length: 3}
-        - {signal: rear_right_light, type: uint32, length: 3}
+        - {signal: front_left_light, type: bytes, capacity: 3}
+        - {signal: front_right_light, type: bytes, capacity: 3}
+        - {signal: rear_left_light, type: bytes, capacity: 3}
+        - {signal: rear_right_light, type: bytes, capacity: 3}
     - name: joints
       id: 0x500
       producer: pc
       consumer: mcu
       schema:
         - {signal: joint_states, type: string, length: 3, capacity: 64}
-    - name: test_proton
+    - name: test
       id: 0x1234
       producer: pc
       consumer: mcu
