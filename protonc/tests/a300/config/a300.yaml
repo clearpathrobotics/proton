@@ -1,0 +1,106 @@
+nodes:
+  - name: pc
+    transport:
+      type: udp4
+      ip: 192.168.131.1
+      port: 11411
+  - name: mcu
+    transport:
+      type: udp4
+      ip: 192.168.131.2
+      port: 11411
+bundles:
+  periodic:
+    - name: logger
+      id: 0x100
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: log, type: string, capacity: 64}
+    - name: status
+      id: 0x101
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: hardware_id, type: string, capacity: 10}
+        - {signal: firmware_version, type: string, capacity: 10}
+        - {signal: mcu_uptime_s, type: uint32}
+        - {signal: mcu_uptime_ns, type: uint32}
+        - {signal: connection_uptime_s, type: uint32}
+        - {signal: connection_uptime_ns, type: uint32}
+    - name: power
+      id: 0x102
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: measured_voltages, type: float, length: 13}
+        - {signal: measured_currents, type: float, length: 13}
+    - name: emergency_stop
+      id: 0x103
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: stopped, type: bool}
+    - name: temperature
+      id: 0x104
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: temperatures, type: float, length: 18}
+    - name: stop_status
+      id: 0x105
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: needs_reset, type: bool}
+    - name: pinout_state
+      id: 0x106
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: rails, type: bool, length: 1}
+        - {signal: inputs, type: bool, length: 7}
+        - {signal: outputs, type: bool, length: 7}
+        - {signal: output_periods, type: uint32, length: 7}
+    - name: error_codes
+      id: 0x107
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: errors, type: string, capacity: 86}
+
+    - name: cmd_fans
+      id: 0x200
+      producer: pc
+      consumer: mcu
+      schema:
+        - {signal: fan_speeds, type: bytes, capacity: 8}
+    - name: display_status
+      id: 0x201
+      producer: pc
+      consumer: mcu
+      schema:
+        - {signal: string_1, type: string, capacity: 50}
+        - {signal: string_2, type: string, capacity: 50}
+    - name: cmd_lights
+      id: 0x202
+      producer: pc
+      consumer: mcu
+      schema:
+        - {signal: front_left_light, type: bytes, capacity: 3}
+        - {signal: front_right_light, type: bytes, capacity: 3}
+        - {signal: rear_left_light, type: bytes, capacity: 3}
+        - {signal: rear_right_light, type: bytes, capacity: 3}
+    - name: battery
+      id: 0x203
+      producer: pc
+      consumer: mcu
+      schema:
+        - {signal: percentage, type: float}
+    - name: pinout_command
+      id: 0x204
+      producer: pc
+      consumer: mcu
+      schema:
+        - {signal: rails, type: bool, length: 1}
+        - {signal: outputs, type: uint32, length: 7}

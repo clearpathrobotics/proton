@@ -309,12 +309,12 @@ class ProtonCGenerator:
         generated_filename = f"proton__{name}"
 
         self.src_writer = CWriter(
-            os.path.join(os.getcwd(), "../tests/sample/generated/"),
+            os.path.join(os.getcwd(), "../tests/a300/generated/"),
             f"{generated_filename}.c",
         )
 
         self.header_writer = CWriter(
-            os.path.join(os.getcwd(), "../tests/sample/generated/"),
+            os.path.join(os.getcwd(), "../tests/a300/generated/"),
             f"{generated_filename}.h",
         )
 
@@ -356,6 +356,6 @@ if __name__ == "__main__":
 
     # args = parser.parse_args(sys.argv)
 
-    file = os.path.join(os.getcwd(), "../tests/sample/config/sample.yaml")
+    file = os.path.join(os.getcwd(), "../tests/a300/config/a300.yaml")
     generator = ProtonCGenerator(file)
     generator.generate(file.split("/")[-1].split(".")[0])

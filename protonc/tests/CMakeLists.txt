@@ -16,3 +16,4 @@ file(GLOB TEST_SOURCES *.c)
 # endforeach()
 
 add_subdirectory(sample)
+add_subdirectory(a300)

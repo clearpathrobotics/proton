@@ -161,7 +161,7 @@ int main()
 
   int d = PROTON_Decode(&test_bundle, write_buf_, e);
 
-  printf("Decoded %d bytes\r\n", e);
+  printf("Decoded %d bytes\r\n", d);
 
   print_bundle(test_bundle.bundle);
 
