@@ -9,42 +9,49 @@ nodes:
       type: udp4
       ip: 192.168.131.2
       port: 11411
-messages:
+bundles:
   periodic:
-    - name: imu
-      id: 0x100
-      producer: mcu
-      consumer: pc
-      schema:
-        - {signal: imu_frame_id, type: string, capacity: 64}
-        - {signal: imu_stamp_sec, type: uint32}
-        - {signal: imu_stamp_nsec, type: uint32}
-        - {signal: linear_accel_x, type: double}
-        - {signal: linear_accel_y, type: double}
-        - {signal: linear_accel_z, type: double}
-        - {signal: angular_velocity_x, type: double}
-        - {signal: angular_velocity_y, type: double}
-        - {signal: angular_velocity_z, type: double}
-    - name: lights
-      id: 0x200
-      producer: pc
-      consumer: mcu
-      schema:
-        - {signal: front_left_light, type: bytes, capacity: 3}
-        - {signal: front_right_light, type: bytes, capacity: 3}
-        - {signal: rear_left_light, type: bytes, capacity: 3}
-        - {signal: rear_right_light, type: bytes, capacity: 3}
-    - name: joints
-      id: 0x500
-      producer: pc
-      consumer: mcu
-      schema:
-        - {signal: joint_states, type: string, length: 3, capacity: 64}
+    # - name: imu
+    #   id: 0x100
+    #   producer: mcu
+    #   consumer: pc
+    #   schema:
+    #     - {signal: imu_frame_id, type: string, capacity: 64}
+    #     - {signal: imu_stamp_sec, type: uint32}
+    #     - {signal: imu_stamp_nsec, type: uint32}
+    #     - {signal: linear_accel_x, type: double}
+    #     - {signal: linear_accel_y, type: double}
+    #     - {signal: linear_accel_z, type: double}
+    #     - {signal: angular_velocity_x, type: double}
+    #     - {signal: angular_velocity_y, type: double}
+    #     - {signal: angular_velocity_z, type: double}
+    # - name: lights
+    #   id: 0x200
+    #   producer: pc
+    #   consumer: mcu
+    #   schema:
+    #     - {signal: front_left_light, type: bytes, capacity: 3}
+    #     - {signal: front_right_light, type: bytes, capacity: 3}
+    #     - {signal: rear_left_light, type: bytes, capacity: 3}
+    #     - {signal: rear_right_light, type: bytes, capacity: 3}
+    # - name: joints
+    #   id: 0x500
+    #   producer: pc
+    #   consumer: mcu
+    #   schema:
+    #     - {signal: joint_states, type: string, length: 3, capacity: 64}
     - name: test
       id: 0x1234
       producer: pc
       consumer: mcu
       schema:
+        - {signal: double_message, type: double}
+        - {signal: float_message, type: float}
+        - {signal: int32_message, type: int32}
+        - {signal: int64_message, type: int64}
+        - {signal: uint32_message, type: uint32}
+        - {signal: uint64_message, type: uint64}
+        - {signal: bool_message, type: bool}
         - {signal: string_message, type: string, capacity: 64}
         - {signal: bytes_message, type: bytes, capacity: 64}
         - {signal: double_list, type: double, length: 10}
@@ -55,23 +62,23 @@ messages:
         - {signal: uint64_list, type: uint64, length: 10}
         - {signal: bool_list, type: bool, length: 10}
         - {signal: string_list, type: string, length: 10, capacity: 64}
-  event:
-    - name: needs_reset_button
-      id: 0x300
-      producer: mcu
-      consumer: pc
-      schema:
-        - {signal: needs_reset_button_state, type: bool}
-  trigger:
-    - name: get_firmware_version
-      id: 0x1
-      producer: pc
-      consumer: mcu
-      schema:
-        - {signal: get_firmware_version, type: bool}
-    - name: get_firmware_version_response
-      id: 0x1
-      producer: mcu
-      consumer: pc
-      schema:
-        - {signal: firmware_version, type: string, capacity: 64}
+  # event:
+  #   - name: needs_reset_button
+  #     id: 0x300
+  #     producer: mcu
+  #     consumer: pc
+  #     schema:
+  #       - {signal: needs_reset_button_state, type: bool}
+  # trigger:
+  #   - name: get_firmware_version
+  #     id: 0x1
+  #     producer: pc
+  #     consumer: mcu
+  #     schema:
+  #       - {signal: get_firmware_version, type: bool}
+  #   - name: get_firmware_version_response
+  #     id: 0x1
+  #     producer: mcu
+  #     consumer: pc
+  #     schema:
+  #       - {signal: firmware_version, type: string, capacity: 64}

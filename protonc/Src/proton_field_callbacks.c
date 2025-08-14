@@ -28,9 +28,10 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
     return false;
   }
 
-  proton_list_arg_t * signals = (proton_list_arg_t *)msg->signals;
+  proton_list_t * signal_list = (proton_list_t *)msg->signals;
+  proton_signal_t * signals = (proton_signal_t *)signal_list->data;
 
-  if (!signals)
+  if (!signal_list)
   {
     return true;
   }
@@ -40,18 +41,12 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   {
     if (field->tag == proton_Bundle_signals_tag)
     {
-      // No signals to decode
-      if (!signals)
-      {
-        return true;
-      }
-
-      proton_Signal * signal = &((proton_Signal *)signals->values)[signals->size++];
+      proton_Signal * signal = &(signals[signal_list->size++].signal);
 
       // This is the last signal in the list, reset size counter
-      if (signals->size == signals->capacity)
+      if (signal_list->size == signal_list->capacity)
       {
-        signals->size = 0;
+        signal_list->size = 0;
       }
 
       switch(signal->which_signal)
@@ -92,20 +87,14 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   {
     if (field->tag == proton_Bundle_signals_tag)
     {
-      // No signals to decode
-      if (!signals)
-      {
-        return true;
-      }
-
-      for (size_t i = 0; i < signals->capacity; i++)
+      for (size_t i = 0; i < signal_list->capacity; i++)
       {
         if (!pb_encode_tag_for_field(ostream, field))
         {
           return false;
         }
 
-        if (!pb_encode_submessage(ostream, proton_Signal_fields, &(((proton_Signal *)signals->values)[i])))
+        if (!pb_encode_submessage(ostream, proton_Signal_fields, &(signals[i].signal)))
         {
           return false;
         }
@@ -136,7 +125,7 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   {
     if (field->tag == proton_Signal_string_value_tag)
     {
-      proton_list_arg_t * arg = (proton_list_arg_t *)msg->signal.string_value;
+      proton_list_t * arg = (proton_list_t *)msg->signal.string_value;
 
       if (!arg)
       {
@@ -151,7 +140,7 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
         return false;
       }
 
-      if (!pb_read(istream, (char *)arg->values, len))
+      if (!pb_read(istream, (char *)arg->data, len))
       {
         return false;
       }
@@ -160,7 +149,7 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
     }
     else if (field->tag == proton_Signal_bytes_value_tag)
     {
-      proton_list_arg_t * arg = (proton_list_arg_t *)msg->signal.bytes_value;
+      proton_list_t * arg = (proton_list_t *)msg->signal.bytes_value;
 
       if (!arg)
       {
@@ -175,7 +164,7 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
         return false;
       }
 
-      if (!pb_read(istream, (uint8_t *)arg->values, len))
+      if (!pb_read(istream, (uint8_t *)arg->data, len))
       {
         return false;
       }
@@ -188,14 +177,14 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   {
     if (field->tag == proton_Signal_string_value_tag)
     {
-      proton_list_arg_t * arg = (proton_list_arg_t *)msg->signal.string_value;
+      proton_list_t * arg = (proton_list_t *)msg->signal.string_value;
 
       if (!arg)
       {
         return false;
       }
 
-      char * string = (char *)arg->values;
+      char * string = (char *)arg->data;
 
       if (!pb_encode_tag_for_field(ostream, field))
       {
@@ -209,7 +198,7 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
     }
     else if (field->tag == proton_Signal_bytes_value_tag)
     {
-      proton_list_arg_t * arg = (proton_list_arg_t *)msg->signal.bytes_value;
+      proton_list_t * arg = (proton_list_t *)msg->signal.bytes_value;
 
       if (!arg)
       {
@@ -221,7 +210,7 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
         return false;
       }
 
-      if (!pb_encode_string(ostream, (uint8_t *)arg->values, arg->capacity))
+      if (!pb_encode_string(ostream, (uint8_t *)arg->data, arg->capacity))
       {
         return false;
       }
@@ -245,7 +234,7 @@ bool proton_ListDoubles_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
     return false;
   }
 
-  proton_list_arg_t * arg = (proton_list_arg_t *)msg->doubles;
+  proton_list_t * arg = (proton_list_t *)msg->doubles;
 
   if (!arg)
   {
@@ -255,7 +244,7 @@ bool proton_ListDoubles_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
   // Decode
   if (istream && field)
   {
-    double * value = &(((double *)arg->values)[arg->size++]);
+    double * value = &(((double *)arg->data)[arg->size++]);
     if (arg->size == arg->capacity)
     {
       arg->size = 0;
@@ -277,7 +266,7 @@ bool proton_ListDoubles_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
         {
           return false;
         }
-        if (!pb_encode_fixed64(ostream, &(((double *)arg->values)[i])))
+        if (!pb_encode_fixed64(ostream, &(((double *)arg->data)[i])))
         {
           return false;
         }
@@ -302,7 +291,7 @@ bool proton_ListFloats_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
     return false;
   }
 
-  proton_list_arg_t * arg = (proton_list_arg_t *)msg->floats;
+  proton_list_t * arg = (proton_list_t *)msg->floats;
 
   if (!arg)
   {
@@ -312,7 +301,7 @@ bool proton_ListFloats_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
   // Decode
   if (istream && field)
   {
-    float * value = &(((float *)arg->values)[arg->size++]);
+    float * value = &(((float *)arg->data)[arg->size++]);
     if (arg->size == arg->capacity)
     {
       arg->size = 0;
@@ -334,7 +323,7 @@ bool proton_ListFloats_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
         {
           return false;
         }
-        if (!pb_encode_fixed32(ostream, &(((float *)arg->values)[i])))
+        if (!pb_encode_fixed32(ostream, &(((float *)arg->data)[i])))
         {
           return false;
         }
@@ -359,7 +348,7 @@ bool proton_ListInt32s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
     return false;
   }
 
-  proton_list_arg_t * arg = (proton_list_arg_t *)msg->int32s;
+  proton_list_t * arg = (proton_list_t *)msg->int32s;
 
   if (!arg)
   {
@@ -369,7 +358,7 @@ bool proton_ListInt32s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
   // Decode
   if (istream && field)
   {
-    int32_t * value = &(((int32_t *)arg->values)[arg->size++]);
+    int32_t * value = &(((int32_t *)arg->data)[arg->size++]);
     if (arg->size == arg->capacity)
     {
       arg->size = 0;
@@ -391,7 +380,7 @@ bool proton_ListInt32s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
         {
           return false;
         }
-        if (!pb_encode_varint(ostream, ((int32_t *)arg->values)[i]))
+        if (!pb_encode_varint(ostream, ((int32_t *)arg->data)[i]))
         {
           return false;
         }
@@ -416,7 +405,7 @@ bool proton_ListInt64s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
     return false;
   }
 
-  proton_list_arg_t * arg = (proton_list_arg_t *)msg->int64s;
+  proton_list_t * arg = (proton_list_t *)msg->int64s;
 
   if (!arg)
   {
@@ -426,7 +415,7 @@ bool proton_ListInt64s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
   // Decode
   if (istream && field)
   {
-    int64_t * value = &(((int64_t *)arg->values)[arg->size++]);
+    int64_t * value = &(((int64_t *)arg->data)[arg->size++]);
     if (arg->size == arg->capacity)
     {
       arg->size = 0;
@@ -448,7 +437,7 @@ bool proton_ListInt64s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
         {
           return false;
         }
-        if (!pb_encode_varint(ostream, ((int64_t *)arg->values)[i]))
+        if (!pb_encode_varint(ostream, ((int64_t *)arg->data)[i]))
         {
           return false;
         }
@@ -473,7 +462,7 @@ bool proton_ListUint32s_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
     return false;
   }
 
-  proton_list_arg_t * arg = (proton_list_arg_t *)msg->uint32s;
+  proton_list_t * arg = (proton_list_t *)msg->uint32s;
 
   if (!arg)
   {
@@ -483,7 +472,7 @@ bool proton_ListUint32s_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
   // Decode
   if (istream && field)
   {
-    uint32_t * value = &(((uint32_t *)arg->values)[arg->size++]);
+    uint32_t * value = &(((uint32_t *)arg->data)[arg->size++]);
     if (arg->size == arg->capacity)
     {
       arg->size = 0;
@@ -505,7 +494,7 @@ bool proton_ListUint32s_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
         {
           return false;
         }
-        if (!pb_encode_varint(ostream, ((uint32_t *)arg->values)[i]))
+        if (!pb_encode_varint(ostream, ((uint32_t *)arg->data)[i]))
         {
           return false;
         }
@@ -530,7 +519,7 @@ bool proton_ListUint64s_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
     return false;
   }
 
-  proton_list_arg_t * arg = (proton_list_arg_t *)msg->uint64s;
+  proton_list_t * arg = (proton_list_t *)msg->uint64s;
 
   if (!arg)
   {
@@ -540,7 +529,7 @@ bool proton_ListUint64s_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
   // Decode
   if (istream && field)
   {
-    uint64_t * value = &(((uint64_t *)arg->values)[arg->size++]);
+    uint64_t * value = &(((uint64_t *)arg->data)[arg->size++]);
     if (arg->size == arg->capacity)
     {
       arg->size = 0;
@@ -562,7 +551,7 @@ bool proton_ListUint64s_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
         {
           return false;
         }
-        if (!pb_encode_varint(ostream, ((uint64_t *)arg->values)[i]))
+        if (!pb_encode_varint(ostream, ((uint64_t *)arg->data)[i]))
         {
           return false;
         }
@@ -587,7 +576,7 @@ bool proton_ListBools_callback(pb_istream_t *istream, pb_ostream_t *ostream, con
     return false;
   }
 
-  proton_list_arg_t * arg = (proton_list_arg_t *)msg->bools;
+  proton_list_t * arg = (proton_list_t *)msg->bools;
 
   if (!arg)
   {
@@ -597,7 +586,7 @@ bool proton_ListBools_callback(pb_istream_t *istream, pb_ostream_t *ostream, con
   // Decode
   if (istream && field)
   {
-    bool * value = &(((bool *)arg->values)[arg->size++]);
+    bool * value = &(((bool *)arg->data)[arg->size++]);
     if (arg->size == arg->capacity)
     {
       arg->size = 0;
@@ -619,7 +608,7 @@ bool proton_ListBools_callback(pb_istream_t *istream, pb_ostream_t *ostream, con
         {
           return false;
         }
-        if (!pb_encode_varint(ostream, ((bool *)arg->values)[i]))
+        if (!pb_encode_varint(ostream, ((bool *)arg->data)[i]))
         {
           return false;
         }
@@ -649,7 +638,7 @@ bool proton_ListStrings_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
   {
     if (field->tag == proton_ListStrings_strings_tag)
     {
-      proton_list_arg_t * arg = (proton_list_arg_t *)msg->strings;
+      proton_list_t * arg = (proton_list_t *)msg->strings;
 
       if (!arg)
       {
@@ -658,7 +647,7 @@ bool proton_ListStrings_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
 
       size_t len = istream->bytes_left;
 
-      char * string = ((char **)arg->values)[arg->size++];
+      char * string = ((char **)arg->data)[arg->size++];
 
       if (arg->size == arg->capacity)
       {
@@ -676,7 +665,7 @@ bool proton_ListStrings_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
   {
     if (field->tag == proton_ListStrings_strings_tag)
     {
-      proton_list_arg_t * arg = (proton_list_arg_t *)msg->strings;
+      proton_list_t * arg = (proton_list_t *)msg->strings;
 
       if (!arg)
       {
@@ -685,7 +674,7 @@ bool proton_ListStrings_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
 
       for (int i=0; i < arg->capacity; i++)
       {
-        char * string = (char *)(((char **)arg->values)[i]);
+        char * string = (char *)(((char **)arg->data)[i]);
 
         if (!pb_encode_tag_for_field(ostream, field))
         {

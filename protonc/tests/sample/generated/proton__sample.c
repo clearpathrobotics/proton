@@ -14,185 +14,114 @@
 
 // Message Structures
 
-PROTON_MESSAGE_STRUCT__imu_t imu;
-PROTON_MESSAGE_STRUCT__lights_t lights;
-PROTON_MESSAGE_STRUCT__joints_t joints;
-PROTON_MESSAGE_STRUCT__test_t test;
-PROTON_MESSAGE_STRUCT__needs_reset_button_t needs_reset_button;
-PROTON_MESSAGE_STRUCT__get_firmware_version_t get_firmware_version;
-PROTON_MESSAGE_STRUCT__get_firmware_version_response_t get_firmware_version_response;
+PROTON_BUNDLE__test_t test_struct;
 
 // Signals
 
-proton_Signal imu_signals[PROTON_SIGNAL__IMU_COUNT];
-proton_Signal lights_signals[PROTON_SIGNAL__LIGHTS_COUNT];
-proton_Signal joints_signals[PROTON_SIGNAL__JOINTS_COUNT];
-proton_Signal test_signals[PROTON_SIGNAL__TEST_COUNT];
-proton_Signal needs_reset_button_signals[PROTON_SIGNAL__NEEDS_RESET_BUTTON_COUNT];
-proton_Signal get_firmware_version_signals[PROTON_SIGNAL__GET_FIRMWARE_VERSION_COUNT];
-proton_Signal get_firmware_version_response_signals[PROTON_SIGNAL__GET_FIRMWARE_VERSION_RESPONSE_COUNT];
-
-// Signal schemas
-
-proton_signal_schema_t imu_signal_schema[PROTON_SIGNAL__IMU_COUNT];
-proton_signal_schema_t lights_signal_schema[PROTON_SIGNAL__LIGHTS_COUNT];
-proton_signal_schema_t joints_signal_schema[PROTON_SIGNAL__JOINTS_COUNT];
-proton_signal_schema_t test_signal_schema[PROTON_SIGNAL__TEST_COUNT];
-proton_signal_schema_t needs_reset_button_signal_schema[PROTON_SIGNAL__NEEDS_RESET_BUTTON_COUNT];
-proton_signal_schema_t get_firmware_version_signal_schema[PROTON_SIGNAL__GET_FIRMWARE_VERSION_COUNT];
-proton_signal_schema_t get_firmware_version_response_signal_schema[PROTON_SIGNAL__GET_FIRMWARE_VERSION_RESPONSE_COUNT];
+proton_signal_t test_signals[PROTON_SIGNALS__TEST_COUNT];
 
 // Bundles
 
-proton_bundle_t imu_bundle;
-proton_bundle_t lights_bundle;
-proton_bundle_t joints_bundle;
 proton_bundle_t test_bundle;
-proton_bundle_t needs_reset_button_bundle;
-proton_bundle_t get_firmware_version_bundle;
-proton_bundle_t get_firmware_version_response_bundle;
 
 // Message Init Prototypes
 
-void PROTON_MESSAGE_init_imu();
-void PROTON_MESSAGE_init_lights();
-void PROTON_MESSAGE_init_joints();
-void PROTON_MESSAGE_init_test();
-void PROTON_MESSAGE_init_needs_reset_button();
-void PROTON_MESSAGE_init_get_firmware_version();
-void PROTON_MESSAGE_init_get_firmware_version_response();
+void PROTON_BUNDLE_init_test();
 
 // Message Init Functions
 
-void PROTON_MESSAGE_init_imu()
+void PROTON_BUNDLE_init_test()
 {
-  imu_signal_schema[PROTON_SIGNAL__IMU__IMU_FRAME_ID].type = PROTON_SIGNAL_TYPE_STRING_VALUE;
-  imu_signal_schema[PROTON_SIGNAL__IMU__IMU_FRAME_ID].arg.values = imu.imu_frame_id;
-  imu_signal_schema[PROTON_SIGNAL__IMU__IMU_FRAME_ID].arg.capacity = 64;
-  imu_signal_schema[PROTON_SIGNAL__IMU__IMU_FRAME_ID].arg.size = 0;
-  imu_signal_schema[PROTON_SIGNAL__IMU__IMU_STAMP_SEC].type = PROTON_SIGNAL_TYPE_UINT32_VALUE;
-  imu_signal_schema[PROTON_SIGNAL__IMU__IMU_STAMP_NSEC].type = PROTON_SIGNAL_TYPE_UINT32_VALUE;
-  imu_signal_schema[PROTON_SIGNAL__IMU__LINEAR_ACCEL_X].type = PROTON_SIGNAL_TYPE_DOUBLE_VALUE;
-  imu_signal_schema[PROTON_SIGNAL__IMU__LINEAR_ACCEL_Y].type = PROTON_SIGNAL_TYPE_DOUBLE_VALUE;
-  imu_signal_schema[PROTON_SIGNAL__IMU__LINEAR_ACCEL_Z].type = PROTON_SIGNAL_TYPE_DOUBLE_VALUE;
-  imu_signal_schema[PROTON_SIGNAL__IMU__ANGULAR_VELOCITY_X].type = PROTON_SIGNAL_TYPE_DOUBLE_VALUE;
-  imu_signal_schema[PROTON_SIGNAL__IMU__ANGULAR_VELOCITY_Y].type = PROTON_SIGNAL_TYPE_DOUBLE_VALUE;
-  imu_signal_schema[PROTON_SIGNAL__IMU__ANGULAR_VELOCITY_Z].type = PROTON_SIGNAL_TYPE_DOUBLE_VALUE;
-  PROTON_InitProton(&imu_bundle, 256, imu_signals, imu_signal_schema, PROTON_SIGNAL__IMU_COUNT);
-}
+  test_signals[PROTON_SIGNALS__TEST__DOUBLE_MESSAGE].signal.which_signal = proton_Signal_double_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__DOUBLE_MESSAGE].arg.data = &test_struct.double_message;
 
-void PROTON_MESSAGE_init_lights()
-{
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__FRONT_LEFT_LIGHT].type = PROTON_SIGNAL_TYPE_BYTES_VALUE;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__FRONT_LEFT_LIGHT].arg.values = lights.front_left_light;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__FRONT_LEFT_LIGHT].arg.capacity = 3;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__FRONT_LEFT_LIGHT].arg.size = 0;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__FRONT_RIGHT_LIGHT].type = PROTON_SIGNAL_TYPE_BYTES_VALUE;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__FRONT_RIGHT_LIGHT].arg.values = lights.front_right_light;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__FRONT_RIGHT_LIGHT].arg.capacity = 3;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__FRONT_RIGHT_LIGHT].arg.size = 0;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__REAR_LEFT_LIGHT].type = PROTON_SIGNAL_TYPE_BYTES_VALUE;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__REAR_LEFT_LIGHT].arg.values = lights.rear_left_light;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__REAR_LEFT_LIGHT].arg.capacity = 3;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__REAR_LEFT_LIGHT].arg.size = 0;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__REAR_RIGHT_LIGHT].type = PROTON_SIGNAL_TYPE_BYTES_VALUE;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__REAR_RIGHT_LIGHT].arg.values = lights.rear_right_light;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__REAR_RIGHT_LIGHT].arg.capacity = 3;
-  lights_signal_schema[PROTON_SIGNAL__LIGHTS__REAR_RIGHT_LIGHT].arg.size = 0;
-  PROTON_InitProton(&lights_bundle, 512, lights_signals, lights_signal_schema, PROTON_SIGNAL__LIGHTS_COUNT);
-}
+  test_signals[PROTON_SIGNALS__TEST__FLOAT_MESSAGE].signal.which_signal = proton_Signal_float_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__FLOAT_MESSAGE].arg.data = &test_struct.float_message;
 
-void PROTON_MESSAGE_init_joints()
-{
-  joints_signal_schema[PROTON_SIGNAL__JOINTS__JOINT_STATES].type = PROTON_SIGNAL_TYPE_LIST_STRING_VALUE;
-  joints_signal_schema[PROTON_SIGNAL__JOINTS__JOINT_STATES].arg.values = joints.joint_states.list;
-  joints_signal_schema[PROTON_SIGNAL__JOINTS__JOINT_STATES].arg.capacity = 3;
-  joints_signal_schema[PROTON_SIGNAL__JOINTS__JOINT_STATES].arg.size = 0;
-  for (int i = 0; i < 3; i += 1)
-  {
-    joints.joint_states.list[i] = joints.joint_states.strings[i];
-  }
-  PROTON_InitProton(&joints_bundle, 1280, joints_signals, joints_signal_schema, PROTON_SIGNAL__JOINTS_COUNT);
-}
+  test_signals[PROTON_SIGNALS__TEST__INT32_MESSAGE].signal.which_signal = proton_Signal_int32_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__INT32_MESSAGE].arg.data = &test_struct.int32_message;
 
-void PROTON_MESSAGE_init_test()
-{
-  test_signal_schema[PROTON_SIGNAL__TEST__STRING_MESSAGE].type = PROTON_SIGNAL_TYPE_STRING_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__STRING_MESSAGE].arg.values = test.string_message;
-  test_signal_schema[PROTON_SIGNAL__TEST__STRING_MESSAGE].arg.capacity = 64;
-  test_signal_schema[PROTON_SIGNAL__TEST__STRING_MESSAGE].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__BYTES_MESSAGE].type = PROTON_SIGNAL_TYPE_BYTES_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__BYTES_MESSAGE].arg.values = test.bytes_message;
-  test_signal_schema[PROTON_SIGNAL__TEST__BYTES_MESSAGE].arg.capacity = 64;
-  test_signal_schema[PROTON_SIGNAL__TEST__BYTES_MESSAGE].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__DOUBLE_LIST].type = PROTON_SIGNAL_TYPE_LIST_DOUBLE_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__DOUBLE_LIST].arg.values = test.double_list;
-  test_signal_schema[PROTON_SIGNAL__TEST__DOUBLE_LIST].arg.capacity = 10;
-  test_signal_schema[PROTON_SIGNAL__TEST__DOUBLE_LIST].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__FLOAT_LIST].type = PROTON_SIGNAL_TYPE_LIST_FLOAT_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__FLOAT_LIST].arg.values = test.float_list;
-  test_signal_schema[PROTON_SIGNAL__TEST__FLOAT_LIST].arg.capacity = 10;
-  test_signal_schema[PROTON_SIGNAL__TEST__FLOAT_LIST].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__INT32_LIST].type = PROTON_SIGNAL_TYPE_LIST_INT32_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__INT32_LIST].arg.values = test.int32_list;
-  test_signal_schema[PROTON_SIGNAL__TEST__INT32_LIST].arg.capacity = 10;
-  test_signal_schema[PROTON_SIGNAL__TEST__INT32_LIST].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__INT64_LIST].type = PROTON_SIGNAL_TYPE_LIST_INT64_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__INT64_LIST].arg.values = test.int64_list;
-  test_signal_schema[PROTON_SIGNAL__TEST__INT64_LIST].arg.capacity = 10;
-  test_signal_schema[PROTON_SIGNAL__TEST__INT64_LIST].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__UINT32_LIST].type = PROTON_SIGNAL_TYPE_LIST_UINT32_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__UINT32_LIST].arg.values = test.uint32_list;
-  test_signal_schema[PROTON_SIGNAL__TEST__UINT32_LIST].arg.capacity = 10;
-  test_signal_schema[PROTON_SIGNAL__TEST__UINT32_LIST].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__UINT64_LIST].type = PROTON_SIGNAL_TYPE_LIST_UINT64_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__UINT64_LIST].arg.values = test.uint64_list;
-  test_signal_schema[PROTON_SIGNAL__TEST__UINT64_LIST].arg.capacity = 10;
-  test_signal_schema[PROTON_SIGNAL__TEST__UINT64_LIST].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__BOOL_LIST].type = PROTON_SIGNAL_TYPE_LIST_BOOL_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__BOOL_LIST].arg.values = test.bool_list;
-  test_signal_schema[PROTON_SIGNAL__TEST__BOOL_LIST].arg.capacity = 10;
-  test_signal_schema[PROTON_SIGNAL__TEST__BOOL_LIST].arg.size = 0;
-  test_signal_schema[PROTON_SIGNAL__TEST__STRING_LIST].type = PROTON_SIGNAL_TYPE_LIST_STRING_VALUE;
-  test_signal_schema[PROTON_SIGNAL__TEST__STRING_LIST].arg.values = test.string_list.list;
-  test_signal_schema[PROTON_SIGNAL__TEST__STRING_LIST].arg.capacity = 10;
-  test_signal_schema[PROTON_SIGNAL__TEST__STRING_LIST].arg.size = 0;
+  test_signals[PROTON_SIGNALS__TEST__INT64_MESSAGE].signal.which_signal = proton_Signal_int64_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__INT64_MESSAGE].arg.data = &test_struct.int64_message;
+
+  test_signals[PROTON_SIGNALS__TEST__UINT32_MESSAGE].signal.which_signal = proton_Signal_uint32_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__UINT32_MESSAGE].arg.data = &test_struct.uint32_message;
+
+  test_signals[PROTON_SIGNALS__TEST__UINT64_MESSAGE].signal.which_signal = proton_Signal_uint64_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__UINT64_MESSAGE].arg.data = &test_struct.uint64_message;
+
+  test_signals[PROTON_SIGNALS__TEST__BOOL_MESSAGE].signal.which_signal = proton_Signal_bool_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__BOOL_MESSAGE].arg.data = &test_struct.bool_message;
+
+  test_signals[PROTON_SIGNALS__TEST__STRING_MESSAGE].signal.which_signal = proton_Signal_string_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__STRING_MESSAGE].signal.signal.string_value = &test_signals[PROTON_SIGNALS__TEST__STRING_MESSAGE].arg;
+  test_signals[PROTON_SIGNALS__TEST__STRING_MESSAGE].arg.data = test_struct.string_message;
+  test_signals[PROTON_SIGNALS__TEST__STRING_MESSAGE].arg.capacity = 64;
+  test_signals[PROTON_SIGNALS__TEST__STRING_MESSAGE].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__BYTES_MESSAGE].signal.which_signal = proton_Signal_bytes_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__BYTES_MESSAGE].signal.signal.bytes_value = &test_signals[PROTON_SIGNALS__TEST__BYTES_MESSAGE].arg;
+  test_signals[PROTON_SIGNALS__TEST__BYTES_MESSAGE].arg.data = test_struct.bytes_message;
+  test_signals[PROTON_SIGNALS__TEST__BYTES_MESSAGE].arg.capacity = 64;
+  test_signals[PROTON_SIGNALS__TEST__BYTES_MESSAGE].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__DOUBLE_LIST].signal.which_signal = proton_Signal_list_double_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__DOUBLE_LIST].signal.signal.list_double_value.doubles = &test_signals[PROTON_SIGNALS__TEST__DOUBLE_LIST].arg;
+  test_signals[PROTON_SIGNALS__TEST__DOUBLE_LIST].arg.data = test_struct.double_list;
+  test_signals[PROTON_SIGNALS__TEST__DOUBLE_LIST].arg.capacity = 10;
+  test_signals[PROTON_SIGNALS__TEST__DOUBLE_LIST].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__FLOAT_LIST].signal.which_signal = proton_Signal_list_float_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__FLOAT_LIST].signal.signal.list_float_value.floats = &test_signals[PROTON_SIGNALS__TEST__FLOAT_LIST].arg;
+  test_signals[PROTON_SIGNALS__TEST__FLOAT_LIST].arg.data = test_struct.float_list;
+  test_signals[PROTON_SIGNALS__TEST__FLOAT_LIST].arg.capacity = 10;
+  test_signals[PROTON_SIGNALS__TEST__FLOAT_LIST].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__INT32_LIST].signal.which_signal = proton_Signal_list_int32_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__INT32_LIST].signal.signal.list_int32_value.int32s = &test_signals[PROTON_SIGNALS__TEST__INT32_LIST].arg;
+  test_signals[PROTON_SIGNALS__TEST__INT32_LIST].arg.data = test_struct.int32_list;
+  test_signals[PROTON_SIGNALS__TEST__INT32_LIST].arg.capacity = 10;
+  test_signals[PROTON_SIGNALS__TEST__INT32_LIST].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__INT64_LIST].signal.which_signal = proton_Signal_list_int64_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__INT64_LIST].signal.signal.list_int64_value.int64s = &test_signals[PROTON_SIGNALS__TEST__INT64_LIST].arg;
+  test_signals[PROTON_SIGNALS__TEST__INT64_LIST].arg.data = test_struct.int64_list;
+  test_signals[PROTON_SIGNALS__TEST__INT64_LIST].arg.capacity = 10;
+  test_signals[PROTON_SIGNALS__TEST__INT64_LIST].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__UINT32_LIST].signal.which_signal = proton_Signal_list_uint32_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__UINT32_LIST].signal.signal.list_uint32_value.uint32s = &test_signals[PROTON_SIGNALS__TEST__UINT32_LIST].arg;
+  test_signals[PROTON_SIGNALS__TEST__UINT32_LIST].arg.data = test_struct.uint32_list;
+  test_signals[PROTON_SIGNALS__TEST__UINT32_LIST].arg.capacity = 10;
+  test_signals[PROTON_SIGNALS__TEST__UINT32_LIST].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__UINT64_LIST].signal.which_signal = proton_Signal_list_uint64_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__UINT64_LIST].signal.signal.list_uint64_value.uint64s = &test_signals[PROTON_SIGNALS__TEST__UINT64_LIST].arg;
+  test_signals[PROTON_SIGNALS__TEST__UINT64_LIST].arg.data = test_struct.uint64_list;
+  test_signals[PROTON_SIGNALS__TEST__UINT64_LIST].arg.capacity = 10;
+  test_signals[PROTON_SIGNALS__TEST__UINT64_LIST].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__BOOL_LIST].signal.which_signal = proton_Signal_list_bool_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__BOOL_LIST].signal.signal.list_bool_value.bools = &test_signals[PROTON_SIGNALS__TEST__BOOL_LIST].arg;
+  test_signals[PROTON_SIGNALS__TEST__BOOL_LIST].arg.data = test_struct.bool_list;
+  test_signals[PROTON_SIGNALS__TEST__BOOL_LIST].arg.capacity = 10;
+  test_signals[PROTON_SIGNALS__TEST__BOOL_LIST].arg.size = 0;
+
+  test_signals[PROTON_SIGNALS__TEST__STRING_LIST].signal.which_signal = proton_Signal_list_string_value_tag;
+  test_signals[PROTON_SIGNALS__TEST__STRING_LIST].signal.signal.list_string_value.strings = &test_signals[PROTON_SIGNALS__TEST__STRING_LIST].arg;
+  test_signals[PROTON_SIGNALS__TEST__STRING_LIST].arg.data = test_struct.string_list.list;
+  test_signals[PROTON_SIGNALS__TEST__STRING_LIST].arg.capacity = 10;
+  test_signals[PROTON_SIGNALS__TEST__STRING_LIST].arg.size = 0;
   for (int i = 0; i < 10; i += 1)
   {
-    test.string_list.list[i] = test.string_list.strings[i];
+    test_struct.string_list.list[i] = test_struct.string_list.strings[i];
   }
-  PROTON_InitProton(&test_bundle, 4660, test_signals, test_signal_schema, PROTON_SIGNAL__TEST_COUNT);
-}
 
-void PROTON_MESSAGE_init_needs_reset_button()
-{
-  needs_reset_button_signal_schema[PROTON_SIGNAL__NEEDS_RESET_BUTTON__NEEDS_RESET_BUTTON_STATE].type = PROTON_SIGNAL_TYPE_BOOL_VALUE;
-  PROTON_InitProton(&needs_reset_button_bundle, 768, needs_reset_button_signals, needs_reset_button_signal_schema, PROTON_SIGNAL__NEEDS_RESET_BUTTON_COUNT);
-}
-
-void PROTON_MESSAGE_init_get_firmware_version()
-{
-  get_firmware_version_signal_schema[PROTON_SIGNAL__GET_FIRMWARE_VERSION__GET_FIRMWARE_VERSION].type = PROTON_SIGNAL_TYPE_BOOL_VALUE;
-  PROTON_InitProton(&get_firmware_version_bundle, 1, get_firmware_version_signals, get_firmware_version_signal_schema, PROTON_SIGNAL__GET_FIRMWARE_VERSION_COUNT);
-}
-
-void PROTON_MESSAGE_init_get_firmware_version_response()
-{
-  get_firmware_version_response_signal_schema[PROTON_SIGNAL__GET_FIRMWARE_VERSION_RESPONSE__FIRMWARE_VERSION].type = PROTON_SIGNAL_TYPE_STRING_VALUE;
-  get_firmware_version_response_signal_schema[PROTON_SIGNAL__GET_FIRMWARE_VERSION_RESPONSE__FIRMWARE_VERSION].arg.values = get_firmware_version_response.firmware_version;
-  get_firmware_version_response_signal_schema[PROTON_SIGNAL__GET_FIRMWARE_VERSION_RESPONSE__FIRMWARE_VERSION].arg.capacity = 64;
-  get_firmware_version_response_signal_schema[PROTON_SIGNAL__GET_FIRMWARE_VERSION_RESPONSE__FIRMWARE_VERSION].arg.size = 0;
-  PROTON_InitProton(&get_firmware_version_response_bundle, 1, get_firmware_version_response_signals, get_firmware_version_response_signal_schema, PROTON_SIGNAL__GET_FIRMWARE_VERSION_RESPONSE_COUNT);
+  PROTON_InitBundle(&test_bundle, 4660, test_signals, PROTON_SIGNALS__TEST_COUNT);
 }
 
 void PROTON_MESSAGE_init()
 {
-  PROTON_MESSAGE_init_imu();
-  PROTON_MESSAGE_init_lights();
-  PROTON_MESSAGE_init_joints();
-  PROTON_MESSAGE_init_test();
-  PROTON_MESSAGE_init_needs_reset_button();
-  PROTON_MESSAGE_init_get_firmware_version();
-  PROTON_MESSAGE_init_get_firmware_version_response();
+  PROTON_BUNDLE_init_test();
 }
 

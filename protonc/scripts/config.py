@@ -33,7 +33,7 @@ from typing import List
 class ProtonConfig:
     # Top level keys
     NODES = "nodes"
-    MESSAGES = "messages"
+    BUNDLES = "bundles"
 
     class Signal:
         # Signal keys
@@ -41,6 +41,8 @@ class ProtonConfig:
         TYPE = "type"
         LENGTH = "length"
         CAPACITY = "capacity"
+
+        SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
 
         # Signal types
         class SignalTypes(StrEnum):
@@ -62,7 +64,8 @@ class ProtonConfig:
             LIST_BOOL = auto()
             LIST_STRING = auto()
 
-        def __init__(self, signal: dict):
+        def __init__(self, bundle: str, signal: dict):
+            self.bundle: str = bundle
             self.signal: str = signal[self.SIGNAL]
             self.type: ProtonConfig.Signal.SignalTypes = (
                 ProtonConfig.Signal.SignalTypes(signal[self.TYPE])
@@ -79,6 +82,8 @@ class ProtonConfig:
                 self.capacity = signal[self.CAPACITY]
             except KeyError:
                 pass
+
+            self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.signal.upper()}'
 
             print(f'signal {self.signal} type {self.type} length {self.length} cap {self.capacity}')
 
@@ -107,31 +112,44 @@ class ProtonConfig:
                     if self.length > 0:
                         self.type = ProtonConfig.Signal.SignalTypes(f"list_{self.type}")
 
-    class Message:
-        # Message keys
+    class Bundle:
+        # Bundle keys
         NAME = "name"
         ID = "id"
         PRODUCER = "producer"
         CONSUMER = "consumer"
         SCHEMA = "schema"
+        BUNDLE_SUFFIX = "_bundle"
+        BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE__"
+        BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
+        SIGNALS_SUFFIX = "_signals"
+        INIT_FUNCTION_SUFFIX = "PROTON_BUNDLE_init_"
 
-        # Message types
+        # Bundle types
         class MessageTypes(StrEnum):
             PERIODIC = auto()
             EVENT = auto()
             TRIGGER = auto()
 
-        def __init__(self, message: dict, type: MessageTypes):
+        def __init__(self, bundle: dict, type: MessageTypes):
             self.type = type
-            self.name = message[self.NAME]
-            self.id = message[self.ID]
-            self.producer = message[self.PRODUCER]
-            self.consumer = message[self.CONSUMER]
+            self.name = bundle[self.NAME]
+            self.id = bundle[self.ID]
+            self.producer = bundle[self.PRODUCER]
+            self.consumer = bundle[self.CONSUMER]
             self.signals: List[ProtonConfig.Signal] = []
             self.needs_init = False
 
-            for signal in message[self.SCHEMA]:
-                s = ProtonConfig.Signal(signal)
+            self.bundle_variable_name = f'{self.name}{self.BUNDLE_SUFFIX}'
+            self.signals_variable_name = f'{self.name}{self.SIGNALS_SUFFIX}'
+            self.struct_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name}'
+            self.struct_variable_name = f'{self.name}_struct'
+            self.signals_enum_name = f'{self.BUNDLE_SIGNAL_ENUM_PREFIX}{self.name}'
+            self.signals_enum_count = f'{self.signals_enum_name.upper()}_COUNT'
+            self.init_function_name = f'{self.INIT_FUNCTION_SUFFIX}{self.name}'
+
+            for signal in bundle[self.SCHEMA]:
+                s = ProtonConfig.Signal(self.name, signal)
                 self.signals.append(s)
                 if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
                     self.needs_init = True
@@ -163,7 +181,7 @@ class ProtonConfig:
     def __init__(self, dictionary: dict):
         self.dictionary = dictionary
         self.nodes: List[ProtonConfig.Node] = []
-        self.messages: List[ProtonConfig.Message] = []
+        self.bundles: List[ProtonConfig.Bundle] = []
         self.parse_nodes()
         self.parse_messages()
 
@@ -181,19 +199,19 @@ class ProtonConfig:
 
     def parse_messages(self):
         try:
-            messages = self.dictionary[self.MESSAGES]
+            bundles = self.dictionary[self.BUNDLES]
         except KeyError:
-            print("Messages key missing")
+            print("Bundles key missing")
             return
-        for t in messages:
-            for message in messages[t]:
-                self.messages.append(
-                    ProtonConfig.Message(message, ProtonConfig.Message.MessageTypes(t))
+        for t in bundles:
+            for bundle in bundles[t]:
+                self.bundles.append(
+                    ProtonConfig.Bundle(bundle, ProtonConfig.Bundle.MessageTypes(t))
                 )
 
-        for m in self.messages:
+        for m in self.bundles:
             print(
-                f"Message: {m.name} type: {m.type} id: {m.id}, producer {m.producer}, consumer {m.consumer}"
+                f"Bundle: {m.name} type: {m.type} id: {m.id}, producer {m.producer}, consumer {m.consumer}"
             )
             print("Signals:")
             for s in m.signals:

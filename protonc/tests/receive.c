@@ -110,18 +110,18 @@ void TASKS_PROTON_Init()
   {
     bufs.string_list.list[i] = bufs.string_list.strings[i];
   }
-  PROTON_InitProton(&proton, PROTON_MESSAGE, signals, signal_schema, PROTON_SIGNAL_COUNT);
+  PROTON_InitBundle(&proton, PROTON_MESSAGE, signals, signal_schema, PROTON_SIGNAL_COUNT);
 }
 
 void print_proton(proton_Bundle proton)
 {
-  proton_list_arg_t * args = (proton_list_arg_t *)proton.signals;
+  proton_list_t * args = (proton_list_t *)proton.signals;
   printf("Proton message { \r\n");
   printf("\tID: 0x%x\r\n", proton.id);
   printf("\tSignals { \r\n");
   for (int i = 0; i < args->capacity; i++)
   {
-    print_signal(((proton_Signal *)args->values)[i]);
+    print_signal(((proton_Signal *)args->data)[i]);
   }
   printf("\t}\r\n}\r\n");
 }
@@ -130,7 +130,7 @@ void print_signal(proton_Signal signal)
 {
   pb_size_t which = signal.which_signal;
 
-  proton_list_arg_t arg = proton_list_arg_init_default;
+  proton_list_t arg = proton_list_arg_init_default;
 
   switch(which)
   {
@@ -180,8 +180,8 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.string_value)
       {
-        arg = *(proton_list_arg_t *)signal.signal.string_value;
-        printf("\t\tstring_value: %s\r\n", (char *)arg.values);
+        arg = *(proton_list_t *)signal.signal.string_value;
+        printf("\t\tstring_value: %s\r\n", (char *)arg.data);
       }
       else
       {
@@ -194,11 +194,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.bytes_value)
       {
-        arg = *(proton_list_arg_t *)signal.signal.bytes_value;
+        arg = *(proton_list_t *)signal.signal.bytes_value;
         printf("\t\tbytes_value: [");
         for (int i = 0; i < arg.size; i++)
         {
-          printf("0x%x", ((uint8_t *)arg.values)[i]);
+          printf("0x%x", ((uint8_t *)arg.data)[i]);
           if (i != arg.size - 1)
           {
             printf(", ");
@@ -217,11 +217,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.list_double_value.doubles)
       {
-        arg = *(proton_list_arg_t *)signal.signal.list_double_value.doubles;
+        arg = *(proton_list_t *)signal.signal.list_double_value.doubles;
         printf("\t\tlist_double_value: {\r\n");
         for (int i = 0; i < arg.capacity; i++)
         {
-          printf("\t\t\t%lf\r\n", ((double *)arg.values)[i]);
+          printf("\t\t\t%lf\r\n", ((double *)arg.data)[i]);
         }
         printf("\t\t}\r\n");
       }
@@ -236,11 +236,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.list_float_value.floats)
       {
-        arg = *(proton_list_arg_t *)signal.signal.list_float_value.floats;
+        arg = *(proton_list_t *)signal.signal.list_float_value.floats;
         printf("\t\tlist_float_value: {\r\n");
         for (int i = 0; i < arg.capacity; i++)
         {
-          printf("\t\t\t%f\r\n", ((float *)arg.values)[i]);
+          printf("\t\t\t%f\r\n", ((float *)arg.data)[i]);
         }
         printf("\t\t}\r\n");
       }
@@ -255,11 +255,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.list_int32_value.int32s)
       {
-        arg = *(proton_list_arg_t *)signal.signal.list_int32_value.int32s;
+        arg = *(proton_list_t *)signal.signal.list_int32_value.int32s;
         printf("\t\tlist_int32_value: {\r\n");
         for (int i = 0; i < arg.capacity; i++)
         {
-          printf("\t\t\t%d\r\n", ((int32_t *)arg.values)[i]);
+          printf("\t\t\t%d\r\n", ((int32_t *)arg.data)[i]);
         }
         printf("\t\t}\r\n");
       }
@@ -274,11 +274,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.list_int64_value.int64s)
       {
-        arg = *(proton_list_arg_t *)signal.signal.list_int64_value.int64s;
+        arg = *(proton_list_t *)signal.signal.list_int64_value.int64s;
         printf("\t\tlist_int64_value: {\r\n");
         for (int i = 0; i < arg.capacity; i++)
         {
-          printf("\t\t\t%ld\r\n", ((int64_t *)arg.values)[i]);
+          printf("\t\t\t%ld\r\n", ((int64_t *)arg.data)[i]);
         }
         printf("\t\t}\r\n");
       }
@@ -293,11 +293,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.list_uint32_value.uint32s)
       {
-        arg = *(proton_list_arg_t *)signal.signal.list_uint32_value.uint32s;
+        arg = *(proton_list_t *)signal.signal.list_uint32_value.uint32s;
         printf("\t\tlist_uint32_value: {\r\n");
         for (int i = 0; i < arg.capacity; i++)
         {
-          printf("\t\t\t%u\r\n", ((uint32_t *)arg.values)[i]);
+          printf("\t\t\t%u\r\n", ((uint32_t *)arg.data)[i]);
         }
         printf("\t\t}\r\n");
       }
@@ -312,11 +312,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.list_uint64_value.uint64s)
       {
-        arg = *(proton_list_arg_t *)signal.signal.list_uint64_value.uint64s;
+        arg = *(proton_list_t *)signal.signal.list_uint64_value.uint64s;
         printf("\t\tlist_uint64_value: {\r\n");
         for (int i = 0; i < arg.capacity; i++)
         {
-          printf("\t\t\t%lu\r\n", ((uint64_t *)arg.values)[i]);
+          printf("\t\t\t%lu\r\n", ((uint64_t *)arg.data)[i]);
         }
         printf("\t\t}\r\n");
       }
@@ -331,11 +331,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.list_bool_value.bools)
       {
-        arg = *(proton_list_arg_t *)signal.signal.list_bool_value.bools;
+        arg = *(proton_list_t *)signal.signal.list_bool_value.bools;
         printf("\t\tlist_bool_value: {\r\n");
         for (int i = 0; i < arg.capacity; i++)
         {
-          printf("\t\t\t%u\r\n", ((bool *)arg.values)[i]);
+          printf("\t\t\t%u\r\n", ((bool *)arg.data)[i]);
         }
         printf("\t\t}\r\n");
       }
@@ -350,11 +350,11 @@ void print_signal(proton_Signal signal)
     {
       if (signal.signal.list_string_value.strings)
       {
-        arg = *(proton_list_arg_t *)signal.signal.list_string_value.strings;
+        arg = *(proton_list_t *)signal.signal.list_string_value.strings;
         printf("\t\tlist_string_value: {\r\n");
         for (int i = 0; i < arg.capacity; i++)
         {
-          printf("\t\t\t%s\r\n", ((char **)arg.values)[i]);
+          printf("\t\t\t%s\r\n", ((char **)arg.data)[i]);
         }
         printf("\t\t}\r\n");
       }

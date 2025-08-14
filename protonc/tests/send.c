@@ -106,7 +106,7 @@ void TASKS_PROTON_Init()
   {
     bufs.string_list.list[i] = bufs.string_list.strings[i];
   }
-  PROTON_InitProton(&proton, PROTON_MESSAGE, signals, signal_schema, PROTON_SIGNAL_COUNT);
+  PROTON_InitBundle(&proton, PROTON_MESSAGE, signals, signal_schema, PROTON_SIGNAL_COUNT);
 }
 
 int fill_proton_message()

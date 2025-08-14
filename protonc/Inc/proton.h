@@ -38,47 +38,32 @@ typedef enum {
   PROTON_SIGNAL_TYPE_LIST_STRING_VALUE,
 } proton_signal_type_e;
 
-typedef struct ListArg {
-  void * values;
+typedef struct {
+  void * data;
   size_t capacity;
   size_t size;
-} proton_list_arg_t;
+} proton_list_t;
 
 #define proton_list_arg_init_default {NULL, 0, 0}
 
 typedef struct {
-  proton_signal_type_e type;
-  proton_list_arg_t arg;
-} proton_signal_schema_t;
+  proton_Signal signal;
+  proton_list_t arg;
+} proton_signal_t;
 
 typedef struct Proton {
   proton_Bundle bundle;
-  proton_list_arg_t arg;
+  proton_list_t arg;
 } proton_bundle_t;
 
-
-#define INIT_PROTON(id, schema) (proton_bundle_t){ \
-  .proton.id = id,                           \
-  .proton.signals.                                      \
-}
-
-void PROTON_InitProton(proton_bundle_t * proton, uint32_t id, proton_Signal * signals, proton_signal_schema_t * schema, uint32_t signal_count);
-void PROTON_InitSignal(proton_Signal * signal, proton_signal_schema_t * schema);
-
-bool PROTON_CopyStringToSignal(proton_Signal * signal, const char * string);
-bool PROTON_CopyStringToListString(proton_Signal * signal, const char * string, size_t index);
+void PROTON_InitBundle(proton_bundle_t * test_bundle, uint32_t id, proton_signal_t * signals, uint32_t signal_count);
+void PROTON_InitSignal(proton_signal_t * signal, uint8_t field_tag);
 
 int PROTON_Encode(proton_bundle_t * bundle, uint8_t * buffer, size_t buffer_length);
 int PROTON_Decode(proton_bundle_t * bundle, const uint8_t * buffer, const size_t buffer_length);
 
-// Struct: {{(proton_Signal){pb_size_t, (union){signal}}, {(proton_list_arg_t{void *, size_t}}
-#define proton_bool_signal_init_default {{proton_Signal_bool_value_tag, {false}}, {NULL, 0}}
-#define proton_list_float_value_signal_init_default {{{proton_Signal_list_float_value_tag, {{NULL}, NULL}}}, {NULL, 0}}
-
-#define proton_signal_init_default(type) \
-  ((type) == PROTON_SIGNAL_TYPE_BOOL_VALUE ? (signal_t)proton_bool_signal_init_default : \
-   (type) == PROTON_SIGNAL_TYPE_LIST_FLOAT_VALUE ? (signal_t)proton_list_float_value_signal_init_default \
-  : (signal_t)proton_bool_signal_init_default)
+void print_bundle(proton_Bundle bundle);
+void print_signal(proton_Signal signal);
 
 
 #endif  // INC_PROTON_PROTON_H_

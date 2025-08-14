@@ -57,6 +57,37 @@ class ProtonCGenerator:
         ProtonConfig.Signal.SignalTypes.LIST_STRING: "char",
     }
 
+    SIGNAL_TAG_MAP = {
+        ProtonConfig.Signal.SignalTypes.DOUBLE: "proton_Signal_double_value_tag",
+        ProtonConfig.Signal.SignalTypes.FLOAT: "proton_Signal_float_value_tag",
+        ProtonConfig.Signal.SignalTypes.INT32: "proton_Signal_int32_value_tag",
+        ProtonConfig.Signal.SignalTypes.INT64: "proton_Signal_int64_value_tag",
+        ProtonConfig.Signal.SignalTypes.UINT32: "proton_Signal_uint32_value_tag",
+        ProtonConfig.Signal.SignalTypes.UINT64: "proton_Signal_uint64_value_tag",
+        ProtonConfig.Signal.SignalTypes.BOOL: "proton_Signal_bool_value_tag",
+        ProtonConfig.Signal.SignalTypes.STRING: "proton_Signal_string_value_tag",
+        ProtonConfig.Signal.SignalTypes.BYTES: "proton_Signal_bytes_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_DOUBLE: "proton_Signal_list_double_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_FLOAT: "proton_Signal_list_float_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_INT32: "proton_Signal_list_int32_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_INT64: "proton_Signal_list_int64_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_UINT32: "proton_Signal_list_uint32_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_UINT64: "proton_Signal_list_uint64_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_BOOL: "proton_Signal_list_bool_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_STRING: "proton_Signal_list_string_value_tag",
+    }
+
+    SIGNAL_VARIABLE_MAP = {
+        ProtonConfig.Signal.SignalTypes.LIST_DOUBLE: "doubles",
+        ProtonConfig.Signal.SignalTypes.LIST_FLOAT: "floats",
+        ProtonConfig.Signal.SignalTypes.LIST_INT32: "int32s",
+        ProtonConfig.Signal.SignalTypes.LIST_INT64: "int64s",
+        ProtonConfig.Signal.SignalTypes.LIST_UINT32: "uint32s",
+        ProtonConfig.Signal.SignalTypes.LIST_UINT64: "uint64s",
+        ProtonConfig.Signal.SignalTypes.LIST_BOOL: "bools",
+        ProtonConfig.Signal.SignalTypes.LIST_STRING: "strings",
+    }
+
     def __init__(self, config_file: str):
         self.config_file = config_file
         assert os.path.exists(self.config_file)
@@ -80,17 +111,14 @@ class ProtonCGenerator:
         )
         return config
 
-    def get_message_struct_name(self, name) -> str:
-        return f"PROTON_MESSAGE_STRUCT__{name}"
-
     def generate_message_struct_typedefs(self):
         self.header_writer.write_comment(
             "Message Structure Definitions", indent_level=0
         )
         self.header_writer.write_newline()
-        for m in self.config.messages:
+        for b in self.config.bundles:
             vars = []
-            for s in m.signals:
+            for s in b.signals:
                 if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
                     string_struct = Struct(
                         s.signal,
@@ -106,57 +134,45 @@ class ProtonCGenerator:
                             s.signal, self.SIGNAL_TYPE_MAP[s.type], s.length, s.capacity
                         )
                     )
-            s = Struct(self.get_message_struct_name(m.name), vars)
+            s = Struct(b.struct_name, vars)
             self.header_writer.write_typedef_struct(s, indent_level=0)
             self.header_writer.write_newline()
 
     def generate_extern_message_structs(self):
         self.header_writer.write_comment("External Message Structures", indent_level=0)
         self.header_writer.write_newline()
-        for m in self.config.messages:
+        for b in self.config.bundles:
             self.header_writer.write_extern_variable(
-                Variable(m.name, f"{self.get_message_struct_name(m.name)}_t")
+                Variable(b.struct_variable_name, f"{b.struct_name}_t")
             )
         self.header_writer.write_newline()
 
     def generate_extern_bundle(self):
         self.header_writer.write_comment("External Bundles", indent_level=0)
         self.header_writer.write_newline()
-        for m in self.config.messages:
+        for b in self.config.bundles:
             self.header_writer.write_extern_variable(
-                Variable(f"{m.name}_bundle", "proton_bundle_t")
+                Variable(b.bundle_variable_name, "proton_bundle_t")
             )
         self.header_writer.write_newline()
 
     def generate_signal_enums(self):
         self.header_writer.write_comment("Signal Enums", indent_level=0)
         self.header_writer.write_newline()
-        for m in self.config.messages:
-            e = [s.signal for s in m.signals]
-            self.header_writer.write_enum(f"PROTON_SIGNAL__{m.name}", e)
+        for b in self.config.bundles:
+            e = [s.signal for s in b.signals]
+            self.header_writer.write_enum(b.signals_enum_name, e)
             self.header_writer.write_newline()
         self.header_writer.write_newline()
 
     def generate_signal_variables(self):
         self.src_writer.write_comment("Signals", indent_level=0)
         self.src_writer.write_newline()
-        for m in self.config.messages:
+        for b in self.config.bundles:
             signals = Variable(
-                f"{m.name}_signals",
-                "proton_Signal",
-                length=f"PROTON_SIGNAL__{m.name.upper()}_COUNT",
-            )
-            self.src_writer.write_variable(signals)
-        self.src_writer.write_newline()
-
-    def generate_signal_schema_variables(self):
-        self.src_writer.write_comment("Signal schemas", indent_level=0)
-        self.src_writer.write_newline()
-        for m in self.config.messages:
-            signals = Variable(
-                f"{m.name}_signal_schema",
-                "proton_signal_schema_t",
-                length=f"PROTON_SIGNAL__{m.name.upper()}_COUNT",
+                b.signals_variable_name,
+                "proton_signal_t",
+                length=b.signals_enum_count,
             )
             self.src_writer.write_variable(signals)
         self.src_writer.write_newline()
@@ -164,26 +180,26 @@ class ProtonCGenerator:
     def generate_bundle_variable(self):
         self.src_writer.write_comment("Bundles", indent_level=0)
         self.src_writer.write_newline()
-        for m in self.config.messages:
-            proton = Variable(f"{m.name}_bundle", "proton_bundle_t")
+        for b in self.config.bundles:
+            proton = Variable(b.bundle_variable_name, "proton_bundle_t")
             self.src_writer.write_variable(proton)
         self.src_writer.write_newline()
 
     def generate_message_structs(self):
         self.src_writer.write_comment("Message Structures", indent_level=0)
         self.src_writer.write_newline()
-        for m in self.config.messages:
+        for b in self.config.bundles:
             self.src_writer.write_variable(
-                Variable(m.name, f"{self.get_message_struct_name(m.name)}_t")
+                Variable(b.struct_variable_name, f"{b.struct_name}_t")
             )
         self.src_writer.write_newline()
 
     def generate_message_init_prototypes(self):
         self.src_writer.write_comment("Message Init Prototypes", indent_level=0)
         self.src_writer.write_newline()
-        for m in self.config.messages:
+        for b in self.config.bundles:
             self.src_writer.write_function_prototype(
-                Function(f"PROTON_MESSAGE_init_{m.name}", [], "void")
+                Function(b.init_function_name, [], "void")
             )
         self.src_writer.write_newline()
 
@@ -197,32 +213,44 @@ class ProtonCGenerator:
     def generate_message_init_functions(self):
         self.src_writer.write_comment("Message Init Functions", indent_level=0)
         self.src_writer.write_newline()
-        for m in self.config.messages:
+        for b in self.config.bundles:
             self.src_writer.write_function_start(
-                Function(f"PROTON_MESSAGE_init_{m.name}", [], "void")
+                Function(b.init_function_name, [], "void")
             )
-            for s in m.signals:
+            for s in b.signals:
                 self.src_writer.write(
-                    f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].type = PROTON_SIGNAL_TYPE_{s.type.upper()}_VALUE;"
+                    f"{b.signals_variable_name}[{s.signal_enum_name}].signal.which_signal = {self.SIGNAL_TAG_MAP[s.type]};"
                 )
                 match s.type:
-                    # case (ProtonConfig.Signal.SignalTypes.DOUBLE | ProtonConfig.Signal.SignalTypes.FLOAT | ProtonConfig.Signal.SignalTypes.INT32 |
-                    #      ProtonConfig.Signal.SignalTypes.INT64 | ProtonConfig.Signal.SignalTypes.UINT32 | ProtonConfig.Signal.SignalTypes.UINT64 |
-                    #      ProtonConfig.Signal.SignalTypes.BOOL):
-                    #     self.src_writer.write(f'{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg = proton_list_arg_init_default;')
+                    case (
+                        ProtonConfig.Signal.SignalTypes.DOUBLE
+                        | ProtonConfig.Signal.SignalTypes.FLOAT
+                        | ProtonConfig.Signal.SignalTypes.INT32
+                        | ProtonConfig.Signal.SignalTypes.INT64
+                        | ProtonConfig.Signal.SignalTypes.UINT32
+                        | ProtonConfig.Signal.SignalTypes.UINT64
+                        | ProtonConfig.Signal.SignalTypes.BOOL
+                    ):
+                        self.src_writer.write(
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = &{b.struct_variable_name}.{s.signal};"
+                        )
                     case (
                         ProtonConfig.Signal.SignalTypes.STRING
                         | ProtonConfig.Signal.SignalTypes.BYTES
                     ):
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.values = {m.name}.{s.signal};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value = &{b.signals_variable_name}[{s.signal_enum_name}].arg;"
                         )
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.capacity = {s.capacity};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.struct_variable_name}.{s.signal};"
                         )
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.size = 0;"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity};"
                         )
+                        self.src_writer.write(
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
+                        )
+
                     case (
                         ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
                         | ProtonConfig.Signal.SignalTypes.LIST_FLOAT
@@ -233,51 +261,61 @@ class ProtonCGenerator:
                         | ProtonConfig.Signal.SignalTypes.LIST_BOOL
                     ):
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.values = {m.name}.{s.signal};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signals_variable_name}[{s.signal_enum_name}].arg;"
                         )
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.capacity = {s.length};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.struct_variable_name}.{s.signal};"
                         )
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.size = 0;"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length};"
                         )
+                        self.src_writer.write(
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
+                        )
+
                     case ProtonConfig.Signal.SignalTypes.LIST_STRING:
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.values = {m.name}.{s.signal}.list;"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signals_variable_name}[{s.signal_enum_name}].arg;"
                         )
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.capacity = {s.length};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.struct_variable_name}.{s.signal}.list;"
                         )
                         self.src_writer.write(
-                            f"{m.name}_signal_schema[PROTON_SIGNAL__{m.name.upper()}__{s.signal.upper()}].arg.size = 0;"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length};"
+                        )
+                        self.src_writer.write(
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
                         )
                         self.src_writer.write_for_loop_start(s.length, indent_level=1)
                         self.src_writer.write(
-                            f"{m.name}.{s.signal}.list[i] = {m.name}.{s.signal}.strings[i];",
+                            f"{b.struct_variable_name}.{s.signal}.list[i] = {b.struct_variable_name}.{s.signal}.strings[i];",
                             indent_level=2,
                         )
                         self.src_writer.write_for_loop_end(indent_level=1)
+                self.src_writer.write_newline()
             self.src_writer.write(
-                f"PROTON_InitProton(&{m.name}_bundle, {m.id}, {m.name}_signals, {m.name}_signal_schema, PROTON_SIGNAL__{m.name.upper()}_COUNT);"
+                f"PROTON_InitBundle(&{b.bundle_variable_name}, {b.id}, {b.signals_variable_name}, {b.signals_enum_count});"
             )
             self.src_writer.write_function_end()
 
         self.src_writer.write_function_start(
             Function("PROTON_MESSAGE_init", [], "void")
         )
-        for m in self.config.messages:
-            self.src_writer.write(f"PROTON_MESSAGE_init_{m.name}();", indent_level=1)
+        for b in self.config.bundles:
+            self.src_writer.write(f"{b.init_function_name}();", indent_level=1)
         self.src_writer.write_function_end()
 
     def generate(self, name: str):
         generated_filename = f"proton__{name}"
 
         self.src_writer = CWriter(
-            os.path.join(os.getcwd(), "../tests/sample/generated/"), f"{generated_filename}.c"
+            os.path.join(os.getcwd(), "../tests/sample/generated/"),
+            f"{generated_filename}.c",
         )
 
         self.header_writer = CWriter(
-            os.path.join(os.getcwd(), "../tests/sample/generated/"), f"{generated_filename}.h"
+            os.path.join(os.getcwd(), "../tests/sample/generated/"),
+            f"{generated_filename}.h",
         )
 
         self.header_writer.write_header_guard_open()
@@ -295,7 +333,6 @@ class ProtonCGenerator:
         self.generate_extern_bundle()
         self.generate_message_structs()
         self.generate_signal_variables()
-        self.generate_signal_schema_variables()
         self.generate_bundle_variable()
 
         self.generate_message_init_prototypes()
