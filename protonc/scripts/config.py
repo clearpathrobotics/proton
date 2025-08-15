@@ -43,6 +43,8 @@ class ProtonConfig:
         CAPACITY = "capacity"
 
         SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
+        LENGTH_SUFFIX = "__LENGTH"
+        CAPACITY_SUFFIX = "__CAPACITY"
 
         # Signal types
         class SignalTypes(StrEnum):
@@ -84,6 +86,8 @@ class ProtonConfig:
                 pass
 
             self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.signal.upper()}'
+            self.capacity_define = f'{self.bundle.upper()}__{self.signal.upper()}{self.CAPACITY_SUFFIX}'
+            self.length_define = f'{self.bundle.upper()}__{self.signal.upper()}{self.LENGTH_SUFFIX}'
 
             print(f'signal {self.signal} type {self.type} length {self.length} cap {self.capacity}')
 

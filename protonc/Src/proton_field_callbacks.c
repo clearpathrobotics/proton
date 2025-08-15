@@ -31,9 +31,9 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   proton_list_t * signal_list = (proton_list_t *)msg->signals;
   proton_signal_t * signals = (proton_signal_t *)signal_list->data;
 
-  if (!signal_list)
+  if (!signal_list || !signals)
   {
-    return true;
+    return false;
   }
 
   // Decode

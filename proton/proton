@@ -6,6 +6,9 @@ import time
 import random
 import sys
 
+import rclpy
+from rclpy.node import Node
+
 from proton_py.signal_pb2 import (
   Signal,
   ListFloats,
@@ -21,110 +24,207 @@ from proton_py.bundle_pb2 import Bundle
 
 from google.protobuf.message import DecodeError
 
+from clearpath_platform_msgs.msg import Status, Power, Temperature, StopStatus, PinoutCommand, PinoutState, Lights, Fans, DisplayStatus
+from sensor_msgs.msg import BatteryState
+from rcl_interfaces.msg import Log
+from std_msgs.msg import Header, Bool, String
+from rclpy.qos import qos_profile_sensor_data
+
 UDP_IP = '127.0.0.1'
 MCU_IP = '127.0.0.1'
 PROTON_UDP_PORT = 11417
-PROTON_SEND_PORT = 11417
+PROTON_SEND_PORT = 11416
 
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
 sock.bind((UDP_IP, PROTON_UDP_PORT))
 
 
-class ProtonProcess():
+class ProtonProcess(Node):
+    LOGGER_ID=0x100
+    STATUS_ID=0x101
+    POWER_ID=0x102
+    ESTOP_ID=0x103
+    TEMP_ID=0x104
+    STOP_ID=0x105
+    PINOUT_STATE_ID=0x106
+    ALERTS_ID=0x107
+
+    CMD_FANS_ID=0x200
+    DISPLAY_STATUS_ID=0x201
+    CMD_LIGHTS_ID=0x202
+    BATTERY_ID=0x203
+    PINOUT_COMMAND_ID=0x204
+
     def __init__(self):
-        self.t = threading.Thread(target=self.send_float_list, daemon=True)
-        #self.t.start()
-        self.sock_read()
+        super().__init__('proton_a300_node')
+        self.status_pub = self.create_publisher(Status, 'proton/mcu/status', qos_profile_sensor_data)
+        self.power_pub = self.create_publisher(Power, 'proton/mcu/status/power', qos_profile_sensor_data)
+        self.temperature_pub = self.create_publisher(Temperature, 'proton/mcu/status/temperature', qos_profile_sensor_data)
+        self.estop_pub = self.create_publisher(Bool, 'proton/emergency_stop', qos_profile_sensor_data)
+        self.stop_pub = self.create_publisher(StopStatus, 'proton/mcu/status/stop', qos_profile_sensor_data)
+        self.pinout_state_pub = self.create_publisher(PinoutState, 'proton/mcu/status/pinout', qos_profile_sensor_data)
+        self.alerts_pub = self.create_publisher(String, 'proton/mcu/status/alerts', qos_profile_sensor_data)
+        self.rosout_pub = self.create_publisher(Log, '/rosout', qos_profile_sensor_data)
+        self.read_thread = threading.Thread(target=self.sock_read, daemon=True)
+        self.read_thread.start()
+        self.send_thread = threading.Thread(target=self.send_bundles, daemon=True)
+        self.send_thread.start()
 
-    def send_float_list(self):
+    def send(self, bundle: Bundle):
+        sock.sendto(bundle.SerializeToString(), (MCU_IP, PROTON_SEND_PORT))
+
+    def send_battery(self):
+        bundle = Bundle()
+        bundle.id = self.BATTERY_ID
+        bundle.signals.extend([
+          Signal(
+              float_value=random.random()
+          )
+        ])
+        self.send(bundle)
+
+    def send_fans(self):
+        bundle = Bundle()
+        bundle.id = self.CMD_FANS_ID
+        bundle.signals.extend([
+          Signal(
+              bytes_value=bytes([random.randint(0, 255) for i in range(0, 8)])
+          )
+        ])
+        self.send(bundle)
+
+    def send_lights(self):
+        bundle = Bundle()
+        bundle.id = self.CMD_LIGHTS_ID
+        bundle.signals.extend([
+          Signal(
+              bytes_value=bytes([random.randint(0, 255) for i in range(0, 3)])
+          ),
+          Signal(
+              bytes_value=bytes([random.randint(0, 255) for i in range(0, 3)])
+          ),
+          Signal(
+              bytes_value=bytes([random.randint(0, 255) for i in range(0, 3)])
+          ),
+          Signal(
+              bytes_value=bytes([random.randint(0, 255) for i in range(0, 3)])
+          )
+        ])
+        self.send(bundle)
+
+    def send_display_status(self):
+        bundle = Bundle()
+        bundle.id = self.DISPLAY_STATUS_ID
+        bundle.signals.extend([
+          Signal(
+              string_value='LINE_1'
+          ),
+          Signal(
+              string_value='LINE_2'
+          )
+        ])
+        self.send(bundle)
+
+    def send_pinout_command(self):
+        bundle = Bundle()
+        bundle.id = self.PINOUT_COMMAND_ID
+        bundle.signals.extend([
+          Signal(
+              list_bool_value=ListBools(bools=[True])
+          ),
+          Signal(
+              list_uint32_value=ListUint32s(uint32s=[0, 1, 2, 3, 4, 5, 6])
+          )
+        ])
+        self.send(bundle)
+
+    def send_bundles(self):
+        i = 0
         while(True):
-            proton = Bundle()
-            proton.id = 0x200
-            proton.signals.extend([
-              Signal(
-                  bool_value=random.randrange(0, 2)
-              ),
-              Signal(
-                  double_value=random.random()
-              ),
-              Signal(
-                  float_value=random.random()
-              ),
-              Signal(
-                  int32_value=random.randint(-0x7FFFFFFF, 0x7FFFFFFF)
-              ),
-              Signal(
-                  int64_value=random.randint(-0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF)
-              ),
-              Signal(
-                  uint32_value=random.randint(0, 0xFFFFFFFF)
-              ),
-              Signal(
-                  uint64_value=random.randint(0, 0xFFFFFFFFFFFFFFFF)
-              ),
-              Signal(
-                  string_value='ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-              ),
-              Signal(
-                  bytes_value=bytes([random.randint(0, 255) for i in range(0, random.randint(0, 64))])
-              ),
-              Signal(
-                    list_double_value=ListDoubles(
-                        doubles=[random.random() for i in range(0, 10)])),
-              Signal(
-                    list_float_value=ListFloats(
-                        floats=[random.random() for i in range(0, 10)])),
-              Signal(
-                    list_int32_value=ListInt32s(
-                        int32s=[random.randint(-0x7FFFFFFF, 0x7FFFFFFF) for i in range(0, 10)])),
-              Signal(
-                    list_int64_value=ListInt64s(
-                        int64s=[random.randint(-0x7FFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF) for i in range(0, 10)])),
-            ])
+            if i % 1000 == 0:
+                self.send_display_status()
+                self.send_battery()
+                self.send_pinout_command()
+            if i % 50 == 0:
+                self.send_fans()
+                self.send_lights()
+            time.sleep(0.001)
+            i += 1
 
-            print(f'Sent {proton.ByteSize()}')
-            #print(proton)
-
-            sock.sendto(proton.SerializeToString(), (MCU_IP, PROTON_SEND_PORT))
-            time.sleep(1)
+    def get_header(self) -> Header:
+        h = Header()
+        h.frame_id = 'a300_proton'
+        h.stamp.sec = int(time.time())
+        h.stamp.nanosec = time.time_ns()
+        return h
 
     def sock_read(self):
       while(True):
           data, addr = sock.recvfrom(1000)
-          print('~~~ Protobuf Received ~~~')
-          print(data)
-          print(f'Data len {len(data)}')
-          print()
 
-          proton = Bundle()
+          bundle = Bundle()
           try:
-            Bundle.ParseFromString(proton, data)
-            print('~~~ Deserialized to protobuf ~~~')
-            print(proton)
-            print(f'Length {proton.ByteSize()}')
-            print()
+            Bundle.ParseFromString(bundle, data)
+            print(f'Received bundle {hex(bundle.id)} length {bundle.ByteSize()}')
+            match bundle.id:
+                case self.LOGGER_ID:
+                    log = Log()
+                    log.level = bundle.signals[0].uint32_value
+                    log.msg = bundle.signals[1].string_value
+                    self.rosout_pub.publish(log)
+                case self.POWER_ID:
+                    power = Power()
+                    power.header = self.get_header()
+                    power.measured_voltages.extend(bundle.signals[0].list_float_value.floats)
+                    power.measured_currents.extend(bundle.signals[1].list_float_value.floats)
+                    self.power_pub.publish(power)
+                case self.TEMP_ID:
+                    temp = Temperature()
+                    temp.header = self.get_header()
+                    temp.temperatures.extend(bundle.signals[0].list_float_value.floats)
+                    self.temperature_pub.publish(temp)
+                case self.STATUS_ID:
+                    status = Status()
+                    status.header = self.get_header()
+                    status.firmware_version = bundle.signals[0].string_value
+                    status.hardware_id = bundle.signals[1].string_value
+                    status.mcu_uptime.sec = bundle.signals[2].uint32_value
+                    status.mcu_uptime.nanosec = bundle.signals[3].uint32_value
+                    status.connection_uptime.sec = bundle.signals[4].uint32_value
+                    status.connection_uptime.nanosec = bundle.signals[5].uint32_value
+                    self.status_pub.publish(status)
+                case self.ESTOP_ID:
+                    estop = Bool()
+                    estop.data = bundle.signals[0].bool_value
+                    self.estop_pub.publish(estop)
+                case self.STOP_ID:
+                    stop = StopStatus()
+                    stop.header = self.get_header()
+                    stop.external_stop_present = False
+                    stop.stop_power_status = False
+                    stop.needs_reset = bundle.signals[0].bool_value
+                    self.stop_pub.publish(stop)
+                case self.PINOUT_STATE_ID:
+                    pinout_state = PinoutState()
+                    pinout_state.header = self.get_header()
+                    pinout_state.rails.extend(bundle.signals[0].list_bool_value.bools)
+                    pinout_state.inputs.extend(bundle.signals[1].list_bool_value.bools)
+                    pinout_state.outputs.extend(bundle.signals[2].list_bool_value.bools)
+                    pinout_state.output_periods.extend(bundle.signals[3].list_uint32_value.uint32s)
+                    self.pinout_state_pub.publish(pinout_state)
+                case self.ALERTS_ID:
+                    alert_string = String()
+                    alert_string.data = bundle.signals[0].string_value
+                    self.alerts_pub.publish(alert_string)
+
           except DecodeError:
               print('Decode Error')
 
 
-          # print('~~~ Indexed ~~~')
-          # i = 0
-          # for data in pb.data:
-          #     value = None
-          #     match data.WhichOneof('data'):
-          #         case 'float_value':
-          #             value = data.float_value
-          #         case 'string_value':
-          #             value = data.string_value
-          #         case 'bool_value':
-          #             value = data.bool_value
-
-          #     print(f'Index: {i} Type: {data.WhichOneof('data')} Data: {value}')
-          #     i += 1
-
-          print('---------------------------------------')
-
 
 if __name__ == '__main__':
+    rclpy.init()
     proton = ProtonProcess()
+    rclpy.spin(proton)
+    rclpy.shutdown()

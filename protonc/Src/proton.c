@@ -100,9 +100,32 @@ int PROTON_Encode(proton_bundle_t * bundle, uint8_t * buffer, size_t buffer_leng
   }
 }
 
+bool PROTON_DecodeId(uint32_t * id, const uint8_t * buffer, size_t buffer_length)
+{
+  pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer, buffer_length);
+
+  pb_wire_type_t wire_type;
+  uint32_t tag;
+  bool eof;
+
+  if (pb_decode_tag(&stream, &wire_type, &tag, &eof))
+  {
+    if (tag == proton_Bundle_id_tag)
+    {
+      if (pb_decode_varint32(&stream, id))
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 int PROTON_Decode(proton_bundle_t * bundle, const uint8_t * buffer, size_t buffer_length)
 {
   pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer, buffer_length);
+
   bool status = pb_decode(&stream, proton_Bundle_fields, &bundle->bundle);
   size_t bytes_left = stream.bytes_left;
 

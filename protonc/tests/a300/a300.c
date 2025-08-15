@@ -4,14 +4,16 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #include "proton__a300.h"
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
 
 uint8_t write_buf_[PROTON_MAX_MESSAGE_SIZE];
+uint8_t read_buf_[PROTON_MAX_MESSAGE_SIZE];
 
-int sockfd;
+int sock_send, sock_recv;
 
 int msleep(long msec)
 {
@@ -36,20 +38,42 @@ int msleep(long msec)
 int socket_init()
 {
   struct sockaddr_in servaddr;
-  sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+  sock_send = socket(AF_INET, SOCK_DGRAM, 0);
 
   memset(&servaddr, 0, sizeof(servaddr));
   servaddr.sin_family = AF_INET;
   servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   servaddr.sin_port = htons(11417);
 
-  if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0)
+  if (connect(sock_send, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0)
   {
     printf("connect error\r\n");
     return 1;
   }
 
-  printf("Socket connected\r\n");
+  printf("Send Socket connected\r\n");
+
+  struct sockaddr_in servaddr2;
+  sock_recv = socket(AF_INET, SOCK_DGRAM, 0);
+
+  memset(&servaddr2, 0, sizeof(servaddr2));
+  servaddr2.sin_family = AF_INET;
+  servaddr2.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  servaddr2.sin_port = htons(11416);
+
+  // Put the socket in non-blocking mode:
+  if(fcntl(sock_recv, F_SETFL, fcntl(sock_recv, F_GETFL) | O_NONBLOCK) < 0) {
+    printf("Set non-blocking error\r\n");
+    return 2;
+  }
+
+  if (bind(sock_recv, (struct sockaddr *)&servaddr2, sizeof(servaddr2)) != 0)
+  {
+    printf("bind error\r\n");
+    return 3;
+  }
+
+  printf("Receive Socket bound\r\n");
 
   return 0;
 }
@@ -60,20 +84,96 @@ int send_bundle(proton_bundle_t * bundle)
 
   if (e > 0)
   {
-    send(sockfd, write_buf_, e, 0);
+    send(sock_send, write_buf_, e, 0);
   }
 
   return e;
 }
 
-int fill_log()
+int get_bundle()
 {
-  strcpy(logger_struct.log, "TEST_LOG");
+  proton_bundle_t * bundle;
+  int s = recv(sock_recv, read_buf_, sizeof(read_buf_), 0);
+
+  if (s > 0)
+  {
+    uint32_t id;
+
+    if (PROTON_DecodeId(&id, read_buf_, s))
+    {
+      switch(id)
+      {
+        case 0x200:
+        {
+          bundle = &cmd_fans_bundle;
+          break;
+        }
+
+        case 0x201:
+        {
+          bundle = &display_status_bundle;
+          break;
+        }
+
+        case 0x202:
+        {
+          bundle = &cmd_lights_bundle;
+          break;
+        }
+
+        case 0x203:
+        {
+          bundle = &battery_bundle;
+          break;
+        }
+
+        case 0x204:
+        {
+          bundle = &pinout_command_bundle;
+          break;
+        }
+
+        default:
+        {
+          printf("Received invalid bundle ID 0x%x\r\n", id);
+          bundle = NULL;
+          break;
+        }
+      }
+    }
+    else
+    {
+      return -1;
+    }
+
+    if (bundle)
+    {
+      int left = PROTON_Decode(bundle, read_buf_, s);
+      if (left == 0)
+      {
+        printf("Received bundle 0x%x length %d\r\n", id, s);
+        // print_bundle(bundle->bundle);
+      }
+    }
+    else
+    {
+      return -1;
+    }
+  }
+
+  return s;
 }
 
-int update_power()
+void update_log()
 {
-  for (uint8_t i = 0; i < 13; i++)
+  strcpy(logger_struct.log, "TEST_LOG");
+  logger_struct.level = 20;
+  send_bundle(&logger_bundle);
+}
+
+void update_power()
+{
+  for (uint8_t i = 0; i < POWER__MEASURED_VOLTAGES__LENGTH; i++)
   {
     power_struct.measured_currents[i] = (float)rand();
     power_struct.measured_voltages[i] = (float)rand();
@@ -81,13 +181,68 @@ int update_power()
   send_bundle(&power_bundle);
 }
 
-int update_temperature()
+void update_temperature()
 {
-  for (uint8_t i = 0; i < 18; i++)
+  for (uint8_t i = 0; i < TEMPERATURE__TEMPERATURES__LENGTH; i++)
   {
     temperature_struct.temperatures[i] = (float)rand();
   }
   send_bundle(&temperature_bundle);
+}
+
+void update_status(uint32_t ms)
+{
+  status_struct.connection_uptime_s = ms / 1000;
+  status_struct.connection_uptime_ns = rand();
+
+  status_struct.mcu_uptime_s = ms / 1000;
+  status_struct.mcu_uptime_ns = rand();
+
+  send_bundle(&status_bundle);
+}
+
+void update_emergency_stop()
+{
+  static bool stopped = false;
+
+  stopped = !stopped;
+  emergency_stop_struct.stopped = stopped;
+
+  send_bundle(&emergency_stop_bundle);
+}
+
+void update_stop_status()
+{
+  static bool needs_reset = true;
+
+  needs_reset = !needs_reset;
+  stop_status_struct.needs_reset = needs_reset;
+
+  send_bundle(&stop_status_bundle);
+}
+
+void update_alerts()
+{
+  strcpy(alerts_struct.alert_string, "E124,E100");
+
+  send_bundle(&alerts_bundle);
+}
+
+void update_pinout_state()
+{
+  pinout_state_struct.rails[0] = true;
+
+  for (uint8_t i = 0; i < PINOUT_STATE__OUTPUTS__LENGTH; i++)
+  {
+    pinout_state_struct.outputs[i] = i % 2;
+  }
+
+  for (uint8_t i = 0; i < PINOUT_STATE__OUTPUT_PERIODS__LENGTH; i++)
+  {
+    pinout_state_struct.output_periods[i] = rand();
+  }
+
+  send_bundle(&pinout_state_bundle);
 }
 
 int main()
@@ -103,16 +258,21 @@ int main()
 
   printf("INIT\r\n");
 
-  uint64_t i = 0;
+  strcpy(status_struct.firmware_version, "3.0.0");
+  strcpy(status_struct.hardware_id, "A300");
+
+  uint32_t i = 0;
 
   while (1)
   {
-    int e = fill_log();
-
     // 1 hz
     if (i % 1000 == 0)
     {
-      send_bundle(&logger_bundle);
+      update_log();
+      update_status(i);
+      update_emergency_stop();
+      update_stop_status();
+      update_alerts();
     }
 
     // 10hz
@@ -120,6 +280,7 @@ int main()
     {
       update_power();
       update_temperature();
+      update_pinout_state();
     }
 
     // 50hz
@@ -128,6 +289,7 @@ int main()
 
     }
 
+    get_bundle();
     msleep(1);
     i++;
   }

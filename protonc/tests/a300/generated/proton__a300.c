@@ -21,7 +21,7 @@ PROTON_BUNDLE__emergency_stop_t emergency_stop_struct;
 PROTON_BUNDLE__temperature_t temperature_struct;
 PROTON_BUNDLE__stop_status_t stop_status_struct;
 PROTON_BUNDLE__pinout_state_t pinout_state_struct;
-PROTON_BUNDLE__error_codes_t error_codes_struct;
+PROTON_BUNDLE__alerts_t alerts_struct;
 PROTON_BUNDLE__cmd_fans_t cmd_fans_struct;
 PROTON_BUNDLE__display_status_t display_status_struct;
 PROTON_BUNDLE__cmd_lights_t cmd_lights_struct;
@@ -37,7 +37,7 @@ proton_signal_t emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP_COUNT];
 proton_signal_t temperature_signals[PROTON_SIGNALS__TEMPERATURE_COUNT];
 proton_signal_t stop_status_signals[PROTON_SIGNALS__STOP_STATUS_COUNT];
 proton_signal_t pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE_COUNT];
-proton_signal_t error_codes_signals[PROTON_SIGNALS__ERROR_CODES_COUNT];
+proton_signal_t alerts_signals[PROTON_SIGNALS__ALERTS_COUNT];
 proton_signal_t cmd_fans_signals[PROTON_SIGNALS__CMD_FANS_COUNT];
 proton_signal_t display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS_COUNT];
 proton_signal_t cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS_COUNT];
@@ -53,7 +53,7 @@ proton_bundle_t emergency_stop_bundle;
 proton_bundle_t temperature_bundle;
 proton_bundle_t stop_status_bundle;
 proton_bundle_t pinout_state_bundle;
-proton_bundle_t error_codes_bundle;
+proton_bundle_t alerts_bundle;
 proton_bundle_t cmd_fans_bundle;
 proton_bundle_t display_status_bundle;
 proton_bundle_t cmd_lights_bundle;
@@ -69,7 +69,7 @@ void PROTON_BUNDLE_init_emergency_stop();
 void PROTON_BUNDLE_init_temperature();
 void PROTON_BUNDLE_init_stop_status();
 void PROTON_BUNDLE_init_pinout_state();
-void PROTON_BUNDLE_init_error_codes();
+void PROTON_BUNDLE_init_alerts();
 void PROTON_BUNDLE_init_cmd_fans();
 void PROTON_BUNDLE_init_display_status();
 void PROTON_BUNDLE_init_cmd_lights();
@@ -80,6 +80,9 @@ void PROTON_BUNDLE_init_pinout_command();
 
 void PROTON_BUNDLE_init_logger()
 {
+  logger_signals[PROTON_SIGNALS__LOGGER__LEVEL].signal.which_signal = proton_Signal_uint32_value_tag;
+  logger_signals[PROTON_SIGNALS__LOGGER__LEVEL].arg.data = &logger_struct.level;
+
   logger_signals[PROTON_SIGNALS__LOGGER__LOG].signal.which_signal = proton_Signal_string_value_tag;
   logger_signals[PROTON_SIGNALS__LOGGER__LOG].signal.signal.string_value = &logger_signals[PROTON_SIGNALS__LOGGER__LOG].arg;
   logger_signals[PROTON_SIGNALS__LOGGER__LOG].arg.data = logger_struct.log;
@@ -94,13 +97,13 @@ void PROTON_BUNDLE_init_status()
   status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].signal.which_signal = proton_Signal_string_value_tag;
   status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].signal.signal.string_value = &status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg;
   status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.data = status_struct.hardware_id;
-  status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.capacity = 64;
+  status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.capacity = 10;
   status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.size = 0;
 
   status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].signal.which_signal = proton_Signal_string_value_tag;
   status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].signal.signal.string_value = &status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg;
   status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.data = status_struct.firmware_version;
-  status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.capacity = 64;
+  status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.capacity = 10;
   status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.size = 0;
 
   status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_S].signal.which_signal = proton_Signal_uint32_value_tag;
@@ -191,15 +194,15 @@ void PROTON_BUNDLE_init_pinout_state()
   PROTON_InitBundle(&pinout_state_bundle, 262, pinout_state_signals, PROTON_SIGNALS__PINOUT_STATE_COUNT);
 }
 
-void PROTON_BUNDLE_init_error_codes()
+void PROTON_BUNDLE_init_alerts()
 {
-  error_codes_signals[PROTON_SIGNALS__ERROR_CODES__ERRORS].signal.which_signal = proton_Signal_string_value_tag;
-  error_codes_signals[PROTON_SIGNALS__ERROR_CODES__ERRORS].signal.signal.string_value = &error_codes_signals[PROTON_SIGNALS__ERROR_CODES__ERRORS].arg;
-  error_codes_signals[PROTON_SIGNALS__ERROR_CODES__ERRORS].arg.data = error_codes_struct.errors;
-  error_codes_signals[PROTON_SIGNALS__ERROR_CODES__ERRORS].arg.capacity = 86;
-  error_codes_signals[PROTON_SIGNALS__ERROR_CODES__ERRORS].arg.size = 0;
+  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].signal.which_signal = proton_Signal_string_value_tag;
+  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].signal.signal.string_value = &alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg;
+  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.data = alerts_struct.alert_string;
+  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.capacity = 86;
+  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.size = 0;
 
-  PROTON_InitBundle(&error_codes_bundle, 263, error_codes_signals, PROTON_SIGNALS__ERROR_CODES_COUNT);
+  PROTON_InitBundle(&alerts_bundle, 263, alerts_signals, PROTON_SIGNALS__ALERTS_COUNT);
 }
 
 void PROTON_BUNDLE_init_cmd_fans()
@@ -293,7 +296,7 @@ void PROTON_MESSAGE_init()
   PROTON_BUNDLE_init_temperature();
   PROTON_BUNDLE_init_stop_status();
   PROTON_BUNDLE_init_pinout_state();
-  PROTON_BUNDLE_init_error_codes();
+  PROTON_BUNDLE_init_alerts();
   PROTON_BUNDLE_init_cmd_fans();
   PROTON_BUNDLE_init_display_status();
   PROTON_BUNDLE_init_cmd_lights();

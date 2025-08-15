@@ -61,6 +61,7 @@ void PROTON_InitSignal(proton_signal_t * signal, uint8_t field_tag);
 
 int PROTON_Encode(proton_bundle_t * bundle, uint8_t * buffer, size_t buffer_length);
 int PROTON_Decode(proton_bundle_t * bundle, const uint8_t * buffer, const size_t buffer_length);
+bool PROTON_DecodeId(uint32_t * id, const uint8_t * buffer, size_t buffer_length);
 
 void print_bundle(proton_Bundle bundle);
 void print_signal(proton_Signal signal);

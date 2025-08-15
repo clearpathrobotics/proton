@@ -123,15 +123,18 @@ class ProtonCGenerator:
                     string_struct = Struct(
                         s.signal,
                         [
-                            Variable("list", "char *", s.length),
-                            Variable("strings", "char", s.length, s.capacity),
+                            Variable("list", "char *", s.length_define),
+                            Variable("strings", "char", s.length_define, s.capacity_define),
                         ],
                     )
                     vars.append(string_struct)
                 else:
                     vars.append(
                         Variable(
-                            s.signal, self.SIGNAL_TYPE_MAP[s.type], s.length, s.capacity
+                            name=s.signal,
+                            type=self.SIGNAL_TYPE_MAP[s.type],
+                            length=0 if s.length == 0 else s.length_define,
+                            capacity=0 if s.capacity == 0 else s.capacity_define
                         )
                     )
             s = Struct(b.struct_name, vars)
@@ -164,6 +167,21 @@ class ProtonCGenerator:
             self.header_writer.write_enum(b.signals_enum_name, e)
             self.header_writer.write_newline()
         self.header_writer.write_newline()
+
+    def generate_defines(self):
+        self.header_writer.write_comment("Constant definitions", indent_level=0)
+        self.header_writer.write_newline()
+        for b in self.config.bundles:
+            num_defines = 0
+            for s in b.signals:
+                if s.length > 0:
+                    self.header_writer.write_define(f"{s.length_define} {s.length}")
+                    num_defines += 1
+                if s.capacity > 0:
+                    self.header_writer.write_define(f"{s.capacity_define} {s.capacity}")
+                    num_defines += 1
+            if num_defines > 0:
+                self.header_writer.write_newline()
 
     def generate_signal_variables(self):
         self.src_writer.write_comment("Signals", indent_level=0)
@@ -328,6 +346,7 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
 
         self.generate_signal_enums()
+        self.generate_defines()
         self.generate_message_struct_typedefs()
         self.generate_extern_message_structs()
         self.generate_extern_bundle()

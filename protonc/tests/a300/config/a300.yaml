@@ -16,6 +16,7 @@ bundles:
       producer: mcu
       consumer: pc
       schema:
+        - {signal: level, type: uint32}
         - {signal: log, type: string, capacity: 64}
     - name: status
       id: 0x101
@@ -62,12 +63,12 @@ bundles:
         - {signal: inputs, type: bool, length: 7}
         - {signal: outputs, type: bool, length: 7}
         - {signal: output_periods, type: uint32, length: 7}
-    - name: error_codes
+    - name: alerts
       id: 0x107
       producer: mcu
       consumer: pc
       schema:
-        - {signal: errors, type: string, capacity: 86}
+        - {signal: alert_string, type: string, capacity: 86}
 
     - name: cmd_fans
       id: 0x200

@@ -36,11 +36,11 @@ import os
 
 
 class Variable:
-    def __init__(self, name, type, length=0, width=0):
+    def __init__(self, name, type, length=0, capacity=0):
         self.name = name
         self.type = type
         self.length = length
-        self.width = width
+        self.capacity = capacity
 
 class Struct:
     def __init__(self, name, vars):
@@ -90,27 +90,15 @@ class CWriter:
         self.write(f'#endif  // PROTONC__{self.header_guard}', indent_level=0)
 
     def write_variable(self, variable: Variable, indent_level=0):
-        if isinstance(variable.length, int):
-            if variable.length == 0 and variable.width == 0:
-                self.write(f"{variable.type} {variable.name};", indent_level)
-            else:
-                if variable.width == 0:
-                    self.write(
-                        f"{variable.type} {variable.name}[{variable.length}];", indent_level
-                    )
-                elif variable.length == 0:
-                    self.write(
-                        f"{variable.type} {variable.name}[{variable.width}];", indent_level
-                    )
-                else:
-                    self.write(
-                        f"{variable.type} {variable.name}[{variable.length}][{variable.width}];",
-                        indent_level,
-                    )
-        else:
-            self.write(
-                f"{variable.type} {variable.name}[{variable.length}];", indent_level
-            )
+        var_string = f"{variable.type} {variable.name}"
+
+        if isinstance(variable.length, str) or variable.length > 0:
+            var_string += f"[{variable.length}]"
+        if isinstance(variable.capacity, str) or variable.capacity > 0:
+            var_string += f"[{variable.capacity}]"
+        var_string += ";"
+
+        self.write(var_string, indent_level)
 
     def write_struct(self, struct: Struct, indent_level=1):
         self.write("struct {", indent_level)
@@ -169,6 +157,9 @@ class CWriter:
 
     def write_for_loop_end(self, indent_level=0):
         self.write('}', indent_level)
+
+    def write_define(self, content, indent_level=0):
+        self.write(f'#define {content}', indent_level)
 
     def initialize_file(self):
         self.write(
