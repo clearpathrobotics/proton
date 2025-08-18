@@ -126,6 +126,7 @@ class ProtonConfig:
         BUNDLE_SUFFIX = "_bundle"
         BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE__"
         BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
+        BUNDLE_ID_PREFIX = "PROTON_BUNDLE_ID__"
         SIGNALS_SUFFIX = "_signals"
         INIT_FUNCTION_SUFFIX = "PROTON_BUNDLE_init_"
 
@@ -151,6 +152,7 @@ class ProtonConfig:
             self.signals_enum_name = f'{self.BUNDLE_SIGNAL_ENUM_PREFIX}{self.name}'
             self.signals_enum_count = f'{self.signals_enum_name.upper()}_COUNT'
             self.init_function_name = f'{self.INIT_FUNCTION_SUFFIX}{self.name}'
+            self.bundle_id_define_name = f'{self.BUNDLE_ID_PREFIX}{self.name.upper()}'
 
             for signal in bundle[self.SCHEMA]:
                 s = ProtonConfig.Signal(self.name, signal)

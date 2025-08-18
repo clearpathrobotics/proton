@@ -183,6 +183,12 @@ class ProtonCGenerator:
             if num_defines > 0:
                 self.header_writer.write_newline()
 
+    def generate_bundle_ids(self):
+        self.header_writer.write_comment("Bundle IDs", indent_level=0)
+        self.header_writer.write_newline()
+        for b in self.config.bundles:
+            self.header_writer.write_define(f'{b.bundle_id_define_name} {hex(b.id)}')
+
     def generate_signal_variables(self):
         self.src_writer.write_comment("Signals", indent_level=0)
         self.src_writer.write_newline()
@@ -312,7 +318,7 @@ class ProtonCGenerator:
                         self.src_writer.write_for_loop_end(indent_level=1)
                 self.src_writer.write_newline()
             self.src_writer.write(
-                f"PROTON_InitBundle(&{b.bundle_variable_name}, {b.id}, {b.signals_variable_name}, {b.signals_enum_count});"
+                f"PROTON_InitBundle(&{b.bundle_variable_name}, {b.bundle_id_define_name}, {b.signals_variable_name}, {b.signals_enum_count});"
             )
             self.src_writer.write_function_end()
 
@@ -345,6 +351,7 @@ class ProtonCGenerator:
         self.src_writer.write_include(generated_filename)
         self.src_writer.write_newline()
 
+        self.generate_bundle_ids()
         self.generate_signal_enums()
         self.generate_defines()
         self.generate_message_struct_typedefs()

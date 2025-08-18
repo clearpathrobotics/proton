@@ -5,6 +5,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <stdarg.h>
 
 #include "proton__a300.h"
 
@@ -14,6 +15,14 @@ uint8_t write_buf_[PROTON_MAX_MESSAGE_SIZE];
 uint8_t read_buf_[PROTON_MAX_MESSAGE_SIZE];
 
 int sock_send, sock_recv;
+
+void send_log(char* file, int line, uint8_t level, char* msg, ...);
+
+#define LOG_DEBUG(message, ...) send_log(__FILE_NAME__, __LINE__, 10U, message, ##__VA_ARGS__)
+#define LOG_INFO(message, ...) send_log(__FILE_NAME__, __LINE__, 20U, message, ##__VA_ARGS__)
+#define LOG_WARNING(message, ...) send_log(__FILE_NAME__, __LINE__, 30U, message, ##__VA_ARGS__)
+#define LOG_ERROR(message, ...) send_log(__FILE_NAME__, __LINE__, 40U, message, ##__VA_ARGS__)
+#define LOG_FATAL(message, ...) send_log(__FILE_NAME__, __LINE__, 50U, message, ##__VA_ARGS__)
 
 int msleep(long msec)
 {
@@ -103,31 +112,31 @@ int get_bundle()
     {
       switch(id)
       {
-        case 0x200:
+        case PROTON_BUNDLE_ID__CMD_FANS:
         {
           bundle = &cmd_fans_bundle;
           break;
         }
 
-        case 0x201:
+        case PROTON_BUNDLE_ID__DISPLAY_STATUS:
         {
           bundle = &display_status_bundle;
           break;
         }
 
-        case 0x202:
+        case PROTON_BUNDLE_ID__CMD_LIGHTS:
         {
           bundle = &cmd_lights_bundle;
           break;
         }
 
-        case 0x203:
+        case PROTON_BUNDLE_ID__BATTERY:
         {
           bundle = &battery_bundle;
           break;
         }
 
-        case 0x204:
+        case PROTON_BUNDLE_ID__PINOUT_COMMAND:
         {
           bundle = &pinout_command_bundle;
           break;
@@ -152,7 +161,7 @@ int get_bundle()
       if (left == 0)
       {
         printf("Received bundle 0x%x length %d\r\n", id, s);
-        // print_bundle(bundle->bundle);
+        print_bundle(bundle->bundle);
       }
     }
     else
@@ -164,10 +173,18 @@ int get_bundle()
   return s;
 }
 
-void update_log()
+void send_log(char* file, int line, uint8_t level, char* msg, ...)
 {
-  strcpy(logger_struct.log, "TEST_LOG");
-  logger_struct.level = 20;
+  strcpy(logger_struct.name, "A300_proton");
+  strcpy(logger_struct.file, file);
+  logger_struct.line = line;
+  logger_struct.level = level;
+
+  va_list args;
+  va_start(args, msg);
+  vsprintf(logger_struct.msg, msg, args);
+  va_end(args);
+
   send_bundle(&logger_bundle);
 }
 
@@ -268,7 +285,6 @@ int main()
     // 1 hz
     if (i % 1000 == 0)
     {
-      update_log();
       update_status(i);
       update_emergency_stop();
       update_stop_status();
@@ -286,7 +302,7 @@ int main()
     // 50hz
     if (i % 20 == 0)
     {
-
+      LOG_INFO("Test %d", i);
     }
 
     get_bundle();
