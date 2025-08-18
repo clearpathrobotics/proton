@@ -89,7 +89,7 @@ class ProtonConfig:
             self.capacity_define = f'{self.bundle.upper()}__{self.signal.upper()}{self.CAPACITY_SUFFIX}'
             self.length_define = f'{self.bundle.upper()}__{self.signal.upper()}{self.LENGTH_SUFFIX}'
 
-            print(f'signal {self.signal} type {self.type} length {self.length} cap {self.capacity}')
+            #print(f'signal {self.signal} type {self.type} length {self.length} cap {self.capacity}')
 
             match self.type:
                 case ProtonConfig.Signal.SignalTypes.BYTES:
@@ -128,7 +128,9 @@ class ProtonConfig:
         BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
         BUNDLE_ID_PREFIX = "PROTON_BUNDLE_ID__"
         SIGNALS_SUFFIX = "_signals"
-        INIT_FUNCTION_SUFFIX = "PROTON_BUNDLE_init_"
+        INIT_FUNCTION_SUFFIX = "PROTON_BUNDLE_Init"
+        CALLBACK_PREFIX = "PROTON_BUNDLE_"
+        CALLBACK_SUFFIX = "Callback"
 
         # Bundle types
         class MessageTypes(StrEnum):
@@ -151,7 +153,8 @@ class ProtonConfig:
             self.struct_variable_name = f'{self.name}_struct'
             self.signals_enum_name = f'{self.BUNDLE_SIGNAL_ENUM_PREFIX}{self.name}'
             self.signals_enum_count = f'{self.signals_enum_name.upper()}_COUNT'
-            self.init_function_name = f'{self.INIT_FUNCTION_SUFFIX}{self.name}'
+            self.init_function_name = f'{self.INIT_FUNCTION_SUFFIX}{self.name.title().replace('_', '')}'
+            self.callback_function_name = f'{self.CALLBACK_PREFIX}{self.name.title().replace('_', '')}{self.CALLBACK_SUFFIX}'
             self.bundle_id_define_name = f'{self.BUNDLE_ID_PREFIX}{self.name.upper()}'
 
             for signal in bundle[self.SCHEMA]:
@@ -200,8 +203,8 @@ class ProtonConfig:
         for node in nodes:
             self.nodes.append(ProtonConfig.Node(node))
 
-        for n in self.nodes:
-            print(f"Node: {n.name} Transport: {n.type}")
+        # for n in self.nodes:
+        #     print(f"Node: {n.name} Transport: {n.type}")
 
     def parse_messages(self):
         try:
@@ -215,10 +218,10 @@ class ProtonConfig:
                     ProtonConfig.Bundle(bundle, ProtonConfig.Bundle.MessageTypes(t))
                 )
 
-        for m in self.bundles:
-            print(
-                f"Bundle: {m.name} type: {m.type} id: {m.id}, producer {m.producer}, consumer {m.consumer}"
-            )
-            print("Signals:")
-            for s in m.signals:
-                print(f"\t{s.signal}: type: {s.type}, length: {s.length}")
+        # for m in self.bundles:
+        #     print(
+        #         f"Bundle: {m.name} type: {m.type} id: {m.id}, producer {m.producer}, consumer {m.consumer}"
+        #     )
+        #     print("Signals:")
+        #     for s in m.signals:
+        #         print(f"\t{s.signal}: type: {s.type}, length: {s.length}")

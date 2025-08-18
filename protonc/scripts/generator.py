@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Software License Agreement (BSD)
 #
 # @author    Roni Kreinin <rkreinin@clearpathrobotics.com>
@@ -88,9 +90,11 @@ class ProtonCGenerator:
         ProtonConfig.Signal.SignalTypes.LIST_STRING: "strings",
     }
 
-    def __init__(self, config_file: str):
+    def __init__(self, config_file: str, destination_path: str):
         self.config_file = config_file
+        self.destination_path = destination_path
         assert os.path.exists(self.config_file)
+        assert os.path.exists(self.destination_path)
 
         self.dictionary = self.read_yaml()
         self.config = ProtonConfig(self.dictionary)
@@ -111,10 +115,8 @@ class ProtonCGenerator:
         )
         return config
 
-    def generate_message_struct_typedefs(self):
-        self.header_writer.write_comment(
-            "Message Structure Definitions", indent_level=0
-        )
+    def generate_bundle_struct_typedefs(self):
+        self.header_writer.write_comment("Bundle Structure Definitions", indent_level=0)
         self.header_writer.write_newline()
         for b in self.config.bundles:
             vars = []
@@ -124,7 +126,9 @@ class ProtonCGenerator:
                         s.signal,
                         [
                             Variable("list", "char *", s.length_define),
-                            Variable("strings", "char", s.length_define, s.capacity_define),
+                            Variable(
+                                "strings", "char", s.length_define, s.capacity_define
+                            ),
                         ],
                     )
                     vars.append(string_struct)
@@ -134,15 +138,15 @@ class ProtonCGenerator:
                             name=s.signal,
                             type=self.SIGNAL_TYPE_MAP[s.type],
                             length=0 if s.length == 0 else s.length_define,
-                            capacity=0 if s.capacity == 0 else s.capacity_define
+                            capacity=0 if s.capacity == 0 else s.capacity_define,
                         )
                     )
             s = Struct(b.struct_name, vars)
             self.header_writer.write_typedef_struct(s, indent_level=0)
             self.header_writer.write_newline()
 
-    def generate_extern_message_structs(self):
-        self.header_writer.write_comment("External Message Structures", indent_level=0)
+    def generate_extern_bundle_structs(self):
+        self.header_writer.write_comment("External Bundle Structures", indent_level=0)
         self.header_writer.write_newline()
         for b in self.config.bundles:
             self.header_writer.write_extern_variable(
@@ -187,7 +191,8 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Bundle IDs", indent_level=0)
         self.header_writer.write_newline()
         for b in self.config.bundles:
-            self.header_writer.write_define(f'{b.bundle_id_define_name} {hex(b.id)}')
+            self.header_writer.write_define(f"{b.bundle_id_define_name} {hex(b.id)}")
+        self.src_writer.write_newline()
 
     def generate_signal_variables(self):
         self.src_writer.write_comment("Signals", indent_level=0)
@@ -209,8 +214,8 @@ class ProtonCGenerator:
             self.src_writer.write_variable(proton)
         self.src_writer.write_newline()
 
-    def generate_message_structs(self):
-        self.src_writer.write_comment("Message Structures", indent_level=0)
+    def generate_bundle_structs(self):
+        self.src_writer.write_comment("Bundle Structures", indent_level=0)
         self.src_writer.write_newline()
         for b in self.config.bundles:
             self.src_writer.write_variable(
@@ -218,8 +223,8 @@ class ProtonCGenerator:
             )
         self.src_writer.write_newline()
 
-    def generate_message_init_prototypes(self):
-        self.src_writer.write_comment("Message Init Prototypes", indent_level=0)
+    def generate_bundle_init_prototypes(self):
+        self.src_writer.write_comment("Bundle Init Prototype", indent_level=0)
         self.src_writer.write_newline()
         for b in self.config.bundles:
             self.src_writer.write_function_prototype(
@@ -227,15 +232,15 @@ class ProtonCGenerator:
             )
         self.src_writer.write_newline()
 
-        self.header_writer.write_comment("Message Init Prototypes", indent_level=0)
+        self.header_writer.write_comment("Bundle Init Prototype", indent_level=0)
         self.header_writer.write_newline()
         self.header_writer.write_function_prototype(
-            Function("PROTON_MESSAGE_init", [], "void")
+            Function("PROTON_BUNDLE_Init", [], "void")
         )
         self.header_writer.write_newline()
 
-    def generate_message_init_functions(self):
-        self.src_writer.write_comment("Message Init Functions", indent_level=0)
+    def generate_bundle_init_functions(self):
+        self.src_writer.write_comment("Bundle Init Functions", indent_level=0)
         self.src_writer.write_newline()
         for b in self.config.bundles:
             self.src_writer.write_function_start(
@@ -322,23 +327,91 @@ class ProtonCGenerator:
             )
             self.src_writer.write_function_end()
 
-        self.src_writer.write_function_start(
-            Function("PROTON_MESSAGE_init", [], "void")
-        )
+        self.src_writer.write_function_start(Function("PROTON_BUNDLE_Init", [], "void"))
         for b in self.config.bundles:
             self.src_writer.write(f"{b.init_function_name}();", indent_level=1)
         self.src_writer.write_function_end()
 
-    def generate(self, name: str):
-        generated_filename = f"proton__{name}"
+    def generate_consumer_callbacks(self):
+        self.header_writer.write_comment("Consumer callbacks", indent_level=0)
+        self.header_writer.write_newline()
+        for b in self.config.bundles:
+            if b.consumer == self.target:
+                self.header_writer.write_function_prototype(
+                    Function(b.callback_function_name, [], "void")
+                )
+        self.header_writer.write_newline()
+
+    def generate_decode_function(self):
+        decode_function = Function(
+            "PROTON_BUNDLE_Decode",
+            [
+                Variable(name="buffer", type="const uint8_t *"),
+                Variable(name="length", type="size_t"),
+            ],
+            "bool",
+        )
+        self.header_writer.write_comment("Bundle Decode Prototype", indent_level=0)
+        self.header_writer.write_newline()
+        self.header_writer.write_function_prototype(decode_function)
+        self.header_writer.write_newline()
+
+        self.src_writer.write_comment("Bundle Decode Function", indent_level=0)
+        self.src_writer.write_newline()
+        self.src_writer.write_function_start(decode_function)
+
+        self.src_writer.write("proton_bundle_t * bundle;")
+        self.src_writer.write("uint32_t id;")
+        self.src_writer.write("proton_callback_t callback;")
+        self.src_writer.write_newline()
+        self.src_writer.write_comment('Decode bundle ID')
+        self.src_writer.write_if_statement_start("!PROTON_DecodeId(&id, buffer, length)")
+        self.src_writer.write('return false;', indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+        self.src_writer.write_switch_start("id")
+
+        for b in self.config.bundles:
+            if b.consumer == self.target:
+                self.src_writer.write_case_start(b.bundle_id_define_name)
+                self.src_writer.write(f"bundle = &{b.bundle_variable_name};", indent_level=3)
+                self.src_writer.write(f"callback = {b.callback_function_name};", indent_level=3)
+                self.src_writer.write("break;", indent_level=3)
+                self.src_writer.write_case_end()
+                self.src_writer.write_newline()
+
+        self.src_writer.write_case_default_start()
+        self.src_writer.write("return false;", indent_level=3)
+        self.src_writer.write_case_end()
+        self.src_writer.write_switch_end()
+
+        self.src_writer.write_comment('Decode bundle')
+
+        self.src_writer.write_if_statement_start('PROTON_Decode(bundle, buffer, length) != 0')
+        self.src_writer.write('return false;', indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+
+        self.src_writer.write_comment('Execute callback')
+        self.src_writer.write_if_statement_start('callback')
+        self.src_writer.write('callback();', indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+
+        self.src_writer.write('return true;')
+        self.src_writer.write_function_end()
+
+    def generate(self, name: str, target: str):
+        self.target = target
+        generated_filename = f"proton__{name}_{target}"
 
         self.src_writer = CWriter(
-            os.path.join(os.getcwd(), "../tests/a300/generated/"),
+            self.destination_path,
             f"{generated_filename}.c",
         )
 
         self.header_writer = CWriter(
-            os.path.join(os.getcwd(), "../tests/a300/generated/"),
+            self.destination_path,
             f"{generated_filename}.h",
         )
 
@@ -354,34 +427,65 @@ class ProtonCGenerator:
         self.generate_bundle_ids()
         self.generate_signal_enums()
         self.generate_defines()
-        self.generate_message_struct_typedefs()
-        self.generate_extern_message_structs()
+        self.generate_bundle_struct_typedefs()
+        self.generate_extern_bundle_structs()
         self.generate_extern_bundle()
-        self.generate_message_structs()
+        self.generate_bundle_structs()
         self.generate_signal_variables()
         self.generate_bundle_variable()
 
-        self.generate_message_init_prototypes()
-        self.generate_message_init_functions()
+        self.generate_bundle_init_prototypes()
+        self.generate_bundle_init_functions()
+        self.generate_decode_function()
+        self.generate_consumer_callbacks()
 
         self.header_writer.write_header_guard_close()
         self.src_writer.close_file()
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument(
-    #   '-c',
-    #   '--config',
-    #   type=str,
-    #   action='store',
-    #   dest='config',
-    #   default=os.path.join(os.getcwd(), '../../config/'),
-    #   help='Configuration file path.'
-    # )
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        action="store",
+        default=os.path.join(os.getcwd(), "../tests/a300/config/a300.yaml"),
+        help="Configuration file path.",
+    )
 
-    # args = parser.parse_args(sys.argv)
+    parser.add_argument(
+        "-d",
+        "--destination",
+        type=str,
+        action="store",
+        default=os.path.join(os.getcwd(), "../tests/a300/generated/"),
+        help="Destination folder path for generated files.",
+    )
 
-    file = os.path.join(os.getcwd(), "../tests/a300/config/a300.yaml")
-    generator = ProtonCGenerator(file)
-    generator.generate(file.split("/")[-1].split(".")[0])
+    parser.add_argument(
+        "-t",
+        "--target",
+        type=str,
+        action="store",
+        default="mcu",
+        help="Target node for generation.",
+    )
+
+    args = parser.parse_args()
+
+    file = args.config
+    config_name = file.split("/")[-1].split(".")[0]
+    dest = args.destination
+    target = args.target
+    generator = ProtonCGenerator(file, dest)
+
+    exists = False
+    for node in generator.config.nodes:
+        if node.name == target:
+            exists = True
+
+    if not exists:
+        raise Exception(f'Invalid target "{target}"')
+    else:
+        generator.generate(config_name, target)

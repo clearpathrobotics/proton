@@ -56,6 +56,8 @@ typedef struct Proton {
   proton_list_t arg;
 } proton_bundle_t;
 
+typedef void (*proton_callback_t)(void);
+
 void PROTON_InitBundle(proton_bundle_t * test_bundle, uint32_t id, proton_signal_t * signals, uint32_t signal_count);
 void PROTON_InitSignal(proton_signal_t * signal, uint8_t field_tag);
 

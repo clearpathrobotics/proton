@@ -10,8 +10,8 @@
  * THIS FILE WAS AUTOMATICALLY GENERATED. DO NOT MODIFY.
  */
 
-#ifndef PROTONC__PROTON__A300_H
-#define PROTONC__PROTON__A300_H
+#ifndef PROTONC__PROTON__A300_MCU_H
+#define PROTONC__PROTON__A300_MCU_H
 
 #include "stdint.h"
 #include "stdbool.h"
@@ -154,7 +154,7 @@ typedef enum PROTON_SIGNALS__pinout_command {
 #define PINOUT_COMMAND__RAILS__LENGTH 1
 #define PINOUT_COMMAND__OUTPUTS__LENGTH 7
 
-// Message Structure Definitions
+// Bundle Structure Definitions
 
 typedef struct PROTON_BUNDLE__logger {
   uint32_t level;
@@ -227,7 +227,7 @@ typedef struct PROTON_BUNDLE__pinout_command {
   uint32_t outputs[PINOUT_COMMAND__OUTPUTS__LENGTH];
 } PROTON_BUNDLE__pinout_command_t;
 
-// External Message Structures
+// External Bundle Structures
 
 extern PROTON_BUNDLE__logger_t logger_struct;
 extern PROTON_BUNDLE__status_t status_struct;
@@ -259,8 +259,20 @@ extern proton_bundle_t cmd_lights_bundle;
 extern proton_bundle_t battery_bundle;
 extern proton_bundle_t pinout_command_bundle;
 
-// Message Init Prototypes
+// Bundle Init Prototype
 
-void PROTON_MESSAGE_init();
+void PROTON_BUNDLE_Init();
 
-#endif  // PROTONC__PROTON__A300_H
+// Bundle Decode Prototype
+
+bool PROTON_BUNDLE_Decode(const uint8_t * buffer, size_t length);
+
+// Consumer callbacks
+
+void PROTON_BUNDLE_CmdFansCallback();
+void PROTON_BUNDLE_DisplayStatusCallback();
+void PROTON_BUNDLE_CmdLightsCallback();
+void PROTON_BUNDLE_BatteryCallback();
+void PROTON_BUNDLE_PinoutCommandCallback();
+
+#endif  // PROTONC__PROTON__A300_MCU_H

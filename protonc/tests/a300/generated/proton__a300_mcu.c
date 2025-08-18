@@ -10,9 +10,10 @@
  * THIS FILE WAS AUTOMATICALLY GENERATED. DO NOT MODIFY.
  */
 
-#include "proton__a300.h"
+#include "proton__a300_mcu.h"
 
-// Message Structures
+
+// Bundle Structures
 
 PROTON_BUNDLE__logger_t logger_struct;
 PROTON_BUNDLE__status_t status_struct;
@@ -60,25 +61,25 @@ proton_bundle_t cmd_lights_bundle;
 proton_bundle_t battery_bundle;
 proton_bundle_t pinout_command_bundle;
 
-// Message Init Prototypes
+// Bundle Init Prototype
 
-void PROTON_BUNDLE_init_logger();
-void PROTON_BUNDLE_init_status();
-void PROTON_BUNDLE_init_power();
-void PROTON_BUNDLE_init_emergency_stop();
-void PROTON_BUNDLE_init_temperature();
-void PROTON_BUNDLE_init_stop_status();
-void PROTON_BUNDLE_init_pinout_state();
-void PROTON_BUNDLE_init_alerts();
-void PROTON_BUNDLE_init_cmd_fans();
-void PROTON_BUNDLE_init_display_status();
-void PROTON_BUNDLE_init_cmd_lights();
-void PROTON_BUNDLE_init_battery();
-void PROTON_BUNDLE_init_pinout_command();
+void PROTON_BUNDLE_InitLogger();
+void PROTON_BUNDLE_InitStatus();
+void PROTON_BUNDLE_InitPower();
+void PROTON_BUNDLE_InitEmergencyStop();
+void PROTON_BUNDLE_InitTemperature();
+void PROTON_BUNDLE_InitStopStatus();
+void PROTON_BUNDLE_InitPinoutState();
+void PROTON_BUNDLE_InitAlerts();
+void PROTON_BUNDLE_InitCmdFans();
+void PROTON_BUNDLE_InitDisplayStatus();
+void PROTON_BUNDLE_InitCmdLights();
+void PROTON_BUNDLE_InitBattery();
+void PROTON_BUNDLE_InitPinoutCommand();
 
-// Message Init Functions
+// Bundle Init Functions
 
-void PROTON_BUNDLE_init_logger()
+void PROTON_BUNDLE_InitLogger()
 {
   logger_signals[PROTON_SIGNALS__LOGGER__LEVEL].signal.which_signal = proton_Signal_uint32_value_tag;
   logger_signals[PROTON_SIGNALS__LOGGER__LEVEL].arg.data = &logger_struct.level;
@@ -113,7 +114,7 @@ void PROTON_BUNDLE_init_logger()
   PROTON_InitBundle(&logger_bundle, PROTON_BUNDLE_ID__LOGGER, logger_signals, PROTON_SIGNALS__LOGGER_COUNT);
 }
 
-void PROTON_BUNDLE_init_status()
+void PROTON_BUNDLE_InitStatus()
 {
   status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].signal.which_signal = proton_Signal_string_value_tag;
   status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].signal.signal.string_value = &status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg;
@@ -142,7 +143,7 @@ void PROTON_BUNDLE_init_status()
   PROTON_InitBundle(&status_bundle, PROTON_BUNDLE_ID__STATUS, status_signals, PROTON_SIGNALS__STATUS_COUNT);
 }
 
-void PROTON_BUNDLE_init_power()
+void PROTON_BUNDLE_InitPower()
 {
   power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].signal.which_signal = proton_Signal_list_float_value_tag;
   power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].signal.signal.list_float_value.floats = &power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg;
@@ -159,7 +160,7 @@ void PROTON_BUNDLE_init_power()
   PROTON_InitBundle(&power_bundle, PROTON_BUNDLE_ID__POWER, power_signals, PROTON_SIGNALS__POWER_COUNT);
 }
 
-void PROTON_BUNDLE_init_emergency_stop()
+void PROTON_BUNDLE_InitEmergencyStop()
 {
   emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP__STOPPED].signal.which_signal = proton_Signal_bool_value_tag;
   emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP__STOPPED].arg.data = &emergency_stop_struct.stopped;
@@ -167,7 +168,7 @@ void PROTON_BUNDLE_init_emergency_stop()
   PROTON_InitBundle(&emergency_stop_bundle, PROTON_BUNDLE_ID__EMERGENCY_STOP, emergency_stop_signals, PROTON_SIGNALS__EMERGENCY_STOP_COUNT);
 }
 
-void PROTON_BUNDLE_init_temperature()
+void PROTON_BUNDLE_InitTemperature()
 {
   temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].signal.which_signal = proton_Signal_list_float_value_tag;
   temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].signal.signal.list_float_value.floats = &temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg;
@@ -178,7 +179,7 @@ void PROTON_BUNDLE_init_temperature()
   PROTON_InitBundle(&temperature_bundle, PROTON_BUNDLE_ID__TEMPERATURE, temperature_signals, PROTON_SIGNALS__TEMPERATURE_COUNT);
 }
 
-void PROTON_BUNDLE_init_stop_status()
+void PROTON_BUNDLE_InitStopStatus()
 {
   stop_status_signals[PROTON_SIGNALS__STOP_STATUS__NEEDS_RESET].signal.which_signal = proton_Signal_bool_value_tag;
   stop_status_signals[PROTON_SIGNALS__STOP_STATUS__NEEDS_RESET].arg.data = &stop_status_struct.needs_reset;
@@ -186,7 +187,7 @@ void PROTON_BUNDLE_init_stop_status()
   PROTON_InitBundle(&stop_status_bundle, PROTON_BUNDLE_ID__STOP_STATUS, stop_status_signals, PROTON_SIGNALS__STOP_STATUS_COUNT);
 }
 
-void PROTON_BUNDLE_init_pinout_state()
+void PROTON_BUNDLE_InitPinoutState()
 {
   pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].signal.which_signal = proton_Signal_list_bool_value_tag;
   pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].signal.signal.list_bool_value.bools = &pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg;
@@ -215,7 +216,7 @@ void PROTON_BUNDLE_init_pinout_state()
   PROTON_InitBundle(&pinout_state_bundle, PROTON_BUNDLE_ID__PINOUT_STATE, pinout_state_signals, PROTON_SIGNALS__PINOUT_STATE_COUNT);
 }
 
-void PROTON_BUNDLE_init_alerts()
+void PROTON_BUNDLE_InitAlerts()
 {
   alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].signal.which_signal = proton_Signal_string_value_tag;
   alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].signal.signal.string_value = &alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg;
@@ -226,7 +227,7 @@ void PROTON_BUNDLE_init_alerts()
   PROTON_InitBundle(&alerts_bundle, PROTON_BUNDLE_ID__ALERTS, alerts_signals, PROTON_SIGNALS__ALERTS_COUNT);
 }
 
-void PROTON_BUNDLE_init_cmd_fans()
+void PROTON_BUNDLE_InitCmdFans()
 {
   cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].signal.which_signal = proton_Signal_bytes_value_tag;
   cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].signal.signal.bytes_value = &cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg;
@@ -237,7 +238,7 @@ void PROTON_BUNDLE_init_cmd_fans()
   PROTON_InitBundle(&cmd_fans_bundle, PROTON_BUNDLE_ID__CMD_FANS, cmd_fans_signals, PROTON_SIGNALS__CMD_FANS_COUNT);
 }
 
-void PROTON_BUNDLE_init_display_status()
+void PROTON_BUNDLE_InitDisplayStatus()
 {
   display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].signal.which_signal = proton_Signal_string_value_tag;
   display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].signal.signal.string_value = &display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg;
@@ -254,7 +255,7 @@ void PROTON_BUNDLE_init_display_status()
   PROTON_InitBundle(&display_status_bundle, PROTON_BUNDLE_ID__DISPLAY_STATUS, display_status_signals, PROTON_SIGNALS__DISPLAY_STATUS_COUNT);
 }
 
-void PROTON_BUNDLE_init_cmd_lights()
+void PROTON_BUNDLE_InitCmdLights()
 {
   cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
   cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].signal.signal.bytes_value = &cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg;
@@ -283,7 +284,7 @@ void PROTON_BUNDLE_init_cmd_lights()
   PROTON_InitBundle(&cmd_lights_bundle, PROTON_BUNDLE_ID__CMD_LIGHTS, cmd_lights_signals, PROTON_SIGNALS__CMD_LIGHTS_COUNT);
 }
 
-void PROTON_BUNDLE_init_battery()
+void PROTON_BUNDLE_InitBattery()
 {
   battery_signals[PROTON_SIGNALS__BATTERY__PERCENTAGE].signal.which_signal = proton_Signal_float_value_tag;
   battery_signals[PROTON_SIGNALS__BATTERY__PERCENTAGE].arg.data = &battery_struct.percentage;
@@ -291,7 +292,7 @@ void PROTON_BUNDLE_init_battery()
   PROTON_InitBundle(&battery_bundle, PROTON_BUNDLE_ID__BATTERY, battery_signals, PROTON_SIGNALS__BATTERY_COUNT);
 }
 
-void PROTON_BUNDLE_init_pinout_command()
+void PROTON_BUNDLE_InitPinoutCommand()
 {
   pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].signal.which_signal = proton_Signal_list_bool_value_tag;
   pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].signal.signal.list_bool_value.bools = &pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg;
@@ -308,20 +309,92 @@ void PROTON_BUNDLE_init_pinout_command()
   PROTON_InitBundle(&pinout_command_bundle, PROTON_BUNDLE_ID__PINOUT_COMMAND, pinout_command_signals, PROTON_SIGNALS__PINOUT_COMMAND_COUNT);
 }
 
-void PROTON_MESSAGE_init()
+void PROTON_BUNDLE_Init()
 {
-  PROTON_BUNDLE_init_logger();
-  PROTON_BUNDLE_init_status();
-  PROTON_BUNDLE_init_power();
-  PROTON_BUNDLE_init_emergency_stop();
-  PROTON_BUNDLE_init_temperature();
-  PROTON_BUNDLE_init_stop_status();
-  PROTON_BUNDLE_init_pinout_state();
-  PROTON_BUNDLE_init_alerts();
-  PROTON_BUNDLE_init_cmd_fans();
-  PROTON_BUNDLE_init_display_status();
-  PROTON_BUNDLE_init_cmd_lights();
-  PROTON_BUNDLE_init_battery();
-  PROTON_BUNDLE_init_pinout_command();
+  PROTON_BUNDLE_InitLogger();
+  PROTON_BUNDLE_InitStatus();
+  PROTON_BUNDLE_InitPower();
+  PROTON_BUNDLE_InitEmergencyStop();
+  PROTON_BUNDLE_InitTemperature();
+  PROTON_BUNDLE_InitStopStatus();
+  PROTON_BUNDLE_InitPinoutState();
+  PROTON_BUNDLE_InitAlerts();
+  PROTON_BUNDLE_InitCmdFans();
+  PROTON_BUNDLE_InitDisplayStatus();
+  PROTON_BUNDLE_InitCmdLights();
+  PROTON_BUNDLE_InitBattery();
+  PROTON_BUNDLE_InitPinoutCommand();
+}
+
+// Bundle Decode Function
+
+bool PROTON_BUNDLE_Decode(const uint8_t * buffer, size_t length)
+{
+  proton_bundle_t * bundle;
+  uint32_t id;
+  proton_callback_t callback;
+
+  // Decode bundle ID
+  if (!PROTON_DecodeId(&id, buffer, length))
+  {
+    return false;
+  }
+
+  switch (id)
+  {
+    case PROTON_BUNDLE_ID__CMD_FANS:
+    {
+      bundle = &cmd_fans_bundle;
+      callback = PROTON_BUNDLE_CmdFansCallback;
+      break;
+    }
+
+    case PROTON_BUNDLE_ID__DISPLAY_STATUS:
+    {
+      bundle = &display_status_bundle;
+      callback = PROTON_BUNDLE_DisplayStatusCallback;
+      break;
+    }
+
+    case PROTON_BUNDLE_ID__CMD_LIGHTS:
+    {
+      bundle = &cmd_lights_bundle;
+      callback = PROTON_BUNDLE_CmdLightsCallback;
+      break;
+    }
+
+    case PROTON_BUNDLE_ID__BATTERY:
+    {
+      bundle = &battery_bundle;
+      callback = PROTON_BUNDLE_BatteryCallback;
+      break;
+    }
+
+    case PROTON_BUNDLE_ID__PINOUT_COMMAND:
+    {
+      bundle = &pinout_command_bundle;
+      callback = PROTON_BUNDLE_PinoutCommandCallback;
+      break;
+    }
+
+    default:
+    {
+      return false;
+    }
+  }
+
+  // Decode bundle
+  if (PROTON_Decode(bundle, buffer, length) != 0)
+  {
+    return false;
+  }
+
+  // Execute callback
+  if (callback)
+  {
+    callback();
+  }
+
+  return true;
 }
 

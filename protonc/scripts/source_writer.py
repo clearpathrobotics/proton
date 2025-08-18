@@ -125,24 +125,42 @@ class CWriter:
         parameters = ''
         for p in function.parameters:
             if len(parameters) == 0:
-                parameters += f'{p.type, p.name}'
+                parameters += f'{p.type} {p.name}'
             else:
-                parameters += f', {p.type, p.name}'
+                parameters += f', {p.type} {p.name}'
         self.write(f'{function.ret} {function.name}({parameters});', indent_level)
 
     def write_function_start(self, function: Function, indent_level=0):
         parameters = ''
         for p in function.parameters:
             if len(parameters) == 0:
-                parameters += f'{p.type, p.name}'
+                parameters += f'{p.type} {p.name}'
             else:
-                parameters += f', {p.type, p.name}'
+                parameters += f', {p.type} {p.name}'
         self.write(f'{function.ret} {function.name}({parameters})', indent_level)
         self.write('{', indent_level)
 
     def write_function_end(self, indent_level=0):
         self.write('}', indent_level)
         self.write_newline()
+
+    def write_switch_start(self, variable: str, indent_level=1):
+        self.write(f'switch ({variable})', indent_level)
+        self.write('{', indent_level)
+
+    def write_switch_end(self, indent_level=1):
+        self.write_function_end(indent_level)
+
+    def write_case_start(self, case: str, indent_level=2):
+        self.write(f'case {case}:', indent_level)
+        self.write('{', indent_level)
+
+    def write_case_default_start(self, indent_level=2):
+        self.write('default:', indent_level)
+        self.write('{', indent_level)
+
+    def write_case_end(self, indent_level=2):
+        self.write('}', indent_level)
 
     def write_enum(self, name: str, enum: List[str], indent_level=0):
         self.write(f'typedef enum {name} {{', indent_level)
@@ -156,6 +174,13 @@ class CWriter:
         self.write('{', indent_level)
 
     def write_for_loop_end(self, indent_level=0):
+        self.write('}', indent_level)
+
+    def write_if_statement_start(self, condition: str, indent_level=1):
+        self.write(f'if ({condition})', indent_level)
+        self.write('{', indent_level)
+
+    def write_if_statement_end(self, indent_level=1):
         self.write('}', indent_level)
 
     def write_define(self, content, indent_level=0):

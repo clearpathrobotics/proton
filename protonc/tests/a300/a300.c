@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
-#include "proton__a300.h"
+#include "proton__a300_mcu.h"
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
 
@@ -99,6 +99,36 @@ int send_bundle(proton_bundle_t * bundle)
   return e;
 }
 
+void PROTON_BUNDLE_CmdFansCallback()
+{
+  printf("Received CmdFans\r\n");
+  print_bundle(cmd_fans_bundle.bundle);
+}
+
+void PROTON_BUNDLE_DisplayStatusCallback()
+{
+  printf("Received DisplayStatus\r\n");
+  print_bundle(display_status_bundle.bundle);
+}
+
+void PROTON_BUNDLE_CmdLightsCallback()
+{
+  printf("Received CmdLights\r\n");
+  print_bundle(cmd_lights_bundle.bundle);
+}
+
+void PROTON_BUNDLE_BatteryCallback()
+{
+  printf("Received Battery %f\r\n", battery_struct.percentage);
+  print_bundle(battery_bundle.bundle);
+}
+
+void PROTON_BUNDLE_PinoutCommandCallback()
+{
+  printf("Received Pinout\r\n");
+  print_bundle(pinout_command_bundle.bundle);
+}
+
 int get_bundle()
 {
   proton_bundle_t * bundle;
@@ -106,68 +136,7 @@ int get_bundle()
 
   if (s > 0)
   {
-    uint32_t id;
-
-    if (PROTON_DecodeId(&id, read_buf_, s))
-    {
-      switch(id)
-      {
-        case PROTON_BUNDLE_ID__CMD_FANS:
-        {
-          bundle = &cmd_fans_bundle;
-          break;
-        }
-
-        case PROTON_BUNDLE_ID__DISPLAY_STATUS:
-        {
-          bundle = &display_status_bundle;
-          break;
-        }
-
-        case PROTON_BUNDLE_ID__CMD_LIGHTS:
-        {
-          bundle = &cmd_lights_bundle;
-          break;
-        }
-
-        case PROTON_BUNDLE_ID__BATTERY:
-        {
-          bundle = &battery_bundle;
-          break;
-        }
-
-        case PROTON_BUNDLE_ID__PINOUT_COMMAND:
-        {
-          bundle = &pinout_command_bundle;
-          break;
-        }
-
-        default:
-        {
-          printf("Received invalid bundle ID 0x%x\r\n", id);
-          bundle = NULL;
-          break;
-        }
-      }
-    }
-    else
-    {
-      return -1;
-    }
-
-    if (bundle)
-    {
-      int left = PROTON_Decode(bundle, read_buf_, s);
-      if (left == 0)
-      {
-        printf("Received bundle 0x%x length %d\r\n", id, s);
-        print_bundle(bundle->bundle);
-      }
-    }
-    else
-    {
-      return -1;
-    }
+    PROTON_BUNDLE_Decode(read_buf_, s);
   }
 
   return s;
@@ -271,7 +240,7 @@ int main()
     return -1;
   }
 
-  PROTON_MESSAGE_init();
+  PROTON_BUNDLE_Init();
 
   printf("INIT\r\n");
 
@@ -302,8 +271,9 @@ int main()
     // 50hz
     if (i % 20 == 0)
     {
-      LOG_INFO("Test %d", i);
+
     }
+    //LOG_INFO("Test %d", i);
 
     get_bundle();
     msleep(1);
