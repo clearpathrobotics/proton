@@ -12,7 +12,6 @@
 
 #include "proton__a300_mcu.h"
 
-
 // Bundle Structures
 
 PROTON_BUNDLE__logger_t logger_struct;
@@ -28,6 +27,9 @@ PROTON_BUNDLE__display_status_t display_status_struct;
 PROTON_BUNDLE__cmd_lights_t cmd_lights_struct;
 PROTON_BUNDLE__battery_t battery_struct;
 PROTON_BUNDLE__pinout_command_t pinout_command_struct;
+PROTON_BUNDLE__cmd_shutdown_trigger_t cmd_shutdown_trigger_struct;
+PROTON_BUNDLE__cmd_shutdown_response_t cmd_shutdown_response_struct;
+PROTON_BUNDLE__clear_needs_reset_trigger_t clear_needs_reset_trigger_struct;
 
 // Signals
 
@@ -44,6 +46,9 @@ proton_signal_t display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS_COUNT];
 proton_signal_t cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS_COUNT];
 proton_signal_t battery_signals[PROTON_SIGNALS__BATTERY_COUNT];
 proton_signal_t pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND_COUNT];
+proton_signal_t cmd_shutdown_trigger_signals[PROTON_SIGNALS__CMD_SHUTDOWN_TRIGGER_COUNT];
+proton_signal_t cmd_shutdown_response_signals[PROTON_SIGNALS__CMD_SHUTDOWN_RESPONSE_COUNT];
+proton_signal_t clear_needs_reset_trigger_signals[PROTON_SIGNALS__CLEAR_NEEDS_RESET_TRIGGER_COUNT];
 
 // Bundles
 
@@ -60,6 +65,9 @@ proton_bundle_t display_status_bundle;
 proton_bundle_t cmd_lights_bundle;
 proton_bundle_t battery_bundle;
 proton_bundle_t pinout_command_bundle;
+proton_bundle_t cmd_shutdown_trigger_bundle;
+proton_bundle_t cmd_shutdown_response_bundle;
+proton_bundle_t clear_needs_reset_trigger_bundle;
 
 // Bundle Init Prototype
 
@@ -76,6 +84,9 @@ void PROTON_BUNDLE_InitDisplayStatus();
 void PROTON_BUNDLE_InitCmdLights();
 void PROTON_BUNDLE_InitBattery();
 void PROTON_BUNDLE_InitPinoutCommand();
+void PROTON_BUNDLE_InitCmdShutdownTrigger();
+void PROTON_BUNDLE_InitCmdShutdownResponse();
+void PROTON_BUNDLE_InitClearNeedsResetTrigger();
 
 // Bundle Init Functions
 
@@ -309,6 +320,30 @@ void PROTON_BUNDLE_InitPinoutCommand()
   PROTON_InitBundle(&pinout_command_bundle, PROTON_BUNDLE_ID__PINOUT_COMMAND, pinout_command_signals, PROTON_SIGNALS__PINOUT_COMMAND_COUNT);
 }
 
+void PROTON_BUNDLE_InitCmdShutdownTrigger()
+{
+  cmd_shutdown_trigger_signals[PROTON_SIGNALS__CMD_SHUTDOWN_TRIGGER__SHUTDOWN_COMMAND].signal.which_signal = proton_Signal_uint32_value_tag;
+  cmd_shutdown_trigger_signals[PROTON_SIGNALS__CMD_SHUTDOWN_TRIGGER__SHUTDOWN_COMMAND].arg.data = &cmd_shutdown_trigger_struct.shutdown_command;
+
+  PROTON_InitBundle(&cmd_shutdown_trigger_bundle, PROTON_BUNDLE_ID__CMD_SHUTDOWN_TRIGGER, cmd_shutdown_trigger_signals, PROTON_SIGNALS__CMD_SHUTDOWN_TRIGGER_COUNT);
+}
+
+void PROTON_BUNDLE_InitCmdShutdownResponse()
+{
+  cmd_shutdown_response_signals[PROTON_SIGNALS__CMD_SHUTDOWN_RESPONSE__SHUTDOWN_COMMAND_RESPONSE].signal.which_signal = proton_Signal_uint32_value_tag;
+  cmd_shutdown_response_signals[PROTON_SIGNALS__CMD_SHUTDOWN_RESPONSE__SHUTDOWN_COMMAND_RESPONSE].arg.data = &cmd_shutdown_response_struct.shutdown_command_response;
+
+  PROTON_InitBundle(&cmd_shutdown_response_bundle, PROTON_BUNDLE_ID__CMD_SHUTDOWN_RESPONSE, cmd_shutdown_response_signals, PROTON_SIGNALS__CMD_SHUTDOWN_RESPONSE_COUNT);
+}
+
+void PROTON_BUNDLE_InitClearNeedsResetTrigger()
+{
+  clear_needs_reset_trigger_signals[PROTON_SIGNALS__CLEAR_NEEDS_RESET_TRIGGER__CLEAR_NEEDS_RESET].signal.which_signal = proton_Signal_bool_value_tag;
+  clear_needs_reset_trigger_signals[PROTON_SIGNALS__CLEAR_NEEDS_RESET_TRIGGER__CLEAR_NEEDS_RESET].arg.data = &clear_needs_reset_trigger_struct.clear_needs_reset;
+
+  PROTON_InitBundle(&clear_needs_reset_trigger_bundle, PROTON_BUNDLE_ID__CLEAR_NEEDS_RESET_TRIGGER, clear_needs_reset_trigger_signals, PROTON_SIGNALS__CLEAR_NEEDS_RESET_TRIGGER_COUNT);
+}
+
 void PROTON_BUNDLE_Init()
 {
   PROTON_BUNDLE_InitLogger();
@@ -324,6 +359,9 @@ void PROTON_BUNDLE_Init()
   PROTON_BUNDLE_InitCmdLights();
   PROTON_BUNDLE_InitBattery();
   PROTON_BUNDLE_InitPinoutCommand();
+  PROTON_BUNDLE_InitCmdShutdownTrigger();
+  PROTON_BUNDLE_InitCmdShutdownResponse();
+  PROTON_BUNDLE_InitClearNeedsResetTrigger();
 }
 
 // Bundle Decode Function
@@ -374,6 +412,20 @@ bool PROTON_BUNDLE_Decode(const uint8_t * buffer, size_t length)
     {
       bundle = &pinout_command_bundle;
       callback = PROTON_BUNDLE_PinoutCommandCallback;
+      break;
+    }
+
+    case PROTON_BUNDLE_ID__CMD_SHUTDOWN_TRIGGER:
+    {
+      bundle = &cmd_shutdown_trigger_bundle;
+      callback = PROTON_BUNDLE_CmdShutdownTriggerCallback;
+      break;
+    }
+
+    case PROTON_BUNDLE_ID__CLEAR_NEEDS_RESET_TRIGGER:
+    {
+      bundle = &clear_needs_reset_trigger_bundle;
+      callback = PROTON_BUNDLE_ClearNeedsResetTriggerCallback;
       break;
     }
 

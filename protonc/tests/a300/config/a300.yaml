@@ -109,3 +109,22 @@ bundles:
       schema:
         - {signal: rails, type: bool, length: 1}
         - {signal: outputs, type: uint32, length: 7}
+  trigger:
+    - name: cmd_shutdown_trigger
+      id: 0x300
+      producer: pc
+      consumer: mcu
+      schema:
+        - {signal: shutdown_command, type: uint32}
+    - name: cmd_shutdown_response
+      id: 0x300
+      producer: mcu
+      consumer: pc
+      schema:
+        - {signal: shutdown_command_response, type: uint32}
+    - name: clear_needs_reset_trigger
+      id: 0x301
+      producer: pc
+      consumer: mcu
+      schema:
+        - {signal: clear_needs_reset, type: bool}

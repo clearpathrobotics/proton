@@ -30,6 +30,7 @@ from clearpath_platform_msgs.msg import Status, Power, Temperature, StopStatus, 
 from sensor_msgs.msg import BatteryState
 from rcl_interfaces.msg import Log
 from std_msgs.msg import Header, Bool, String
+from std_srvs.srv import Empty
 from rclpy.qos import qos_profile_sensor_data
 
 UDP_IP = '127.0.0.1'
@@ -58,6 +59,10 @@ class ProtonProcess(Node):
     BATTERY_ID=0x203
     PINOUT_COMMAND_ID=0x204
 
+    CMD_SHUTDOWN_TRIGGER=0x300
+    CMD_SHUTDOWN_RESPONSE=0x300
+    CLEAR_NEEDS_RESET=0x301
+
     def __init__(self):
         super().__init__('proton_a300_node')
         self.status_pub = self.create_publisher(Status, 'proton/mcu/status', qos_profile_sensor_data)
@@ -74,6 +79,10 @@ class ProtonProcess(Node):
         self.cmd_fans_sub = self.create_subscription(Fans, 'platform/mcu/cmd_fans', self.fans_cb, qos_profile_sensor_data)
         self.cmd_lights_sub = self.create_subscription(Lights, 'platform/mcu/cmd_lights', self.lights_cb, qos_profile_sensor_data)
         self.cmd_pinout_sub = self.create_subscription(PinoutCommand, 'platform/mcu/cmd_pinout', self.pinout_cb, qos_profile_sensor_data)
+
+        self.cmd_shutdown_service = self.create_service(Empty, 'platform/mcu/cmd_shutdown', self.cmd_shutdown_cb)
+        self.clear_needs_reset_service = self.create_service(Empty, 'platform/mcu/clear_estop_needs_reset', self.clear_needs_reset_cb)
+
         self.read_thread = threading.Thread(target=self.sock_read, daemon=True)
         self.read_thread.start()
         self.send_thread = threading.Thread(target=self.send_bundles, daemon=True)
@@ -96,6 +105,30 @@ class ProtonProcess(Node):
 
     def pinout_cb(self, msg: PinoutCommand):
         self.send_pinout_command(msg.rails, msg.outputs)
+
+    def cmd_shutdown_cb(self, req: Empty.Request, res: Empty.Response):
+        self.shutting_down = False
+        self.send_cmd_shutdown_trigger()
+        while not self.shutting_down:
+            pass
+        print('SHUTDOWN CONFIRMED')
+        return res
+
+    def send_cmd_shutdown_trigger(self):
+        bundle = Bundle()
+        bundle.id = self.CMD_SHUTDOWN_TRIGGER
+        bundle.signals.extend([Signal(uint32_value=0xDEADBEEF)])
+        self.send(bundle)
+
+    def clear_needs_reset_cb(self, req: Empty.Request, res: Empty.Response):
+        self.send_clear_needs_reset()
+        return res
+
+    def send_clear_needs_reset(self):
+        bundle = Bundle()
+        bundle.id = self.CLEAR_NEEDS_RESET
+        bundle.signals.extend([Signal(bool_value=True)])
+        self.send(bundle)
 
     def send(self, bundle: Bundle):
         sock.sendto(bundle.SerializeToString(), (MCU_IP, PROTON_SEND_PORT))
@@ -184,7 +217,7 @@ class ProtonProcess(Node):
           bundle = Bundle()
           try:
             Bundle.ParseFromString(bundle, data)
-            print(f'Received bundle {hex(bundle.id)} length {bundle.ByteSize()}')
+            #print(f'Received bundle {hex(bundle.id)} length {bundle.ByteSize()}')
             match bundle.id:
                 case self.LOGGER_ID:
                     log = Log()
@@ -241,6 +274,9 @@ class ProtonProcess(Node):
                     alert_string = String()
                     alert_string.data = bundle.signals[0].string_value
                     self.alerts_pub.publish(alert_string)
+                case self.CMD_SHUTDOWN_RESPONSE:
+                    if bundle.signals[0].uint32_value == 0xDEADBEEF:
+                        self.shutting_down = True
 
           except DecodeError:
               print('Decode Error')

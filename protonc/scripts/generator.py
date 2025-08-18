@@ -192,7 +192,7 @@ class ProtonCGenerator:
         self.header_writer.write_newline()
         for b in self.config.bundles:
             self.header_writer.write_define(f"{b.bundle_id_define_name} {hex(b.id)}")
-        self.src_writer.write_newline()
+        self.header_writer.write_newline()
 
     def generate_signal_variables(self):
         self.src_writer.write_comment("Signals", indent_level=0)
@@ -484,6 +484,7 @@ if __name__ == "__main__":
     for node in generator.config.nodes:
         if node.name == target:
             exists = True
+            break
 
     if not exists:
         raise Exception(f'Invalid target "{target}"')

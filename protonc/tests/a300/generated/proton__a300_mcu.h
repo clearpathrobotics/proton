@@ -32,6 +32,10 @@
 #define PROTON_BUNDLE_ID__CMD_LIGHTS 0x202
 #define PROTON_BUNDLE_ID__BATTERY 0x203
 #define PROTON_BUNDLE_ID__PINOUT_COMMAND 0x204
+#define PROTON_BUNDLE_ID__CMD_SHUTDOWN_TRIGGER 0x300
+#define PROTON_BUNDLE_ID__CMD_SHUTDOWN_RESPONSE 0x300
+#define PROTON_BUNDLE_ID__CLEAR_NEEDS_RESET_TRIGGER 0x301
+
 // Signal Enums
 
 typedef enum PROTON_SIGNALS__logger {
@@ -117,6 +121,21 @@ typedef enum PROTON_SIGNALS__pinout_command {
   PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS,
   PROTON_SIGNALS__PINOUT_COMMAND_COUNT
 } PROTON_SIGNALS__pinout_command_e;
+
+typedef enum PROTON_SIGNALS__cmd_shutdown_trigger {
+  PROTON_SIGNALS__CMD_SHUTDOWN_TRIGGER__SHUTDOWN_COMMAND,
+  PROTON_SIGNALS__CMD_SHUTDOWN_TRIGGER_COUNT
+} PROTON_SIGNALS__cmd_shutdown_trigger_e;
+
+typedef enum PROTON_SIGNALS__cmd_shutdown_response {
+  PROTON_SIGNALS__CMD_SHUTDOWN_RESPONSE__SHUTDOWN_COMMAND_RESPONSE,
+  PROTON_SIGNALS__CMD_SHUTDOWN_RESPONSE_COUNT
+} PROTON_SIGNALS__cmd_shutdown_response_e;
+
+typedef enum PROTON_SIGNALS__clear_needs_reset_trigger {
+  PROTON_SIGNALS__CLEAR_NEEDS_RESET_TRIGGER__CLEAR_NEEDS_RESET,
+  PROTON_SIGNALS__CLEAR_NEEDS_RESET_TRIGGER_COUNT
+} PROTON_SIGNALS__clear_needs_reset_trigger_e;
 
 
 // Constant definitions
@@ -227,6 +246,18 @@ typedef struct PROTON_BUNDLE__pinout_command {
   uint32_t outputs[PINOUT_COMMAND__OUTPUTS__LENGTH];
 } PROTON_BUNDLE__pinout_command_t;
 
+typedef struct PROTON_BUNDLE__cmd_shutdown_trigger {
+  uint32_t shutdown_command;
+} PROTON_BUNDLE__cmd_shutdown_trigger_t;
+
+typedef struct PROTON_BUNDLE__cmd_shutdown_response {
+  uint32_t shutdown_command_response;
+} PROTON_BUNDLE__cmd_shutdown_response_t;
+
+typedef struct PROTON_BUNDLE__clear_needs_reset_trigger {
+  bool clear_needs_reset;
+} PROTON_BUNDLE__clear_needs_reset_trigger_t;
+
 // External Bundle Structures
 
 extern PROTON_BUNDLE__logger_t logger_struct;
@@ -242,6 +273,9 @@ extern PROTON_BUNDLE__display_status_t display_status_struct;
 extern PROTON_BUNDLE__cmd_lights_t cmd_lights_struct;
 extern PROTON_BUNDLE__battery_t battery_struct;
 extern PROTON_BUNDLE__pinout_command_t pinout_command_struct;
+extern PROTON_BUNDLE__cmd_shutdown_trigger_t cmd_shutdown_trigger_struct;
+extern PROTON_BUNDLE__cmd_shutdown_response_t cmd_shutdown_response_struct;
+extern PROTON_BUNDLE__clear_needs_reset_trigger_t clear_needs_reset_trigger_struct;
 
 // External Bundles
 
@@ -258,6 +292,9 @@ extern proton_bundle_t display_status_bundle;
 extern proton_bundle_t cmd_lights_bundle;
 extern proton_bundle_t battery_bundle;
 extern proton_bundle_t pinout_command_bundle;
+extern proton_bundle_t cmd_shutdown_trigger_bundle;
+extern proton_bundle_t cmd_shutdown_response_bundle;
+extern proton_bundle_t clear_needs_reset_trigger_bundle;
 
 // Bundle Init Prototype
 
@@ -274,5 +311,7 @@ void PROTON_BUNDLE_DisplayStatusCallback();
 void PROTON_BUNDLE_CmdLightsCallback();
 void PROTON_BUNDLE_BatteryCallback();
 void PROTON_BUNDLE_PinoutCommandCallback();
+void PROTON_BUNDLE_CmdShutdownTriggerCallback();
+void PROTON_BUNDLE_ClearNeedsResetTriggerCallback();
 
 #endif  // PROTONC__PROTON__A300_MCU_H

@@ -129,6 +129,19 @@ void PROTON_BUNDLE_PinoutCommandCallback()
   print_bundle(pinout_command_bundle.bundle);
 }
 
+void PROTON_BUNDLE_CmdShutdownTriggerCallback()
+{
+  printf("~~~SHUTTING DOWN~~~\r\n");
+  cmd_shutdown_response_struct.shutdown_command_response = cmd_shutdown_trigger_struct.shutdown_command;
+  send_bundle(&cmd_shutdown_response_bundle);
+}
+
+void PROTON_BUNDLE_ClearNeedsResetTriggerCallback()
+{
+  printf("~~~Needs reset cleared~~~\r\n");
+  stop_status_struct.needs_reset = false;
+}
+
 int get_bundle()
 {
   proton_bundle_t * bundle;
@@ -199,11 +212,6 @@ void update_emergency_stop()
 
 void update_stop_status()
 {
-  static bool needs_reset = true;
-
-  needs_reset = !needs_reset;
-  stop_status_struct.needs_reset = needs_reset;
-
   send_bundle(&stop_status_bundle);
 }
 
@@ -246,6 +254,7 @@ int main()
 
   strcpy(status_struct.firmware_version, "3.0.0");
   strcpy(status_struct.hardware_id, "A300");
+  stop_status_struct.needs_reset = true;
 
   uint32_t i = 0;
 
