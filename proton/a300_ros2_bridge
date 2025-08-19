@@ -31,12 +31,12 @@ from sensor_msgs.msg import BatteryState
 from rcl_interfaces.msg import Log
 from std_msgs.msg import Header, Bool, String
 from std_srvs.srv import Empty
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import qos_profile_sensor_data, QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
-UDP_IP = '127.0.0.1'
-MCU_IP = '127.0.0.1'
+UDP_IP = '192.168.131.1'
+MCU_IP = '192.168.131.2'
 PROTON_UDP_PORT = 11417
-PROTON_SEND_PORT = 11416
+PROTON_SEND_PORT = 11417
 
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
@@ -72,13 +72,18 @@ class ProtonProcess(Node):
         self.stop_pub = self.create_publisher(StopStatus, 'platform/mcu/status/stop', qos_profile_sensor_data)
         self.pinout_state_pub = self.create_publisher(PinoutState, 'platform/mcu/status/pinout', qos_profile_sensor_data)
         self.alerts_pub = self.create_publisher(String, 'platform/mcu/status/alerts', qos_profile_sensor_data)
-        self.rosout_pub = self.create_publisher(Log, '/rosout', qos_profile_sensor_data)
+        self.rosout_pub = self.create_publisher(Log, '/rosout', QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=100,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL
+        ))
 
         self.battery_sub = self.create_subscription(BatteryState, 'platform/bms/state', self.battery_cb, qos_profile_sensor_data)
         self.display_status_sub = self.create_subscription(DisplayStatus, 'platform/display/status', self.display_cb, qos_profile_sensor_data)
-        self.cmd_fans_sub = self.create_subscription(Fans, 'platform/mcu/cmd_fans', self.fans_cb, qos_profile_sensor_data)
-        self.cmd_lights_sub = self.create_subscription(Lights, 'platform/mcu/cmd_lights', self.lights_cb, qos_profile_sensor_data)
-        self.cmd_pinout_sub = self.create_subscription(PinoutCommand, 'platform/mcu/cmd_pinout', self.pinout_cb, qos_profile_sensor_data)
+        self.cmd_fans_sub = self.create_subscription(Fans, 'platform/mcu/_cmd_fans', self.fans_cb, qos_profile_sensor_data)
+        self.cmd_lights_sub = self.create_subscription(Lights, 'platform/mcu/_cmd_lights', self.lights_cb, qos_profile_sensor_data)
+        self.cmd_pinout_sub = self.create_subscription(PinoutCommand, 'platform/mcu/_cmd_pinout', self.pinout_cb, qos_profile_sensor_data)
 
         self.cmd_shutdown_service = self.create_service(Empty, 'platform/mcu/cmd_shutdown', self.cmd_shutdown_cb)
         self.clear_needs_reset_service = self.create_service(Empty, 'platform/mcu/clear_estop_needs_reset', self.clear_needs_reset_cb)
@@ -239,13 +244,16 @@ class ProtonProcess(Node):
                     log = Log()
                     log.stamp.sec = int(time.time())
                     log.stamp.nanosec = time.time_ns()
-                    log.level = bundle.signals[0].uint32_value
-                    log.name = bundle.signals[1].string_value
-                    log.msg = bundle.signals[2].string_value
-                    log.file = bundle.signals[3].string_value
-                    log.function = bundle.signals[4].string_value
-                    log.line = bundle.signals[5].uint32_value
-                    self.rosout_pub.publish(log)
+                    try:
+                        log.level = bundle.signals[0].uint32_value
+                        log.name = bundle.signals[1].string_value
+                        log.msg = bundle.signals[2].string_value
+                        log.file = bundle.signals[3].string_value
+                        log.function = bundle.signals[4].string_value
+                        log.line = bundle.signals[5].uint32_value
+                        self.rosout_pub.publish(log)
+                    except IndexError:
+                        print(bundle)
                 case self.POWER_ID:
                     power = Power()
                     power.header = self.get_header()
