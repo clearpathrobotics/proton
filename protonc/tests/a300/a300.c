@@ -26,22 +26,22 @@ void send_log(char* file, int line, uint8_t level, char* msg, ...);
 
 int msleep(long msec)
 {
-    struct timespec ts;
-    int res;
+  struct timespec ts;
+  int res;
 
-    if (msec < 0)
-    {
-        return -1;
-    }
+  if (msec < 0)
+  {
+      return -1;
+  }
 
-    ts.tv_sec = msec / 1000;
-    ts.tv_nsec = (msec % 1000) * 1000000;
+  ts.tv_sec = msec / 1000;
+  ts.tv_nsec = (msec % 1000) * 1000000;
 
-    do {
-        res = nanosleep(&ts, &ts);
-    } while (res);
+  do {
+      res = nanosleep(&ts, &ts);
+  } while (res);
 
-    return res;
+  return res;
 }
 
 int socket_init()
@@ -51,8 +51,8 @@ int socket_init()
 
   memset(&servaddr, 0, sizeof(servaddr));
   servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-  servaddr.sin_port = htons(11417);
+  servaddr.sin_addr.s_addr = htonl((in_addr_t)PROTON_NODE__PC__IP);
+  servaddr.sin_port = htons(PROTON_NODE__PC__PORT);
 
   if (connect(sock_send, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0)
   {
@@ -67,8 +67,8 @@ int socket_init()
 
   memset(&servaddr2, 0, sizeof(servaddr2));
   servaddr2.sin_family = AF_INET;
-  servaddr2.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-  servaddr2.sin_port = htons(11416);
+  servaddr2.sin_addr.s_addr = htonl((in_addr_t)PROTON_NODE__MCU__IP);
+  servaddr2.sin_port = htons(PROTON_NODE__MCU__PORT);
 
   // Put the socket in non-blocking mode:
   if(fcntl(sock_recv, F_SETFL, fcntl(sock_recv, F_GETFL) | O_NONBLOCK) < 0) {
@@ -129,14 +129,12 @@ void PROTON_BUNDLE_PinoutCommandCallback()
   print_bundle(pinout_command_bundle.bundle);
 }
 
-void PROTON_BUNDLE_CmdShutdownTriggerCallback()
+void PROTON_BUNDLE_CmdShutdownCallback()
 {
   printf("~~~SHUTTING DOWN~~~\r\n");
-  cmd_shutdown_response_struct.shutdown_command_response = cmd_shutdown_trigger_struct.shutdown_command;
-  send_bundle(&cmd_shutdown_response_bundle);
 }
 
-void PROTON_BUNDLE_ClearNeedsResetTriggerCallback()
+void PROTON_BUNDLE_ClearNeedsResetCallback()
 {
   printf("~~~Needs reset cleared~~~\r\n");
   stop_status_struct.needs_reset = false;
@@ -241,7 +239,7 @@ void update_pinout_state()
 
 int main()
 {
-  printf("~~~~~~~ Proton publisher ~~~~~~~\r\n");
+  printf("~~~~~~~ A300 node ~~~~~~~\r\n");
 
   if (socket_init() != 0)
   {
@@ -282,7 +280,6 @@ int main()
     {
 
     }
-    //LOG_INFO("Test %d", i);
 
     get_bundle();
     msleep(1);

@@ -132,14 +132,7 @@ class ProtonConfig:
         CALLBACK_PREFIX = "PROTON_BUNDLE_"
         CALLBACK_SUFFIX = "Callback"
 
-        # Bundle types
-        class MessageTypes(StrEnum):
-            PERIODIC = auto()
-            EVENT = auto()
-            TRIGGER = auto()
-
-        def __init__(self, bundle: dict, type: MessageTypes):
-            self.type = type
+        def __init__(self, bundle: dict):
             self.name = bundle[self.NAME]
             self.id = bundle[self.ID]
             self.producer = bundle[self.PRODUCER]
@@ -157,11 +150,14 @@ class ProtonConfig:
             self.callback_function_name = f'{self.CALLBACK_PREFIX}{self.name.title().replace('_', '')}{self.CALLBACK_SUFFIX}'
             self.bundle_id_define_name = f'{self.BUNDLE_ID_PREFIX}{self.name.upper()}'
 
-            for signal in bundle[self.SCHEMA]:
-                s = ProtonConfig.Signal(self.name, signal)
-                self.signals.append(s)
-                if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
-                    self.needs_init = True
+            try:
+                for signal in bundle[self.SCHEMA]:
+                    s = ProtonConfig.Signal(self.name, signal)
+                    self.signals.append(s)
+                    if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
+                        self.needs_init = True
+            except KeyError:
+                pass
 
     class Node:
         # Node keys
@@ -176,6 +172,10 @@ class ProtonConfig:
         UDP4 = "udp4"
         SERIAL = "serial"
 
+        NODE_PREFIX = "PROTON_NODE__"
+        IP_SUFFIX = "__IP"
+        PORT_SUFFIX = "__PORT"
+
         def __init__(self, node: dict):
             self.name = node[self.NAME]
             transport = node[self.TRANSPORT]
@@ -184,6 +184,8 @@ class ProtonConfig:
                 case self.UDP4:
                     self.ip = transport[self.IP]
                     self.port = transport[self.PORT]
+                    self.ip_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.IP_SUFFIX}'
+                    self.port_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.PORT_SUFFIX}'
                 case self.SERIAL:
                     self.device = transport[self.DEVICE]
 
@@ -212,11 +214,10 @@ class ProtonConfig:
         except KeyError:
             print("Bundles key missing")
             return
-        for t in bundles:
-            for bundle in bundles[t]:
-                self.bundles.append(
-                    ProtonConfig.Bundle(bundle, ProtonConfig.Bundle.MessageTypes(t))
-                )
+        for bundle in bundles:
+            self.bundles.append(
+                ProtonConfig.Bundle(bundle)
+            )
 
         # for m in self.bundles:
         #     print(

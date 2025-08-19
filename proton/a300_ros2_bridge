@@ -65,13 +65,13 @@ class ProtonProcess(Node):
 
     def __init__(self):
         super().__init__('proton_a300_node')
-        self.status_pub = self.create_publisher(Status, 'proton/mcu/status', qos_profile_sensor_data)
-        self.power_pub = self.create_publisher(Power, 'proton/mcu/status/power', qos_profile_sensor_data)
-        self.temperature_pub = self.create_publisher(Temperature, 'proton/mcu/status/temperature', qos_profile_sensor_data)
-        self.estop_pub = self.create_publisher(Bool, 'proton/emergency_stop', qos_profile_sensor_data)
-        self.stop_pub = self.create_publisher(StopStatus, 'proton/mcu/status/stop', qos_profile_sensor_data)
-        self.pinout_state_pub = self.create_publisher(PinoutState, 'proton/mcu/status/pinout', qos_profile_sensor_data)
-        self.alerts_pub = self.create_publisher(String, 'proton/mcu/status/alerts', qos_profile_sensor_data)
+        self.status_pub = self.create_publisher(Status, 'platform/mcu/status', qos_profile_sensor_data)
+        self.power_pub = self.create_publisher(Power, 'platform/mcu/status/power', qos_profile_sensor_data)
+        self.temperature_pub = self.create_publisher(Temperature, 'platform/mcu/status/temperature', qos_profile_sensor_data)
+        self.estop_pub = self.create_publisher(Bool, 'platform/emergency_stop', qos_profile_sensor_data)
+        self.stop_pub = self.create_publisher(StopStatus, 'platform/mcu/status/stop', qos_profile_sensor_data)
+        self.pinout_state_pub = self.create_publisher(PinoutState, 'platform/mcu/status/pinout', qos_profile_sensor_data)
+        self.alerts_pub = self.create_publisher(String, 'platform/mcu/status/alerts', qos_profile_sensor_data)
         self.rosout_pub = self.create_publisher(Log, '/rosout', qos_profile_sensor_data)
 
         self.battery_sub = self.create_subscription(BatteryState, 'platform/bms/state', self.battery_cb, qos_profile_sensor_data)
@@ -83,10 +83,24 @@ class ProtonProcess(Node):
         self.cmd_shutdown_service = self.create_service(Empty, 'platform/mcu/cmd_shutdown', self.cmd_shutdown_cb)
         self.clear_needs_reset_service = self.create_service(Empty, 'platform/mcu/clear_estop_needs_reset', self.clear_needs_reset_cb)
 
+        self.rx = 0
+        self.tx = 0
+
+        self.diag_thread = threading.Thread(target=self.update_diag, daemon=True)
+        self.diag_thread.start()
         self.read_thread = threading.Thread(target=self.sock_read, daemon=True)
         self.read_thread.start()
         self.send_thread = threading.Thread(target=self.send_bundles, daemon=True)
         #self.send_thread.start()
+
+    def update_diag(self):
+        self.last_update = time.time()
+        while(1):
+            if time.time() - self.last_update >= 1:
+                print(f'Rx: {self.rx / 1000} KB/s Tx: {self.tx / 1000} KB/s')
+                self.rx = 0
+                self.tx = 0
+                self.last_update = time.time()
 
     def battery_cb(self, msg: BatteryState):
         self.send_battery(msg.percentage)
@@ -132,6 +146,7 @@ class ProtonProcess(Node):
 
     def send(self, bundle: Bundle):
         sock.sendto(bundle.SerializeToString(), (MCU_IP, PROTON_SEND_PORT))
+        self.tx += bundle.ByteSize()
 
     def send_battery(self, percent: float):
         bundle = Bundle()
@@ -217,6 +232,7 @@ class ProtonProcess(Node):
           bundle = Bundle()
           try:
             Bundle.ParseFromString(bundle, data)
+            self.rx += bundle.ByteSize()
             #print(f'Received bundle {hex(bundle.id)} length {bundle.ByteSize()}')
             match bundle.id:
                 case self.LOGGER_ID:
@@ -277,7 +293,6 @@ class ProtonProcess(Node):
                 case self.CMD_SHUTDOWN_RESPONSE:
                     if bundle.signals[0].uint32_value == 0xDEADBEEF:
                         self.shutting_down = True
-
           except DecodeError:
               print('Decode Error')
 

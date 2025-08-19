@@ -274,7 +274,7 @@ class ProtonCGenerator:
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.struct_variable_name}.{s.signal};"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity_define};"
                         )
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
@@ -296,7 +296,7 @@ class ProtonCGenerator:
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.struct_variable_name}.{s.signal};"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length_define};"
                         )
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
@@ -310,7 +310,7 @@ class ProtonCGenerator:
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.struct_variable_name}.{s.signal}.list;"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length_define};"
                         )
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
@@ -343,6 +343,7 @@ class ProtonCGenerator:
         self.header_writer.write_newline()
 
     def generate_decode_function(self):
+        # Name, parameters, and return type of the decode function
         decode_function = Function(
             "PROTON_BUNDLE_Decode",
             [
@@ -351,28 +352,37 @@ class ProtonCGenerator:
             ],
             "bool",
         )
+
+        # Generate prototype in header file for users to use
         self.header_writer.write_comment("Bundle Decode Prototype", indent_level=0)
         self.header_writer.write_newline()
         self.header_writer.write_function_prototype(decode_function)
         self.header_writer.write_newline()
 
+        # Generate function source
         self.src_writer.write_comment("Bundle Decode Function", indent_level=0)
         self.src_writer.write_newline()
         self.src_writer.write_function_start(decode_function)
 
+        # Initialise variables
         self.src_writer.write("proton_bundle_t * bundle;")
         self.src_writer.write("uint32_t id;")
         self.src_writer.write("proton_callback_t callback;")
         self.src_writer.write_newline()
+
+        # Attempt to decode bundle ID
         self.src_writer.write_comment('Decode bundle ID')
         self.src_writer.write_if_statement_start("!PROTON_DecodeId(&id, buffer, length)")
         self.src_writer.write('return false;', indent_level=2)
         self.src_writer.write_if_statement_end()
         self.src_writer.write_newline()
+
+        # Check which bundle we received
         self.src_writer.write_switch_start("id")
 
         for b in self.config.bundles:
             if b.consumer == self.target:
+                # Assign bundle and callback to appropriate values for this case
                 self.src_writer.write_case_start(b.bundle_id_define_name)
                 self.src_writer.write(f"bundle = &{b.bundle_variable_name};", indent_level=3)
                 self.src_writer.write(f"callback = {b.callback_function_name};", indent_level=3)
@@ -380,18 +390,20 @@ class ProtonCGenerator:
                 self.src_writer.write_case_end()
                 self.src_writer.write_newline()
 
+        # Default case is invalid, return false
         self.src_writer.write_case_default_start()
         self.src_writer.write("return false;", indent_level=3)
         self.src_writer.write_case_end()
         self.src_writer.write_switch_end()
 
+        # Decode the bundle
         self.src_writer.write_comment('Decode bundle')
-
         self.src_writer.write_if_statement_start('PROTON_Decode(bundle, buffer, length) != 0')
         self.src_writer.write('return false;', indent_level=2)
         self.src_writer.write_if_statement_end()
         self.src_writer.write_newline()
 
+        # Execute the callback for this bundle
         self.src_writer.write_comment('Execute callback')
         self.src_writer.write_if_statement_start('callback')
         self.src_writer.write('callback();', indent_level=2)
@@ -400,6 +412,19 @@ class ProtonCGenerator:
 
         self.src_writer.write('return true;')
         self.src_writer.write_function_end()
+
+    def generate_node_info(self):
+        self.header_writer.write_comment('Node Info', indent_level=0)
+        self.header_writer.write_newline()
+        for node in self.config.nodes:
+            if node.type == ProtonConfig.Node.UDP4:
+                ip_hex = 0
+                ip_split = node.ip.split('.')
+                for i in range(0, 4):
+                    ip_hex |= int(ip_split[i]) << 8 * (3-i)
+                self.header_writer.write_define(f'{node.ip_define} {hex(ip_hex)}')
+                self.header_writer.write_define(f'{node.port_define} {node.port}')
+        self.header_writer.write_newline()
 
     def generate(self, name: str, target: str):
         self.target = target
@@ -424,6 +449,7 @@ class ProtonCGenerator:
         self.src_writer.write_include(generated_filename)
         self.src_writer.write_newline()
 
+        self.generate_node_info()
         self.generate_bundle_ids()
         self.generate_signal_enums()
         self.generate_defines()

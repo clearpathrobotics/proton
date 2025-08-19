@@ -102,9 +102,7 @@ add_custom_target(generate_proto_py ALL DEPENDS ${GENERATED_PY_FILES})
 add_custom_target(generate_proto_pyi ALL DEPENDS ${GENERATED_PYI_FILES})
 
 install(
-    PROGRAMS ${PROJECT_NAME}/send_pulse
-             ${PROJECT_NAME}/trigger
-             ${PROJECT_NAME}/proton
+    PROGRAMS ${PROJECT_NAME}/a300_ros2_bridge
     DESTINATION lib/${PROJECT_NAME}
   )
 
