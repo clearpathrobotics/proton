@@ -183,6 +183,10 @@ class ProtonConfig:
         TRANSPORT_READ = "Read"
         TRANSPORT_Write = "Write"
 
+        MUTEX_PREFIX = "PROTON_MUTEX__"
+        MUTEX_LOCK = "Lock"
+        MUTEX_UNLOCK = "Unlock"
+
         def __init__(self, node: dict):
             self.name = node[self.NAME]
             transport = node[self.TRANSPORT]
@@ -193,6 +197,9 @@ class ProtonConfig:
             self.transport_disconnect_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_DISCONNECT}'
             self.transport_read_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_READ}'
             self.transport_write_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_Write}'
+            self.mutex_lock_func = f'{self.MUTEX_PREFIX}{self.name.title()}{self.MUTEX_LOCK}'
+            self.mutex_unlock_func = f'{self.MUTEX_PREFIX}{self.name.title()}{self.MUTEX_UNLOCK}'
+
             match self.type:
                 case self.UDP4:
                     self.ip = transport[self.IP]

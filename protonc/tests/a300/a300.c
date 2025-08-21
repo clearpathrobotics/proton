@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <pthread.h>
 
 #include "proton__a300_mcu.h"
 
@@ -254,9 +255,34 @@ size_t PROTON_TRANSPORT__McuWrite(const uint8_t *buf, size_t len)
   return ret;
 }
 
+pthread_mutex_t lock;
+pthread_t thread;
+
+bool PROTON_MUTEX__McuLock()
+{
+  return pthread_mutex_lock(&lock) == 0;
+}
+
+bool PROTON_MUTEX__McuUnlock()
+{
+  return pthread_mutex_unlock(&lock) == 0;
+}
+
+void* spam_log(void * arg)
+{
+  uint32_t i = 0;
+  while(1)
+  {
+    LOG_INFO("Test %ld", i++);
+    msleep(10);
+  }
+}
+
 int main()
 {
   printf("~~~~~~~ A300 node ~~~~~~~\r\n");
+
+  pthread_mutex_init(&lock, NULL);
 
   PROTON_Init();
 
@@ -267,6 +293,8 @@ int main()
   stop_status_bundle.needs_reset = true;
 
   uint32_t i = 0;
+
+  pthread_create(&thread, NULL, &spam_log, NULL);
 
   while (1)
   {

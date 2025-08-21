@@ -498,19 +498,21 @@ bool PROTON_BUNDLE_Send(PROTON_BUNDLE_e bundle)
   }
 
   // Encode bundle
-  int bytes_written = PROTON_Encode(bundle_, mcu_node.write_buf.data, mcu_node.write_buf.len);
-  if (bytes_written <= 0)
+  bool ret = false;
+
+  if (PROTON_MUTEX__McuLock())
   {
-    return false;
+    int bytes_written = PROTON_Encode(bundle_, mcu_node.write_buf.data, mcu_node.write_buf.len);
+    if (bytes_written > 0 && mcu_node.connected && mcu_node.transport.write)
+    {
+      // Send bundle
+      ret = mcu_node.transport.write(mcu_node.write_buf.data, bytes_written) > 0;
+    }
+
+    PROTON_MUTEX__McuUnlock();
   }
 
-  // Send bundle
-  if (mcu_node.connected && mcu_node.transport.write)
-  {
-    return mcu_node.transport.write(mcu_node.write_buf.data, bytes_written) > 0;
-  }
-
-  return false;
+  return ret;
 }
 
 // Proton Init

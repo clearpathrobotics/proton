@@ -518,27 +518,36 @@ class ProtonCGenerator:
 
         # Decode the bundle
         self.src_writer.write_comment("Encode bundle")
-        self.src_writer.write(
-            f"int bytes_written = PROTON_Encode(bundle_, {self.config.target_node.node_variable_name}.write_buf.data, {self.config.target_node.node_variable_name}.write_buf.len);"
-        )
-        self.src_writer.write_if_statement_start("bytes_written <= 0")
-        self.src_writer.write("return false;", indent_level=2)
-        self.src_writer.write_if_statement_end()
+        self.src_writer.write("bool ret = false;")
         self.src_writer.write_newline()
 
-        # Execute the callback for this bundle
-        self.src_writer.write_comment("Send bundle")
         self.src_writer.write_if_statement_start(
-            f"{self.config.target_node.node_variable_name}.connected && {self.config.target_node.node_variable_name}.transport.write"
+            f"{self.config.target_node.mutex_lock_func}()"
         )
         self.src_writer.write(
-            f"return {self.config.target_node.node_variable_name}.transport.write({self.config.target_node.node_variable_name}.write_buf.data, bytes_written) > 0;",
+            f"int bytes_written = PROTON_Encode(bundle_, {self.config.target_node.node_variable_name}.write_buf.data, {self.config.target_node.node_variable_name}.write_buf.len);",
             indent_level=2,
         )
-        self.src_writer.write_if_statement_end()
+        self.src_writer.write_if_statement_start(
+            f"bytes_written > 0 && {self.config.target_node.node_variable_name}.connected && {self.config.target_node.node_variable_name}.transport.write",
+            indent_level=2,
+        )
+        self.src_writer.write_comment("Send bundle", indent_level=3)
+        self.src_writer.write(
+            f"ret = {self.config.target_node.node_variable_name}.transport.write({self.config.target_node.node_variable_name}.write_buf.data, bytes_written) > 0;",
+            indent_level=3,
+        )
+        self.src_writer.write_if_statement_end(indent_level=2)
+
+        self.src_writer.write_newline()
+        self.src_writer.write(
+            f"{self.config.target_node.mutex_unlock_func}();", indent_level=2
+        )
+
+        self.src_writer.write_if_statement_end(indent_level=1)
         self.src_writer.write_newline()
 
-        self.src_writer.write("return false;")
+        self.src_writer.write("return ret;")
         self.src_writer.write_function_end()
 
     def generate_node_info(self):
@@ -595,6 +604,18 @@ class ProtonCGenerator:
 
         self.src_writer.write_function_end()
 
+    def generate_mutex_prototypes(self):
+        self.header_writer.write_comment("Mutex prototypes", indent_level=0)
+        self.header_writer.write_newline()
+
+        self.header_writer.write_function_prototype(
+            Function(self.config.target_node.mutex_lock_func, [], "bool")
+        )
+        self.header_writer.write_function_prototype(
+            Function(self.config.target_node.mutex_unlock_func, [], "bool")
+        )
+        self.header_writer.write_newline()
+
     def generate(self, name: str, target: str):
         self.target = target
         self.config.set_target(target)
@@ -636,6 +657,7 @@ class ProtonCGenerator:
         self.generate_send_function()
         self.generate_consumer_callbacks()
         self.generate_transport_prototypes()
+        self.generate_mutex_prototypes()
 
         self.generate_init_prototype()
         self.generate_init_function()

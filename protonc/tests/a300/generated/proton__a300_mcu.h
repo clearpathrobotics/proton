@@ -311,6 +311,11 @@ bool PROTON_TRANSPORT__McuDisconnect();
 size_t PROTON_TRANSPORT__McuRead(uint8_t * buf, size_t len);
 size_t PROTON_TRANSPORT__McuWrite(const uint8_t * buf, size_t len);
 
+// Mutex prototypes
+
+bool PROTON_MUTEX__McuLock();
+bool PROTON_MUTEX__McuUnlock();
+
 // Proton Init Prototype
 
 void PROTON_Init();
