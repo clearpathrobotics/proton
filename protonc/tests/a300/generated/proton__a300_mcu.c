@@ -515,6 +515,18 @@ bool PROTON_BUNDLE_Send(PROTON_BUNDLE_e bundle)
   return ret;
 }
 
+// Weak Mutex functions
+
+__attribute__((weak)) bool PROTON_MUTEX__McuLock()
+{
+  return true;
+}
+
+__attribute__((weak)) bool PROTON_MUTEX__McuUnlock()
+{
+  return true;
+}
+
 // Proton Init
 
 void PROTON_Init()

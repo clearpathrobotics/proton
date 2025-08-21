@@ -273,8 +273,8 @@ class ProtonProcess(Node):
                 case self.STATUS_ID:
                     status = Status()
                     status.header = self.get_header()
-                    status.firmware_version = bundle.signals[0].string_value
-                    status.hardware_id = bundle.signals[1].string_value
+                    status.hardware_id = bundle.signals[0].string_value
+                    status.firmware_version = bundle.signals[1].string_value
                     status.mcu_uptime.sec = bundle.signals[2].uint32_value
                     status.mcu_uptime.nanosec = bundle.signals[3].uint32_value
                     status.connection_uptime.sec = bundle.signals[4].uint32_value

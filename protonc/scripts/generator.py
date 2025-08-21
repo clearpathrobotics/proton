@@ -616,6 +616,21 @@ class ProtonCGenerator:
         )
         self.header_writer.write_newline()
 
+        self.src_writer.write_comment("Weak Mutex functions", indent_level=0)
+        self.src_writer.write_newline()
+
+        self.src_writer.write_function_start(
+            Function(self.config.target_node.mutex_lock_func, [], "__attribute__((weak)) bool")
+        )
+        self.src_writer.write('return true;')
+        self.src_writer.write_function_end()
+
+        self.src_writer.write_function_start(
+            Function(self.config.target_node.mutex_unlock_func, [], "__attribute__((weak)) bool")
+        )
+        self.src_writer.write('return true;')
+        self.src_writer.write_function_end()
+
     def generate(self, name: str, target: str):
         self.target = target
         self.config.set_target(target)
