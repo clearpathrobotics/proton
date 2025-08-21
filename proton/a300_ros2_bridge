@@ -288,7 +288,7 @@ class ProtonProcess(Node):
                     stop = StopStatus()
                     stop.header = self.get_header()
                     stop.external_stop_present = False
-                    stop.stop_power_status = False
+                    stop.stop_power_status = True
                     stop.needs_reset = bundle.signals[0].bool_value
                     self.stop_pub.publish(stop)
                 case self.PINOUT_STATE_ID:
