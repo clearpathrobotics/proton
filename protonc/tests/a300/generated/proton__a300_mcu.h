@@ -19,28 +19,32 @@
 
 // Node Info
 
+#define PROTON_NODE__PC__NAME "pc"
 #define PROTON_NODE__PC__IP 0x7f000001
 #define PROTON_NODE__PC__PORT 11417
+#define PROTON_NODE__MCU__NAME "mcu"
 #define PROTON_NODE__MCU__IP 0x7f000001
 #define PROTON_NODE__MCU__PORT 11416
 
 // Bundle IDs
 
-#define PROTON_BUNDLE_ID__LOGGER 0x100
-#define PROTON_BUNDLE_ID__STATUS 0x101
-#define PROTON_BUNDLE_ID__POWER 0x102
-#define PROTON_BUNDLE_ID__EMERGENCY_STOP 0x103
-#define PROTON_BUNDLE_ID__TEMPERATURE 0x104
-#define PROTON_BUNDLE_ID__STOP_STATUS 0x105
-#define PROTON_BUNDLE_ID__PINOUT_STATE 0x106
-#define PROTON_BUNDLE_ID__ALERTS 0x107
-#define PROTON_BUNDLE_ID__CMD_FANS 0x200
-#define PROTON_BUNDLE_ID__DISPLAY_STATUS 0x201
-#define PROTON_BUNDLE_ID__CMD_LIGHTS 0x202
-#define PROTON_BUNDLE_ID__BATTERY 0x203
-#define PROTON_BUNDLE_ID__PINOUT_COMMAND 0x204
-#define PROTON_BUNDLE_ID__CMD_SHUTDOWN 0x300
-#define PROTON_BUNDLE_ID__CLEAR_NEEDS_RESET 0x301
+typedef enum PROTON_BUNDLE {
+  PROTON_BUNDLE__LOGGER = 0x100,
+  PROTON_BUNDLE__STATUS = 0x101,
+  PROTON_BUNDLE__POWER = 0x102,
+  PROTON_BUNDLE__EMERGENCY_STOP = 0x103,
+  PROTON_BUNDLE__TEMPERATURE = 0x104,
+  PROTON_BUNDLE__STOP_STATUS = 0x105,
+  PROTON_BUNDLE__PINOUT_STATE = 0x106,
+  PROTON_BUNDLE__ALERTS = 0x107,
+  PROTON_BUNDLE__CMD_FANS = 0x200,
+  PROTON_BUNDLE__DISPLAY_STATUS = 0x201,
+  PROTON_BUNDLE__CMD_LIGHTS = 0x202,
+  PROTON_BUNDLE__BATTERY = 0x203,
+  PROTON_BUNDLE__PINOUT_COMMAND = 0x204,
+  PROTON_BUNDLE__CMD_SHUTDOWN = 0x300,
+  PROTON_BUNDLE__CLEAR_NEEDS_RESET = 0x301,
+} PROTON_BUNDLE_e;
 
 // Signal Enums
 
@@ -139,53 +143,53 @@ typedef enum PROTON_SIGNALS__clear_needs_reset {
 
 // Constant definitions
 
-#define LOGGER__NAME__CAPACITY 64
-#define LOGGER__MSG__CAPACITY 64
-#define LOGGER__FILE__CAPACITY 64
-#define LOGGER__FUNCTION__CAPACITY 64
+#define PROTON_SIGNALS__LOGGER__NAME__CAPACITY 64
+#define PROTON_SIGNALS__LOGGER__MSG__CAPACITY 64
+#define PROTON_SIGNALS__LOGGER__FILE__CAPACITY 64
+#define PROTON_SIGNALS__LOGGER__FUNCTION__CAPACITY 64
 
-#define STATUS__HARDWARE_ID__CAPACITY 10
-#define STATUS__FIRMWARE_VERSION__CAPACITY 10
+#define PROTON_SIGNALS__STATUS__HARDWARE_ID__CAPACITY 10
+#define PROTON_SIGNALS__STATUS__FIRMWARE_VERSION__CAPACITY 10
 
-#define POWER__MEASURED_VOLTAGES__LENGTH 13
-#define POWER__MEASURED_CURRENTS__LENGTH 13
+#define PROTON_SIGNALS__POWER__MEASURED_VOLTAGES__LENGTH 13
+#define PROTON_SIGNALS__POWER__MEASURED_CURRENTS__LENGTH 13
 
-#define TEMPERATURE__TEMPERATURES__LENGTH 18
+#define PROTON_SIGNALS__TEMPERATURE__TEMPERATURES__LENGTH 18
 
-#define PINOUT_STATE__RAILS__LENGTH 1
-#define PINOUT_STATE__INPUTS__LENGTH 7
-#define PINOUT_STATE__OUTPUTS__LENGTH 7
-#define PINOUT_STATE__OUTPUT_PERIODS__LENGTH 7
+#define PROTON_SIGNALS__PINOUT_STATE__RAILS__LENGTH 1
+#define PROTON_SIGNALS__PINOUT_STATE__INPUTS__LENGTH 7
+#define PROTON_SIGNALS__PINOUT_STATE__OUTPUTS__LENGTH 7
+#define PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS__LENGTH 7
 
-#define ALERTS__ALERT_STRING__CAPACITY 86
+#define PROTON_SIGNALS__ALERTS__ALERT_STRING__CAPACITY 86
 
-#define CMD_FANS__FAN_SPEEDS__CAPACITY 8
+#define PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY 8
 
-#define DISPLAY_STATUS__STRING_1__CAPACITY 50
-#define DISPLAY_STATUS__STRING_2__CAPACITY 50
+#define PROTON_SIGNALS__DISPLAY_STATUS__STRING_1__CAPACITY 50
+#define PROTON_SIGNALS__DISPLAY_STATUS__STRING_2__CAPACITY 50
 
-#define CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY 3
-#define CMD_LIGHTS__FRONT_RIGHT_LIGHT__CAPACITY 3
-#define CMD_LIGHTS__REAR_LEFT_LIGHT__CAPACITY 3
-#define CMD_LIGHTS__REAR_RIGHT_LIGHT__CAPACITY 3
+#define PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY 3
+#define PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT__CAPACITY 3
+#define PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT__CAPACITY 3
+#define PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT__CAPACITY 3
 
-#define PINOUT_COMMAND__RAILS__LENGTH 1
-#define PINOUT_COMMAND__OUTPUTS__LENGTH 7
+#define PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH 1
+#define PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS__LENGTH 7
 
 // Bundle Structure Definitions
 
 typedef struct PROTON_BUNDLE__logger {
   uint32_t level;
-  char name[LOGGER__NAME__CAPACITY];
-  char msg[LOGGER__MSG__CAPACITY];
-  char file[LOGGER__FILE__CAPACITY];
-  char function[LOGGER__FUNCTION__CAPACITY];
+  char name[PROTON_SIGNALS__LOGGER__NAME__CAPACITY];
+  char msg[PROTON_SIGNALS__LOGGER__MSG__CAPACITY];
+  char file[PROTON_SIGNALS__LOGGER__FILE__CAPACITY];
+  char function[PROTON_SIGNALS__LOGGER__FUNCTION__CAPACITY];
   uint32_t line;
 } PROTON_BUNDLE__logger_t;
 
 typedef struct PROTON_BUNDLE__status {
-  char hardware_id[STATUS__HARDWARE_ID__CAPACITY];
-  char firmware_version[STATUS__FIRMWARE_VERSION__CAPACITY];
+  char hardware_id[PROTON_SIGNALS__STATUS__HARDWARE_ID__CAPACITY];
+  char firmware_version[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION__CAPACITY];
   uint32_t mcu_uptime_s;
   uint32_t mcu_uptime_ns;
   uint32_t connection_uptime_s;
@@ -193,8 +197,8 @@ typedef struct PROTON_BUNDLE__status {
 } PROTON_BUNDLE__status_t;
 
 typedef struct PROTON_BUNDLE__power {
-  float measured_voltages[POWER__MEASURED_VOLTAGES__LENGTH];
-  float measured_currents[POWER__MEASURED_CURRENTS__LENGTH];
+  float measured_voltages[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES__LENGTH];
+  float measured_currents[PROTON_SIGNALS__POWER__MEASURED_CURRENTS__LENGTH];
 } PROTON_BUNDLE__power_t;
 
 typedef struct PROTON_BUNDLE__emergency_stop {
@@ -202,7 +206,7 @@ typedef struct PROTON_BUNDLE__emergency_stop {
 } PROTON_BUNDLE__emergency_stop_t;
 
 typedef struct PROTON_BUNDLE__temperature {
-  float temperatures[TEMPERATURE__TEMPERATURES__LENGTH];
+  float temperatures[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES__LENGTH];
 } PROTON_BUNDLE__temperature_t;
 
 typedef struct PROTON_BUNDLE__stop_status {
@@ -210,30 +214,30 @@ typedef struct PROTON_BUNDLE__stop_status {
 } PROTON_BUNDLE__stop_status_t;
 
 typedef struct PROTON_BUNDLE__pinout_state {
-  bool rails[PINOUT_STATE__RAILS__LENGTH];
-  bool inputs[PINOUT_STATE__INPUTS__LENGTH];
-  bool outputs[PINOUT_STATE__OUTPUTS__LENGTH];
-  uint32_t output_periods[PINOUT_STATE__OUTPUT_PERIODS__LENGTH];
+  bool rails[PROTON_SIGNALS__PINOUT_STATE__RAILS__LENGTH];
+  bool inputs[PROTON_SIGNALS__PINOUT_STATE__INPUTS__LENGTH];
+  bool outputs[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS__LENGTH];
+  uint32_t output_periods[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS__LENGTH];
 } PROTON_BUNDLE__pinout_state_t;
 
 typedef struct PROTON_BUNDLE__alerts {
-  char alert_string[ALERTS__ALERT_STRING__CAPACITY];
+  char alert_string[PROTON_SIGNALS__ALERTS__ALERT_STRING__CAPACITY];
 } PROTON_BUNDLE__alerts_t;
 
 typedef struct PROTON_BUNDLE__cmd_fans {
-  uint8_t fan_speeds[CMD_FANS__FAN_SPEEDS__CAPACITY];
+  uint8_t fan_speeds[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY];
 } PROTON_BUNDLE__cmd_fans_t;
 
 typedef struct PROTON_BUNDLE__display_status {
-  char string_1[DISPLAY_STATUS__STRING_1__CAPACITY];
-  char string_2[DISPLAY_STATUS__STRING_2__CAPACITY];
+  char string_1[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1__CAPACITY];
+  char string_2[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2__CAPACITY];
 } PROTON_BUNDLE__display_status_t;
 
 typedef struct PROTON_BUNDLE__cmd_lights {
-  uint8_t front_left_light[CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY];
-  uint8_t front_right_light[CMD_LIGHTS__FRONT_RIGHT_LIGHT__CAPACITY];
-  uint8_t rear_left_light[CMD_LIGHTS__REAR_LEFT_LIGHT__CAPACITY];
-  uint8_t rear_right_light[CMD_LIGHTS__REAR_RIGHT_LIGHT__CAPACITY];
+  uint8_t front_left_light[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY];
+  uint8_t front_right_light[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT__CAPACITY];
+  uint8_t rear_left_light[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT__CAPACITY];
+  uint8_t rear_right_light[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT__CAPACITY];
 } PROTON_BUNDLE__cmd_lights_t;
 
 typedef struct PROTON_BUNDLE__battery {
@@ -241,8 +245,8 @@ typedef struct PROTON_BUNDLE__battery {
 } PROTON_BUNDLE__battery_t;
 
 typedef struct PROTON_BUNDLE__pinout_command {
-  bool rails[PINOUT_COMMAND__RAILS__LENGTH];
-  uint32_t outputs[PINOUT_COMMAND__OUTPUTS__LENGTH];
+  bool rails[PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH];
+  uint32_t outputs[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS__LENGTH];
 } PROTON_BUNDLE__pinout_command_t;
 
 typedef struct PROTON_BUNDLE__cmd_shutdown {
@@ -251,49 +255,39 @@ typedef struct PROTON_BUNDLE__cmd_shutdown {
 typedef struct PROTON_BUNDLE__clear_needs_reset {
 } PROTON_BUNDLE__clear_needs_reset_t;
 
+// External Node
+
+extern proton_node_t mcu_node;
+
 // External Bundle Structures
 
-extern PROTON_BUNDLE__logger_t logger_struct;
-extern PROTON_BUNDLE__status_t status_struct;
-extern PROTON_BUNDLE__power_t power_struct;
-extern PROTON_BUNDLE__emergency_stop_t emergency_stop_struct;
-extern PROTON_BUNDLE__temperature_t temperature_struct;
-extern PROTON_BUNDLE__stop_status_t stop_status_struct;
-extern PROTON_BUNDLE__pinout_state_t pinout_state_struct;
-extern PROTON_BUNDLE__alerts_t alerts_struct;
-extern PROTON_BUNDLE__cmd_fans_t cmd_fans_struct;
-extern PROTON_BUNDLE__display_status_t display_status_struct;
-extern PROTON_BUNDLE__cmd_lights_t cmd_lights_struct;
-extern PROTON_BUNDLE__battery_t battery_struct;
-extern PROTON_BUNDLE__pinout_command_t pinout_command_struct;
-extern PROTON_BUNDLE__cmd_shutdown_t cmd_shutdown_struct;
-extern PROTON_BUNDLE__clear_needs_reset_t clear_needs_reset_struct;
-
-// External Bundles
-
-extern proton_bundle_t logger_bundle;
-extern proton_bundle_t status_bundle;
-extern proton_bundle_t power_bundle;
-extern proton_bundle_t emergency_stop_bundle;
-extern proton_bundle_t temperature_bundle;
-extern proton_bundle_t stop_status_bundle;
-extern proton_bundle_t pinout_state_bundle;
-extern proton_bundle_t alerts_bundle;
-extern proton_bundle_t cmd_fans_bundle;
-extern proton_bundle_t display_status_bundle;
-extern proton_bundle_t cmd_lights_bundle;
-extern proton_bundle_t battery_bundle;
-extern proton_bundle_t pinout_command_bundle;
-extern proton_bundle_t cmd_shutdown_bundle;
-extern proton_bundle_t clear_needs_reset_bundle;
+extern PROTON_BUNDLE__logger_t logger_bundle;
+extern PROTON_BUNDLE__status_t status_bundle;
+extern PROTON_BUNDLE__power_t power_bundle;
+extern PROTON_BUNDLE__emergency_stop_t emergency_stop_bundle;
+extern PROTON_BUNDLE__temperature_t temperature_bundle;
+extern PROTON_BUNDLE__stop_status_t stop_status_bundle;
+extern PROTON_BUNDLE__pinout_state_t pinout_state_bundle;
+extern PROTON_BUNDLE__alerts_t alerts_bundle;
+extern PROTON_BUNDLE__cmd_fans_t cmd_fans_bundle;
+extern PROTON_BUNDLE__display_status_t display_status_bundle;
+extern PROTON_BUNDLE__cmd_lights_t cmd_lights_bundle;
+extern PROTON_BUNDLE__battery_t battery_bundle;
+extern PROTON_BUNDLE__pinout_command_t pinout_command_bundle;
+extern PROTON_BUNDLE__cmd_shutdown_t cmd_shutdown_bundle;
+extern PROTON_BUNDLE__clear_needs_reset_t clear_needs_reset_bundle;
 
 // Bundle Init Prototype
 
 void PROTON_BUNDLE_Init();
 
-// Bundle Decode Prototype
+// Bundle Receive Prototype
 
-bool PROTON_BUNDLE_Decode(const uint8_t * buffer, size_t length);
+bool PROTON_BUNDLE_Receive(const uint8_t* buffer, size_t length);
+
+// Bundle Send Prototype
+
+bool PROTON_BUNDLE_Send(PROTON_BUNDLE_e bundle);
 
 // Consumer callbacks
 
@@ -304,5 +298,21 @@ void PROTON_BUNDLE_BatteryCallback();
 void PROTON_BUNDLE_PinoutCommandCallback();
 void PROTON_BUNDLE_CmdShutdownCallback();
 void PROTON_BUNDLE_ClearNeedsResetCallback();
+
+// Transport Buffers
+
+extern proton_buffer_t proton_mcu_read_buffer;
+extern proton_buffer_t proton_mcu_write_buffer;
+
+// Transport Prototypes
+
+bool PROTON_TRANSPORT__McuConnect();
+bool PROTON_TRANSPORT__McuDisconnect();
+size_t PROTON_TRANSPORT__McuRead(uint8_t * buf, size_t len);
+size_t PROTON_TRANSPORT__McuWrite(const uint8_t * buf, size_t len);
+
+// Proton Init Prototype
+
+void PROTON_Init();
 
 #endif  // PROTONC__PROTON__A300_MCU_H

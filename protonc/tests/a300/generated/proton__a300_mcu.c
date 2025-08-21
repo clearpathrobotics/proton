@@ -12,59 +12,63 @@
 
 #include "proton__a300_mcu.h"
 
-// Bundle Structures
+// Node
 
-PROTON_BUNDLE__logger_t logger_struct;
-PROTON_BUNDLE__status_t status_struct;
-PROTON_BUNDLE__power_t power_struct;
-PROTON_BUNDLE__emergency_stop_t emergency_stop_struct;
-PROTON_BUNDLE__temperature_t temperature_struct;
-PROTON_BUNDLE__stop_status_t stop_status_struct;
-PROTON_BUNDLE__pinout_state_t pinout_state_struct;
-PROTON_BUNDLE__alerts_t alerts_struct;
-PROTON_BUNDLE__cmd_fans_t cmd_fans_struct;
-PROTON_BUNDLE__display_status_t display_status_struct;
-PROTON_BUNDLE__cmd_lights_t cmd_lights_struct;
-PROTON_BUNDLE__battery_t battery_struct;
-PROTON_BUNDLE__pinout_command_t pinout_command_struct;
-PROTON_BUNDLE__cmd_shutdown_t cmd_shutdown_struct;
-PROTON_BUNDLE__clear_needs_reset_t clear_needs_reset_struct;
+proton_node_t mcu_node;
 
-// Signals
+// External Bundle Structures
 
-proton_signal_t logger_signals[PROTON_SIGNALS__LOGGER_COUNT];
-proton_signal_t status_signals[PROTON_SIGNALS__STATUS_COUNT];
-proton_signal_t power_signals[PROTON_SIGNALS__POWER_COUNT];
-proton_signal_t emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP_COUNT];
-proton_signal_t temperature_signals[PROTON_SIGNALS__TEMPERATURE_COUNT];
-proton_signal_t stop_status_signals[PROTON_SIGNALS__STOP_STATUS_COUNT];
-proton_signal_t pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE_COUNT];
-proton_signal_t alerts_signals[PROTON_SIGNALS__ALERTS_COUNT];
-proton_signal_t cmd_fans_signals[PROTON_SIGNALS__CMD_FANS_COUNT];
-proton_signal_t display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS_COUNT];
-proton_signal_t cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS_COUNT];
-proton_signal_t battery_signals[PROTON_SIGNALS__BATTERY_COUNT];
-proton_signal_t pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND_COUNT];
-proton_signal_t cmd_shutdown_signals[PROTON_SIGNALS__CMD_SHUTDOWN_COUNT];
-proton_signal_t clear_needs_reset_signals[PROTON_SIGNALS__CLEAR_NEEDS_RESET_COUNT];
+PROTON_BUNDLE__logger_t logger_bundle;
+PROTON_BUNDLE__status_t status_bundle;
+PROTON_BUNDLE__power_t power_bundle;
+PROTON_BUNDLE__emergency_stop_t emergency_stop_bundle;
+PROTON_BUNDLE__temperature_t temperature_bundle;
+PROTON_BUNDLE__stop_status_t stop_status_bundle;
+PROTON_BUNDLE__pinout_state_t pinout_state_bundle;
+PROTON_BUNDLE__alerts_t alerts_bundle;
+PROTON_BUNDLE__cmd_fans_t cmd_fans_bundle;
+PROTON_BUNDLE__display_status_t display_status_bundle;
+PROTON_BUNDLE__cmd_lights_t cmd_lights_bundle;
+PROTON_BUNDLE__battery_t battery_bundle;
+PROTON_BUNDLE__pinout_command_t pinout_command_bundle;
+PROTON_BUNDLE__cmd_shutdown_t cmd_shutdown_bundle;
+PROTON_BUNDLE__clear_needs_reset_t clear_needs_reset_bundle;
 
-// Bundles
+// Internal Signals
 
-proton_bundle_t logger_bundle;
-proton_bundle_t status_bundle;
-proton_bundle_t power_bundle;
-proton_bundle_t emergency_stop_bundle;
-proton_bundle_t temperature_bundle;
-proton_bundle_t stop_status_bundle;
-proton_bundle_t pinout_state_bundle;
-proton_bundle_t alerts_bundle;
-proton_bundle_t cmd_fans_bundle;
-proton_bundle_t display_status_bundle;
-proton_bundle_t cmd_lights_bundle;
-proton_bundle_t battery_bundle;
-proton_bundle_t pinout_command_bundle;
-proton_bundle_t cmd_shutdown_bundle;
-proton_bundle_t clear_needs_reset_bundle;
+static proton_signal_t _logger_signals[PROTON_SIGNALS__LOGGER_COUNT];
+static proton_signal_t _status_signals[PROTON_SIGNALS__STATUS_COUNT];
+static proton_signal_t _power_signals[PROTON_SIGNALS__POWER_COUNT];
+static proton_signal_t _emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP_COUNT];
+static proton_signal_t _temperature_signals[PROTON_SIGNALS__TEMPERATURE_COUNT];
+static proton_signal_t _stop_status_signals[PROTON_SIGNALS__STOP_STATUS_COUNT];
+static proton_signal_t _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE_COUNT];
+static proton_signal_t _alerts_signals[PROTON_SIGNALS__ALERTS_COUNT];
+static proton_signal_t _cmd_fans_signals[PROTON_SIGNALS__CMD_FANS_COUNT];
+static proton_signal_t _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS_COUNT];
+static proton_signal_t _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS_COUNT];
+static proton_signal_t _battery_signals[PROTON_SIGNALS__BATTERY_COUNT];
+static proton_signal_t _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND_COUNT];
+static proton_signal_t _cmd_shutdown_signals[PROTON_SIGNALS__CMD_SHUTDOWN_COUNT];
+static proton_signal_t _clear_needs_reset_signals[PROTON_SIGNALS__CLEAR_NEEDS_RESET_COUNT];
+
+// Internal Bundles
+
+static proton_bundle_t _logger_bundle;
+static proton_bundle_t _status_bundle;
+static proton_bundle_t _power_bundle;
+static proton_bundle_t _emergency_stop_bundle;
+static proton_bundle_t _temperature_bundle;
+static proton_bundle_t _stop_status_bundle;
+static proton_bundle_t _pinout_state_bundle;
+static proton_bundle_t _alerts_bundle;
+static proton_bundle_t _cmd_fans_bundle;
+static proton_bundle_t _display_status_bundle;
+static proton_bundle_t _cmd_lights_bundle;
+static proton_bundle_t _battery_bundle;
+static proton_bundle_t _pinout_command_bundle;
+static proton_bundle_t _cmd_shutdown_bundle;
+static proton_bundle_t _clear_needs_reset_bundle;
 
 // Bundle Init Prototype
 
@@ -88,242 +92,242 @@ void PROTON_BUNDLE_InitClearNeedsReset();
 
 void PROTON_BUNDLE_InitLogger()
 {
-  logger_signals[PROTON_SIGNALS__LOGGER__LEVEL].signal.which_signal = proton_Signal_uint32_value_tag;
-  logger_signals[PROTON_SIGNALS__LOGGER__LEVEL].arg.data = &logger_struct.level;
+  _logger_signals[PROTON_SIGNALS__LOGGER__LEVEL].signal.which_signal = proton_Signal_uint32_value_tag;
+  _logger_signals[PROTON_SIGNALS__LOGGER__LEVEL].arg.data = &logger_bundle.level;
 
-  logger_signals[PROTON_SIGNALS__LOGGER__NAME].signal.which_signal = proton_Signal_string_value_tag;
-  logger_signals[PROTON_SIGNALS__LOGGER__NAME].signal.signal.string_value = &logger_signals[PROTON_SIGNALS__LOGGER__NAME].arg;
-  logger_signals[PROTON_SIGNALS__LOGGER__NAME].arg.data = logger_struct.name;
-  logger_signals[PROTON_SIGNALS__LOGGER__NAME].arg.capacity = LOGGER__NAME__CAPACITY;
-  logger_signals[PROTON_SIGNALS__LOGGER__NAME].arg.size = 0;
+  _logger_signals[PROTON_SIGNALS__LOGGER__NAME].signal.which_signal = proton_Signal_string_value_tag;
+  _logger_signals[PROTON_SIGNALS__LOGGER__NAME].signal.signal.string_value = &_logger_signals[PROTON_SIGNALS__LOGGER__NAME].arg;
+  _logger_signals[PROTON_SIGNALS__LOGGER__NAME].arg.data = logger_bundle.name;
+  _logger_signals[PROTON_SIGNALS__LOGGER__NAME].arg.capacity = PROTON_SIGNALS__LOGGER__NAME__CAPACITY;
+  _logger_signals[PROTON_SIGNALS__LOGGER__NAME].arg.size = 0;
 
-  logger_signals[PROTON_SIGNALS__LOGGER__MSG].signal.which_signal = proton_Signal_string_value_tag;
-  logger_signals[PROTON_SIGNALS__LOGGER__MSG].signal.signal.string_value = &logger_signals[PROTON_SIGNALS__LOGGER__MSG].arg;
-  logger_signals[PROTON_SIGNALS__LOGGER__MSG].arg.data = logger_struct.msg;
-  logger_signals[PROTON_SIGNALS__LOGGER__MSG].arg.capacity = LOGGER__MSG__CAPACITY;
-  logger_signals[PROTON_SIGNALS__LOGGER__MSG].arg.size = 0;
+  _logger_signals[PROTON_SIGNALS__LOGGER__MSG].signal.which_signal = proton_Signal_string_value_tag;
+  _logger_signals[PROTON_SIGNALS__LOGGER__MSG].signal.signal.string_value = &_logger_signals[PROTON_SIGNALS__LOGGER__MSG].arg;
+  _logger_signals[PROTON_SIGNALS__LOGGER__MSG].arg.data = logger_bundle.msg;
+  _logger_signals[PROTON_SIGNALS__LOGGER__MSG].arg.capacity = PROTON_SIGNALS__LOGGER__MSG__CAPACITY;
+  _logger_signals[PROTON_SIGNALS__LOGGER__MSG].arg.size = 0;
 
-  logger_signals[PROTON_SIGNALS__LOGGER__FILE].signal.which_signal = proton_Signal_string_value_tag;
-  logger_signals[PROTON_SIGNALS__LOGGER__FILE].signal.signal.string_value = &logger_signals[PROTON_SIGNALS__LOGGER__FILE].arg;
-  logger_signals[PROTON_SIGNALS__LOGGER__FILE].arg.data = logger_struct.file;
-  logger_signals[PROTON_SIGNALS__LOGGER__FILE].arg.capacity = LOGGER__FILE__CAPACITY;
-  logger_signals[PROTON_SIGNALS__LOGGER__FILE].arg.size = 0;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FILE].signal.which_signal = proton_Signal_string_value_tag;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FILE].signal.signal.string_value = &_logger_signals[PROTON_SIGNALS__LOGGER__FILE].arg;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FILE].arg.data = logger_bundle.file;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FILE].arg.capacity = PROTON_SIGNALS__LOGGER__FILE__CAPACITY;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FILE].arg.size = 0;
 
-  logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].signal.which_signal = proton_Signal_string_value_tag;
-  logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].signal.signal.string_value = &logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].arg;
-  logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].arg.data = logger_struct.function;
-  logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].arg.capacity = LOGGER__FUNCTION__CAPACITY;
-  logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].arg.size = 0;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].signal.which_signal = proton_Signal_string_value_tag;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].signal.signal.string_value = &_logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].arg;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].arg.data = logger_bundle.function;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].arg.capacity = PROTON_SIGNALS__LOGGER__FUNCTION__CAPACITY;
+  _logger_signals[PROTON_SIGNALS__LOGGER__FUNCTION].arg.size = 0;
 
-  logger_signals[PROTON_SIGNALS__LOGGER__LINE].signal.which_signal = proton_Signal_uint32_value_tag;
-  logger_signals[PROTON_SIGNALS__LOGGER__LINE].arg.data = &logger_struct.line;
+  _logger_signals[PROTON_SIGNALS__LOGGER__LINE].signal.which_signal = proton_Signal_uint32_value_tag;
+  _logger_signals[PROTON_SIGNALS__LOGGER__LINE].arg.data = &logger_bundle.line;
 
-  PROTON_InitBundle(&logger_bundle, PROTON_BUNDLE_ID__LOGGER, logger_signals, PROTON_SIGNALS__LOGGER_COUNT);
+  PROTON_InitBundle(&_logger_bundle, PROTON_BUNDLE__LOGGER, _logger_signals, PROTON_SIGNALS__LOGGER_COUNT);
 }
 
 void PROTON_BUNDLE_InitStatus()
 {
-  status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].signal.which_signal = proton_Signal_string_value_tag;
-  status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].signal.signal.string_value = &status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg;
-  status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.data = status_struct.hardware_id;
-  status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.capacity = STATUS__HARDWARE_ID__CAPACITY;
-  status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.size = 0;
+  _status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].signal.which_signal = proton_Signal_string_value_tag;
+  _status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].signal.signal.string_value = &_status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg;
+  _status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.data = status_bundle.hardware_id;
+  _status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.capacity = PROTON_SIGNALS__STATUS__HARDWARE_ID__CAPACITY;
+  _status_signals[PROTON_SIGNALS__STATUS__HARDWARE_ID].arg.size = 0;
 
-  status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].signal.which_signal = proton_Signal_string_value_tag;
-  status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].signal.signal.string_value = &status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg;
-  status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.data = status_struct.firmware_version;
-  status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.capacity = STATUS__FIRMWARE_VERSION__CAPACITY;
-  status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.size = 0;
+  _status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].signal.which_signal = proton_Signal_string_value_tag;
+  _status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].signal.signal.string_value = &_status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg;
+  _status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.data = status_bundle.firmware_version;
+  _status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.capacity = PROTON_SIGNALS__STATUS__FIRMWARE_VERSION__CAPACITY;
+  _status_signals[PROTON_SIGNALS__STATUS__FIRMWARE_VERSION].arg.size = 0;
 
-  status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_S].signal.which_signal = proton_Signal_uint32_value_tag;
-  status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_S].arg.data = &status_struct.mcu_uptime_s;
+  _status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_S].signal.which_signal = proton_Signal_uint32_value_tag;
+  _status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_S].arg.data = &status_bundle.mcu_uptime_s;
 
-  status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_NS].signal.which_signal = proton_Signal_uint32_value_tag;
-  status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_NS].arg.data = &status_struct.mcu_uptime_ns;
+  _status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_NS].signal.which_signal = proton_Signal_uint32_value_tag;
+  _status_signals[PROTON_SIGNALS__STATUS__MCU_UPTIME_NS].arg.data = &status_bundle.mcu_uptime_ns;
 
-  status_signals[PROTON_SIGNALS__STATUS__CONNECTION_UPTIME_S].signal.which_signal = proton_Signal_uint32_value_tag;
-  status_signals[PROTON_SIGNALS__STATUS__CONNECTION_UPTIME_S].arg.data = &status_struct.connection_uptime_s;
+  _status_signals[PROTON_SIGNALS__STATUS__CONNECTION_UPTIME_S].signal.which_signal = proton_Signal_uint32_value_tag;
+  _status_signals[PROTON_SIGNALS__STATUS__CONNECTION_UPTIME_S].arg.data = &status_bundle.connection_uptime_s;
 
-  status_signals[PROTON_SIGNALS__STATUS__CONNECTION_UPTIME_NS].signal.which_signal = proton_Signal_uint32_value_tag;
-  status_signals[PROTON_SIGNALS__STATUS__CONNECTION_UPTIME_NS].arg.data = &status_struct.connection_uptime_ns;
+  _status_signals[PROTON_SIGNALS__STATUS__CONNECTION_UPTIME_NS].signal.which_signal = proton_Signal_uint32_value_tag;
+  _status_signals[PROTON_SIGNALS__STATUS__CONNECTION_UPTIME_NS].arg.data = &status_bundle.connection_uptime_ns;
 
-  PROTON_InitBundle(&status_bundle, PROTON_BUNDLE_ID__STATUS, status_signals, PROTON_SIGNALS__STATUS_COUNT);
+  PROTON_InitBundle(&_status_bundle, PROTON_BUNDLE__STATUS, _status_signals, PROTON_SIGNALS__STATUS_COUNT);
 }
 
 void PROTON_BUNDLE_InitPower()
 {
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].signal.which_signal = proton_Signal_list_float_value_tag;
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].signal.signal.list_float_value.floats = &power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg;
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg.data = power_struct.measured_voltages;
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg.capacity = POWER__MEASURED_VOLTAGES__LENGTH;
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg.size = 0;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].signal.which_signal = proton_Signal_list_float_value_tag;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].signal.signal.list_float_value.floats = &_power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg.data = power_bundle.measured_voltages;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg.capacity = PROTON_SIGNALS__POWER__MEASURED_VOLTAGES__LENGTH;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_VOLTAGES].arg.size = 0;
 
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].signal.which_signal = proton_Signal_list_float_value_tag;
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].signal.signal.list_float_value.floats = &power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].arg;
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].arg.data = power_struct.measured_currents;
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].arg.capacity = POWER__MEASURED_CURRENTS__LENGTH;
-  power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].arg.size = 0;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].signal.which_signal = proton_Signal_list_float_value_tag;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].signal.signal.list_float_value.floats = &_power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].arg;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].arg.data = power_bundle.measured_currents;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].arg.capacity = PROTON_SIGNALS__POWER__MEASURED_CURRENTS__LENGTH;
+  _power_signals[PROTON_SIGNALS__POWER__MEASURED_CURRENTS].arg.size = 0;
 
-  PROTON_InitBundle(&power_bundle, PROTON_BUNDLE_ID__POWER, power_signals, PROTON_SIGNALS__POWER_COUNT);
+  PROTON_InitBundle(&_power_bundle, PROTON_BUNDLE__POWER, _power_signals, PROTON_SIGNALS__POWER_COUNT);
 }
 
 void PROTON_BUNDLE_InitEmergencyStop()
 {
-  emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP__STOPPED].signal.which_signal = proton_Signal_bool_value_tag;
-  emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP__STOPPED].arg.data = &emergency_stop_struct.stopped;
+  _emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP__STOPPED].signal.which_signal = proton_Signal_bool_value_tag;
+  _emergency_stop_signals[PROTON_SIGNALS__EMERGENCY_STOP__STOPPED].arg.data = &emergency_stop_bundle.stopped;
 
-  PROTON_InitBundle(&emergency_stop_bundle, PROTON_BUNDLE_ID__EMERGENCY_STOP, emergency_stop_signals, PROTON_SIGNALS__EMERGENCY_STOP_COUNT);
+  PROTON_InitBundle(&_emergency_stop_bundle, PROTON_BUNDLE__EMERGENCY_STOP, _emergency_stop_signals, PROTON_SIGNALS__EMERGENCY_STOP_COUNT);
 }
 
 void PROTON_BUNDLE_InitTemperature()
 {
-  temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].signal.which_signal = proton_Signal_list_float_value_tag;
-  temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].signal.signal.list_float_value.floats = &temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg;
-  temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg.data = temperature_struct.temperatures;
-  temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg.capacity = TEMPERATURE__TEMPERATURES__LENGTH;
-  temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg.size = 0;
+  _temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].signal.which_signal = proton_Signal_list_float_value_tag;
+  _temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].signal.signal.list_float_value.floats = &_temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg;
+  _temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg.data = temperature_bundle.temperatures;
+  _temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg.capacity = PROTON_SIGNALS__TEMPERATURE__TEMPERATURES__LENGTH;
+  _temperature_signals[PROTON_SIGNALS__TEMPERATURE__TEMPERATURES].arg.size = 0;
 
-  PROTON_InitBundle(&temperature_bundle, PROTON_BUNDLE_ID__TEMPERATURE, temperature_signals, PROTON_SIGNALS__TEMPERATURE_COUNT);
+  PROTON_InitBundle(&_temperature_bundle, PROTON_BUNDLE__TEMPERATURE, _temperature_signals, PROTON_SIGNALS__TEMPERATURE_COUNT);
 }
 
 void PROTON_BUNDLE_InitStopStatus()
 {
-  stop_status_signals[PROTON_SIGNALS__STOP_STATUS__NEEDS_RESET].signal.which_signal = proton_Signal_bool_value_tag;
-  stop_status_signals[PROTON_SIGNALS__STOP_STATUS__NEEDS_RESET].arg.data = &stop_status_struct.needs_reset;
+  _stop_status_signals[PROTON_SIGNALS__STOP_STATUS__NEEDS_RESET].signal.which_signal = proton_Signal_bool_value_tag;
+  _stop_status_signals[PROTON_SIGNALS__STOP_STATUS__NEEDS_RESET].arg.data = &stop_status_bundle.needs_reset;
 
-  PROTON_InitBundle(&stop_status_bundle, PROTON_BUNDLE_ID__STOP_STATUS, stop_status_signals, PROTON_SIGNALS__STOP_STATUS_COUNT);
+  PROTON_InitBundle(&_stop_status_bundle, PROTON_BUNDLE__STOP_STATUS, _stop_status_signals, PROTON_SIGNALS__STOP_STATUS_COUNT);
 }
 
 void PROTON_BUNDLE_InitPinoutState()
 {
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].signal.which_signal = proton_Signal_list_bool_value_tag;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].signal.signal.list_bool_value.bools = &pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg.data = pinout_state_struct.rails;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg.capacity = PINOUT_STATE__RAILS__LENGTH;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg.size = 0;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].signal.which_signal = proton_Signal_list_bool_value_tag;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].signal.signal.list_bool_value.bools = &_pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg.data = pinout_state_bundle.rails;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg.capacity = PROTON_SIGNALS__PINOUT_STATE__RAILS__LENGTH;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__RAILS].arg.size = 0;
 
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].signal.which_signal = proton_Signal_list_bool_value_tag;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].signal.signal.list_bool_value.bools = &pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].arg;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].arg.data = pinout_state_struct.inputs;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].arg.capacity = PINOUT_STATE__INPUTS__LENGTH;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].arg.size = 0;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].signal.which_signal = proton_Signal_list_bool_value_tag;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].signal.signal.list_bool_value.bools = &_pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].arg;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].arg.data = pinout_state_bundle.inputs;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].arg.capacity = PROTON_SIGNALS__PINOUT_STATE__INPUTS__LENGTH;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__INPUTS].arg.size = 0;
 
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].signal.which_signal = proton_Signal_list_bool_value_tag;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].signal.signal.list_bool_value.bools = &pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].arg;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].arg.data = pinout_state_struct.outputs;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].arg.capacity = PINOUT_STATE__OUTPUTS__LENGTH;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].arg.size = 0;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].signal.which_signal = proton_Signal_list_bool_value_tag;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].signal.signal.list_bool_value.bools = &_pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].arg;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].arg.data = pinout_state_bundle.outputs;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].arg.capacity = PROTON_SIGNALS__PINOUT_STATE__OUTPUTS__LENGTH;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUTS].arg.size = 0;
 
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].signal.which_signal = proton_Signal_list_uint32_value_tag;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].signal.signal.list_uint32_value.uint32s = &pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].arg;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].arg.data = pinout_state_struct.output_periods;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].arg.capacity = PINOUT_STATE__OUTPUT_PERIODS__LENGTH;
-  pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].arg.size = 0;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].signal.which_signal = proton_Signal_list_uint32_value_tag;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].signal.signal.list_uint32_value.uint32s = &_pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].arg;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].arg.data = pinout_state_bundle.output_periods;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].arg.capacity = PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS__LENGTH;
+  _pinout_state_signals[PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS].arg.size = 0;
 
-  PROTON_InitBundle(&pinout_state_bundle, PROTON_BUNDLE_ID__PINOUT_STATE, pinout_state_signals, PROTON_SIGNALS__PINOUT_STATE_COUNT);
+  PROTON_InitBundle(&_pinout_state_bundle, PROTON_BUNDLE__PINOUT_STATE, _pinout_state_signals, PROTON_SIGNALS__PINOUT_STATE_COUNT);
 }
 
 void PROTON_BUNDLE_InitAlerts()
 {
-  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].signal.which_signal = proton_Signal_string_value_tag;
-  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].signal.signal.string_value = &alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg;
-  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.data = alerts_struct.alert_string;
-  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.capacity = ALERTS__ALERT_STRING__CAPACITY;
-  alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.size = 0;
+  _alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].signal.which_signal = proton_Signal_string_value_tag;
+  _alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].signal.signal.string_value = &_alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg;
+  _alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.data = alerts_bundle.alert_string;
+  _alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.capacity = PROTON_SIGNALS__ALERTS__ALERT_STRING__CAPACITY;
+  _alerts_signals[PROTON_SIGNALS__ALERTS__ALERT_STRING].arg.size = 0;
 
-  PROTON_InitBundle(&alerts_bundle, PROTON_BUNDLE_ID__ALERTS, alerts_signals, PROTON_SIGNALS__ALERTS_COUNT);
+  PROTON_InitBundle(&_alerts_bundle, PROTON_BUNDLE__ALERTS, _alerts_signals, PROTON_SIGNALS__ALERTS_COUNT);
 }
 
 void PROTON_BUNDLE_InitCmdFans()
 {
-  cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].signal.which_signal = proton_Signal_bytes_value_tag;
-  cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].signal.signal.bytes_value = &cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg;
-  cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg.data = cmd_fans_struct.fan_speeds;
-  cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg.capacity = CMD_FANS__FAN_SPEEDS__CAPACITY;
-  cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg.size = 0;
+  _cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].signal.which_signal = proton_Signal_bytes_value_tag;
+  _cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].signal.signal.bytes_value = &_cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg;
+  _cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg.data = cmd_fans_bundle.fan_speeds;
+  _cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg.capacity = PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY;
+  _cmd_fans_signals[PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS].arg.size = 0;
 
-  PROTON_InitBundle(&cmd_fans_bundle, PROTON_BUNDLE_ID__CMD_FANS, cmd_fans_signals, PROTON_SIGNALS__CMD_FANS_COUNT);
+  PROTON_InitBundle(&_cmd_fans_bundle, PROTON_BUNDLE__CMD_FANS, _cmd_fans_signals, PROTON_SIGNALS__CMD_FANS_COUNT);
 }
 
 void PROTON_BUNDLE_InitDisplayStatus()
 {
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].signal.which_signal = proton_Signal_string_value_tag;
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].signal.signal.string_value = &display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg;
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg.data = display_status_struct.string_1;
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg.capacity = DISPLAY_STATUS__STRING_1__CAPACITY;
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg.size = 0;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].signal.which_signal = proton_Signal_string_value_tag;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].signal.signal.string_value = &_display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg.data = display_status_bundle.string_1;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg.capacity = PROTON_SIGNALS__DISPLAY_STATUS__STRING_1__CAPACITY;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_1].arg.size = 0;
 
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].signal.which_signal = proton_Signal_string_value_tag;
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].signal.signal.string_value = &display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].arg;
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].arg.data = display_status_struct.string_2;
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].arg.capacity = DISPLAY_STATUS__STRING_2__CAPACITY;
-  display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].arg.size = 0;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].signal.which_signal = proton_Signal_string_value_tag;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].signal.signal.string_value = &_display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].arg;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].arg.data = display_status_bundle.string_2;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].arg.capacity = PROTON_SIGNALS__DISPLAY_STATUS__STRING_2__CAPACITY;
+  _display_status_signals[PROTON_SIGNALS__DISPLAY_STATUS__STRING_2].arg.size = 0;
 
-  PROTON_InitBundle(&display_status_bundle, PROTON_BUNDLE_ID__DISPLAY_STATUS, display_status_signals, PROTON_SIGNALS__DISPLAY_STATUS_COUNT);
+  PROTON_InitBundle(&_display_status_bundle, PROTON_BUNDLE__DISPLAY_STATUS, _display_status_signals, PROTON_SIGNALS__DISPLAY_STATUS_COUNT);
 }
 
 void PROTON_BUNDLE_InitCmdLights()
 {
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].signal.signal.bytes_value = &cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg.data = cmd_lights_struct.front_left_light;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg.capacity = CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg.size = 0;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].signal.signal.bytes_value = &_cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg.data = cmd_lights_bundle.front_left_light;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg.capacity = PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT].arg.size = 0;
 
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].signal.signal.bytes_value = &cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].arg;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].arg.data = cmd_lights_struct.front_right_light;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].arg.capacity = CMD_LIGHTS__FRONT_RIGHT_LIGHT__CAPACITY;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].arg.size = 0;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].signal.signal.bytes_value = &_cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].arg;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].arg.data = cmd_lights_bundle.front_right_light;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].arg.capacity = PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT__CAPACITY;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__FRONT_RIGHT_LIGHT].arg.size = 0;
 
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].signal.signal.bytes_value = &cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].arg;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].arg.data = cmd_lights_struct.rear_left_light;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].arg.capacity = CMD_LIGHTS__REAR_LEFT_LIGHT__CAPACITY;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].arg.size = 0;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].signal.signal.bytes_value = &_cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].arg;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].arg.data = cmd_lights_bundle.rear_left_light;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].arg.capacity = PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT__CAPACITY;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_LEFT_LIGHT].arg.size = 0;
 
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].signal.signal.bytes_value = &cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].arg;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].arg.data = cmd_lights_struct.rear_right_light;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].arg.capacity = CMD_LIGHTS__REAR_RIGHT_LIGHT__CAPACITY;
-  cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].arg.size = 0;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].signal.which_signal = proton_Signal_bytes_value_tag;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].signal.signal.bytes_value = &_cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].arg;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].arg.data = cmd_lights_bundle.rear_right_light;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].arg.capacity = PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT__CAPACITY;
+  _cmd_lights_signals[PROTON_SIGNALS__CMD_LIGHTS__REAR_RIGHT_LIGHT].arg.size = 0;
 
-  PROTON_InitBundle(&cmd_lights_bundle, PROTON_BUNDLE_ID__CMD_LIGHTS, cmd_lights_signals, PROTON_SIGNALS__CMD_LIGHTS_COUNT);
+  PROTON_InitBundle(&_cmd_lights_bundle, PROTON_BUNDLE__CMD_LIGHTS, _cmd_lights_signals, PROTON_SIGNALS__CMD_LIGHTS_COUNT);
 }
 
 void PROTON_BUNDLE_InitBattery()
 {
-  battery_signals[PROTON_SIGNALS__BATTERY__PERCENTAGE].signal.which_signal = proton_Signal_float_value_tag;
-  battery_signals[PROTON_SIGNALS__BATTERY__PERCENTAGE].arg.data = &battery_struct.percentage;
+  _battery_signals[PROTON_SIGNALS__BATTERY__PERCENTAGE].signal.which_signal = proton_Signal_float_value_tag;
+  _battery_signals[PROTON_SIGNALS__BATTERY__PERCENTAGE].arg.data = &battery_bundle.percentage;
 
-  PROTON_InitBundle(&battery_bundle, PROTON_BUNDLE_ID__BATTERY, battery_signals, PROTON_SIGNALS__BATTERY_COUNT);
+  PROTON_InitBundle(&_battery_bundle, PROTON_BUNDLE__BATTERY, _battery_signals, PROTON_SIGNALS__BATTERY_COUNT);
 }
 
 void PROTON_BUNDLE_InitPinoutCommand()
 {
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].signal.which_signal = proton_Signal_list_bool_value_tag;
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].signal.signal.list_bool_value.bools = &pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg;
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg.data = pinout_command_struct.rails;
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg.capacity = PINOUT_COMMAND__RAILS__LENGTH;
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg.size = 0;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].signal.which_signal = proton_Signal_list_bool_value_tag;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].signal.signal.list_bool_value.bools = &_pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg.data = pinout_command_bundle.rails;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg.capacity = PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__RAILS].arg.size = 0;
 
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].signal.which_signal = proton_Signal_list_uint32_value_tag;
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].signal.signal.list_uint32_value.uint32s = &pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].arg;
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].arg.data = pinout_command_struct.outputs;
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].arg.capacity = PINOUT_COMMAND__OUTPUTS__LENGTH;
-  pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].arg.size = 0;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].signal.which_signal = proton_Signal_list_uint32_value_tag;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].signal.signal.list_uint32_value.uint32s = &_pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].arg;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].arg.data = pinout_command_bundle.outputs;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].arg.capacity = PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS__LENGTH;
+  _pinout_command_signals[PROTON_SIGNALS__PINOUT_COMMAND__OUTPUTS].arg.size = 0;
 
-  PROTON_InitBundle(&pinout_command_bundle, PROTON_BUNDLE_ID__PINOUT_COMMAND, pinout_command_signals, PROTON_SIGNALS__PINOUT_COMMAND_COUNT);
+  PROTON_InitBundle(&_pinout_command_bundle, PROTON_BUNDLE__PINOUT_COMMAND, _pinout_command_signals, PROTON_SIGNALS__PINOUT_COMMAND_COUNT);
 }
 
 void PROTON_BUNDLE_InitCmdShutdown()
 {
-  PROTON_InitBundle(&cmd_shutdown_bundle, PROTON_BUNDLE_ID__CMD_SHUTDOWN, cmd_shutdown_signals, PROTON_SIGNALS__CMD_SHUTDOWN_COUNT);
+  PROTON_InitBundle(&_cmd_shutdown_bundle, PROTON_BUNDLE__CMD_SHUTDOWN, _cmd_shutdown_signals, PROTON_SIGNALS__CMD_SHUTDOWN_COUNT);
 }
 
 void PROTON_BUNDLE_InitClearNeedsReset()
 {
-  PROTON_InitBundle(&clear_needs_reset_bundle, PROTON_BUNDLE_ID__CLEAR_NEEDS_RESET, clear_needs_reset_signals, PROTON_SIGNALS__CLEAR_NEEDS_RESET_COUNT);
+  PROTON_InitBundle(&_clear_needs_reset_bundle, PROTON_BUNDLE__CLEAR_NEEDS_RESET, _clear_needs_reset_signals, PROTON_SIGNALS__CLEAR_NEEDS_RESET_COUNT);
 }
 
 void PROTON_BUNDLE_Init()
@@ -345,12 +349,12 @@ void PROTON_BUNDLE_Init()
   PROTON_BUNDLE_InitClearNeedsReset();
 }
 
-// Bundle Decode Function
+// Bundle Receive Function
 
-bool PROTON_BUNDLE_Decode(const uint8_t * buffer, size_t length)
+bool PROTON_BUNDLE_Receive(const uint8_t* buffer, size_t length)
 {
   proton_bundle_t * bundle;
-  uint32_t id;
+  PROTON_BUNDLE_e id;
   proton_callback_t callback;
 
   // Decode bundle ID
@@ -361,51 +365,51 @@ bool PROTON_BUNDLE_Decode(const uint8_t * buffer, size_t length)
 
   switch (id)
   {
-    case PROTON_BUNDLE_ID__CMD_FANS:
+    case PROTON_BUNDLE__CMD_FANS:
     {
-      bundle = &cmd_fans_bundle;
+      bundle = &_cmd_fans_bundle;
       callback = PROTON_BUNDLE_CmdFansCallback;
       break;
     }
 
-    case PROTON_BUNDLE_ID__DISPLAY_STATUS:
+    case PROTON_BUNDLE__DISPLAY_STATUS:
     {
-      bundle = &display_status_bundle;
+      bundle = &_display_status_bundle;
       callback = PROTON_BUNDLE_DisplayStatusCallback;
       break;
     }
 
-    case PROTON_BUNDLE_ID__CMD_LIGHTS:
+    case PROTON_BUNDLE__CMD_LIGHTS:
     {
-      bundle = &cmd_lights_bundle;
+      bundle = &_cmd_lights_bundle;
       callback = PROTON_BUNDLE_CmdLightsCallback;
       break;
     }
 
-    case PROTON_BUNDLE_ID__BATTERY:
+    case PROTON_BUNDLE__BATTERY:
     {
-      bundle = &battery_bundle;
+      bundle = &_battery_bundle;
       callback = PROTON_BUNDLE_BatteryCallback;
       break;
     }
 
-    case PROTON_BUNDLE_ID__PINOUT_COMMAND:
+    case PROTON_BUNDLE__PINOUT_COMMAND:
     {
-      bundle = &pinout_command_bundle;
+      bundle = &_pinout_command_bundle;
       callback = PROTON_BUNDLE_PinoutCommandCallback;
       break;
     }
 
-    case PROTON_BUNDLE_ID__CMD_SHUTDOWN:
+    case PROTON_BUNDLE__CMD_SHUTDOWN:
     {
-      bundle = &cmd_shutdown_bundle;
+      bundle = &_cmd_shutdown_bundle;
       callback = PROTON_BUNDLE_CmdShutdownCallback;
       break;
     }
 
-    case PROTON_BUNDLE_ID__CLEAR_NEEDS_RESET:
+    case PROTON_BUNDLE__CLEAR_NEEDS_RESET:
     {
-      bundle = &clear_needs_reset_bundle;
+      bundle = &_clear_needs_reset_bundle;
       callback = PROTON_BUNDLE_ClearNeedsResetCallback;
       break;
     }
@@ -429,5 +433,98 @@ bool PROTON_BUNDLE_Decode(const uint8_t * buffer, size_t length)
   }
 
   return true;
+}
+
+// Bundle Send Function
+
+bool PROTON_BUNDLE_Send(PROTON_BUNDLE_e bundle)
+{
+  proton_bundle_t * bundle_;
+
+  switch (bundle)
+  {
+    case PROTON_BUNDLE__LOGGER:
+    {
+      bundle_= &_logger_bundle;
+      break;
+    }
+
+    case PROTON_BUNDLE__STATUS:
+    {
+      bundle_= &_status_bundle;
+      break;
+    }
+
+    case PROTON_BUNDLE__POWER:
+    {
+      bundle_= &_power_bundle;
+      break;
+    }
+
+    case PROTON_BUNDLE__EMERGENCY_STOP:
+    {
+      bundle_= &_emergency_stop_bundle;
+      break;
+    }
+
+    case PROTON_BUNDLE__TEMPERATURE:
+    {
+      bundle_= &_temperature_bundle;
+      break;
+    }
+
+    case PROTON_BUNDLE__STOP_STATUS:
+    {
+      bundle_= &_stop_status_bundle;
+      break;
+    }
+
+    case PROTON_BUNDLE__PINOUT_STATE:
+    {
+      bundle_= &_pinout_state_bundle;
+      break;
+    }
+
+    case PROTON_BUNDLE__ALERTS:
+    {
+      bundle_= &_alerts_bundle;
+      break;
+    }
+
+    default:
+    {
+      return false;
+    }
+  }
+
+  // Encode bundle
+  int bytes_written = PROTON_Encode(bundle_, mcu_node.write_buf.data, mcu_node.write_buf.len);
+  if (bytes_written <= 0)
+  {
+    return false;
+  }
+
+  // Send bundle
+  if (mcu_node.connected && mcu_node.transport.write)
+  {
+    return mcu_node.transport.write(mcu_node.write_buf.data, bytes_written) > 0;
+  }
+
+  return false;
+}
+
+// Proton Init
+
+void PROTON_Init()
+{
+  proton_transport_t mcu_transport;
+  mcu_transport.connect = PROTON_TRANSPORT__McuConnect;
+  mcu_transport.disconnect = PROTON_TRANSPORT__McuDisconnect;
+  mcu_transport.read = PROTON_TRANSPORT__McuRead;
+  mcu_transport.write = PROTON_TRANSPORT__McuWrite;
+
+  PROTON_BUNDLE_Init();
+
+  PROTON_InitNode(&mcu_node, mcu_transport, PROTON_BUNDLE_Receive, proton_mcu_read_buffer, proton_mcu_write_buffer);
 }
 

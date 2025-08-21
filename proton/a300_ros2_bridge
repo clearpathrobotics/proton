@@ -33,14 +33,19 @@ from std_msgs.msg import Header, Bool, String
 from std_srvs.srv import Empty
 from rclpy.qos import qos_profile_sensor_data, QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 
-UDP_IP = '192.168.131.1'
-MCU_IP = '192.168.131.2'
-PROTON_UDP_PORT = 11417
-PROTON_SEND_PORT = 11417
+# PC_IP = '192.168.131.1'
+# MCU_IP = '192.168.131.2'
+# PROTON_PC_PORT = 11417
+# PROTON_MCU_PORT = 11417
+
+PC_IP = '127.0.0.1'
+MCU_IP = '127.0.0.1'
+PROTON_PC_PORT = 11417
+PROTON_MCU_PORT = 11416
 
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
-sock.bind((UDP_IP, PROTON_UDP_PORT))
+sock.bind((PC_IP, PROTON_PC_PORT))
 
 
 class ProtonProcess(Node):
@@ -150,7 +155,7 @@ class ProtonProcess(Node):
         self.send(bundle)
 
     def send(self, bundle: Bundle):
-        sock.sendto(bundle.SerializeToString(), (MCU_IP, PROTON_SEND_PORT))
+        sock.sendto(bundle.SerializeToString(), (MCU_IP, PROTON_MCU_PORT))
         self.tx += bundle.ByteSize()
 
     def send_battery(self, percent: float):

@@ -86,8 +86,8 @@ class ProtonConfig:
                 pass
 
             self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.signal.upper()}'
-            self.capacity_define = f'{self.bundle.upper()}__{self.signal.upper()}{self.CAPACITY_SUFFIX}'
-            self.length_define = f'{self.bundle.upper()}__{self.signal.upper()}{self.LENGTH_SUFFIX}'
+            self.capacity_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.signal.upper()}{self.CAPACITY_SUFFIX}'
+            self.length_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.signal.upper()}{self.LENGTH_SUFFIX}'
 
             #print(f'signal {self.signal} type {self.type} length {self.length} cap {self.capacity}')
 
@@ -140,15 +140,15 @@ class ProtonConfig:
             self.signals: List[ProtonConfig.Signal] = []
             self.needs_init = False
 
-            self.bundle_variable_name = f'{self.name}{self.BUNDLE_SUFFIX}'
-            self.signals_variable_name = f'{self.name}{self.SIGNALS_SUFFIX}'
+            self.bundle_enum_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name.upper()}'
+            self.internal_bundle_variable_name = f'_{self.name}{self.BUNDLE_SUFFIX}'
+            self.signals_variable_name = f'_{self.name}{self.SIGNALS_SUFFIX}'
             self.struct_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name}'
-            self.struct_variable_name = f'{self.name}_struct'
+            self.bundle_variable_name = f'{self.name}{self.BUNDLE_SUFFIX}'
             self.signals_enum_name = f'{self.BUNDLE_SIGNAL_ENUM_PREFIX}{self.name}'
             self.signals_enum_count = f'{self.signals_enum_name.upper()}_COUNT'
             self.init_function_name = f'{self.INIT_FUNCTION_SUFFIX}{self.name.title().replace('_', '')}'
             self.callback_function_name = f'{self.CALLBACK_PREFIX}{self.name.title().replace('_', '')}{self.CALLBACK_SUFFIX}'
-            self.bundle_id_define_name = f'{self.BUNDLE_ID_PREFIX}{self.name.upper()}'
 
             try:
                 for signal in bundle[self.SCHEMA]:
@@ -173,13 +173,26 @@ class ProtonConfig:
         SERIAL = "serial"
 
         NODE_PREFIX = "PROTON_NODE__"
+        NAME_SUFFIX = "__NAME"
         IP_SUFFIX = "__IP"
         PORT_SUFFIX = "__PORT"
+
+        TRANSPORT_PREFIX = "PROTON_TRANSPORT__"
+        TRANSPORT_CONNECT = "Connect"
+        TRANSPORT_DISCONNECT = "Disconnect"
+        TRANSPORT_READ = "Read"
+        TRANSPORT_Write = "Write"
 
         def __init__(self, node: dict):
             self.name = node[self.NAME]
             transport = node[self.TRANSPORT]
             self.type = transport[self.TYPE]
+            self.name_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.NAME_SUFFIX}'
+            self.node_variable_name = f'{self.name}_node'
+            self.transport_connect_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_CONNECT}'
+            self.transport_disconnect_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_DISCONNECT}'
+            self.transport_read_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_READ}'
+            self.transport_write_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_Write}'
             match self.type:
                 case self.UDP4:
                     self.ip = transport[self.IP]
@@ -192,6 +205,7 @@ class ProtonConfig:
     def __init__(self, dictionary: dict):
         self.dictionary = dictionary
         self.nodes: List[ProtonConfig.Node] = []
+        self.target_node: ProtonConfig.Node = None
         self.bundles: List[ProtonConfig.Bundle] = []
         self.parse_nodes()
         self.parse_messages()
@@ -218,6 +232,11 @@ class ProtonConfig:
             self.bundles.append(
                 ProtonConfig.Bundle(bundle)
             )
+
+    def set_target(self, target: str):
+        for n in self.nodes:
+            if n.name == target:
+                self.target_node = n
 
         # for m in self.bundles:
         #     print(

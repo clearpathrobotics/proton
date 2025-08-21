@@ -162,11 +162,15 @@ class CWriter:
     def write_case_end(self, indent_level=2):
         self.write('}', indent_level)
 
-    def write_enum(self, name: str, enum: List[str], indent_level=0):
+    def write_enum(self, name: str, enum: List[str], values: List[int] | None = None, indent_level=0):
         self.write(f'typedef enum {name} {{', indent_level)
-        for e in enum:
-            self.write(f'{name.upper() + '__' + e.upper()},', indent_level + 1)
-        self.write(f'{name.upper()}_COUNT', indent_level + 1)
+        for i in range(0, len(enum)):
+            if values is not None:
+                self.write(f'{name.upper() + '__' + enum[i].upper()} = {hex(values[i])},', indent_level + 1)
+            else:
+                self.write(f'{name.upper() + '__' + enum[i].upper()},', indent_level + 1)
+        if values is None:
+            self.write(f'{name.upper()}_COUNT', indent_level + 1)
         self.write(f'}} {name}_e;', indent_level)
 
     def write_for_loop_start(self, count, iter_type='int', iter_name='i', start=0, incr=1, indent_level=1):

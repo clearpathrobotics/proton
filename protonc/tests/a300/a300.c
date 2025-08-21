@@ -14,6 +14,9 @@
 uint8_t write_buf_[PROTON_MAX_MESSAGE_SIZE];
 uint8_t read_buf_[PROTON_MAX_MESSAGE_SIZE];
 
+proton_buffer_t proton_mcu_read_buffer = {read_buf_, PROTON_MAX_MESSAGE_SIZE};
+proton_buffer_t proton_mcu_write_buffer = {write_buf_, PROTON_MAX_MESSAGE_SIZE};
+
 int sock_send, sock_recv;
 
 void send_log(char* file, int line, uint8_t level, char* msg, ...);
@@ -87,46 +90,34 @@ int socket_init()
   return 0;
 }
 
-int send_bundle(proton_bundle_t * bundle)
-{
-  int e = PROTON_Encode(bundle, write_buf_, sizeof(write_buf_));
-
-  if (e > 0)
-  {
-    send(sock_send, write_buf_, e, 0);
-  }
-
-  return e;
-}
-
 void PROTON_BUNDLE_CmdFansCallback()
 {
   printf("Received CmdFans\r\n");
-  print_bundle(cmd_fans_bundle.bundle);
+  //print_bundle(cmd_fans_bundle.bundle);
 }
 
 void PROTON_BUNDLE_DisplayStatusCallback()
 {
   printf("Received DisplayStatus\r\n");
-  print_bundle(display_status_bundle.bundle);
+  //print_bundle(display_status_bundle.bundle);
 }
 
 void PROTON_BUNDLE_CmdLightsCallback()
 {
   printf("Received CmdLights\r\n");
-  print_bundle(cmd_lights_bundle.bundle);
+  //print_bundle(cmd_lights_bundle.bundle);
 }
 
 void PROTON_BUNDLE_BatteryCallback()
 {
-  printf("Received Battery %f\r\n", battery_struct.percentage);
-  print_bundle(battery_bundle.bundle);
+  printf("Received Battery %f\r\n", battery_bundle.percentage);
+  //print_bundle(battery_bundle.bundle);
 }
 
 void PROTON_BUNDLE_PinoutCommandCallback()
 {
   printf("Received Pinout\r\n");
-  print_bundle(pinout_command_bundle.bundle);
+ // print_bundle(pinout_command_bundle.bundle);
 }
 
 void PROTON_BUNDLE_CmdShutdownCallback()
@@ -137,65 +128,57 @@ void PROTON_BUNDLE_CmdShutdownCallback()
 void PROTON_BUNDLE_ClearNeedsResetCallback()
 {
   printf("~~~Needs reset cleared~~~\r\n");
-  stop_status_struct.needs_reset = false;
-}
-
-int get_bundle()
-{
-  proton_bundle_t * bundle;
-  int s = recv(sock_recv, read_buf_, sizeof(read_buf_), 0);
-
-  if (s > 0)
-  {
-    PROTON_BUNDLE_Decode(read_buf_, s);
-  }
-
-  return s;
+  stop_status_bundle.needs_reset = false;
 }
 
 void send_log(char* file, int line, uint8_t level, char* msg, ...)
 {
-  strcpy(logger_struct.name, "A300_proton");
-  strcpy(logger_struct.file, file);
-  logger_struct.line = line;
-  logger_struct.level = level;
+  strcpy(logger_bundle.name, "A300_proton");
+  strcpy(logger_bundle.file, file);
+  logger_bundle.line = line;
+  logger_bundle.level = level;
 
   va_list args;
   va_start(args, msg);
-  vsprintf(logger_struct.msg, msg, args);
+  vsprintf(logger_bundle.msg, msg, args);
   va_end(args);
 
-  send_bundle(&logger_bundle);
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__LOGGER);
 }
 
 void update_power()
 {
-  for (uint8_t i = 0; i < POWER__MEASURED_VOLTAGES__LENGTH; i++)
+  for (uint8_t i = 0; i < PROTON_SIGNALS__POWER__MEASURED_VOLTAGES__LENGTH; i++)
   {
-    power_struct.measured_currents[i] = (float)rand();
-    power_struct.measured_voltages[i] = (float)rand();
+    power_bundle.measured_currents[i] = (float)rand();
+    power_bundle.measured_voltages[i] = (float)rand();
   }
-  send_bundle(&power_bundle);
+
+  if (!PROTON_BUNDLE_Send(PROTON_BUNDLE__POWER))
+  {
+    //printf("Failed to send power\r\n");
+  }
 }
 
 void update_temperature()
 {
-  for (uint8_t i = 0; i < TEMPERATURE__TEMPERATURES__LENGTH; i++)
+  for (uint8_t i = 0; i < PROTON_SIGNALS__TEMPERATURE__TEMPERATURES__LENGTH; i++)
   {
-    temperature_struct.temperatures[i] = (float)rand();
+    temperature_bundle.temperatures[i] = (float)rand();
   }
-  send_bundle(&temperature_bundle);
+
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__TEMPERATURE);
 }
 
 void update_status(uint32_t ms)
 {
-  status_struct.connection_uptime_s = ms / 1000;
-  status_struct.connection_uptime_ns = rand();
+  status_bundle.connection_uptime_s = ms / 1000;
+  status_bundle.connection_uptime_ns = rand();
 
-  status_struct.mcu_uptime_s = ms / 1000;
-  status_struct.mcu_uptime_ns = rand();
+  status_bundle.mcu_uptime_s = ms / 1000;
+  status_bundle.mcu_uptime_ns = rand();
 
-  send_bundle(&status_bundle);
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__STATUS);
 }
 
 void update_emergency_stop()
@@ -203,56 +186,85 @@ void update_emergency_stop()
   static bool stopped = false;
 
   stopped = !stopped;
-  emergency_stop_struct.stopped = stopped;
+  emergency_stop_bundle.stopped = stopped;
 
-  send_bundle(&emergency_stop_bundle);
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__EMERGENCY_STOP);
 }
 
 void update_stop_status()
 {
-  send_bundle(&stop_status_bundle);
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__STOP_STATUS);
 }
 
 void update_alerts()
 {
-  strcpy(alerts_struct.alert_string, "E124,E100");
+  strcpy(alerts_bundle.alert_string, "E124,E100");
 
-  send_bundle(&alerts_bundle);
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__ALERTS);
 }
 
 void update_pinout_state()
 {
-  pinout_state_struct.rails[0] = true;
+  pinout_state_bundle.rails[0] = true;
 
-  for (uint8_t i = 0; i < PINOUT_STATE__OUTPUTS__LENGTH; i++)
+  for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_STATE__OUTPUTS__LENGTH; i++)
   {
-    pinout_state_struct.outputs[i] = i % 2;
+    pinout_state_bundle.outputs[i] = i % 2;
   }
 
-  for (uint8_t i = 0; i < PINOUT_STATE__OUTPUT_PERIODS__LENGTH; i++)
+  for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS__LENGTH; i++)
   {
-    pinout_state_struct.output_periods[i] = rand();
+    pinout_state_bundle.output_periods[i] = rand();
   }
 
-  send_bundle(&pinout_state_bundle);
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__PINOUT_STATE);
+}
+
+bool PROTON_TRANSPORT__McuConnect()
+{
+  return socket_init() == 0;
+}
+
+bool PROTON_TRANSPORT__McuDisconnect()
+{
+  return true;
+}
+
+size_t PROTON_TRANSPORT__McuRead(uint8_t * buf, size_t len)
+{
+  int ret = recv(sock_recv, buf, len, 0);
+
+  if (ret < 0)
+  {
+    return 0;
+  }
+
+  return ret;
+}
+
+size_t PROTON_TRANSPORT__McuWrite(const uint8_t *buf, size_t len)
+{
+  int ret = send(sock_send, buf, len, 0);
+
+  if (ret < 0)
+  {
+    return 0;
+  }
+
+  return ret;
 }
 
 int main()
 {
   printf("~~~~~~~ A300 node ~~~~~~~\r\n");
 
-  if (socket_init() != 0)
-  {
-    return -1;
-  }
-
-  PROTON_BUNDLE_Init();
+  PROTON_Init();
 
   printf("INIT\r\n");
 
-  strcpy(status_struct.firmware_version, "3.0.0");
-  strcpy(status_struct.hardware_id, "A300");
-  stop_status_struct.needs_reset = true;
+  strcpy(status_bundle.firmware_version, "3.0.0");
+  strcpy(status_bundle.hardware_id, "A300");
+  stop_status_bundle.needs_reset = true;
 
   uint32_t i = 0;
 
@@ -281,7 +293,7 @@ int main()
 
     }
 
-    get_bundle();
+    PROTON_SpinOnce(&mcu_node);
     msleep(1);
     i++;
   }
