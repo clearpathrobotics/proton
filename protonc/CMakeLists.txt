@@ -89,5 +89,11 @@ target_include_directories(proton
         ${GENERATED_DIR}                     # for generated .pb.h
 )
 
+# -------------------------------
+# Protonc generator
+# -------------------------------
+find_program(PROTONC_GENERATOR protonc_generator)
+
+
 # Add tests
 add_subdirectory(tests)

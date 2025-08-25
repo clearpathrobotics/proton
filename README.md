@@ -1,16 +1,23 @@
 # Proton
 
-Cloning:
-
-```
-mkdir ~/proton_ws/src -p
-cd ~/proton_ws/src
-git clone git@gitlab.clearpathrobotics.com:research/proton.git
-```
+Proton communication protocol.
 
 ## Build steps
 
-### Protonc
+### Protonc Python library
+
+This command will install the `protonc` python module to your local system.
+
+```
+pip install -e protonc --break-system-packages
+```
+
+You can then call the `protonc` generator from anywhere with
+
+```
+protonc_generator -c /path/to/config.yaml -d /path/to/generated/dir -t target_name
+```
+
 
 ```
 cd ~/proton_ws/src/proton/protonc

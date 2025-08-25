@@ -30,7 +30,6 @@
 # modification, is not permitted without the express permission
 # of Clearpath Robotics.
 
-from config import ProtonConfig
 from typing import List
 import os
 

@@ -29,13 +29,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import argparse
-from enum import Enum
 import os
-import sys
 import yaml
 
-from config import ProtonConfig
-from source_writer import CWriter, Variable, Struct, Function
+from protonc.config import ProtonConfig
+from protonc.source_writer import CWriter, Variable, Struct, Function
 
 
 class ProtonCGenerator:
@@ -94,7 +92,8 @@ class ProtonCGenerator:
         self.config_file = config_file
         self.destination_path = destination_path
         assert os.path.exists(self.config_file)
-        assert os.path.exists(self.destination_path)
+        if not os.path.exists(self.destination_path):
+            os.mkdir(self.destination_path)
 
         self.dictionary = self.read_yaml()
         self.config = ProtonConfig(self.dictionary)
@@ -683,14 +682,14 @@ class ProtonCGenerator:
         self.src_writer.close_file()
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-c",
         "--config",
         type=str,
         action="store",
-        default=os.path.join(os.getcwd(), "../tests/a300/config/a300.yaml"),
+        default="/home/rkreinin/proto_ws/src/proton/protonc/tests/a300/config/a300.yaml",
         help="Configuration file path.",
     )
 
@@ -699,7 +698,7 @@ if __name__ == "__main__":
         "--destination",
         type=str,
         action="store",
-        default=os.path.join(os.getcwd(), "../tests/a300/generated/"),
+        default="/home/rkreinin/proto_ws/src/proton/protonc/tests/a300/generated/",
         help="Destination folder path for generated files.",
     )
 
@@ -730,3 +729,6 @@ if __name__ == "__main__":
         raise Exception(f'Invalid target "{target}"')
     else:
         generator.generate(config_name, target)
+
+if __name__ == "__main__":
+    main()
