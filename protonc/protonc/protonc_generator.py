@@ -648,7 +648,7 @@ class ProtonCGenerator:
         self.header_writer.write_header_guard_open()
         self.header_writer.write_include("stdint.h")
         self.header_writer.write_include("stdbool.h")
-        self.header_writer.write_include("proton.h")
+        self.header_writer.write_include("protonc/proton.h")
         self.header_writer.write_newline()
 
         self.src_writer.write_include(generated_filename)

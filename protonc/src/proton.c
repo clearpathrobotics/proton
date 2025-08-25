@@ -10,7 +10,7 @@
  * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
  */
 
-#include "proton.h"
+#include "protonc/proton.h"
 #include <stdio.h>
 
 void PROTON_InitBundle(proton_bundle_t *bundle, uint32_t id,

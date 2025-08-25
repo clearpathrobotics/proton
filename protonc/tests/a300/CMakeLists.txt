@@ -25,12 +25,12 @@ add_executable(a300
 )
 
 target_link_libraries(a300
-    proton
+    protonc
 )
 
 target_include_directories(a300
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/Inc
+        ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
 )

@@ -18,20 +18,15 @@ You can then call the `protonc` generator from anywhere with
 protonc_generator -c /path/to/config.yaml -d /path/to/generated/dir -t target_name
 ```
 
+### CMake
+
+Build all C/C++ code with:
 
 ```
-cd ~/proton_ws/src/proton/protonc
 mkdir build
 cd build
 cmake ..
 make
-```
-
-### ROS2 package
-
-```
-cd ~/proton_ws/
-colcon build --symlink-install
 ```
 
 ### Run A300 test
@@ -41,7 +36,7 @@ colcon build --symlink-install
 C Node:
 
 ```
-cd protonc/build/tests/a300
+cd build/protonc/tests/a300
 ./a300
 ```
 

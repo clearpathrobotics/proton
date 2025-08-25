@@ -9,9 +9,7 @@
  * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
  */
 
-#include "proton.h"
-#include "pb_decode.h"
-#include "pb_encode.h"
+#include "protonc/proton.h"
 #include <stdio.h>
 
 bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const pb_field_t *field)

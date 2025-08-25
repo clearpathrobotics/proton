@@ -13,7 +13,7 @@
 #ifndef INC_PROTON_PROTON_H_
 #define INC_PROTON_PROTON_H_
 
-#include "bundle.pb.h"
+#include "protonc/bundle.pb.h"
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"

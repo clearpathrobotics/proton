@@ -10,6 +10,6 @@
  * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
  */
 
-#include "proton.hpp"
+#include "protoncpp/proton.hpp"
 #include <stdio.h>
 
