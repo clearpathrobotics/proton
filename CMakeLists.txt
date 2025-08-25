@@ -8,3 +8,4 @@ endif()
 #find_package(protobuf-compiler REQUIRED)
 
 add_subdirectory(protonc)
+add_subdirectory(protoncpp)
