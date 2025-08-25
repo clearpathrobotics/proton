@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package proton;
+
+import "signal.proto";
+
+message Bundle {
+  uint32 id = 1;
+  repeated Signal signals = 2;
+}
