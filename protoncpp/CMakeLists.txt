@@ -1,12 +1,22 @@
 cmake_minimum_required(VERSION 3.14)
 project(protoncpp CXX)
 
-
 # Protobuf compiler
+find_package(Protobuf REQUIRED)
 find_program(PROTOC_EXECUTABLE protoc)
 if(NOT PROTOC_EXECUTABLE)
   message(FATAL_ERROR "Could not find protoc")
 endif()
+
+# YAML-CPP
+include(FetchContent)
+
+FetchContent_Declare(
+  yaml-cpp
+  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+  GIT_TAG 0.8.0
+)
+FetchContent_MakeAvailable(yaml-cpp)
 
 # -------------------------------
 # Proto files
@@ -81,6 +91,7 @@ add_custom_target(generate_protocpp ALL
 
 add_library(protoncpp
   src/proton.cpp
+  src/config.cpp
   ${GENERATED_SRCS}
   ${GENERATED_HDRS}
 )
@@ -91,5 +102,8 @@ target_include_directories(protoncpp
       ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
+target_link_libraries(protoncpp PRIVATE protobuf::libprotobuf)
+target_link_libraries(protoncpp PUBLIC yaml-cpp::yaml-cpp)
+
 # Add tests
-#add_subdirectory(tests)
+add_subdirectory(tests)
