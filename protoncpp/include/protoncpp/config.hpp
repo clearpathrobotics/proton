@@ -23,8 +23,6 @@
 
 namespace proton {
 
-namespace config {
-
 class SignalConfig {
 public:
   inline static const std::string TYPE_DOUBLE = "double";
@@ -59,18 +57,18 @@ public:
       {TYPE_STRING, proton::Signal::SignalCase::kListStringValue}};
 
   SignalConfig();
-  SignalConfig(std::string name, std::string type, uint32_t length,
+  SignalConfig(std::string name, std::string bundle_name, std::string type, uint32_t length,
                uint32_t capacity);
 
-  void initSignal(proton::Signal *signal);
-
   std::string getName() { return name_; }
+  std::string getBundleName() { return bundle_name_; }
   std::string getTypeString() { return type_string_; }
   uint32_t getLength() { return length_; }
   uint32_t getCapacity() { return capacity_; }
 
 private:
   std::string name_;
+  std::string bundle_name_;
   std::string type_string_;
   uint32_t length_;
   uint32_t capacity_;
@@ -81,9 +79,6 @@ public:
   BundleConfig();
   BundleConfig(std::string name, uint32_t id, std::string producer,
                std::string consumer, std::vector<SignalConfig> signals);
-
-  void initBundle(proton::Bundle *bundle);
-  void addSignal(SignalConfig signal);
 
   std::string getName() { return name_; }
   uint32_t getID() { return id_; }
@@ -104,6 +99,7 @@ private:
 
 class Config {
 public:
+  Config();
   Config(std::string file);
 
   std::vector<BundleConfig> getBundles() { return bundles_; }
@@ -111,8 +107,6 @@ public:
 private:
   std::vector<BundleConfig> bundles_;
 };
-
-} // namespace config
 
 } // namespace proton
 

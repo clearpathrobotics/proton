@@ -116,3 +116,25 @@ bundles:
     id: 0x301
     producer: pc
     consumer: mcu
+  - name: test
+    id: 0x400
+    producer: pc
+    consumer: mcu
+    schema:
+      - {signal: double, type: double}
+      - {signal: float, type: float}
+      - {signal: int32_t, type: int32}
+      - {signal: int64_t, type: int64}
+      - {signal: uint32_t, type: uint32}
+      - {signal: uint64_t, type: uint64}
+      - {signal: bool, type: bool}
+      - {signal: bytes, type: bytes, capacity: 10}
+      - {signal: string, type: string, capacity: 10}
+      - {signal: list_double, type: double, length: 10}
+      - {signal: list_float, type: float, length: 10}
+      - {signal: list_int32_t, type: int32, length: 10}
+      - {signal: list_int64_t, type: int64, length: 10}
+      - {signal: list_uint32_t, type: uint32, length: 10}
+      - {signal: list_uint64_t, type: uint64, length: 10}
+      - {signal: list_bool, type: bool, length: 10}
+      - {signal: list_string, type: string, capacity: 10, length: 10}
