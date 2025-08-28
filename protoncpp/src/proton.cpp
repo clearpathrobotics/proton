@@ -22,5 +22,14 @@ Node::Node(const std::string config_file) : config_(config_file) {
   for (auto b : config_.getBundles()) {
     addBundle(b);
   }
+
+  for (auto n : config_.getNodes()) {
+    auto& transport_config = n.getTransport();
+    if (n.getTransport().getType() == TransportConfig::TYPE_UDP4)
+    {
+      auto& udp_config = dynamic_cast<Udp4TransportConfig&>(transport_config);
+      transport_ = Udp4Transport(udp_config);
+    }
+  }
 }
 

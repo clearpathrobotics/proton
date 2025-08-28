@@ -37,7 +37,7 @@ class ProtonConfig:
 
     class Signal:
         # Signal keys
-        SIGNAL = "signal"
+        NAME = "name"
         TYPE = "type"
         LENGTH = "length"
         CAPACITY = "capacity"
@@ -68,7 +68,7 @@ class ProtonConfig:
 
         def __init__(self, bundle: str, signal: dict):
             self.bundle: str = bundle
-            self.signal: str = signal[self.SIGNAL]
+            self.name: str = signal[self.NAME]
             self.type: ProtonConfig.Signal.SignalTypes = (
                 ProtonConfig.Signal.SignalTypes(signal[self.TYPE])
             )
@@ -85,11 +85,11 @@ class ProtonConfig:
             except KeyError:
                 pass
 
-            self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.signal.upper()}'
-            self.capacity_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.signal.upper()}{self.CAPACITY_SUFFIX}'
-            self.length_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.signal.upper()}{self.LENGTH_SUFFIX}'
+            self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}'
+            self.capacity_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.CAPACITY_SUFFIX}'
+            self.length_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.LENGTH_SUFFIX}'
 
-            #print(f'signal {self.signal} type {self.type} length {self.length} cap {self.capacity}')
+            #print(f'signal {self.name} type {self.type} length {self.length} cap {self.capacity}')
 
             match self.type:
                 case ProtonConfig.Signal.SignalTypes.BYTES:
@@ -122,7 +122,7 @@ class ProtonConfig:
         ID = "id"
         PRODUCER = "producer"
         CONSUMER = "consumer"
-        SCHEMA = "schema"
+        SIGNALS = "signals"
         BUNDLE_SUFFIX = "_bundle"
         BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE__"
         BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
@@ -151,7 +151,7 @@ class ProtonConfig:
             self.callback_function_name = f'{self.CALLBACK_PREFIX}{self.name.title().replace('_', '')}{self.CALLBACK_SUFFIX}'
 
             try:
-                for signal in bundle[self.SCHEMA]:
+                for signal in bundle[self.SIGNALS]:
                     s = ProtonConfig.Signal(self.name, signal)
                     self.signals.append(s)
                     if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:

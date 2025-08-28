@@ -23,6 +23,24 @@
 
 namespace proton {
 
+namespace keys {
+
+static const char *const NODES = "nodes";
+static const char *const BUNDLES = "bundles";
+static const char *const NAME = "name";
+static const char *const TRANSPORT = "transport";
+static const char *const TYPE = "type";
+static const char *const IP = "ip";
+static const char *const PORT = "port";
+static const char *const LENGTH = "length";
+static const char *const CAPACITY = "capacity";
+static const char *const ID = "id";
+static const char *const PRODUCER = "producer";
+static const char *const CONSUMER = "consumer";
+static const char *const SIGNALS = "signals";
+
+} // namespace keys
+
 class SignalConfig {
 public:
   inline static const std::string TYPE_DOUBLE = "double";
@@ -56,9 +74,11 @@ public:
       {TYPE_BOOL, proton::Signal::SignalCase::kListBoolValue},
       {TYPE_STRING, proton::Signal::SignalCase::kListStringValue}};
 
-  SignalConfig();
-  SignalConfig(std::string name, std::string bundle_name, std::string type, uint32_t length,
-               uint32_t capacity);
+  SignalConfig() : name_(""), type_string_(""), length_(0), capacity_(0) {}
+  SignalConfig(std::string name, std::string bundle_name, std::string type,
+               uint32_t length, uint32_t capacity)
+      : name_(name), bundle_name_(bundle_name), type_string_(type),
+        length_(length), capacity_(capacity) {}
 
   std::string getName() { return name_; }
   std::string getBundleName() { return bundle_name_; }
@@ -76,18 +96,17 @@ private:
 
 class BundleConfig {
 public:
-  BundleConfig();
+  BundleConfig() : name_(""), id_(0), producer_(""), consumer_("") {}
   BundleConfig(std::string name, uint32_t id, std::string producer,
-               std::string consumer, std::vector<SignalConfig> signals);
+               std::string consumer, std::vector<SignalConfig> signals)
+      : name_(name), id_(id), producer_(producer), consumer_(consumer),
+        signals_(signals) {}
 
   std::string getName() { return name_; }
   uint32_t getID() { return id_; }
   std::string getProducer() { return producer_; }
   std::string getConsumer() { return consumer_; }
-  std::vector<SignalConfig> getSignals()
-  {
-    return signals_;
-  }
+  std::vector<SignalConfig> getSignals() { return signals_; }
 
 private:
   std::string name_;
@@ -97,15 +116,54 @@ private:
   std::vector<SignalConfig> signals_;
 };
 
+class TransportConfig {
+public:
+  inline static const std::string TYPE_UDP4 = "udp4";
+  inline static const std::string TYPE_SERIAL = "serial";
+  std::string getType() { return type_; }
+
+protected:
+  std::string type_;
+};
+
+class Udp4TransportConfig : public TransportConfig {
+public:
+  Udp4TransportConfig(std::string ip, uint32_t port) : ip_(ip), port_(port) {
+    type_ = TransportConfig::TYPE_UDP4;
+  }
+
+  std::string getIP() { return ip_; }
+  uint32_t getPort() { return port_; }
+
+private:
+  std::string ip_;
+  uint32_t port_;
+};
+
+class NodeConfig {
+public:
+  NodeConfig();
+  NodeConfig(std::string name, TransportConfig transport): name_(name), transport_(transport) {}
+
+  std::string getName() { return name_; }
+  TransportConfig& getTransport() { return transport_; }
+
+private:
+  std::string name_;
+  TransportConfig& transport_;
+};
+
 class Config {
 public:
   Config();
   Config(std::string file);
 
   std::vector<BundleConfig> getBundles() { return bundles_; }
+  std::vector<NodeConfig> getNodes() { return nodes_; }
 
 private:
   std::vector<BundleConfig> bundles_;
+  std::vector<NodeConfig> nodes_;
 };
 
 } // namespace proton

@@ -19,6 +19,7 @@
 #include "protoncpp/bundle.pb.h"
 #include "protoncpp/config.hpp"
 #include "protoncpp/manager.hpp"
+#include "protoncpp/transport/udp4.hpp"
 
 
 namespace proton {
@@ -33,6 +34,7 @@ public:
 
 private:
   Config config_;
+  Transport transport_;
 };
 
 }

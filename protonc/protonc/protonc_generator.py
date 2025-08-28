@@ -122,7 +122,7 @@ class ProtonCGenerator:
             for s in b.signals:
                 if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
                     string_struct = Struct(
-                        s.signal,
+                        s.name,
                         [
                             Variable("list", "char *", s.length_define),
                             Variable(
@@ -134,7 +134,7 @@ class ProtonCGenerator:
                 else:
                     vars.append(
                         Variable(
-                            name=s.signal,
+                            name=s.name,
                             type=self.SIGNAL_TYPE_MAP[s.type],
                             length=0 if s.length == 0 else s.length_define,
                             capacity=0 if s.capacity == 0 else s.capacity_define,
@@ -170,7 +170,7 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Signal Enums", indent_level=0)
         self.header_writer.write_newline()
         for b in self.config.bundles:
-            e = [s.signal for s in b.signals]
+            e = [s.name for s in b.signals]
             self.header_writer.write_enum(b.signals_enum_name, e)
             self.header_writer.write_newline()
         self.header_writer.write_newline()
@@ -267,7 +267,7 @@ class ProtonCGenerator:
                         | ProtonConfig.Signal.SignalTypes.BOOL
                     ):
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = &{b.bundle_variable_name}.{s.signal};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = &{b.bundle_variable_name}.{s.name};"
                         )
                     case (
                         ProtonConfig.Signal.SignalTypes.STRING
@@ -277,7 +277,7 @@ class ProtonCGenerator:
                             f"{b.signals_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value = &{b.signals_variable_name}[{s.signal_enum_name}].arg;"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.signal};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name};"
                         )
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity_define};"
@@ -299,7 +299,7 @@ class ProtonCGenerator:
                             f"{b.signals_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signals_variable_name}[{s.signal_enum_name}].arg;"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.signal};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name};"
                         )
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length_define};"
@@ -313,7 +313,7 @@ class ProtonCGenerator:
                             f"{b.signals_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signals_variable_name}[{s.signal_enum_name}].arg;"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.signal}.list;"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name}.list;"
                         )
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length_define};"
@@ -323,7 +323,7 @@ class ProtonCGenerator:
                         )
                         self.src_writer.write_for_loop_start(s.length, indent_level=1)
                         self.src_writer.write(
-                            f"{b.bundle_variable_name}.{s.signal}.list[i] = {b.bundle_variable_name}.{s.signal}.strings[i];",
+                            f"{b.bundle_variable_name}.{s.name}.list[i] = {b.bundle_variable_name}.{s.name}.strings[i];",
                             indent_level=2,
                         )
                         self.src_writer.write_for_loop_end(indent_level=1)

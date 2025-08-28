@@ -148,7 +148,7 @@ BundleHandle::BundleHandle(proton::BundleConfig config) {
 
   // Add each signal for this bundle
   for (auto s : config.getSignals()) {
-    addSignal(config.getName(), s);
+    addSignal(name, s);
   }
 }
 
@@ -164,10 +164,6 @@ BundleHandle &BundleManager::getBundle(const std::string &bundle_name) {
   }
 }
 
-proton::Bundle *BundleManager::getBundlePtr(const std::string &bundle_name) {
-  return getBundle(bundle_name).bundle.get();
-}
-
 BundleHandle &BundleManager::receiveBundle(const uint8_t *buffer,
                                            const uint32_t len) {
   auto bundle = proton::Bundle();
@@ -176,8 +172,7 @@ BundleHandle &BundleManager::receiveBundle(const uint8_t *buffer,
 }
 
 BundleHandle &BundleManager::setBundle(const proton::Bundle &bundle) {
-  for (auto &b : bundles_) {
-    BundleHandle &handle = b.second;
+  for (auto &[name, handle] : bundles_) {
     if (handle.id == bundle.id()) {
       *handle.bundle.get() = bundle;
       return handle;
@@ -188,12 +183,54 @@ BundleHandle &BundleManager::setBundle(const proton::Bundle &bundle) {
 }
 
 void BundleManager::printAllBundles() {
-  for (auto &b : bundles_) {
-    b.second.printBundle();
+  for (auto &[name, handle] : bundles_) {
+    handle.printBundle();
   }
 }
 
-void BundleHandle::printBundle() { bundle->PrintDebugString(); }
+void BundleManager::printAllBundlesVerbose() {
+  for (auto &[name, handle] : bundles_) {
+    handle.printBundleVerbose();
+  }
+}
+
+void BundleHandle::printBundle() {
+  std::cout << name << " bundle: {" << std::endl;
+  std::cout << "  id: 0x" << std::hex << id << std::dec << std::endl;
+  std::cout << "}" << std::endl;
+}
+
+void BundleHandle::printBundleVerbose() {
+  std::cout << name << " bundle: {" << std::endl;
+  std::cout << "  id: 0x" << std::hex << id << std::dec << std::endl;
+  std::cout << "  signals: {" << std::endl;
+  for (auto&[name, handle] : signals_)
+  {
+    std::cout << "    " << name << " {" << std::endl;
+    std::string debug = handle.signal->DebugString();
+    std::string spaces = "  "; //tab
+    std::string tab = "\t"; //four spaces
+    std::string close_bracket = "      }\r\n";
+
+    auto it = debug.find(spaces);
+    while (it != std::string::npos)
+    {
+      debug.replace(it, spaces.size(), tab);
+      it = debug.find(spaces, it);
+    }
+
+    it = debug.find('}');
+    if (it != std::string::npos)
+    {
+      debug.replace(it, close_bracket.size(), close_bracket);
+    }
+
+    std::cout << "      " << debug;
+    std::cout << "    }" << std::endl;
+  }
+  std::cout << "  }" << std::endl;
+  std::cout << "}" << std::endl;
+}
 
 void BundleHandle::addSignal(const std::string &bundle_name,
                              proton::SignalConfig config) {
@@ -234,7 +271,6 @@ template <> int32_t SignalHandle::getValue<int32_t>() {
 }
 
 template <> int64_t SignalHandle::getValue<int64_t>() {
-
   if (type != proton::Signal::SignalCase::kInt64Value) {
     throw std::runtime_error("Signal " + name + " is not of int64_t type");
   }
@@ -242,7 +278,6 @@ template <> int64_t SignalHandle::getValue<int64_t>() {
 }
 
 template <> uint32_t SignalHandle::getValue<uint32_t>() {
-
   if (type != proton::Signal::SignalCase::kUint32Value) {
     throw std::runtime_error("Signal " + name + " is not of uint32_t type");
   }
@@ -250,7 +285,6 @@ template <> uint32_t SignalHandle::getValue<uint32_t>() {
 }
 
 template <> uint64_t SignalHandle::getValue<uint64_t>() {
-
   if (type != proton::Signal::SignalCase::kUint64Value) {
     throw std::runtime_error("Signal " + name + " is not of uint64_t type");
   }
@@ -258,7 +292,6 @@ template <> uint64_t SignalHandle::getValue<uint64_t>() {
 }
 
 template <> bool SignalHandle::getValue<bool>() {
-
   if (type != proton::Signal::SignalCase::kBoolValue) {
     throw std::runtime_error("Signal " + name + " is not of bool type");
   }
@@ -266,7 +299,6 @@ template <> bool SignalHandle::getValue<bool>() {
 }
 
 template <> std::string SignalHandle::getValue<std::string>() {
-
   if (type != proton::Signal::SignalCase::kStringValue) {
     throw std::runtime_error("Signal " + name + " is not of std::string type");
   }
@@ -274,7 +306,6 @@ template <> std::string SignalHandle::getValue<std::string>() {
 }
 
 template <> proton::bytes SignalHandle::getValue<proton::bytes>() {
-
   if (type != proton::Signal::SignalCase::kBytesValue) {
     throw std::runtime_error("Signal " + name +
                              " is not of proton::bytes type");
@@ -283,86 +314,73 @@ template <> proton::bytes SignalHandle::getValue<proton::bytes>() {
   return {bytes.begin(), bytes.end()};
 }
 
-template <> std::vector<double> SignalHandle::getValue<std::vector<double>>() {
-
+template <> proton::list_double SignalHandle::getValue<proton::list_double>() {
   if (type != proton::Signal::SignalCase::kListDoubleValue) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<double> type");
+                             " is not of proton::list_double type");
   }
   return {signal->list_double_value().doubles().begin(),
           signal->list_double_value().doubles().end()};
 }
 
-template <> std::vector<float> SignalHandle::getValue<std::vector<float>>() {
-
+template <> proton::list_float SignalHandle::getValue<proton::list_float>() {
   if (type != proton::Signal::SignalCase::kListFloatValue) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<float> type");
+                             " is not of proton::list_float type");
   }
   return {signal->list_float_value().floats().begin(),
           signal->list_float_value().floats().end()};
 }
 
-template <>
-std::vector<int32_t> SignalHandle::getValue<std::vector<int32_t>>() {
-
+template <> proton::list_int32 SignalHandle::getValue<proton::list_int32>() {
   if (type != proton::Signal::SignalCase::kListInt32Value) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<int32_t> type");
+                             " is not of proton::list_int32 type");
   }
   return {signal->list_int32_value().int32s().begin(),
           signal->list_int32_value().int32s().end()};
 }
 
-template <>
-std::vector<int64_t> SignalHandle::getValue<std::vector<int64_t>>() {
-
+template <> proton::list_int64 SignalHandle::getValue<proton::list_int64>() {
   if (type != proton::Signal::SignalCase::kListInt64Value) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<int64_t> type");
+                             " is not of proton::list_int64 type");
   }
   return {signal->list_int64_value().int64s().begin(),
           signal->list_int64_value().int64s().end()};
 }
 
-template <>
-std::vector<uint32_t> SignalHandle::getValue<std::vector<uint32_t>>() {
-
+template <> proton::list_uint32 SignalHandle::getValue<proton::list_uint32>() {
   if (type != proton::Signal::SignalCase::kListUint32Value) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<uint32_t> type");
+                             " is not of proton::list_uint32 type");
   }
   return {signal->list_uint32_value().uint32s().begin(),
           signal->list_uint32_value().uint32s().end()};
 }
 
-template <>
-std::vector<uint64_t> SignalHandle::getValue<std::vector<uint64_t>>() {
-
+template <> proton::list_uint64 SignalHandle::getValue<proton::list_uint64>() {
   if (type != proton::Signal::SignalCase::kListUint64Value) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<uint64_t> type");
+                             " is not of proton::list_uint64 type");
   }
   return {signal->list_uint64_value().uint64s().begin(),
           signal->list_uint64_value().uint64s().end()};
 }
 
-template <> std::vector<bool> SignalHandle::getValue<std::vector<bool>>() {
-
+template <> proton::list_bool SignalHandle::getValue<proton::list_bool>() {
   if (type != proton::Signal::SignalCase::kListBoolValue) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<bool> type");
+                             " is not of proton::list_bool type");
   }
   return {signal->list_bool_value().bools().begin(),
           signal->list_bool_value().bools().end()};
 }
 
-template <>
-std::vector<std::string> SignalHandle::getValue<std::vector<std::string>>() {
-
+template <> proton::list_string SignalHandle::getValue<proton::list_string>() {
   if (type != proton::Signal::SignalCase::kListStringValue) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<std::string> type");
+                             " is not of proton::list_string type");
   }
   return {signal->list_string_value().strings().begin(),
           signal->list_string_value().strings().end()};
@@ -376,7 +394,6 @@ template <> void SignalHandle::setValue<double>(double value) {
 }
 
 template <> void SignalHandle::setValue<float>(float value) {
-
   if (type != proton::Signal::SignalCase::kFloatValue) {
     throw std::runtime_error("Signal " + name + " is not of float type");
   }
@@ -434,83 +451,80 @@ template <> void SignalHandle::setValue<proton::bytes>(proton::bytes value) {
 }
 
 template <>
-void SignalHandle::setValue<std::vector<double>>(std::vector<double> value) {
+void SignalHandle::setValue<proton::list_double>(proton::list_double value) {
   if (type != proton::Signal::SignalCase::kListDoubleValue) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<double> type");
+                             " is not of proton::list_double type");
   }
   signal->mutable_list_double_value()->mutable_doubles()->Assign(value.begin(),
                                                                  value.end());
 }
 
 template <>
-void SignalHandle::setValue<std::vector<float>>(std::vector<float> value) {
+void SignalHandle::setValue<proton::list_float>(proton::list_float value) {
   if (type != proton::Signal::SignalCase::kListFloatValue) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<float> type");
+                             " is not of proton::list_float type");
   }
   signal->mutable_list_float_value()->mutable_floats()->Assign(value.begin(),
                                                                value.end());
 }
 
 template <>
-void SignalHandle::setValue<std::vector<int32_t>>(std::vector<int32_t> value) {
+void SignalHandle::setValue<proton::list_int32>(proton::list_int32 value) {
   if (type != proton::Signal::SignalCase::kListInt32Value) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<int32_t> type");
+                             " is not of proton::list_int32 type");
   }
   signal->mutable_list_int32_value()->mutable_int32s()->Assign(value.begin(),
                                                                value.end());
 }
 
 template <>
-void SignalHandle::setValue<std::vector<int64_t>>(std::vector<int64_t> value) {
+void SignalHandle::setValue<proton::list_int64>(proton::list_int64 value) {
   if (type != proton::Signal::SignalCase::kListInt64Value) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<int64_t> type");
+                             " is not of proton::list_int64 type");
   }
   signal->mutable_list_int64_value()->mutable_int64s()->Assign(value.begin(),
                                                                value.end());
 }
 
 template <>
-void SignalHandle::setValue<std::vector<uint32_t>>(
-    std::vector<uint32_t> value) {
+void SignalHandle::setValue<proton::list_uint32>(proton::list_uint32 value) {
   if (type != proton::Signal::SignalCase::kListUint32Value) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<uint32_t> type");
+                             " is not of proton::list_uint32 type");
   }
   signal->mutable_list_uint32_value()->mutable_uint32s()->Assign(value.begin(),
                                                                  value.end());
 }
 
 template <>
-void SignalHandle::setValue<std::vector<uint64_t>>(
-    std::vector<uint64_t> value) {
+void SignalHandle::setValue<proton::list_uint64>(proton::list_uint64 value) {
   if (type != proton::Signal::SignalCase::kListUint64Value) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<uint64_t> type");
+                             " is not of proton::list_uint64 type");
   }
   signal->mutable_list_uint64_value()->mutable_uint64s()->Assign(value.begin(),
                                                                  value.end());
 }
 
 template <>
-void SignalHandle::setValue<std::vector<bool>>(std::vector<bool> value) {
+void SignalHandle::setValue<proton::list_bool>(proton::list_bool value) {
   if (type != proton::Signal::SignalCase::kListBoolValue) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<bool> type");
+                             " is not of proton::list_bool type");
   }
   signal->mutable_list_bool_value()->mutable_bools()->Assign(value.begin(),
                                                              value.end());
 }
 
 template <>
-void SignalHandle::setValue<std::vector<std::string>>(
-    std::vector<std::string> value) {
+void SignalHandle::setValue<proton::list_string>(proton::list_string value) {
   if (type != proton::Signal::SignalCase::kListStringValue) {
     throw std::runtime_error("Signal " + name +
-                             " is not of std::vector<std::string> type");
+                             " is not of proton::list_string type");
   }
   signal->mutable_list_string_value()->mutable_strings()->Assign(value.begin(),
                                                                  value.end());

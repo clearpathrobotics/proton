@@ -1,14 +1,7 @@
 #include "protoncpp/proton.hpp"
 #include <iostream>
-#include <bits/stdc++.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <fcntl.h>
 #include <thread>
 #include <chrono>
 
@@ -22,72 +15,72 @@ double rx, tx;
 int sock_send, sock_recv;
 proton::Node node;
 
-int socket_init()
-{
-  struct sockaddr_in servaddr;
-  sock_send = socket(AF_INET, SOCK_DGRAM, 0);
+// int socket_init()
+// {
+//   struct sockaddr_in servaddr;
+//   sock_send = socket(AF_INET, SOCK_DGRAM, 0);
 
-  memset(&servaddr, 0, sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = htonl((in_addr_t)0x7f000001);
-  servaddr.sin_port = htons(11416);
+//   memset(&servaddr, 0, sizeof(servaddr));
+//   servaddr.sin_family = AF_INET;
+//   servaddr.sin_addr.s_addr = htonl((in_addr_t)0x7f000001);
+//   servaddr.sin_port = htons(11416);
 
-  if (connect(sock_send, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0)
-  {
-    printf("connect error\r\n");
-    return 1;
-  }
+//   if (connect(sock_send, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0)
+//   {
+//     printf("connect error\r\n");
+//     return 1;
+//   }
 
-  printf("Send Socket connected\r\n");
+//   printf("Send Socket connected\r\n");
 
-  struct sockaddr_in servaddr2;
-  sock_recv = socket(AF_INET, SOCK_DGRAM, 0);
+//   struct sockaddr_in servaddr2;
+//   sock_recv = socket(AF_INET, SOCK_DGRAM, 0);
 
-  memset(&servaddr2, 0, sizeof(servaddr2));
-  servaddr2.sin_family = AF_INET;
-  servaddr2.sin_addr.s_addr = htonl((in_addr_t)0x7f000001);
-  servaddr2.sin_port = htons(11417);
+//   memset(&servaddr2, 0, sizeof(servaddr2));
+//   servaddr2.sin_family = AF_INET;
+//   servaddr2.sin_addr.s_addr = htonl((in_addr_t)0x7f000001);
+//   servaddr2.sin_port = htons(11417);
 
-  // Put the socket in non-blocking mode:
-  if(fcntl(sock_recv, F_SETFL, fcntl(sock_recv, F_GETFL) | O_NONBLOCK) < 0) {
-    printf("Set non-blocking error\r\n");
-    return 2;
-  }
+//   // Put the socket in non-blocking mode:
+//   if(fcntl(sock_recv, F_SETFL, fcntl(sock_recv, F_GETFL) | O_NONBLOCK) < 0) {
+//     printf("Set non-blocking error\r\n");
+//     return 2;
+//   }
 
-  if (bind(sock_recv, (struct sockaddr *)&servaddr2, sizeof(servaddr2)) != 0)
-  {
-    printf("bind error\r\n");
-    return 3;
-  }
+//   if (bind(sock_recv, (struct sockaddr *)&servaddr2, sizeof(servaddr2)) != 0)
+//   {
+//     printf("bind error\r\n");
+//     return 3;
+//   }
 
-  printf("Receive Socket bound\r\n");
+//   printf("Receive Socket bound\r\n");
 
-  return 0;
-}
+//   return 0;
+// }
 
-size_t PROTON_TRANSPORT__PcRead(uint8_t * buf, size_t len)
-{
-  int ret = recv(sock_recv, buf, len, 0);
+// size_t PROTON_TRANSPORT__PcRead(uint8_t * buf, size_t len)
+// {
+//   int ret = recv(sock_recv, buf, len, 0);
 
-  if (ret < 0)
-  {
-    return 0;
-  }
+//   if (ret < 0)
+//   {
+//     return 0;
+//   }
 
-  return ret;
-}
+//   return ret;
+// }
 
-size_t PROTON_TRANSPORT__PcWrite(const uint8_t *buf, size_t len)
-{
-  int ret = send(sock_send, buf, len, 0);
+// size_t PROTON_TRANSPORT__PcWrite(const uint8_t *buf, size_t len)
+// {
+//   int ret = send(sock_send, buf, len, 0);
 
-  if (ret < 0)
-  {
-    return 0;
-  }
+//   if (ret < 0)
+//   {
+//     return 0;
+//   }
 
-  return ret;
-}
+//   return ret;
+// }
 
 void send_bundle(const std::string& bundle_name)
 {
@@ -95,12 +88,12 @@ void send_bundle(const std::string& bundle_name)
 
   if (bundle->SerializeToArray(write_buf_, PROTON_MAX_MESSAGE_SIZE))
   {
-    size_t bytes_written = PROTON_TRANSPORT__PcWrite(write_buf_, bundle->ByteSize());
+    // size_t bytes_written = PROTON_TRANSPORT__PcWrite(write_buf_, bundle->ByteSizeLong());
 
-    if (bytes_written > 0)
-    {
-      tx += bytes_written;
-    }
+    // if (bytes_written > 0)
+    // {
+    //   tx += bytes_written;
+    // }
   }
 }
 
@@ -117,6 +110,7 @@ void update_lights()
 void update_fans()
 {
   node.getBundle("cmd_fans").getSignal("fan_speeds").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255});
+  node.printAllBundles();
   send_bundle("cmd_fans");
 }
 
@@ -168,21 +162,19 @@ int main()
 
   node = proton::Node("/home/rkreinin/proto_ws/src/proton/protoncpp/tests/a300/config/a300.yaml");
 
-  proton::Bundle bundle;
-
-  socket_init();
+  //socket_init();
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_thread(run_send_thread);
 
   while(1)
   {
-    size_t bytes_read = PROTON_TRANSPORT__PcRead(read_buf_, PROTON_MAX_MESSAGE_SIZE);
-    if (bytes_read > 0)
-    {
-      rx += bytes_read;
-      node.receiveBundle(read_buf_, bytes_read);
-    }
+    // size_t bytes_read = PROTON_TRANSPORT__PcRead(read_buf_, PROTON_MAX_MESSAGE_SIZE);
+    // if (bytes_read > 0)
+    // {
+    //   rx += bytes_read;
+    //   node.receiveBundle(read_buf_, bytes_read);
+    // }
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 

@@ -16,55 +16,54 @@
 
 using namespace proton;
 
-SignalConfig::SignalConfig()
-    : name_(""), type_string_(""), length_(0), capacity_(0) {}
-
-SignalConfig::SignalConfig(std::string name, std::string bundle_name, std::string type,
-                           uint32_t length = 0, uint32_t capacity = 0)
-    : name_(name), bundle_name_(bundle_name), type_string_(type), length_(length), capacity_(capacity) {}
-
-BundleConfig::BundleConfig()
-    : name_(""), id_(0), producer_(""), consumer_("") {}
-
-BundleConfig::BundleConfig(std::string name, uint32_t id, std::string producer,
-                           std::string consumer,
-                           std::vector<SignalConfig> signals)
-    : name_(name), id_(id), producer_(producer), consumer_(consumer),
-      signals_(signals) {}
-
 Config::Config() {}
 
 Config::Config(std::string file) {
   YAML::Node config = YAML::LoadFile(file);
 
-  for (auto b : config["bundles"]) {
+  for (auto node : config[keys::NODES]) {
+    auto transport = node[keys::TRANSPORT];
+    std::string transport_type = transport[keys::TYPE].as<std::string>();
+    if (transport_type == TransportConfig::TYPE_UDP4) {
+      nodes_.push_back(NodeConfig(
+          node[keys::NAME].as<std::string>(),
+          Udp4TransportConfig(transport[keys::IP].as<std::string>(),
+                              transport[keys::PORT].as<uint32_t>())));
+    } else if (transport_type == TransportConfig::TYPE_SERIAL) {
+      // TODO
+    }
+  }
+
+  // Get bundle configs
+  for (auto bundle : config[keys::BUNDLES]) {
     std::vector<SignalConfig> signal_configs;
 
-    for (auto s : b["schema"]) {
+    // Get signal configs for this bundle
+    for (auto signal : bundle[keys::SIGNALS]) {
       uint32_t length, capacity;
 
       try {
-        length = s["length"].as<uint32_t>();
+        length = signal[keys::LENGTH].as<uint32_t>();
       } catch (const YAML::TypedBadConversion<uint32_t> &e) {
         length = 0;
       }
 
       try {
-        capacity = s["capacity"].as<uint32_t>();
+        capacity = signal[keys::CAPACITY].as<uint32_t>();
       } catch (const YAML::TypedBadConversion<uint32_t> &e) {
         capacity = 0;
       }
 
-      signal_configs.push_back(SignalConfig(s["signal"].as<std::string>(),
-                                            b["name"].as<std::string>(),
-                                            s["type"].as<std::string>(), length,
-                                            capacity));
+      signal_configs.push_back(
+          SignalConfig(signal[keys::NAME].as<std::string>(),
+                       bundle[keys::NAME].as<std::string>(),
+                       signal[keys::TYPE].as<std::string>(), length, capacity));
     }
 
-    BundleConfig bundle_config =
-        BundleConfig(b["name"].as<std::string>(), b["id"].as<uint32_t>(),
-                     b["producer"].as<std::string>(),
-                     b["consumer"].as<std::string>(), signal_configs);
+    BundleConfig bundle_config = BundleConfig(
+        bundle[keys::NAME].as<std::string>(), bundle[keys::ID].as<uint32_t>(),
+        bundle[keys::PRODUCER].as<std::string>(),
+        bundle[keys::CONSUMER].as<std::string>(), signal_configs);
 
     bundles_.push_back(bundle_config);
   }

@@ -21,6 +21,14 @@
 namespace proton {
 
 using bytes = std::vector<uint8_t>;
+using list_double = std::vector<double>;
+using list_float = std::vector<float>;
+using list_int32 = std::vector<int32_t>;
+using list_int64 = std::vector<int64_t>;
+using list_uint32 = std::vector<uint32_t>;
+using list_uint64 = std::vector<uint64_t>;
+using list_bool = std::vector<bool>;
+using list_string = std::vector<std::string>;
 
 class SignalHandle {
 public:
@@ -49,6 +57,7 @@ public:
   SignalHandle &getSignal(const std::string &signal_name);
 
   void printBundle();
+  void printBundleVerbose();
 
   std::string name;
   uint32_t id;
@@ -67,10 +76,9 @@ public:
   BundleHandle &setBundle(const proton::Bundle &bundle);
 
   void printAllBundles();
-
+  void printAllBundlesVerbose();
 
 protected:
-  proton::Bundle *getBundlePtr(const std::string &bundle_name);
   std::map<std::string, BundleHandle> bundles_;
 };
 
