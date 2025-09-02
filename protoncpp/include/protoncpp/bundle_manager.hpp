@@ -53,7 +53,7 @@ class BundleHandle {
 public:
   BundleHandle(proton::BundleConfig config);
 
-  void addSignal(const std::string &, proton::SignalConfig config);
+  void addSignal(proton::SignalConfig config);
   SignalHandle &getSignal(const std::string &signal_name);
 
   void printBundle();

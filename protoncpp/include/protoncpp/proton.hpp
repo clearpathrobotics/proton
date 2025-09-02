@@ -13,30 +13,31 @@
 #ifndef INC_PROTONCPP_PROTON_HPP_
 #define INC_PROTONCPP_PROTON_HPP_
 
-#include <vector>
 #include <stdint.h>
+#include <vector>
 
 #include "protoncpp/bundle.pb.h"
+#include "protoncpp/bundle_manager.hpp"
 #include "protoncpp/config.hpp"
-#include "protoncpp/manager.hpp"
 #include "protoncpp/transport/udp4.hpp"
-
 
 namespace proton {
 
-class Node : public BundleManager
-{
+class Node : public BundleManager, public TransportManager {
 public:
   Node();
-  Node(const std::string config_file);
+  Node(const std::string config_file, const std::string target);
 
-  Config getConfig() {return config_;}
+  Config getConfig() { return config_; }
+
+  void spinOnce();
+  void spin();
 
 private:
+  std::string target_;
   Config config_;
-  Transport transport_;
 };
 
-}
+} // namespace proton
 
 #endif // INC_PROTONCPP_PROTON_HPP_

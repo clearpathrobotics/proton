@@ -92,7 +92,8 @@ add_custom_target(generate_protocpp ALL
 add_library(protoncpp
   src/proton.cpp
   src/config.cpp
-  src/manager.cpp
+  src/bundle_manager.cpp
+  src/transport/udp4.cpp
   ${GENERATED_SRCS}
   ${GENERATED_HDRS}
 )

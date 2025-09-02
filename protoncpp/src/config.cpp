@@ -25,12 +25,12 @@ Config::Config(std::string file) {
     auto transport = node[keys::TRANSPORT];
     std::string transport_type = transport[keys::TYPE].as<std::string>();
     if (transport_type == TransportConfig::TYPE_UDP4) {
-      nodes_.push_back(NodeConfig(
-          node[keys::NAME].as<std::string>(),
-          Udp4TransportConfig(transport[keys::IP].as<std::string>(),
-                              transport[keys::PORT].as<uint32_t>())));
+      nodes_.push_back(NodeConfig(node[keys::NAME].as<std::string>(),
+                                  transport[keys::IP].as<std::string>(),
+                                  transport[keys::PORT].as<uint32_t>()));
     } else if (transport_type == TransportConfig::TYPE_SERIAL) {
-      // TODO
+      nodes_.push_back(NodeConfig(node[keys::NAME].as<std::string>(),
+                                  transport[keys::DEVICE].as<std::string>()));
     }
   }
 

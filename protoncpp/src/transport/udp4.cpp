@@ -15,10 +15,10 @@
 
 using namespace proton;
 
-Udp4Transport::Udp4Transport(socket_pair target, socket_pair peer)
+Udp4Transport::Udp4Transport(socket_endpoint target, socket_endpoint peer)
 {
-  socket_pairs_[SOCKET_TARGET] = target;
-  socket_pairs_[SOCKET_PEER] = peer;
+  socket_endpoints_[SOCKET_TARGET] = target;
+  socket_endpoints_[SOCKET_PEER] = peer;
   socket_[SOCKET_TARGET] = -1;
   socket_[SOCKET_PEER] = -1;
 }
@@ -31,7 +31,7 @@ in_addr_t Udp4Transport::ipToInaddr(const std::string& ip) {
   return addr.s_addr;
 }
 
-int Udp4Transport::initSocket(socket_pair s, bool server, bool blocking)
+int Udp4Transport::initSocket(socket_endpoint s, bool server, bool blocking)
 {
   int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -43,7 +43,7 @@ int Udp4Transport::initSocket(socket_pair s, bool server, bool blocking)
   struct sockaddr_in sock_addr;
   memset(&sock_addr, 0, sizeof(sock_addr));
   sock_addr.sin_family = AF_INET;
-  sock_addr.sin_addr.s_addr = ::htonl(ipToInaddr(s.first));
+  sock_addr.sin_addr.s_addr = ipToInaddr(s.first);
   sock_addr.sin_port = ::htons(s.second);
 
   if (!blocking)
@@ -55,18 +55,26 @@ int Udp4Transport::initSocket(socket_pair s, bool server, bool blocking)
 
   if (server)
   {
+    std::cout << "Binding server " << std::hex << s.first << ":" << std::dec << s.second << std::endl;
+    int one = 1;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     if (::bind(sock, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) != 0)
     {
+      std::cerr << "Bind error" << std::endl;
       return -1;
     }
   }
   else
   {
+    std::cout << "Connecting to " << std::hex << s.first << ":" << std::dec << s.second << std::endl;
     if (::connect(sock, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) != 0)
     {
+      std::cout << "Connect error" << std::endl;
       return -1;
     }
   }
+
+  std::cout << "Init socket " << sock << std::endl;
 
   return sock;
 }
@@ -81,15 +89,17 @@ bool Udp4Transport::connect()
 
   if (socket_[SOCKET_TARGET] == -1)
   {
-    socket_[SOCKET_TARGET] = initSocket(socket_pairs_[SOCKET_TARGET], true, false);
+    socket_[SOCKET_TARGET] = initSocket(socket_endpoints_[SOCKET_TARGET], true, false);
   }
 
   if (socket_[SOCKET_PEER] == -1)
   {
-    socket_[SOCKET_PEER] = initSocket(socket_pairs_[SOCKET_PEER], false, false);
+    socket_[SOCKET_PEER] = initSocket(socket_endpoints_[SOCKET_PEER], false, false);
   }
 
-  return socket_[SOCKET_TARGET] != -1 && socket_[SOCKET_PEER] != -1;
+  connected_ = socket_[SOCKET_TARGET] != -1 && socket_[SOCKET_PEER] != -1;
+
+  return connected_;
 }
 
 bool Udp4Transport::disconnect()
@@ -99,6 +109,11 @@ bool Udp4Transport::disconnect()
 
 size_t Udp4Transport::read(uint8_t * buf, size_t len)
 {
+  if (!connected_)
+  {
+    return 0;
+  }
+
   int ret = ::recv(socket_[SOCKET_TARGET], buf, len, 0);
 
   if (ret < 0)
@@ -111,10 +126,16 @@ size_t Udp4Transport::read(uint8_t * buf, size_t len)
 
 size_t Udp4Transport::write(const uint8_t * buf, size_t len)
 {
+  if (!connected_)
+  {
+    return 0;
+  }
+
   int ret = send(socket_[SOCKET_PEER], buf, len, 0);
 
   if (ret < 0)
   {
+    std::cerr << "write err " << ret << std::endl;
     return 0;
   }
 

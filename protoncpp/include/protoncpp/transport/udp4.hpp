@@ -28,17 +28,18 @@
 namespace proton
 {
 
-using socket_pair = std::pair<std::string, uint32_t>;
+using socket_endpoint = std::pair<std::string, uint32_t>;
 
 class Udp4Transport : public Transport
 {
+public:
   enum {
     SOCKET_TARGET,
     SOCKET_PEER,
     SOCKET_COUNT
   } sockets;
 
-  Udp4Transport(socket_pair target, socket_pair peer);
+  Udp4Transport(socket_endpoint target, socket_endpoint peer);
 
   bool connect() override;
   bool disconnect() override;
@@ -46,10 +47,10 @@ class Udp4Transport : public Transport
   size_t write(const uint8_t * buf, size_t len) override;
 
   in_addr_t ipToInaddr(const std::string& ip);
-  int initSocket(socket_pair s, bool server, bool blocking);
+  int initSocket(socket_endpoint s, bool server, bool blocking);
 
-private:
-  socket_pair socket_pairs_[SOCKET_COUNT];
+public:
+  socket_endpoint socket_endpoints_[SOCKET_COUNT];
   int socket_[SOCKET_COUNT];
 };
 

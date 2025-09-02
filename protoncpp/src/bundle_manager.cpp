@@ -10,7 +10,7 @@
  * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
  */
 
-#include "protoncpp/manager.hpp"
+#include "protoncpp/bundle_manager.hpp"
 
 using namespace proton;
 
@@ -148,7 +148,7 @@ BundleHandle::BundleHandle(proton::BundleConfig config) {
 
   // Add each signal for this bundle
   for (auto s : config.getSignals()) {
-    addSignal(name, s);
+    addSignal(s);
   }
 }
 
@@ -232,8 +232,7 @@ void BundleHandle::printBundleVerbose() {
   std::cout << "}" << std::endl;
 }
 
-void BundleHandle::addSignal(const std::string &bundle_name,
-                             proton::SignalConfig config) {
+void BundleHandle::addSignal(proton::SignalConfig config) {
   auto sig = std::shared_ptr<proton::Signal>(bundle->add_signals());
   int idx = bundle->signals_size() - 1;
 

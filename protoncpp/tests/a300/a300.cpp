@@ -88,12 +88,12 @@ void send_bundle(const std::string& bundle_name)
 
   if (bundle->SerializeToArray(write_buf_, PROTON_MAX_MESSAGE_SIZE))
   {
-    // size_t bytes_written = PROTON_TRANSPORT__PcWrite(write_buf_, bundle->ByteSizeLong());
+    size_t bytes_written = node.write(write_buf_, bundle->ByteSizeLong());
 
-    // if (bytes_written > 0)
-    // {
-    //   tx += bytes_written;
-    // }
+    if (bytes_written > 0)
+    {
+      tx += bytes_written;
+    }
   }
 }
 
@@ -110,7 +110,7 @@ void update_lights()
 void update_fans()
 {
   node.getBundle("cmd_fans").getSignal("fan_speeds").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255});
-  node.printAllBundles();
+  //node.printAllBundles();
   send_bundle("cmd_fans");
 }
 
@@ -160,9 +160,7 @@ int main()
 {
   printf("~~~~~~~ A300 node ~~~~~~~\r\n");
 
-  node = proton::Node("/home/rkreinin/proto_ws/src/proton/protoncpp/tests/a300/config/a300.yaml");
-
-  //socket_init();
+  node = proton::Node("/home/rkreinin/proto_ws/src/proton/protoncpp/tests/a300/config/a300.yaml", "pc");
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_thread(run_send_thread);
@@ -175,6 +173,7 @@ int main()
     //   rx += bytes_read;
     //   node.receiveBundle(read_buf_, bytes_read);
     // }
+    node.spinOnce();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 
