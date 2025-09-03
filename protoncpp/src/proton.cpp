@@ -71,6 +71,20 @@ void Node::sendBundle(const std::string &bundle_name) {
   }
 }
 
+bool Node::registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback)
+{
+  auto& bundle = getBundle(bundle_name);
+
+  if (callback && bundle.consumer == target_)
+  {
+    bundle.registerCallback(callback);
+    return true;
+  }
+
+  return false;
+}
+
+
 void Node::spinOnce() {
   if (!connected()) {
     return;
@@ -80,9 +94,13 @@ void Node::spinOnce() {
 
   size_t bytes_read = read(read_buf, 1024);
   if (bytes_read > 0) {
-    auto bundle = receiveBundle(read_buf, bytes_read);
+    auto& bundle = receiveBundle(read_buf, bytes_read);
     rx_ += bytes_read;
-    // std::cout << "Received 0x" << std::hex << bundle.id << std::endl;
+    auto callback = bundle.getCallback();
+    if (callback)
+    {
+      callback(bundle);
+    }
   }
 }
 

@@ -259,7 +259,7 @@ void *spam_log(void *arg) {
   uint32_t i = 0;
   while (1) {
     LOG_INFO("Test %ld", i++);
-    msleep(10);
+    msleep(100);
   }
 }
 

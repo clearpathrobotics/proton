@@ -51,6 +51,8 @@ public:
 
 class BundleHandle {
 public:
+  using BundleCallback = std::function<void(BundleHandle&)>;
+
   BundleHandle(proton::BundleConfig config);
 
   void addSignal(proton::SignalConfig config);
@@ -59,12 +61,16 @@ public:
   void printBundle();
   void printBundleVerbose();
 
+  void registerCallback(BundleCallback callback);
+  BundleCallback getCallback() { return callback_; }
+
   std::string name;
   uint32_t id;
   std::string producer;
   std::string consumer;
   std::shared_ptr<proton::Bundle> bundle;
   std::map<std::string, SignalHandle> signals_;
+  BundleCallback callback_;
 };
 
 class BundleManager {

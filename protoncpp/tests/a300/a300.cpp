@@ -67,12 +67,61 @@ void run_stats_thread()
   }
 }
 
+void logger_callback(proton::BundleHandle& bundle)
+{
+  bundle.printBundle();
+}
+
+void status_callback(proton::BundleHandle& bundle)
+{
+  bundle.printBundle();
+}
+
+void power_callback(proton::BundleHandle& bundle)
+{
+  bundle.printBundle();
+}
+
+void estop_callback(proton::BundleHandle& bundle)
+{
+  bundle.printBundle();
+}
+
+void temperature_callback(proton::BundleHandle& bundle)
+{
+  bundle.printBundle();
+}
+
+void stop_status_callback(proton::BundleHandle& bundle)
+{
+  bundle.printBundle();
+}
+
+void pinout_state_callback(proton::BundleHandle& bundle)
+{
+  bundle.printBundle();
+}
+
+void alerts_callback(proton::BundleHandle& bundle)
+{
+  bundle.printBundle();
+}
+
 
 int main()
 {
   printf("~~~~~~~ A300 node ~~~~~~~\r\n");
 
   node = proton::Node("/home/rkreinin/proto_ws/src/proton/protoncpp/tests/a300/config/a300.yaml", "pc");
+
+  node.registerCallback("logger", logger_callback);
+  node.registerCallback("status", status_callback);
+  node.registerCallback("power", power_callback);
+  node.registerCallback("emergency_stop", estop_callback);
+  node.registerCallback("temperature", temperature_callback);
+  node.registerCallback("stop_status", stop_status_callback);
+  node.registerCallback("pinout_state", pinout_state_callback);
+  node.registerCallback("alerts", alerts_callback);
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_thread(run_send_thread);

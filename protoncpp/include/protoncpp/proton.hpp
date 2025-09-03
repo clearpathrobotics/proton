@@ -26,6 +26,8 @@ namespace proton {
 
 class Node : public BundleManager, public TransportManager {
 public:
+
+
   Node();
   Node(const std::string config_file, const std::string target);
 
@@ -41,6 +43,8 @@ public:
 
   void resetRx() { rx_ = 0; }
   void resetTx() { tx_ = 0; }
+
+  bool registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback);
 
 private:
   Config config_;

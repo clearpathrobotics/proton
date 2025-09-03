@@ -145,10 +145,19 @@ BundleHandle::BundleHandle(proton::BundleConfig config) {
   consumer = config.getConsumer();
   bundle = std::make_shared<proton::Bundle>();
   bundle->set_id(id);
+  callback_ = nullptr;
 
   // Add each signal for this bundle
   for (auto s : config.getSignals()) {
     addSignal(s);
+  }
+}
+
+void BundleHandle::registerCallback(BundleCallback callback)
+{
+  if (callback)
+  {
+    callback_ = callback;
   }
 }
 
