@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <vector>
+#include <thread>
 
 #include "protoncpp/bundle.pb.h"
 #include "protoncpp/bundle_manager.hpp"
@@ -33,9 +34,18 @@ public:
   void spinOnce();
   void spin();
 
+  void sendBundle(const std::string &bundle_name);
+
+  uint64_t getRx() { return rx_; }
+  uint64_t getTx() { return tx_; }
+
+  void resetRx() { rx_ = 0; }
+  void resetTx() { tx_ = 0; }
+
 private:
-  std::string target_;
   Config config_;
+  std::string target_;
+  uint64_t rx_, tx_;
 };
 
 } // namespace proton
