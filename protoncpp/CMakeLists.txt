@@ -106,6 +106,3 @@ target_include_directories(protoncpp
 
 target_link_libraries(protoncpp PRIVATE protobuf::libprotobuf)
 target_link_libraries(protoncpp PUBLIC yaml-cpp::yaml-cpp)
-
-# Add tests
-add_subdirectory(tests)

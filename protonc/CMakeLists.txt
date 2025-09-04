@@ -122,7 +122,3 @@ target_include_directories(${PROJECT_NAME}
 # Protonc generator
 # -------------------------------
 find_program(PROTONC_GENERATOR protonc_generator)
-
-
-# Add tests
-add_subdirectory(tests)

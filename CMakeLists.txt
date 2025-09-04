@@ -9,3 +9,4 @@ endif()
 
 add_subdirectory(protonc)
 add_subdirectory(protoncpp)
+add_subdirectory(examples)

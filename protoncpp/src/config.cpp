@@ -54,16 +54,18 @@ Config::Config(std::string file) {
         capacity = 0;
       }
 
-      signal_configs.push_back(
-          SignalConfig(signal[keys::NAME].as<std::string>(),
-                       bundle[keys::NAME].as<std::string>(),
-                       signal[keys::TYPE].as<std::string>(), length, capacity));
+      SignalConfig config = {signal[keys::NAME].as<std::string>(),
+                             bundle[keys::NAME].as<std::string>(),
+                             signal[keys::TYPE].as<std::string>(), length,
+                             capacity};
+
+      signal_configs.push_back(config);
     }
 
-    BundleConfig bundle_config = BundleConfig(
+    BundleConfig bundle_config = {
         bundle[keys::NAME].as<std::string>(), bundle[keys::ID].as<uint32_t>(),
         bundle[keys::PRODUCER].as<std::string>(),
-        bundle[keys::CONSUMER].as<std::string>(), signal_configs);
+        bundle[keys::CONSUMER].as<std::string>(), signal_configs};
 
     bundles_.push_back(bundle_config);
   }

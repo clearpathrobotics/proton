@@ -15,6 +15,8 @@
 uint8_t write_buf_[PROTON_MAX_MESSAGE_SIZE];
 uint8_t read_buf_[PROTON_MAX_MESSAGE_SIZE];
 
+double rx, tx;
+
 proton_buffer_t proton_mcu_read_buffer = {read_buf_, PROTON_MAX_MESSAGE_SIZE};
 proton_buffer_t proton_mcu_write_buffer = {write_buf_, PROTON_MAX_MESSAGE_SIZE};
 
@@ -32,6 +34,19 @@ void send_log(char *file, int line, uint8_t level, char *msg, ...);
   send_log(__FILE_NAME__, __LINE__, 40U, message, ##__VA_ARGS__)
 #define LOG_FATAL(message, ...)                                                \
   send_log(__FILE_NAME__, __LINE__, 50U, message, ##__VA_ARGS__)
+
+typedef enum {
+  CALLBACK_CMD_FANS,
+  CALLBACK_DISPLAY_STATUS,
+  CALLBACK_CMD_LIGHTS,
+  CALLBACK_BATTERY,
+  CALLBACK_PINOUT_COMMAND,
+  CALLBACK_CMD_SHUTDOWN,
+  CALLBACK_CLEAR_NEEDS_RESET,
+  CALLBACK_COUNT
+} callback_e;
+
+uint32_t cb_counts[CALLBACK_COUNT];
 
 int msleep(long msec) {
   struct timespec ts;
@@ -92,57 +107,66 @@ int socket_init() {
 }
 
 void PROTON_BUNDLE_CmdFansCallback() {
-  printf("Received CmdFans\r\n");
-  printf("[");
-  for (int i = 0; i < PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY; i++) {
-    printf("%d", cmd_fans_bundle.fan_speeds[i]);
-    if (i != PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY - 1) {
-      printf(", ");
-    }
-  }
-  printf("]\r\n");
+  cb_counts[CALLBACK_CMD_FANS]++;
+  // printf("Received CmdFans\r\n");
+  // printf("[");
+  // for (int i = 0; i < PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY; i++) {
+  //   printf("%d", cmd_fans_bundle.fan_speeds[i]);
+  //   if (i != PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY - 1) {
+  //     printf(", ");
+  //   }
+  // }
+  // printf("]\r\n");
 }
 
 void PROTON_BUNDLE_DisplayStatusCallback() {
+  cb_counts[CALLBACK_DISPLAY_STATUS]++;
   printf("Received DisplayStatus\r\n");
   printf("string_1: %s\r\n", display_status_bundle.string_1);
   printf("string_1: %s\r\n", display_status_bundle.string_2);
 }
 
 void PROTON_BUNDLE_CmdLightsCallback() {
-  printf("Received CmdLights\r\n");
-  printf("front_left_light [%d, %d, %d]\r\n",
-         cmd_lights_bundle.front_left_light[0],
-         cmd_lights_bundle.front_left_light[1],
-         cmd_lights_bundle.front_left_light[2]);
-  printf("front_right_light [%d, %d, %d]\r\n",
-         cmd_lights_bundle.front_right_light[0],
-         cmd_lights_bundle.front_right_light[1],
-         cmd_lights_bundle.front_right_light[2]);
-  printf("rear_left_light [%d, %d, %d]\r\n",
-         cmd_lights_bundle.rear_left_light[0],
-         cmd_lights_bundle.rear_left_light[1],
-         cmd_lights_bundle.rear_left_light[2]);
-  printf("rear_right_light [%d, %d, %d]\r\n",
-         cmd_lights_bundle.rear_right_light[0],
-         cmd_lights_bundle.rear_right_light[1],
-         cmd_lights_bundle.rear_right_light[2]);
+  cb_counts[CALLBACK_CMD_LIGHTS]++;
+  // printf("Received CmdLights\r\n");
+  // printf("front_left_light [%d, %d, %d]\r\n",
+  //        cmd_lights_bundle.front_left_light[0],
+  //        cmd_lights_bundle.front_left_light[1],
+  //        cmd_lights_bundle.front_left_light[2]);
+  // printf("front_right_light [%d, %d, %d]\r\n",
+  //        cmd_lights_bundle.front_right_light[0],
+  //        cmd_lights_bundle.front_right_light[1],
+  //        cmd_lights_bundle.front_right_light[2]);
+  // printf("rear_left_light [%d, %d, %d]\r\n",
+  //        cmd_lights_bundle.rear_left_light[0],
+  //        cmd_lights_bundle.rear_left_light[1],
+  //        cmd_lights_bundle.rear_left_light[2]);
+  // printf("rear_right_light [%d, %d, %d]\r\n",
+  //        cmd_lights_bundle.rear_right_light[0],
+  //        cmd_lights_bundle.rear_right_light[1],
+  //        cmd_lights_bundle.rear_right_light[2]);
   // print_bundle(cmd_lights_bundle.bundle);
 }
 
 void PROTON_BUNDLE_BatteryCallback() {
+  cb_counts[CALLBACK_BATTERY]++;
   printf("Received Battery %f\r\n", battery_bundle.percentage);
   // print_bundle(battery_bundle.bundle);
 }
 
 void PROTON_BUNDLE_PinoutCommandCallback() {
+  cb_counts[CALLBACK_PINOUT_COMMAND]++;
   printf("Received Pinout\r\n");
   // print_bundle(pinout_command_bundle.bundle);
 }
 
-void PROTON_BUNDLE_CmdShutdownCallback() { printf("~~~SHUTTING DOWN~~~\r\n"); }
+void PROTON_BUNDLE_CmdShutdownCallback() {
+  cb_counts[CALLBACK_CMD_SHUTDOWN]++;
+  printf("~~~SHUTTING DOWN~~~\r\n");
+}
 
 void PROTON_BUNDLE_ClearNeedsResetCallback() {
+  cb_counts[CALLBACK_CLEAR_NEEDS_RESET]++;
   printf("~~~Needs reset cleared~~~\r\n");
   stop_status_bundle.needs_reset = false;
 }
@@ -235,6 +259,8 @@ size_t PROTON_TRANSPORT__McuRead(uint8_t *buf, size_t len) {
     return 0;
   }
 
+  rx += ret;
+
   return ret;
 }
 
@@ -245,21 +271,64 @@ size_t PROTON_TRANSPORT__McuWrite(const uint8_t *buf, size_t len) {
     return 0;
   }
 
+  tx += ret;
+
   return ret;
 }
 
 pthread_mutex_t lock;
-pthread_t thread;
 
 bool PROTON_MUTEX__McuLock() { return pthread_mutex_lock(&lock) == 0; }
 
 bool PROTON_MUTEX__McuUnlock() { return pthread_mutex_unlock(&lock) == 0; }
 
-void *spam_log(void *arg) {
+void *timer_1hz(void *arg) {
   uint32_t i = 0;
   while (1) {
-    LOG_INFO("Test %ld", i++);
+    LOG_INFO("1hz timer %ld", i++);
+    update_status(i);
+    update_emergency_stop();
+    update_stop_status();
+    update_alerts();
+    msleep(1000);
+  }
+}
+
+void *timer_10hz(void *arg) {
+  uint32_t i = 0;
+  while (1) {
+    LOG_INFO("10hz timer %ld", i++);
+    update_power();
+    update_temperature();
+    update_pinout_state();
     msleep(100);
+  }
+}
+
+void * stats(void *arg) {
+  uint32_t i = 0;
+  while (1) {
+    printf("\033[2J\033[1;1H");
+    printf("-------- A300 MCU C --------\r\n");
+    printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", rx / 1000, tx / 1000);
+    printf("cmd_fans hz: %d\r\n", cb_counts[CALLBACK_CMD_FANS]);
+    printf("display_status hz: %d\r\n", cb_counts[CALLBACK_DISPLAY_STATUS]);
+    printf("cmd_lights hz: %d\r\n", cb_counts[CALLBACK_CMD_LIGHTS]);
+    printf("battery hz: %d\r\n", cb_counts[CALLBACK_BATTERY]);
+    printf("pinout_command hz: %d\r\n", cb_counts[CALLBACK_PINOUT_COMMAND]);
+    printf("cmd_shutdown hz: %d\r\n", cb_counts[CALLBACK_CMD_SHUTDOWN]);
+    printf("clear_needs_reset hz: %d\r\n", cb_counts[CALLBACK_CLEAR_NEEDS_RESET]);
+    printf("----------------------------\r\n");
+
+    rx = 0.0;
+    tx = 0.0;
+
+    for (uint8_t i = 0; i < CALLBACK_COUNT; i++)
+    {
+      cb_counts[i] = 0;
+    }
+
+    msleep(1000);
   }
 }
 
@@ -276,34 +345,17 @@ int main() {
   strcpy(status_bundle.hardware_id, "A300");
   stop_status_bundle.needs_reset = true;
 
-  uint32_t i = 0;
+  pthread_t thread_10hz, thread_1hz, thread_stats;
 
-  pthread_create(&thread, NULL, &spam_log, NULL);
+  pthread_create(&thread_10hz, NULL, &timer_10hz, NULL);
+  pthread_create(&thread_1hz, NULL, &timer_1hz, NULL);
+  pthread_create(&thread_stats, NULL, &stats, NULL);
 
-  while (1) {
-    // 1 hz
-    if (i % 1000 == 0) {
-      update_status(i);
-      update_emergency_stop();
-      update_stop_status();
-      update_alerts();
-    }
+  PROTON_Spin(&mcu_node);
 
-    // 10hz
-    if (i % 100 == 0) {
-      update_power();
-      update_temperature();
-      update_pinout_state();
-    }
-
-    // 50hz
-    if (i % 20 == 0) {
-    }
-
-    PROTON_SpinOnce(&mcu_node);
-    msleep(1);
-    i++;
-  }
+  pthread_join(thread_10hz, NULL);
+  pthread_join(thread_1hz, NULL);
+  pthread_join(thread_stats, NULL);
 
   return 0;
 }

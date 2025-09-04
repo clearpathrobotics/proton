@@ -61,7 +61,7 @@ void Node::sendBundle(const std::string &bundle_name) {
     return;
   }
 
-  auto bundle = getBundle(bundle_name).bundle.get();
+  auto bundle = getBundle(bundle_name).getBundlePtr().get();
 
   auto buf = std::make_unique<uint8_t[]>(bundle->ByteSizeLong());
 
@@ -75,7 +75,7 @@ bool Node::registerCallback(const std::string &bundle_name, BundleHandle::Bundle
 {
   auto& bundle = getBundle(bundle_name);
 
-  if (callback && bundle.consumer == target_)
+  if (callback && bundle.getConsumer() == target_)
   {
     bundle.registerCallback(callback);
     return true;

@@ -24,97 +24,71 @@
 namespace proton {
 
 namespace keys {
-
-static const char *const NODES = "nodes";
-static const char *const BUNDLES = "bundles";
-static const char *const NAME = "name";
-static const char *const TRANSPORT = "transport";
-static const char *const TYPE = "type";
-static const char *const IP = "ip";
-static const char *const PORT = "port";
-static const char *const DEVICE = "device";
-static const char *const LENGTH = "length";
-static const char *const CAPACITY = "capacity";
-static const char *const ID = "id";
-static const char *const PRODUCER = "producer";
-static const char *const CONSUMER = "consumer";
-static const char *const SIGNALS = "signals";
-
+  static const char *const NODES = "nodes";
+  static const char *const BUNDLES = "bundles";
+  static const char *const NAME = "name";
+  static const char *const TRANSPORT = "transport";
+  static const char *const TYPE = "type";
+  static const char *const IP = "ip";
+  static const char *const PORT = "port";
+  static const char *const DEVICE = "device";
+  static const char *const LENGTH = "length";
+  static const char *const CAPACITY = "capacity";
+  static const char *const ID = "id";
+  static const char *const PRODUCER = "producer";
+  static const char *const CONSUMER = "consumer";
+  static const char *const SIGNALS = "signals";
 } // namespace keys
 
-class SignalConfig {
-public:
-  inline static const std::string TYPE_DOUBLE = "double";
-  inline static const std::string TYPE_FLOAT = "float";
-  inline static const std::string TYPE_INT32 = "int32";
-  inline static const std::string TYPE_INT64 = "int64";
-  inline static const std::string TYPE_UINT32 = "uint32";
-  inline static const std::string TYPE_UINT64 = "uint64";
-  inline static const std::string TYPE_BOOL = "bool";
-  inline static const std::string TYPE_STRING = "string";
-  inline static const std::string TYPE_BYTES = "bytes";
+namespace types {
+  inline static const std::string DOUBLE = "double";
+  inline static const std::string FLOAT = "float";
+  inline static const std::string INT32 = "int32";
+  inline static const std::string INT64 = "int64";
+  inline static const std::string UINT32 = "uint32";
+  inline static const std::string UINT64 = "uint64";
+  inline static const std::string BOOL = "bool";
+  inline static const std::string STRING = "string";
+  inline static const std::string BYTES = "bytes";
+} // namespace types
 
-  const std::map<std::string, proton::Signal::SignalCase> SignalMap = {
-      {TYPE_DOUBLE, proton::Signal::SignalCase::kDoubleValue},
-      {TYPE_FLOAT, proton::Signal::SignalCase::kFloatValue},
-      {TYPE_INT32, proton::Signal::SignalCase::kInt32Value},
-      {TYPE_INT64, proton::Signal::SignalCase::kInt64Value},
-      {TYPE_UINT32, proton::Signal::SignalCase::kUint32Value},
-      {TYPE_UINT64, proton::Signal::SignalCase::kUint64Value},
-      {TYPE_BOOL, proton::Signal::SignalCase::kBoolValue},
-      {TYPE_STRING, proton::Signal::SignalCase::kStringValue},
-      {TYPE_BYTES, proton::Signal::SignalCase::kBytesValue}};
+namespace signal_map {
+  const std::map<std::string, proton::Signal::SignalCase> ScalarSignalMap = {
+      {types::DOUBLE, proton::Signal::SignalCase::kDoubleValue},
+      {types::FLOAT, proton::Signal::SignalCase::kFloatValue},
+      {types::INT32, proton::Signal::SignalCase::kInt32Value},
+      {types::INT64, proton::Signal::SignalCase::kInt64Value},
+      {types::UINT32, proton::Signal::SignalCase::kUint32Value},
+      {types::UINT64, proton::Signal::SignalCase::kUint64Value},
+      {types::BOOL, proton::Signal::SignalCase::kBoolValue},
+      {types::STRING, proton::Signal::SignalCase::kStringValue},
+      {types::BYTES, proton::Signal::SignalCase::kBytesValue}};
 
   const std::map<std::string, proton::Signal::SignalCase> ListSignalMap = {
-      {TYPE_DOUBLE, proton::Signal::SignalCase::kListDoubleValue},
-      {TYPE_FLOAT, proton::Signal::SignalCase::kListFloatValue},
-      {TYPE_INT32, proton::Signal::SignalCase::kListInt32Value},
-      {TYPE_INT64, proton::Signal::SignalCase::kListInt64Value},
-      {TYPE_UINT32, proton::Signal::SignalCase::kListUint32Value},
-      {TYPE_UINT64, proton::Signal::SignalCase::kListUint64Value},
-      {TYPE_BOOL, proton::Signal::SignalCase::kListBoolValue},
-      {TYPE_STRING, proton::Signal::SignalCase::kListStringValue}};
+      {types::DOUBLE, proton::Signal::SignalCase::kListDoubleValue},
+      {types::FLOAT, proton::Signal::SignalCase::kListFloatValue},
+      {types::INT32, proton::Signal::SignalCase::kListInt32Value},
+      {types::INT64, proton::Signal::SignalCase::kListInt64Value},
+      {types::UINT32, proton::Signal::SignalCase::kListUint32Value},
+      {types::UINT64, proton::Signal::SignalCase::kListUint64Value},
+      {types::BOOL, proton::Signal::SignalCase::kListBoolValue},
+      {types::STRING, proton::Signal::SignalCase::kListStringValue}};
+}
 
-  SignalConfig() : name_(""), type_string_(""), length_(0), capacity_(0) {}
-  SignalConfig(std::string name, std::string bundle_name, std::string type,
-               uint32_t length, uint32_t capacity)
-      : name_(name), bundle_name_(bundle_name), type_string_(type),
-        length_(length), capacity_(capacity) {}
-
-  std::string getName() { return name_; }
-  std::string getBundleName() { return bundle_name_; }
-  std::string getTypeString() { return type_string_; }
-  uint32_t getLength() { return length_; }
-  uint32_t getCapacity() { return capacity_; }
-
-private:
-  std::string name_;
-  std::string bundle_name_;
-  std::string type_string_;
-  uint32_t length_;
-  uint32_t capacity_;
+struct SignalConfig {
+  std::string name;
+  std::string bundle_name;
+  std::string type_string;
+  uint32_t length;
+  uint32_t capacity;
 };
 
-class BundleConfig {
-public:
-  BundleConfig() : name_(""), id_(0), producer_(""), consumer_("") {}
-  BundleConfig(std::string name, uint32_t id, std::string producer,
-               std::string consumer, std::vector<SignalConfig> signals)
-      : name_(name), id_(id), producer_(producer), consumer_(consumer),
-        signals_(signals) {}
-
-  std::string getName() { return name_; }
-  uint32_t getID() { return id_; }
-  std::string getProducer() { return producer_; }
-  std::string getConsumer() { return consumer_; }
-  std::vector<SignalConfig> getSignals() { return signals_; }
-
-private:
-  std::string name_;
-  uint32_t id_;
-  std::string producer_;
-  std::string consumer_;
-  std::vector<SignalConfig> signals_;
+struct BundleConfig {
+  std::string name;
+  uint32_t id;
+  std::string producer;
+  std::string consumer;
+  std::vector<SignalConfig> signals;
 };
 
 class TransportConfig {
