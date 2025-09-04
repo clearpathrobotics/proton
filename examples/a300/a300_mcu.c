@@ -108,81 +108,45 @@ int socket_init() {
 
 void PROTON_BUNDLE_CmdFansCallback() {
   cb_counts[CALLBACK_CMD_FANS]++;
-  // printf("Received CmdFans\r\n");
-  // printf("[");
-  // for (int i = 0; i < PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY; i++) {
-  //   printf("%d", cmd_fans_bundle.fan_speeds[i]);
-  //   if (i != PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY - 1) {
-  //     printf(", ");
-  //   }
-  // }
-  // printf("]\r\n");
 }
 
 void PROTON_BUNDLE_DisplayStatusCallback() {
   cb_counts[CALLBACK_DISPLAY_STATUS]++;
-  printf("Received DisplayStatus\r\n");
-  printf("string_1: %s\r\n", display_status_bundle.string_1);
-  printf("string_1: %s\r\n", display_status_bundle.string_2);
 }
 
 void PROTON_BUNDLE_CmdLightsCallback() {
   cb_counts[CALLBACK_CMD_LIGHTS]++;
-  // printf("Received CmdLights\r\n");
-  // printf("front_left_light [%d, %d, %d]\r\n",
-  //        cmd_lights_bundle.front_left_light[0],
-  //        cmd_lights_bundle.front_left_light[1],
-  //        cmd_lights_bundle.front_left_light[2]);
-  // printf("front_right_light [%d, %d, %d]\r\n",
-  //        cmd_lights_bundle.front_right_light[0],
-  //        cmd_lights_bundle.front_right_light[1],
-  //        cmd_lights_bundle.front_right_light[2]);
-  // printf("rear_left_light [%d, %d, %d]\r\n",
-  //        cmd_lights_bundle.rear_left_light[0],
-  //        cmd_lights_bundle.rear_left_light[1],
-  //        cmd_lights_bundle.rear_left_light[2]);
-  // printf("rear_right_light [%d, %d, %d]\r\n",
-  //        cmd_lights_bundle.rear_right_light[0],
-  //        cmd_lights_bundle.rear_right_light[1],
-  //        cmd_lights_bundle.rear_right_light[2]);
-  // print_bundle(cmd_lights_bundle.bundle);
 }
 
 void PROTON_BUNDLE_BatteryCallback() {
   cb_counts[CALLBACK_BATTERY]++;
-  printf("Received Battery %f\r\n", battery_bundle.percentage);
-  // print_bundle(battery_bundle.bundle);
 }
 
 void PROTON_BUNDLE_PinoutCommandCallback() {
   cb_counts[CALLBACK_PINOUT_COMMAND]++;
-  printf("Received Pinout\r\n");
-  // print_bundle(pinout_command_bundle.bundle);
 }
 
 void PROTON_BUNDLE_CmdShutdownCallback() {
   cb_counts[CALLBACK_CMD_SHUTDOWN]++;
-  printf("~~~SHUTTING DOWN~~~\r\n");
 }
 
 void PROTON_BUNDLE_ClearNeedsResetCallback() {
   cb_counts[CALLBACK_CLEAR_NEEDS_RESET]++;
-  printf("~~~Needs reset cleared~~~\r\n");
   stop_status_bundle.needs_reset = false;
 }
 
 void send_log(char *file, int line, uint8_t level, char *msg, ...) {
-  strcpy(logger_bundle.name, "A300_proton");
-  strcpy(logger_bundle.file, file);
-  logger_bundle.line = line;
-  logger_bundle.level = level;
+  strcpy(log_bundle.name, "A300_proton");
+  strcpy(log_bundle.file, file);
+  log_bundle.line = line;
+  log_bundle.level = level;
 
   va_list args;
   va_start(args, msg);
-  vsprintf(logger_bundle.msg, msg, args);
+  vsprintf(log_bundle.msg, msg, args);
   va_end(args);
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__LOGGER);
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__LOG);
 }
 
 void update_power() {
@@ -309,16 +273,17 @@ void * stats(void *arg) {
   uint32_t i = 0;
   while (1) {
     printf("\033[2J\033[1;1H");
-    printf("-------- A300 MCU C --------\r\n");
+    printf("--------- A300 MCU C --------\r\n");
     printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", rx / 1000, tx / 1000);
-    printf("cmd_fans hz: %d\r\n", cb_counts[CALLBACK_CMD_FANS]);
-    printf("display_status hz: %d\r\n", cb_counts[CALLBACK_DISPLAY_STATUS]);
-    printf("cmd_lights hz: %d\r\n", cb_counts[CALLBACK_CMD_LIGHTS]);
-    printf("battery hz: %d\r\n", cb_counts[CALLBACK_BATTERY]);
-    printf("pinout_command hz: %d\r\n", cb_counts[CALLBACK_PINOUT_COMMAND]);
-    printf("cmd_shutdown hz: %d\r\n", cb_counts[CALLBACK_CMD_SHUTDOWN]);
-    printf("clear_needs_reset hz: %d\r\n", cb_counts[CALLBACK_CLEAR_NEEDS_RESET]);
-    printf("----------------------------\r\n");
+    printf("--- Received Bundles (hz) ---\r\n");
+    printf("cmd_fans: %d\r\n", cb_counts[CALLBACK_CMD_FANS]);
+    printf("display_status: %d\r\n", cb_counts[CALLBACK_DISPLAY_STATUS]);
+    printf("cmd_lights: %d\r\n", cb_counts[CALLBACK_CMD_LIGHTS]);
+    printf("battery: %d\r\n", cb_counts[CALLBACK_BATTERY]);
+    printf("pinout_command: %d\r\n", cb_counts[CALLBACK_PINOUT_COMMAND]);
+    printf("cmd_shutdown: %d\r\n", cb_counts[CALLBACK_CMD_SHUTDOWN]);
+    printf("clear_needs_reset: %d\r\n", cb_counts[CALLBACK_CLEAR_NEEDS_RESET]);
+    printf("-----------------------------\r\n");
 
     rx = 0.0;
     tx = 0.0;

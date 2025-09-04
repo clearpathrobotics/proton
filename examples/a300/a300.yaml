@@ -10,7 +10,7 @@ nodes:
       ip: 127.0.0.1
       port: 11416
 bundles:
-  - name: logger
+  - name: log
     id: 0x100
     producer: mcu
     consumer: pc

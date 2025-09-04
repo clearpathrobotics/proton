@@ -135,7 +135,6 @@ size_t Udp4Transport::write(const uint8_t * buf, size_t len)
 
   if (ret < 0)
   {
-    std::cerr << "write err " << ret << std::endl;
     return 0;
   }
 

@@ -71,6 +71,21 @@ void Node::sendBundle(const std::string &bundle_name) {
   }
 }
 
+void Node::sendBundle(BundleHandle &bundle_handle) {
+  if (!connected()) {
+    return;
+  }
+
+  auto bundle = bundle_handle.getBundlePtr().get();
+
+  auto buf = std::make_unique<uint8_t[]>(bundle->ByteSizeLong());
+
+  if (bundle->SerializeToArray(buf.get(), bundle->ByteSizeLong()))
+  {
+    tx_ += write(buf.get(), bundle->ByteSizeLong());
+  }
+}
+
 bool Node::registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback)
 {
   auto& bundle = getBundle(bundle_name);

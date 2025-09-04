@@ -37,6 +37,7 @@ public:
   void spin();
 
   void sendBundle(const std::string &bundle_name);
+  void sendBundle(BundleHandle &bundle_handle);
 
   uint64_t getRx() { return rx_; }
   uint64_t getTx() { return tx_; }
