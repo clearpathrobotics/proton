@@ -4,22 +4,6 @@ Proton communication protocol.
 
 ## Build steps
 
-### Protonc Python library
-
-This command will install the `protonc` python module to your local system.
-
-```
-pip install -e protonc --break-system-packages
-```
-
-You can then call the `protonc` generator from anywhere with
-
-```
-protonc_generator -c /path/to/config.yaml -d /path/to/generated/dir -t target_name
-```
-
-### CMake
-
 Build all C/C++ code with:
 
 ```
@@ -29,22 +13,44 @@ cmake ..
 make
 ```
 
-### Run A300 test
+## Run Examples
 
-#### Terminal 1
+### A300
 
-C Node:
+MCU and PC nodes are implemented in both C and C++ and can be used interchangeably.
 
-```
-cd build/protonc/tests/a300
-./a300
-```
+#### Terminal 1 - MCU
 
-#### Terminal 2
+These nodes simulate the A300 MCU.
 
-Python ROS bridge:
+##### C
 
 ```
-source ~/proton_ws/install/setup.bash
-ros2 run proton a300_ros2_bridge
+cd build/examples/a300
+./a300_mcu_c
+```
+
+##### C++
+
+```
+cd build/examples/a300
+./a300_mcu_cpp
+```
+
+#### Terminal 2 - PC
+
+These nodes simulate the A300 PC.
+
+##### C
+
+```
+cd build/examples/a300
+./a300_pc_c
+```
+
+##### C++
+
+```
+cd build/examples/a300
+./a300_pc_cpp
 ```
