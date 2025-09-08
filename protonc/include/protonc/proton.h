@@ -18,6 +18,13 @@
 #include "pb_decode.h"
 #include "pb_encode.h"
 
+#define PROTON_FRAME_HEADER_MAGIC_BYTE_0 (uint8_t)0x50
+#define PROTON_FRAME_HEADER_MAGIC_BYTE_1 (uint8_t)0x52
+#define PROTON_FRAME_HEADER_LENGTH_OVERHEAD sizeof(uint16_t)
+#define PROTON_FRAME_CRC_OVERHEAD sizeof(uint16_t)
+#define PROTON_FRAME_HEADER_OVERHEAD sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_0) + sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_1) + PROTON_FRAME_HEADER_LENGTH_OVERHEAD
+#define PROTON_FRAME_OVERHEAD PROTON_FRAME_HEADER_OVERHEAD + PROTON_FRAME_CRC_OVERHEAD
+
 typedef enum {
   PROTON_SIGNAL_TYPE_DOUBLE_VALUE,
   PROTON_SIGNAL_TYPE_FLOAT_VALUE,
@@ -102,6 +109,12 @@ bool PROTON_DecodeId(uint32_t *id, const uint8_t *buffer, size_t buffer_length);
 
 proton_status_e PROTON_Spin(proton_node_t *node);
 proton_status_e PROTON_SpinOnce(proton_node_t *node);
+
+uint16_t PROTON_CRC16(const uint8_t *data, uint16_t len);
+bool PROTON_FillFrameHeader(uint8_t * header, uint16_t payload_len);
+bool PROTON_FillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
+bool PROTON_CheckFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
+uint16_t PROTON_GetFramedPayloadLength(const uint8_t * framed_buf);
 
 void print_bundle(proton_Bundle bundle);
 void print_signal(proton_Signal signal);

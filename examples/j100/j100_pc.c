@@ -1,12 +1,11 @@
-#include <fcntl.h>
-#include <netinet/in.h>
 #include <pthread.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/types.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <termios.h>
+#include <unistd.h>
 #include <time.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #include "proton__j100_pc.h"
 
@@ -20,7 +19,7 @@ double rx, tx;
 proton_buffer_t proton_pc_read_buffer = {read_buf_, PROTON_MAX_MESSAGE_SIZE};
 proton_buffer_t proton_pc_write_buffer = {write_buf_, PROTON_MAX_MESSAGE_SIZE};
 
-int sock_send, sock_recv;
+int serial_port;
 
 #define MAX_LOGS 100
 
@@ -34,8 +33,10 @@ typedef enum {
   CALLBACK_ESTOP,
   CALLBACK_TEMPERATURE,
   CALLBACK_STOP_STATUS,
-  CALLBACK_PINOUT_STATE,
-  CALLBACK_ALERTS,
+  CALLBACK_IMU,
+  CALLBACK_MAG,
+  CALLBACK_NMEA,
+  CALLBACK_MOTOR_FEEDBACK,
   CALLBACK_COUNT
 } callback_e;
 
@@ -57,6 +58,30 @@ int msleep(long msec) {
   } while (res);
 
   return res;
+}
+
+int serialInit()
+{
+  serial_port = open(PROTON_NODE__PC__DEVICE, O_RDWR | O_NOCTTY | O_SYNC);
+
+  if (serial_port == -1) {
+    printf("Error opening serial device\r\n");
+    return -1;
+  }
+
+  struct termios tty;
+
+  if (tcgetattr(serial_port, &tty) != 0) {
+    return -1;
+  }
+
+  cfsetospeed(&tty, B921600);
+  cfsetispeed(&tty, B921600);
+  tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8; // 8-bit
+  tty.c_cflag |= (CLOCAL | CREAD);            // enable receiver
+  tcsetattr(serial_port, TCSANOW, &tty);
+
+  return 0;
 }
 
 void PROTON_BUNDLE_LogCallback()
@@ -91,93 +116,108 @@ void PROTON_BUNDLE_StopStatusCallback()
   cb_counts[CALLBACK_STOP_STATUS]++;
 }
 
-void PROTON_BUNDLE_PinoutStateCallback()
+void PROTON_BUNDLE_ImuCallback()
 {
-  cb_counts[CALLBACK_PINOUT_STATE]++;
+  cb_counts[CALLBACK_IMU]++;
 }
 
-void PROTON_BUNDLE_AlertsCallback()
+void PROTON_BUNDLE_MagnetometerCallback()
 {
-  cb_counts[CALLBACK_ALERTS]++;
+  cb_counts[CALLBACK_MAG]++;
 }
 
-void update_lights()
+void PROTON_BUNDLE_NmeaCallback()
 {
-  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY; i++)
-  {
-    cmd_lights_bundle.front_left_light[i] = rand() % 255;
-    cmd_lights_bundle.front_right_light[i] = rand() % 255;
-    cmd_lights_bundle.rear_left_light[i] = rand() % 255;
-    cmd_lights_bundle.rear_right_light[i] = rand() % 255;
-  }
-
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__CMD_LIGHTS);
+  cb_counts[CALLBACK_NMEA]++;
 }
 
-void update_fans()
+void PROTON_BUNDLE_MotorFeedbackCallback()
 {
-  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY; i++)
-  {
-    cmd_fans_bundle.fan_speeds[i] = rand() % 255;
-  }
-
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__CMD_FANS);
+  cb_counts[CALLBACK_MOTOR_FEEDBACK]++;
 }
 
-void update_display_status()
-{
-  strncpy(display_status_bundle.string_1, "TEST_STRING", PROTON_SIGNALS__DISPLAY_STATUS__STRING_1__CAPACITY);
-  strncpy(display_status_bundle.string_2, "TEST_STRING2", PROTON_SIGNALS__DISPLAY_STATUS__STRING_2__CAPACITY);
-
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__DISPLAY_STATUS);
-}
-
-void update_battery()
-{
-  battery_bundle.percentage = (float)rand();
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__BATTERY);
-}
-
-void update_pinout_command()
-{
-  for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH; i++)
-  {
-    pinout_command_bundle.rails[i] = rand() % 2;
-  }
-  for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH; i++)
-  {
-    pinout_command_bundle.rails[i] = rand() % 2;
-  }
-
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__PINOUT_COMMAND);
-}
-
-bool PROTON_TRANSPORT__PcConnect() { return true; }
+bool PROTON_TRANSPORT__PcConnect() { return serialInit() == 0; }
 
 bool PROTON_TRANSPORT__PcDisconnect() { return true; }
 
 size_t PROTON_TRANSPORT__PcRead(uint8_t *buf, size_t len) {
-  int ret = recv(sock_recv, buf, len, 0);
+  // Read header first
+  int ret = read(serial_port, buf, PROTON_FRAME_HEADER_OVERHEAD);
 
   if (ret < 0) {
     return 0;
   }
 
-  rx += ret;
+  // Get payload length from header
+  uint16_t payload_len = PROTON_GetFramedPayloadLength(buf);
 
-  return ret;
+  // Invalid header
+  if (payload_len == 0)
+  {
+    return 0;
+  }
+
+  // Read payload
+  ret = read(serial_port, buf, payload_len);
+
+  if (ret != payload_len)
+  {
+    return 0;
+  }
+
+  uint8_t crc[2];
+
+  ret = read(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
+
+  // Check for valid CRC16
+  if (ret != PROTON_FRAME_CRC_OVERHEAD || !PROTON_CheckFramedPayload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))))
+  {
+    return 0;
+  }
+
+  rx += payload_len + PROTON_FRAME_OVERHEAD;
+
+  return payload_len;
 }
 
 size_t PROTON_TRANSPORT__PcWrite(const uint8_t *buf, size_t len) {
-  int ret = send(sock_send, buf, len, 0);
+  uint8_t header[4];
+  uint8_t crc[2];
+
+  if (!PROTON_FillFrameHeader(header, len))
+  {
+    return 0;
+  }
+
+  if (!PROTON_FillCRC16(buf, len, crc))
+  {
+    return 0;
+  }
+
+  // Write header
+  int ret = write(serial_port, header, PROTON_FRAME_HEADER_OVERHEAD);
 
   if (ret < 0) {
     return 0;
   }
 
-  tx += ret;
+  // Write payload
+  ret = write(serial_port, buf, len);
 
-  return ret;
+  if (ret < 0) {
+    return 0;
+  }
+
+  // Write CRC16
+  ret = write(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
+
+  if (ret < 0) {
+    return 0;
+  }
+
+  tx += len + PROTON_FRAME_OVERHEAD;
+
+  return len;
 }
 
 pthread_mutex_t lock;
@@ -186,22 +226,41 @@ bool PROTON_MUTEX__McuLock() { return pthread_mutex_lock(&lock) == 0; }
 
 bool PROTON_MUTEX__McuUnlock() { return pthread_mutex_unlock(&lock) == 0; }
 
+void update_wifi_connected()
+{
+  wifi_connected_bundle.connected = !wifi_connected_bundle.connected;
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__WIFI_CONNECTED);
+}
+
+void update_hmi()
+{
+  hmi_bundle.state = rand() % 8;
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__HMI);
+}
+
+void update_motor_command()
+{
+  motor_command_bundle.mode = -1;
+  motor_command_bundle.command[0] = 1.0f;
+  motor_command_bundle.command[1] = -1.0f;
+
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__MOTOR_COMMAND);
+}
+
 void *timer_1hz(void *arg) {
   uint32_t i = 0;
   while (1) {
-    update_fans();
-    update_display_status();
-    update_battery();
-    update_pinout_command();
+    update_wifi_connected();
+    update_hmi();
     msleep(1000);
   }
 }
 
-void *timer_20hz(void *arg) {
+void *timer_50hz(void *arg) {
   uint32_t i = 0;
   while (1) {
-    update_lights();
-    msleep(50);
+    update_motor_command();
+    msleep(20);
   }
 }
 
@@ -218,8 +277,10 @@ void * stats(void *arg) {
     printf("emergency_stop: %d\r\n", cb_counts[CALLBACK_ESTOP]);
     printf("temperature: %d\r\n", cb_counts[CALLBACK_TEMPERATURE]);
     printf("stop_status: %d\r\n", cb_counts[CALLBACK_STOP_STATUS]);
-    printf("pinout_state: %d\r\n", cb_counts[CALLBACK_PINOUT_STATE]);
-    printf("alerts: %d\r\n", cb_counts[CALLBACK_ALERTS]);
+    printf("imu: %d\r\n", cb_counts[CALLBACK_IMU]);
+    printf("magnetometer: %d\r\n", cb_counts[CALLBACK_MAG]);
+    printf("nmea: %d\r\n", cb_counts[CALLBACK_NMEA]);
+    printf("motor_feedback: %d\r\n", cb_counts[CALLBACK_MOTOR_FEEDBACK]);
     printf("----------- Logs ------------\r\n");
 
     for (uint8_t i = 0; i < log_index; i++)
@@ -251,15 +312,15 @@ int main() {
 
   PROTON_Init();
 
-  pthread_t thread_20hz, thread_1hz, thread_stats;
+  pthread_t thread_50hz, thread_1hz, thread_stats;
 
-  pthread_create(&thread_20hz, NULL, &timer_20hz, NULL);
+  pthread_create(&thread_50hz, NULL, &timer_50hz, NULL);
   pthread_create(&thread_1hz, NULL, &timer_1hz, NULL);
   pthread_create(&thread_stats, NULL, &stats, NULL);
 
   PROTON_Spin(&pc_node);
 
-  pthread_join(thread_20hz, NULL);
+  pthread_join(thread_50hz, NULL);
   pthread_join(thread_1hz, NULL);
   pthread_join(thread_stats, NULL);
 

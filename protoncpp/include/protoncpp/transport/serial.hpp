@@ -30,8 +30,8 @@ using serial_device = std::pair<std::string, uint32_t>;
 class SerialTransport : public Transport
 {
 public:
-  static constexpr uint8_t FRAME_HEADER1 = 0xAA;
-  static constexpr uint8_t FRAME_HEADER2 = 0x55;
+  static constexpr uint8_t FRAME_HEADER1 = 0x50;
+  static constexpr uint8_t FRAME_HEADER2 = 0x52;
   static constexpr uint8_t LENGTH_OVERHEAD = 2;
   static constexpr uint8_t CRC16_OVERHEAD = 2;
   static constexpr uint8_t HEADER_OVERHEAD = sizeof(FRAME_HEADER1) + sizeof(FRAME_HEADER2) + LENGTH_OVERHEAD;
@@ -46,10 +46,11 @@ public:
 
   int initDevice(serial_device s, bool server, bool blocking);
 
-  static uint16_t crc16_ccitt(const uint8_t *data, size_t len);
-  static size_t framePayload(const uint8_t * payload, size_t payload_len, uint8_t * out_buf, size_t out_max);
+  static uint16_t getCRC16(const uint8_t *data, size_t len);
+  static bool fillFrameHeader(uint8_t * header, const uint16_t payload_len);
+  static bool fillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
   static size_t getPayloadLength(const uint8_t * header_buf);
-  static size_t getPayload(const uint8_t * in_buf, size_t in_len, uint8_t * payload);
+  static bool checkFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
 
 private:
   serial_device device_;

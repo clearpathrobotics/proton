@@ -176,6 +176,7 @@ class ProtonConfig:
         NAME_SUFFIX = "__NAME"
         IP_SUFFIX = "__IP"
         PORT_SUFFIX = "__PORT"
+        DEVICE_SUFFIX = "__DEVICE"
 
         TRANSPORT_PREFIX = "PROTON_TRANSPORT__"
         TRANSPORT_CONNECT = "Connect"
@@ -208,6 +209,7 @@ class ProtonConfig:
                     self.port_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.PORT_SUFFIX}'
                 case self.SERIAL:
                     self.device = transport[self.DEVICE]
+                    self.device_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.DEVICE_SUFFIX}'
 
     def __init__(self, dictionary: dict):
         self.dictionary = dictionary

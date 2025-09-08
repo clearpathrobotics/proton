@@ -79,6 +79,16 @@ void Node::sendBundle(const std::string &bundle_name) {
   if (bundle->SerializeToArray(buf.get(), bundle->ByteSizeLong()))
   {
     tx_ += write(buf.get(), bundle->ByteSizeLong());
+    for (auto& node : config_.getNodes())
+    {
+      if (node.getName() == target_)
+      {
+        if (node.getTransport().getType() == TransportConfig::TYPE_SERIAL)
+        {
+          tx_ += SerialTransport::FRAME_OVERHEAD;
+        }
+      }
+    }
     getBundle(bundle_name).incrementTxCount();
   }
 }
@@ -95,6 +105,18 @@ void Node::sendBundle(BundleHandle &bundle_handle) {
   if (bundle->SerializeToArray(buf.get(), bundle->ByteSizeLong()))
   {
     tx_ += write(buf.get(), bundle->ByteSizeLong());
+
+    for (auto& node : config_.getNodes())
+    {
+      if (node.getName() == target_)
+      {
+        if (node.getTransport().getType() == TransportConfig::TYPE_SERIAL)
+        {
+          tx_ += SerialTransport::FRAME_OVERHEAD;
+        }
+      }
+    }
+
     bundle_handle.incrementTxCount();
   }
 }
@@ -118,14 +140,25 @@ void Node::spinOnce() {
     return;
   }
 
-  uint8_t read_buf[PROTON_MAX_FRAME_SIZE];
+  uint8_t read_buf[PROTON_MAX_MESSAGE_SIZE];
 
-  size_t bytes_read = read(read_buf, PROTON_MAX_FRAME_SIZE);
+  size_t bytes_read = read(read_buf, PROTON_MAX_MESSAGE_SIZE);
 
   if (bytes_read > 0) {
     auto& bundle = receiveBundle(read_buf, bytes_read);
     bundle.incrementRxCount();
     rx_ += bytes_read;
+    for (auto& node : config_.getNodes())
+    {
+      if (node.getName() == target_)
+      {
+        if (node.getTransport().getType() == TransportConfig::TYPE_SERIAL)
+        {
+          rx_ += SerialTransport::FRAME_OVERHEAD;
+        }
+      }
+    }
+
     auto callback = bundle.getCallback();
     if (callback)
     {

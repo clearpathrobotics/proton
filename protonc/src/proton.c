@@ -410,3 +410,58 @@ void print_signal(proton_Signal signal) {
   }
   }
 }
+
+uint16_t PROTON_CRC16(const uint8_t *data, uint16_t len) {
+  uint16_t crc = 0xFFFF;
+  for (uint16_t i = 0; i < len; i++) {
+    crc ^= (uint16_t)data[i] << 8;
+    for (int j = 0; j < 8; j++) {
+      if (crc & 0x8000)
+        crc = (crc << 1) ^ 0x1021;
+      else
+        crc <<= 1;
+    }
+  }
+  return crc;
+}
+
+bool PROTON_FillFrameHeader(uint8_t * header, uint16_t payload_len) {
+  if (header == NULL)
+  {
+    return false;
+  }
+
+  header[0] = PROTON_FRAME_HEADER_MAGIC_BYTE_0;
+  header[1] = PROTON_FRAME_HEADER_MAGIC_BYTE_1;
+  header[2] = (uint8_t)(payload_len & 0xFF);
+  header[3] = (uint8_t)(payload_len >> 8);
+
+  return true;
+}
+
+bool PROTON_FillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc)
+{
+  if (payload == NULL || crc == NULL)
+  {
+    return false;
+  }
+
+  uint16_t crc16 = PROTON_CRC16(payload, payload_len);
+  crc[0] = (uint8_t)(crc16 & 0xFF);
+  crc[1] = (uint8_t)(crc16 >> 8);
+
+  return true;
+}
+
+bool PROTON_CheckFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc) {
+  return PROTON_CRC16(payload, payload_len) == frame_crc;
+}
+
+uint16_t PROTON_GetFramedPayloadLength(const uint8_t *framed_buf) {
+  if (framed_buf[0] != PROTON_FRAME_HEADER_MAGIC_BYTE_0 ||
+      framed_buf[1] != PROTON_FRAME_HEADER_MAGIC_BYTE_1) {
+    return 0;
+  }
+
+  return (framed_buf[2] | framed_buf[3] << 8);
+}

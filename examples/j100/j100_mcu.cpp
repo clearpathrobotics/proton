@@ -159,7 +159,6 @@ void update_motor_feedback()
 {
   auto& feedback_bundle = node.getBundle("motor_feedback");
 
-  feedback_bundle.getSignal("frame_id").setValue<std::string>("base_link");
   feedback_bundle.getSignal("current").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
   feedback_bundle.getSignal("bridge_temperature").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
   feedback_bundle.getSignal("motor_temperature").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});

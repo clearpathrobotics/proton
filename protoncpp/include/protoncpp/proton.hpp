@@ -26,7 +26,6 @@
 namespace proton {
 
 static constexpr size_t PROTON_MAX_MESSAGE_SIZE = UINT16_MAX;
-static constexpr size_t PROTON_MAX_FRAME_SIZE = PROTON_MAX_MESSAGE_SIZE + SerialTransport::FRAME_OVERHEAD;
 
 class Node : public BundleManager, public TransportManager {
 public:

@@ -553,14 +553,16 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Node Info", indent_level=0)
         self.header_writer.write_newline()
         for node in self.config.nodes:
+            self.header_writer.write_define(f'{node.name_define} "{node.name}"')
             if node.type == ProtonConfig.Node.UDP4:
                 ip_hex = 0
                 ip_split = node.ip.split(".")
                 for i in range(0, 4):
                     ip_hex |= int(ip_split[i]) << 8 * (3 - i)
-                self.header_writer.write_define(f'{node.name_define} "{node.name}"')
                 self.header_writer.write_define(f"{node.ip_define} {hex(ip_hex)}")
                 self.header_writer.write_define(f"{node.port_define} {node.port}")
+            elif node.type == ProtonConfig.Node.SERIAL:
+                self.header_writer.write_define(f'{node.device_define} \"{node.device}\"')
         self.header_writer.write_newline()
 
     def generate_init_prototype(self):
