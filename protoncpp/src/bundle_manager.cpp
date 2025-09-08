@@ -146,6 +146,8 @@ BundleHandle::BundleHandle(BundleConfig config) {
   bundle_ = std::make_shared<Bundle>();
   bundle_->set_id(id_);
   callback_ = nullptr;
+  rx_count_ = rxps_ = 0;
+  tx_count_ = txps_ = 0;
 
   // Add each signal_ for this bundle
   for (auto s : config.signals) {
@@ -181,7 +183,7 @@ BundleHandle &BundleManager::receiveBundle(const uint8_t *buffer,
 }
 
 BundleHandle &BundleManager::setBundle(const Bundle &bundle) {
-  for (auto &[name_, handle] : bundles_) {
+  for (auto &[name, handle] : bundles_) {
     if (handle.getId() == bundle.id()) {
       *handle.getBundlePtr().get() = bundle;
       return handle;
@@ -192,13 +194,13 @@ BundleHandle &BundleManager::setBundle(const Bundle &bundle) {
 }
 
 void BundleManager::printAllBundles() {
-  for (auto &[name_, handle] : bundles_) {
+  for (auto &[name, handle] : bundles_) {
     handle.printBundle();
   }
 }
 
 void BundleManager::printAllBundlesVerbose() {
-  for (auto &[name_, handle] : bundles_) {
+  for (auto &[name, handle] : bundles_) {
     handle.printBundleVerbose();
   }
 }

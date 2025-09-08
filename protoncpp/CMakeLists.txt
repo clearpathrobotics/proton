@@ -94,6 +94,7 @@ add_library(protoncpp
   src/config.cpp
   src/bundle_manager.cpp
   src/transport/udp4.cpp
+  src/transport/serial.cpp
   ${GENERATED_SRCS}
   ${GENERATED_HDRS}
 )

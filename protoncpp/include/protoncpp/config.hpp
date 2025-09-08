@@ -162,10 +162,12 @@ public:
 
   std::vector<BundleConfig> getBundles() { return bundles_; }
   std::vector<NodeConfig> getNodes() { return nodes_; }
+  std::string getName() { return name_; }
 
 private:
   std::vector<BundleConfig> bundles_;
   std::vector<NodeConfig> nodes_;
+  std::string name_;
 };
 
 } // namespace proton

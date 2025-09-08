@@ -7,19 +7,6 @@
 
 proton::Node node;
 
-typedef enum {
-  CALLBACK_LOGGER,
-  CALLBACK_STATUS,
-  CALLBACK_POWER,
-  CALLBACK_ESTOP,
-  CALLBACK_TEMPERATURE,
-  CALLBACK_STOP_STATUS,
-  CALLBACK_PINOUT_STATE,
-  CALLBACK_ALERTS,
-  CALLBACK_COUNT
-} callback_e;
-
-uint32_t cb_counts[CALLBACK_COUNT];
 std::vector<std::string> logs;
 
 void update_lights()
@@ -84,35 +71,15 @@ void run_stats_thread()
 {
   while(1)
   {
-    std::cout<< u8"\033[2J\033[1;1H";
-    std::cout << "-------- A300 PC CPP --------" << std::endl;
-    std::cout << "Rx: " << static_cast<double>(node.getRx()) / 1000 << " KB/s " << "Tx: " << static_cast<double>(node.getTx()) / 1000 << " KB/s" << std::endl;
-    std::cout << "--- Received Bundles (hz) ---" << std::endl;
-    std::cout << "log: " << cb_counts[CALLBACK_LOGGER] << std::endl;
-    std::cout << "status: " << cb_counts[CALLBACK_STATUS] << std::endl;
-    std::cout << "power: " << cb_counts[CALLBACK_POWER] << std::endl;
-    std::cout << "emergency_stop: " << cb_counts[CALLBACK_ESTOP] << std::endl;
-    std::cout << "temperature: " << cb_counts[CALLBACK_TEMPERATURE] << std::endl;
-    std::cout << "stop_status: " << cb_counts[CALLBACK_STOP_STATUS] << std::endl;
-    std::cout << "pinout_state: " << cb_counts[CALLBACK_PINOUT_STATE] << std::endl;
-    std::cout << "alerts: " << cb_counts[CALLBACK_ALERTS] << std::endl;
-    std::cout << "----------- Logs ------------" << std::endl;
+    node.printStats();
 
+    std::cout << "------------- Logs --------------" << std::endl;
     for (auto & l : logs)
     {
       std::cout << l << std::endl;
     }
-
-    std::cout << "-----------------------------" << std::endl;
-
+    std::cout << "---------------------------------" << std::endl;
     logs.clear();
-
-    node.resetRx();
-    node.resetTx();
-    for (int i = 0; i < CALLBACK_COUNT; i++)
-    {
-      cb_counts[i] = 0;
-    }
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
@@ -120,44 +87,7 @@ void run_stats_thread()
 
 void logger_callback(proton::BundleHandle& bundle)
 {
-  cb_counts[CALLBACK_LOGGER]++;
-
   logs.push_back(bundle.getSignal("msg").getValue<std::string>());
-}
-
-void status_callback(proton::BundleHandle& bundle)
-{
-  cb_counts[CALLBACK_STATUS]++;
-}
-
-void power_callback(proton::BundleHandle& bundle)
-{
-  cb_counts[CALLBACK_POWER]++;
-}
-
-void estop_callback(proton::BundleHandle& bundle)
-{
-  cb_counts[CALLBACK_ESTOP]++;
-}
-
-void temperature_callback(proton::BundleHandle& bundle)
-{
-  cb_counts[CALLBACK_TEMPERATURE]++;
-}
-
-void stop_status_callback(proton::BundleHandle& bundle)
-{
-  cb_counts[CALLBACK_STOP_STATUS]++;
-}
-
-void pinout_state_callback(proton::BundleHandle& bundle)
-{
-  cb_counts[CALLBACK_PINOUT_STATE]++;
-}
-
-void alerts_callback(proton::BundleHandle& bundle)
-{
-  cb_counts[CALLBACK_ALERTS]++;
 }
 
 int main()
@@ -165,18 +95,12 @@ int main()
   node = proton::Node(CONFIG_FILE, "pc");
 
   node.registerCallback("log", logger_callback);
-  node.registerCallback("status", status_callback);
-  node.registerCallback("power", power_callback);
-  node.registerCallback("emergency_stop", estop_callback);
-  node.registerCallback("temperature", temperature_callback);
-  node.registerCallback("stop_status", stop_status_callback);
-  node.registerCallback("pinout_state", pinout_state_callback);
-  node.registerCallback("alerts", alerts_callback);
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);
   std::thread send_20hz_thread(run_20hz_thread);
 
+  node.startStatsThread();
   node.spin();
 
   stats_thread.join();

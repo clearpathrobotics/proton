@@ -21,13 +21,15 @@
 #include "protoncpp/bundle_manager.hpp"
 #include "protoncpp/config.hpp"
 #include "protoncpp/transport/udp4.hpp"
+#include "protoncpp/transport/serial.hpp"
 
 namespace proton {
 
+static constexpr size_t PROTON_MAX_MESSAGE_SIZE = UINT16_MAX;
+static constexpr size_t PROTON_MAX_FRAME_SIZE = PROTON_MAX_MESSAGE_SIZE + SerialTransport::FRAME_OVERHEAD;
+
 class Node : public BundleManager, public TransportManager {
 public:
-
-
   Node();
   Node(const std::string config_file, const std::string target);
 
@@ -39,18 +41,24 @@ public:
   void sendBundle(const std::string &bundle_name);
   void sendBundle(BundleHandle &bundle_handle);
 
-  uint64_t getRx() { return rx_; }
-  uint64_t getTx() { return tx_; }
-
-  void resetRx() { rx_ = 0; }
-  void resetTx() { tx_ = 0; }
+  double getRxKbps() { return rx_kbps_; }
+  double getTxKbps() { return tx_kbps_; }
 
   bool registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback);
 
+  void startStatsThread();
+  void printStats();
+
 private:
+  void runStatsThread();
+
   Config config_;
   std::string target_;
+
+  // Stats
   uint64_t rx_, tx_;
+  double rx_kbps_, tx_kbps_;
+  std::thread stats_thread_;
 };
 
 } // namespace proton

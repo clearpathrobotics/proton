@@ -19,6 +19,9 @@ using namespace proton;
 Config::Config() {}
 
 Config::Config(std::string file) {
+  std::string yaml_file_name = file.substr(file.find_last_of('/') + 1);
+  name_ = yaml_file_name.substr(0, yaml_file_name.find(".yaml"));
+
   YAML::Node config = YAML::LoadFile(file);
 
   for (auto node : config[keys::NODES]) {

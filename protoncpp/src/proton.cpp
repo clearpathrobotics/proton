@@ -13,6 +13,7 @@
 #include "protoncpp/proton.hpp"
 #include "protoncpp/config.hpp"
 #include <iostream>
+#include <chrono>
 
 
 using namespace proton;
@@ -20,7 +21,8 @@ using namespace proton;
 Node::Node() {}
 
 Node::Node(const std::string config_file, const std::string target)
-    : config_(config_file), target_(target), rx_(0), tx_(0) {
+    : config_(config_file), target_(target), rx_(0), tx_(0), rx_kbps_(0.0), tx_kbps_(0.0) {
+
   for (auto b : config_.getBundles()) {
     addBundle(b);
   }
@@ -49,11 +51,20 @@ Node::Node(const std::string config_file, const std::string target)
     setTransport(
         std::make_unique<Udp4Transport>(target_endpoint, peer_endpoint));
   }
+  else if (transport_type == TransportConfig::TYPE_SERIAL) {
+    auto device = proton::serial_device(target_config.getTransport().getDevice(), 0);
+    setTransport(std::make_unique<SerialTransport>(device));
+  }
 
   if (!connect())
   {
     std::cerr << "Connect error" << std::endl;
   }
+}
+
+void Node::startStatsThread()
+{
+  stats_thread_ = std::thread(&Node::runStatsThread, this);
 }
 
 void Node::sendBundle(const std::string &bundle_name) {
@@ -68,6 +79,7 @@ void Node::sendBundle(const std::string &bundle_name) {
   if (bundle->SerializeToArray(buf.get(), bundle->ByteSizeLong()))
   {
     tx_ += write(buf.get(), bundle->ByteSizeLong());
+    getBundle(bundle_name).incrementTxCount();
   }
 }
 
@@ -83,6 +95,7 @@ void Node::sendBundle(BundleHandle &bundle_handle) {
   if (bundle->SerializeToArray(buf.get(), bundle->ByteSizeLong()))
   {
     tx_ += write(buf.get(), bundle->ByteSizeLong());
+    bundle_handle.incrementTxCount();
   }
 }
 
@@ -105,11 +118,13 @@ void Node::spinOnce() {
     return;
   }
 
-  uint8_t read_buf[1024];
+  uint8_t read_buf[PROTON_MAX_FRAME_SIZE];
 
-  size_t bytes_read = read(read_buf, 1024);
+  size_t bytes_read = read(read_buf, PROTON_MAX_FRAME_SIZE);
+
   if (bytes_read > 0) {
     auto& bundle = receiveBundle(read_buf, bytes_read);
+    bundle.incrementRxCount();
     rx_ += bytes_read;
     auto callback = bundle.getCallback();
     if (callback)
@@ -124,4 +139,55 @@ void Node::spin() {
     spinOnce();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
+}
+
+void Node::runStatsThread()
+{
+  while(1)
+  {
+    rx_kbps_ = static_cast<double>(rx_) / 1000;
+    tx_kbps_ = static_cast<double>(tx_) / 1000;
+    rx_ = 0;
+    tx_ = 0;
+
+    if (bundles_.size() > 0)
+    {
+      for (auto& [name, handle] : bundles_)
+      {
+        handle.setRxps(handle.getRxCount());
+        handle.setTxps(handle.getTxCount());
+        handle.resetRxCount();
+        handle.resetTxCount();
+      }
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+}
+
+void Node::printStats()
+{
+  std::cout<< u8"\033[2J\033[1;1H";
+  std::cout << "-------- Proton CPP Node --------" << std::endl;
+  std::cout << "Config: " << config_.getName() << std::endl;
+  std::cout << "Target: " << target_ << std::endl;
+  std::cout << "Rx: " << getRxKbps() << " KB/s " << "Tx: " << getTxKbps() << " KB/s" << std::endl;
+  std::cout << "----- Produced Bundles (hz) -----" << std::endl;
+  for (auto& [name, handle] : bundles_)
+  {
+    if (handle.getProducer() == target_)
+    {
+      std::cout << name << ": " << handle.getTxps() << std::endl;
+    }
+  }
+  std::cout << "----- Consumed Bundles (hz) -----" << std::endl;
+  for (auto& [name, handle] : bundles_)
+  {
+    if (handle.getConsumer() == target_)
+    {
+      std::cout << name << ": " << handle.getRxps() << std::endl;
+    }
+  }
+
+  std::cout << "---------------------------------" << std::endl;
 }

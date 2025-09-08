@@ -23,7 +23,7 @@ void send_log(char *file, const char* func, int line, uint8_t level, char *msg, 
 
 void send_log(char *file, const char* func, int line, uint8_t level, char *msg, ...) {
   auto& log_bundle = node.getBundle("log");
-  log_bundle.getSignal("name").setValue<std::string>("A300_mcu_cpp");
+  log_bundle.getSignal("name").setValue<std::string>("J100_mcu_cpp");
   log_bundle.getSignal("file").setValue<std::string>(file);
   log_bundle.getSignal("line").setValue<uint32_t>(line);
   log_bundle.getSignal("level").setValue<uint32_t>(level);
@@ -49,7 +49,7 @@ void send_log(char *file, const char* func, int line, uint8_t level, char *msg, 
 void update_status()
 {
   auto& status_bundle = node.getBundle("status");
-  status_bundle.getSignal("hardware_id").setValue<std::string>("A300_MCU");
+  status_bundle.getSignal("hardware_id").setValue<std::string>("J100_MCU");
   status_bundle.getSignal("firmware_version").setValue<std::string>("3.0.0");
   status_bundle.getSignal("mcu_uptime_s").setValue<uint32_t>(rand());
   status_bundle.getSignal("mcu_uptime_ns").setValue<uint32_t>(rand());
@@ -103,30 +103,72 @@ void update_emergency_stop()
   node.sendBundle("emergency_stop");
 }
 
-bool needs_reset = true;
-
 void update_stop_status()
 {
-  node.getBundle("stop_status").getSignal("needs_reset").setValue<bool>(needs_reset);
+  node.getBundle("stop_status").getSignal("external_stop_present").setValue<bool>(rand() % 2);
   node.sendBundle("stop_status");
 }
 
-void update_alerts()
+void update_imu()
 {
-  node.getBundle("alerts").getSignal("alert_string").setValue<std::string>("E810");
-  node.sendBundle("alerts");
+  auto& imu_bundle = node.getBundle("imu");
+
+  imu_bundle.getSignal("frame_id").setValue<std::string>("imu_0_link");
+  imu_bundle.getSignal("linear_acceleration").setValue<proton::list_double>({static_cast<double>(rand()), static_cast<double>(rand()), static_cast<double>(rand())});
+  imu_bundle.getSignal("angular_velocity").setValue<proton::list_double>({static_cast<double>(rand()), static_cast<double>(rand()), static_cast<double>(rand())});
+
+  node.sendBundle(imu_bundle);
 }
 
-void update_pinout_state()
+void update_magnetometer()
 {
-  auto& pinout_state_bundle = node.getBundle("pinout_state");
+  auto& mag_bundle = node.getBundle("magnetometer");
 
-  pinout_state_bundle.getSignal("rails").setValue<proton::list_bool>({rand() % 2});
-  pinout_state_bundle.getSignal("inputs").setValue<proton::list_bool>({rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2});
-  pinout_state_bundle.getSignal("outputs").setValue<proton::list_bool>({rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2});
-  pinout_state_bundle.getSignal("output_periods").setValue<proton::list_uint32>({rand(), rand(), rand(), rand(), rand(), rand(), rand()});
+  mag_bundle.getSignal("frame_id").setValue<std::string>("imu_0_link");
+  mag_bundle.getSignal("magnetic_field").setValue<proton::list_double>({static_cast<double>(rand()), static_cast<double>(rand()), static_cast<double>(rand())});
 
-  node.sendBundle(pinout_state_bundle);
+  node.sendBundle(mag_bundle);
+}
+
+std::string gen_random_string(const int len) {
+  static const char alphanum[] =
+      "0123456789"
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      "abcdefghijklmnopqrstuvwxyz";
+  std::string tmp_s;
+  tmp_s.reserve(len);
+
+  for (int i = 0; i < len; ++i) {
+      tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+  }
+
+  return tmp_s;
+}
+
+void update_nmea()
+{
+  auto& nmea_bundle = node.getBundle("nmea");
+
+  nmea_bundle.getSignal("frame_id").setValue<std::string>("gps_0_link");
+  nmea_bundle.getSignal("sentence").setValue<std::string>(gen_random_string(rand() % nmea_bundle.getSignal("sentence").getCapacity()));
+
+  node.sendBundle(nmea_bundle);
+}
+
+void update_motor_feedback()
+{
+  auto& feedback_bundle = node.getBundle("motor_feedback");
+
+  feedback_bundle.getSignal("frame_id").setValue<std::string>("base_link");
+  feedback_bundle.getSignal("current").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("bridge_temperature").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("motor_temperature").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("driver_fault").setValue<proton::list_bool>({static_cast<bool>(rand() % 2), static_cast<bool>(rand() % 2)});
+  feedback_bundle.getSignal("duty_cycle").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("measured_velocity").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("measured_travel").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+
+  node.sendBundle(feedback_bundle);
 }
 
 void run_1hz_thread()
@@ -138,8 +180,7 @@ void run_1hz_thread()
     update_status();
     update_emergency_stop();
     update_stop_status();
-    update_alerts();
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
 }
 
@@ -148,11 +189,22 @@ void run_10hz_thread()
   uint32_t i = 0;
   while(1)
   {
-    LOG_INFO("Test Log %d", i++);
     update_power();
     update_temperature();
-    update_pinout_state();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+}
+
+void run_50hz_thread()
+{
+  uint32_t i = 0;
+  while(1)
+  {
+    update_imu();
+    update_magnetometer();
+    update_nmea();
+    update_motor_feedback();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
   }
 }
 
@@ -161,25 +213,18 @@ void run_stats_thread()
   while(1)
   {
     node.printStats();
-
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
-}
-
-void clear_needs_reset_callback(proton::BundleHandle& bundle)
-{
-  needs_reset = false;
 }
 
 int main()
 {
   node = proton::Node(CONFIG_FILE, "mcu");
 
-  node.registerCallback("clear_needs_reset", clear_needs_reset_callback);
-
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);
   std::thread send_10hz_thread(run_10hz_thread);
+  std::thread send_50hz_thread(run_50hz_thread);
 
   node.startStatsThread();
   node.spin();
@@ -187,6 +232,7 @@ int main()
   stats_thread.join();
   send_1hz_thread.join();
   send_10hz_thread.join();
+  send_50hz_thread.join();
 
   return 0;
 }

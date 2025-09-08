@@ -81,6 +81,20 @@ public:
   std::map<std::string, SignalHandle> getSignalMap() { return signals_; }
   BundleCallback getCallback() { return callback_; }
 
+  void incrementRxCount() { rx_count_++; };
+  void resetRxCount() { rx_count_ = 0; };
+  uint32_t getRxCount() { return rx_count_; };
+
+  void setRxps(uint32_t rxps) { rxps_ = rxps; }
+  uint32_t getRxps() { return rxps_; }
+
+  void incrementTxCount() { tx_count_++; };
+  void resetTxCount() { tx_count_ = 0; };
+  uint32_t getTxCount() { return tx_count_; };
+
+  void setTxps(uint32_t txps) { txps_ = txps; }
+  uint32_t getTxps() { return txps_; }
+
 private:
   std::string name_;
   uint32_t id_;
@@ -89,6 +103,8 @@ private:
   std::shared_ptr<proton::Bundle> bundle_;
   std::map<std::string, SignalHandle> signals_;
   BundleCallback callback_;
+  uint32_t rx_count_, rxps_;
+  uint32_t tx_count_, txps_;
 };
 
 class BundleManager {
