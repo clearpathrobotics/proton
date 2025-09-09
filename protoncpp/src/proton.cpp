@@ -31,7 +31,7 @@ Node::Node(const std::string config_file, const std::string target)
 
   for (auto n : config_.getNodes()) {
     // Target node config
-    if (n.getName() == target_) {
+    if (n.name == target_) {
       target_config = n;
     }
     // Peer node config
@@ -40,19 +40,21 @@ Node::Node(const std::string config_file, const std::string target)
     }
   }
 
-  auto transport_type = target_config.getTransport().getType();
-  if (transport_type == TransportConfig::TYPE_UDP4) {
+  target_node_config_ = target_config;
+
+  auto transport_type = target_config.transport.type;
+  if (transport_type == transport_types::UDP4) {
     auto target_endpoint =
-        proton::socket_endpoint(target_config.getTransport().getIP(),
-                                target_config.getTransport().getPort());
+        proton::socket_endpoint(target_config.transport.ip,
+                                target_config.transport.port);
     auto peer_endpoint =
-        proton::socket_endpoint(peer_config.getTransport().getIP(),
-                                peer_config.getTransport().getPort());
+        proton::socket_endpoint(peer_config.transport.ip,
+                                peer_config.transport.port);
     setTransport(
         std::make_unique<Udp4Transport>(target_endpoint, peer_endpoint));
   }
-  else if (transport_type == TransportConfig::TYPE_SERIAL) {
-    auto device = proton::serial_device(target_config.getTransport().getDevice(), 0);
+  else if (transport_type == transport_types::SERIAL) {
+    auto device = proton::serial_device(target_config.transport.device, 0);
     setTransport(std::make_unique<SerialTransport>(device));
   }
 
@@ -68,29 +70,7 @@ void Node::startStatsThread()
 }
 
 void Node::sendBundle(const std::string &bundle_name) {
-  if (!connected()) {
-    return;
-  }
-
-  auto bundle = getBundle(bundle_name).getBundlePtr().get();
-
-  auto buf = std::make_unique<uint8_t[]>(bundle->ByteSizeLong());
-
-  if (bundle->SerializeToArray(buf.get(), bundle->ByteSizeLong()))
-  {
-    tx_ += write(buf.get(), bundle->ByteSizeLong());
-    for (auto& node : config_.getNodes())
-    {
-      if (node.getName() == target_)
-      {
-        if (node.getTransport().getType() == TransportConfig::TYPE_SERIAL)
-        {
-          tx_ += SerialTransport::FRAME_OVERHEAD;
-        }
-      }
-    }
-    getBundle(bundle_name).incrementTxCount();
-  }
+  sendBundle(getBundle(bundle_name));
 }
 
 void Node::sendBundle(BundleHandle &bundle_handle) {
@@ -106,15 +86,9 @@ void Node::sendBundle(BundleHandle &bundle_handle) {
   {
     tx_ += write(buf.get(), bundle->ByteSizeLong());
 
-    for (auto& node : config_.getNodes())
+    if (target_node_config_.transport.type == transport_types::SERIAL)
     {
-      if (node.getName() == target_)
-      {
-        if (node.getTransport().getType() == TransportConfig::TYPE_SERIAL)
-        {
-          tx_ += SerialTransport::FRAME_OVERHEAD;
-        }
-      }
+      tx_ += SerialTransport::FRAME_OVERHEAD;
     }
 
     bundle_handle.incrementTxCount();
@@ -148,15 +122,10 @@ void Node::spinOnce() {
     auto& bundle = receiveBundle(read_buf, bytes_read);
     bundle.incrementRxCount();
     rx_ += bytes_read;
-    for (auto& node : config_.getNodes())
+
+    if (target_node_config_.transport.type == transport_types::SERIAL)
     {
-      if (node.getName() == target_)
-      {
-        if (node.getTransport().getType() == TransportConfig::TYPE_SERIAL)
-        {
-          rx_ += SerialTransport::FRAME_OVERHEAD;
-        }
-      }
+      rx_ += SerialTransport::FRAME_OVERHEAD;
     }
 
     auto callback = bundle.getCallback();

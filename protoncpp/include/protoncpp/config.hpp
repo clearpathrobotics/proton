@@ -40,7 +40,7 @@ namespace keys {
   static const char *const SIGNALS = "signals";
 } // namespace keys
 
-namespace types {
+namespace value_types {
   inline static const std::string DOUBLE = "double";
   inline static const std::string FLOAT = "float";
   inline static const std::string INT32 = "int32";
@@ -50,29 +50,34 @@ namespace types {
   inline static const std::string BOOL = "bool";
   inline static const std::string STRING = "string";
   inline static const std::string BYTES = "bytes";
-} // namespace types
+} // namespace value_types
 
 namespace signal_map {
   const std::map<std::string, proton::Signal::SignalCase> ScalarSignalMap = {
-      {types::DOUBLE, proton::Signal::SignalCase::kDoubleValue},
-      {types::FLOAT, proton::Signal::SignalCase::kFloatValue},
-      {types::INT32, proton::Signal::SignalCase::kInt32Value},
-      {types::INT64, proton::Signal::SignalCase::kInt64Value},
-      {types::UINT32, proton::Signal::SignalCase::kUint32Value},
-      {types::UINT64, proton::Signal::SignalCase::kUint64Value},
-      {types::BOOL, proton::Signal::SignalCase::kBoolValue},
-      {types::STRING, proton::Signal::SignalCase::kStringValue},
-      {types::BYTES, proton::Signal::SignalCase::kBytesValue}};
+      {value_types::DOUBLE, proton::Signal::SignalCase::kDoubleValue},
+      {value_types::FLOAT, proton::Signal::SignalCase::kFloatValue},
+      {value_types::INT32, proton::Signal::SignalCase::kInt32Value},
+      {value_types::INT64, proton::Signal::SignalCase::kInt64Value},
+      {value_types::UINT32, proton::Signal::SignalCase::kUint32Value},
+      {value_types::UINT64, proton::Signal::SignalCase::kUint64Value},
+      {value_types::BOOL, proton::Signal::SignalCase::kBoolValue},
+      {value_types::STRING, proton::Signal::SignalCase::kStringValue},
+      {value_types::BYTES, proton::Signal::SignalCase::kBytesValue}};
 
   const std::map<std::string, proton::Signal::SignalCase> ListSignalMap = {
-      {types::DOUBLE, proton::Signal::SignalCase::kListDoubleValue},
-      {types::FLOAT, proton::Signal::SignalCase::kListFloatValue},
-      {types::INT32, proton::Signal::SignalCase::kListInt32Value},
-      {types::INT64, proton::Signal::SignalCase::kListInt64Value},
-      {types::UINT32, proton::Signal::SignalCase::kListUint32Value},
-      {types::UINT64, proton::Signal::SignalCase::kListUint64Value},
-      {types::BOOL, proton::Signal::SignalCase::kListBoolValue},
-      {types::STRING, proton::Signal::SignalCase::kListStringValue}};
+      {value_types::DOUBLE, proton::Signal::SignalCase::kListDoubleValue},
+      {value_types::FLOAT, proton::Signal::SignalCase::kListFloatValue},
+      {value_types::INT32, proton::Signal::SignalCase::kListInt32Value},
+      {value_types::INT64, proton::Signal::SignalCase::kListInt64Value},
+      {value_types::UINT32, proton::Signal::SignalCase::kListUint32Value},
+      {value_types::UINT64, proton::Signal::SignalCase::kListUint64Value},
+      {value_types::BOOL, proton::Signal::SignalCase::kListBoolValue},
+      {value_types::STRING, proton::Signal::SignalCase::kListStringValue}};
+}
+
+namespace transport_types {
+  inline static const std::string UDP4 = "udp4";
+  inline static const std::string SERIAL = "serial";
 }
 
 struct SignalConfig {
@@ -91,68 +96,16 @@ struct BundleConfig {
   std::vector<SignalConfig> signals;
 };
 
-class TransportConfig {
-public:
-  inline static const std::string TYPE_UDP4 = "udp4";
-  inline static const std::string TYPE_SERIAL = "serial";
-
-  TransportConfig() {}
-
-  TransportConfig(std::string device)
-  {
-    type_ = TYPE_SERIAL;
-    device_ = device;
-  }
-
-  TransportConfig(std::string ip, uint32_t port)
-  {
-    type_ = TYPE_UDP4;
-    ip_ = ip;
-    port_ = port;
-  }
-
-  std::string getType() { return type_; }
-
-  std::string getDevice() {
-    if (type_ == TYPE_SERIAL) {
-      return device_;
-    }
-    return std::string();
-  }
-
-  std::string getIP() {
-    if (type_ == TYPE_UDP4) {
-      return ip_;
-    }
-    return std::string();
-  }
-
-  uint32_t getPort() {
-    if (type_ == TYPE_UDP4) {
-      return port_;
-    }
-    return 0;
-  }
-
-private:
-  std::string type_;
-  std::string device_;
-  std::string ip_;
-  uint32_t port_;
+struct TransportConfig {
+  std::string type;
+  std::string device;
+  std::string ip;
+  uint32_t port;
 };
 
-class NodeConfig {
-public:
-  NodeConfig() {}
-  NodeConfig(std::string name, std::string device) : name_(name), transport_(device) {}
-  NodeConfig(std::string name, std::string ip, uint32_t port) : name_(name), transport_(ip, port) {}
-
-  std::string getName() { return name_; }
-  TransportConfig& getTransport() { return transport_; }
-
-private:
-  std::string name_;
-  TransportConfig transport_;
+struct NodeConfig {
+  std::string name;
+  TransportConfig transport;
 };
 
 class Config {

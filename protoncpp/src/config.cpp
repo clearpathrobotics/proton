@@ -26,15 +26,53 @@ Config::Config(std::string file) {
 
   for (auto node : config[keys::NODES]) {
     auto transport = node[keys::TRANSPORT];
-    std::string transport_type = transport[keys::TYPE].as<std::string>();
-    if (transport_type == TransportConfig::TYPE_UDP4) {
-      nodes_.push_back(NodeConfig(node[keys::NAME].as<std::string>(),
-                                  transport[keys::IP].as<std::string>(),
-                                  transport[keys::PORT].as<uint32_t>()));
-    } else if (transport_type == TransportConfig::TYPE_SERIAL) {
-      nodes_.push_back(NodeConfig(node[keys::NAME].as<std::string>(),
-                                  transport[keys::DEVICE].as<std::string>()));
+
+    std::string type, device, ip;
+    uint32_t port;
+
+    type = transport[keys::TYPE].as<std::string>();
+
+    if (type == transport_types::UDP4)
+    {
+      ip = transport[keys::IP].as<std::string>();
+      port = transport[keys::PORT].as<uint32_t>();
+
+      try {
+        device = transport[keys::DEVICE].as<std::string>();
+      }
+      catch (YAML::TypedBadConversion<std::string>& e)
+      {}
     }
+    else if (type == transport_types::SERIAL)
+    {
+      device = transport[keys::DEVICE].as<std::string>();
+
+      try {
+        ip = transport[keys::IP].as<std::string>();
+      }
+      catch (YAML::TypedBadConversion<std::string>& e)
+      {}
+
+      try {
+        port = transport[keys::PORT].as<uint32_t>();
+      }
+      catch (YAML::TypedBadConversion<uint32_t>& e)
+      {}
+    }
+
+    TransportConfig transport_config = {
+      type,
+      device,
+      ip,
+      port
+    };
+
+    NodeConfig node_config = {
+      node[keys::NAME].as<std::string>(),
+      transport_config
+    };
+
+    nodes_.push_back(node_config);
   }
 
   // Get bundle configs

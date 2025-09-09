@@ -92,6 +92,8 @@ add_custom_target(generate_protocpp ALL
 add_library(protoncpp
   src/proton.cpp
   src/config.cpp
+  src/signal.cpp
+  src/bundle.cpp
   src/bundle_manager.cpp
   src/transport/udp4.cpp
   src/transport/serial.cpp

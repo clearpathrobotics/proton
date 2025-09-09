@@ -73,57 +73,11 @@ void logger_callback(proton::BundleHandle& bundle)
   logs.push_back(bundle.getSignal("msg").getValue<std::string>());
 }
 
-void status_callback(proton::BundleHandle& bundle)
-{
-}
-
-void power_callback(proton::BundleHandle& bundle)
-{
-}
-
-void estop_callback(proton::BundleHandle& bundle)
-{
-}
-
-void temperature_callback(proton::BundleHandle& bundle)
-{
-}
-
-void stop_status_callback(proton::BundleHandle& bundle)
-{
-}
-
-void imu_callback(proton::BundleHandle& bundle)
-{
-}
-
-void magnetometer_callback(proton::BundleHandle& bundle)
-{
-}
-
-void nmea_callback(proton::BundleHandle& bundle)
-{
-
-}
-
-void motor_feedback_callback(proton::BundleHandle& bundle)
-{
-}
-
 int main()
 {
   node = proton::Node(CONFIG_FILE, "pc");
 
   node.registerCallback("log", logger_callback);
-  node.registerCallback("status", status_callback);
-  node.registerCallback("power", power_callback);
-  node.registerCallback("emergency_stop", estop_callback);
-  node.registerCallback("temperature", temperature_callback);
-  node.registerCallback("stop_status", stop_status_callback);
-  node.registerCallback("imu", imu_callback);
-  node.registerCallback("magnetometer", magnetometer_callback);
-  node.registerCallback("nmea", nmea_callback);
-  node.registerCallback("motor_feedback", motor_feedback_callback);
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);

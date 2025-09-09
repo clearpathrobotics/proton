@@ -54,3 +54,52 @@ cd build/examples/a300
 cd build/examples/a300
 ./a300_pc_cpp
 ```
+
+### J100
+
+J100 uses a USB serial transport.
+
+#### Terminal 1 - socat
+
+To simulate serial transport, create virtual serial ports with `socat`:
+
+```
+socat PTY,link=/tmp/ttyPC,raw,echo=0 PTY,link=/tmp/ttyMCU,raw,echo=0
+```
+
+#### Terminal 2 - MCU
+
+These nodes simulate the J100 MCU.
+
+##### C
+
+```
+cd build/examples/j100
+./j100_mcu_c
+```
+
+##### C++
+
+```
+cd build/examples/j100
+./j100_mcu_cpp
+```
+
+#### Terminal 3 - PC
+
+These nodes simulate the J100 PC.
+
+##### C
+
+```
+cd build/examples/j100
+./j100_pc_c
+```
+
+##### C++
+
+```
+cd build/examples/j100
+./j100_pc_cpp
+```
+

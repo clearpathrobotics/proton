@@ -14,14 +14,14 @@
 #define INC_PROTONCPP_PROTON_HPP_
 
 #include <stdint.h>
-#include <vector>
 #include <thread>
+#include <vector>
 
 #include "protoncpp/bundle.pb.h"
 #include "protoncpp/bundle_manager.hpp"
 #include "protoncpp/config.hpp"
-#include "protoncpp/transport/udp4.hpp"
 #include "protoncpp/transport/serial.hpp"
+#include "protoncpp/transport/udp4.hpp"
 
 namespace proton {
 
@@ -43,7 +43,11 @@ public:
   double getRxKbps() { return rx_kbps_; }
   double getTxKbps() { return tx_kbps_; }
 
-  bool registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback);
+  bool registerCallback(const std::string &bundle_name,
+                        BundleHandle::BundleCallback callback);
+
+  std::string getTarget() { return target_node_config_.name; }
+  NodeConfig getNode() { return target_node_config_; }
 
   void startStatsThread();
   void printStats();
@@ -52,6 +56,7 @@ private:
   void runStatsThread();
 
   Config config_;
+  NodeConfig target_node_config_;
   std::string target_;
 
   // Stats
