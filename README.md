@@ -1,48 +1,105 @@
 # Proton
 
-Cloning:
-
-```
-mkdir ~/proton_ws/src -p
-cd ~/proton_ws/src
-git clone git@gitlab.clearpathrobotics.com:research/proton.git
-```
+Proton communication protocol.
 
 ## Build steps
 
-### Protonc
+Build all C/C++ code with:
 
 ```
-cd ~/proton_ws/src/proton/protonc
 mkdir build
 cd build
 cmake ..
 make
 ```
 
-### ROS2 package
+## Run Examples
+
+### A300
+
+MCU and PC nodes are implemented in both C and C++ and can be used interchangeably.
+
+#### Terminal 1 - MCU
+
+These nodes simulate the A300 MCU.
+
+##### C
 
 ```
-cd ~/proton_ws/
-colcon build --symlink-install
+cd build/examples/a300
+./a300_mcu_c
 ```
 
-### Run A300 test
-
-#### Terminal 1
-
-C Node:
+##### C++
 
 ```
-cd protonc/build/tests/a300
-./a300
+cd build/examples/a300
+./a300_mcu_cpp
 ```
 
-#### Terminal 2
+#### Terminal 2 - PC
 
-Python ROS bridge:
+These nodes simulate the A300 PC.
+
+##### C
 
 ```
-source ~/proton_ws/install/setup.bash
-ros2 run proton a300_ros2_bridge
+cd build/examples/a300
+./a300_pc_c
 ```
+
+##### C++
+
+```
+cd build/examples/a300
+./a300_pc_cpp
+```
+
+### J100
+
+J100 uses a USB serial transport.
+
+#### Terminal 1 - socat
+
+To simulate serial transport, create virtual serial ports with `socat`:
+
+```
+socat PTY,link=/tmp/ttyPC,raw,echo=0 PTY,link=/tmp/ttyMCU,raw,echo=0
+```
+
+#### Terminal 2 - MCU
+
+These nodes simulate the J100 MCU.
+
+##### C
+
+```
+cd build/examples/j100
+./j100_mcu_c
+```
+
+##### C++
+
+```
+cd build/examples/j100
+./j100_mcu_cpp
+```
+
+#### Terminal 3 - PC
+
+These nodes simulate the J100 PC.
+
+##### C
+
+```
+cd build/examples/j100
+./j100_pc_c
+```
+
+##### C++
+
+```
+cd build/examples/j100
+./j100_pc_cpp
+```
+
