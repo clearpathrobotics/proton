@@ -520,3 +520,16 @@ void SignalHandle::setValue<std::string>(uint16_t index, const std::string value
   }
   *signal_->mutable_list_string_value()->mutable_strings(index) = value;
 }
+
+template <>
+void SignalHandle::setValue<uint8_t>(uint16_t index, const uint8_t value) {
+  if (type_ != proton::Signal::SignalCase::kBytesValue) {
+    throw std::runtime_error("Signal " + name_ +
+                             " is not of proton::bytes type");
+  }
+  if (index >= capacity_)
+  {
+    throw std::out_of_range("Index " + std::to_string(index) + " out of range");
+  }
+  (*signal_->mutable_bytes_value())[index] = value;
+}

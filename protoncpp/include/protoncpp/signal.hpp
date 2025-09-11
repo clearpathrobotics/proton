@@ -42,8 +42,8 @@ public:
   std::string getName() { return name_; }
   std::string getBundleName() { return bundle_name_; }
   Signal::SignalCase getType() { return type_; }
-  uint32_t getLength() { return length_; }
-  uint32_t getCapacity() { return capacity_; }
+  uint32_t getLength() const { return length_; }
+  uint32_t getCapacity() const { return capacity_; }
   std::shared_ptr<Signal> getSignalPtr() { return signal_; }
 
 private:
