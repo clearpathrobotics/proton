@@ -11,7 +11,8 @@ add_executable(j100_mcu_cpp
 )
 
 target_link_libraries(j100_mcu_cpp
-  protoncpp
+  PRIVATE
+  proton::protoncpp
 )
 
 target_compile_definitions(j100_mcu_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
@@ -23,7 +24,8 @@ add_executable(j100_pc_cpp
 )
 
 target_link_libraries(j100_pc_cpp
-  protoncpp
+  PRIVATE
+  proton::protoncpp
 )
 
 target_compile_definitions(j100_pc_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
@@ -53,7 +55,8 @@ add_executable(j100_mcu_c
 )
 
 target_link_libraries(j100_mcu_c
-    protonc
+  PRIVATE
+  proton::protonc
 )
 
 target_include_directories(j100_mcu_c
@@ -86,7 +89,8 @@ add_executable(j100_pc_c
 )
 
 target_link_libraries(j100_pc_c
-    protonc
+  PRIVATE
+  proton::protonc
 )
 
 target_include_directories(j100_pc_c
@@ -95,3 +99,6 @@ target_include_directories(j100_pc_c
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
 )
+
+# Install
+install(TARGETS j100_mcu_c j100_mcu_cpp j100_pc_c j100_pc_cpp RUNTIME DESTINATION bin)

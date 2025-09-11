@@ -21,6 +21,9 @@ bundles:
       - {name: file, type: string, capacity: 64}
       - {name: function, type: string, capacity: 64}
       - {name: line, type: uint32}
+    ros2:
+      message: rcl_interfaces/msg/Log
+      topic: /rosout
   - name: status
     id: 0x101
     producer: mcu
@@ -44,7 +47,10 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
-      - {name: stopped, type: bool}
+      - {name: data, type: bool}
+    ros2:
+      message: std_msgs/msg/Bool
+      topic: platform/emergency_stop
   - name: temperature
     id: 0x104
     producer: mcu
@@ -71,21 +77,30 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
-      - {name: alert_string, type: string, capacity: 86}
+      - {name: data, type: string, capacity: 86}
+    ros2:
+      message: std_msgs/msg/String
+      topic: platform/mcu/alerts
 
   - name: cmd_fans
     id: 0x200
     producer: pc
     consumer: mcu
     signals:
-      - {name: fan_speeds, type: bytes, capacity: 8}
+      - {name: fans, type: bytes, capacity: 8}
+    ros2:
+      message: clearpath_platform_msgs/msg/Fans
+      topic: platform/cmd_fans
   - name: display_status
     id: 0x201
     producer: pc
     consumer: mcu
     signals:
-      - {name: string_1, type: string, capacity: 50}
-      - {name: string_2, type: string, capacity: 50}
+      - {name: string1, type: string, capacity: 50}
+      - {name: string2, type: string, capacity: 50}
+    ros2:
+      message: clearpath_platform_msgs/msg/DisplayStatus
+      topic: platform/display/status
   - name: cmd_lights
     id: 0x202
     producer: pc

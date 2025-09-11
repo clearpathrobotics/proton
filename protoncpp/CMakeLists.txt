@@ -101,11 +101,27 @@ add_library(protoncpp
   ${GENERATED_HDRS}
 )
 
+add_library(proton::protoncpp ALIAS protoncpp)
+
 target_include_directories(protoncpp
   PUBLIC
-      ${CMAKE_CURRENT_SOURCE_DIR}/include
-      ${CMAKE_CURRENT_BINARY_DIR}/include
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 )
 
 target_link_libraries(protoncpp PRIVATE protobuf::libprotobuf)
 target_link_libraries(protoncpp PUBLIC yaml-cpp::yaml-cpp)
+
+# Install
+
+install(TARGETS yaml-cpp EXPORT ProtonTargets)
+
+install(TARGETS protoncpp
+    EXPORT ProtonTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)

@@ -181,10 +181,7 @@ void update_status(uint32_t ms) {
 }
 
 void update_emergency_stop() {
-  static bool stopped = false;
-
-  stopped = !stopped;
-  emergency_stop_bundle.stopped = stopped;
+  emergency_stop_bundle.data = !emergency_stop_bundle.data;
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__EMERGENCY_STOP);
 }
@@ -192,7 +189,7 @@ void update_emergency_stop() {
 void update_stop_status() { PROTON_BUNDLE_Send(PROTON_BUNDLE__STOP_STATUS); }
 
 void update_alerts() {
-  strcpy(alerts_bundle.alert_string, "E124,E100");
+  strcpy(alerts_bundle.data, "E124,E100");
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__ALERTS);
 }

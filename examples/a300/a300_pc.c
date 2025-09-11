@@ -156,9 +156,9 @@ void update_lights()
 
 void update_fans()
 {
-  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY; i++)
+  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_FANS__FANS__CAPACITY; i++)
   {
-    cmd_fans_bundle.fan_speeds[i] = rand() % 255;
+    cmd_fans_bundle.fans[i] = rand() % 255;
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__CMD_FANS);
@@ -166,8 +166,8 @@ void update_fans()
 
 void update_display_status()
 {
-  strncpy(display_status_bundle.string_1, "TEST_STRING", PROTON_SIGNALS__DISPLAY_STATUS__STRING_1__CAPACITY);
-  strncpy(display_status_bundle.string_2, "TEST_STRING2", PROTON_SIGNALS__DISPLAY_STATUS__STRING_2__CAPACITY);
+  strncpy(display_status_bundle.string1, "TEST_STRING", PROTON_SIGNALS__DISPLAY_STATUS__STRING1__CAPACITY);
+  strncpy(display_status_bundle.string2, "TEST_STRING2", PROTON_SIGNALS__DISPLAY_STATUS__STRING2__CAPACITY);
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__DISPLAY_STATUS);
 }

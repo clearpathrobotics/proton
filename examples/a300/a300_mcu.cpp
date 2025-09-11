@@ -99,7 +99,7 @@ void update_temperature()
 
 void update_emergency_stop()
 {
-  node.getBundle("emergency_stop").getSignal("stopped").setValue<bool>(true);
+  node.getBundle("emergency_stop").getSignal("data").setValue<bool>(!node.getBundle("emergency_stop").getSignal("data").getValue<bool>());
   node.sendBundle("emergency_stop");
 }
 
@@ -113,7 +113,7 @@ void update_stop_status()
 
 void update_alerts()
 {
-  node.getBundle("alerts").getSignal("alert_string").setValue<std::string>("E810");
+  node.getBundle("alerts").getSignal("data").setValue<std::string>("E810");
   node.sendBundle("alerts");
 }
 

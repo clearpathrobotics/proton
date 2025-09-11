@@ -25,10 +25,13 @@ class BundleHandle {
 public:
   using BundleCallback = std::function<void(BundleHandle &)>;
 
+  BundleHandle();
   BundleHandle(BundleConfig config);
 
   void addSignal(SignalConfig config);
   SignalHandle &getSignal(const std::string &signal_name);
+  const SignalHandle getConstSignal(const std::string &signal_name) const;
+  bool hasSignal(const std::string &signal_name) const;
 
   void printBundle();
   void printBundleVerbose();

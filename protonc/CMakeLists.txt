@@ -10,14 +10,24 @@ FetchContent_Declare(
   nanopb
   GIT_REPOSITORY https://github.com/nanopb/nanopb.git
   GIT_TAG        0.4.9.1
+  SOURCE_SUBDIR  null
 )
-FetchContent_MakeAvailable(nanopb)
+# FetchContent_MakeAvailable(nanopb)
+
+FetchContent_GetProperties(nanopb)
+if(NOT proton_POPULATED)
+  FetchContent_Populate(nanopb)
+endif()
+
 
 # Protobuf compiler
 find_program(PROTOC_EXECUTABLE protoc)
 if(NOT PROTOC_EXECUTABLE)
   message(FATAL_ERROR "Could not find protoc")
 endif()
+
+# Protonc generator
+find_program(PROTONC_GENERATOR protonc_generator)
 
 # -------------------------------
 # Proto files
@@ -101,7 +111,7 @@ add_custom_target(generate_protoc ALL
 # -------------------------------
 # protonc library
 # -------------------------------
-add_library(${PROJECT_NAME}
+add_library(protonc
     src/proton.c
     src/proton_field_callbacks.c
     ${nanopb_SOURCE_DIR}/pb_common.c
@@ -111,14 +121,29 @@ add_library(${PROJECT_NAME}
     ${GENERATED_HEADERS}
 )
 
+add_library(proton::protonc ALIAS protonc)
+
 target_include_directories(${PROJECT_NAME}
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_BINARY_DIR}/include
-        ${nanopb_SOURCE_DIR}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${nanopb_SOURCE_DIR}>
 )
 
-# -------------------------------
-# Protonc generator
-# -------------------------------
-find_program(PROTONC_GENERATOR protonc_generator)
+# Install
+
+install(TARGETS protonc
+    EXPORT ProtonTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY
+        include/
+        DESTINATION include)
+
+install(DIRECTORY
+        ${GENERATED_INC_DIR}/
+        DESTINATION include/protonc)
+

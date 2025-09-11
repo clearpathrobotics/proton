@@ -11,7 +11,8 @@ add_executable(a300_mcu_cpp
 )
 
 target_link_libraries(a300_mcu_cpp
-  protoncpp
+  PRIVATE
+  proton::protoncpp
 )
 
 target_compile_definitions(a300_mcu_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
@@ -23,7 +24,8 @@ add_executable(a300_pc_cpp
 )
 
 target_link_libraries(a300_pc_cpp
-  protoncpp
+  PRIVATE
+  proton::protoncpp
 )
 
 target_compile_definitions(a300_pc_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
@@ -53,7 +55,8 @@ add_executable(a300_mcu_c
 )
 
 target_link_libraries(a300_mcu_c
-    protonc
+  PRIVATE
+  proton::protonc
 )
 
 target_include_directories(a300_mcu_c
@@ -86,7 +89,8 @@ add_executable(a300_pc_c
 )
 
 target_link_libraries(a300_pc_c
-    protonc
+  PRIVATE
+  proton::protonc
 )
 
 target_include_directories(a300_pc_c
@@ -95,3 +99,6 @@ target_include_directories(a300_pc_c
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
 )
+
+# Install
+install(TARGETS a300_mcu_c a300_mcu_cpp a300_pc_c a300_pc_cpp RUNTIME DESTINATION bin)

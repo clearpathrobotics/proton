@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include "yaml-cpp/yaml.h"
 #include "protoncpp/bundle.pb.h"
 #include "protoncpp/signal.pb.h"
 
@@ -116,11 +117,13 @@ public:
   std::vector<BundleConfig> getBundles() { return bundles_; }
   std::vector<NodeConfig> getNodes() { return nodes_; }
   std::string getName() { return name_; }
+  YAML::Node getYamlNode() { return yaml_node_; }
 
 private:
   std::vector<BundleConfig> bundles_;
   std::vector<NodeConfig> nodes_;
   std::string name_;
+  YAML::Node yaml_node_;
 };
 
 } // namespace proton

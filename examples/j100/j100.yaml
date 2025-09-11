@@ -63,6 +63,9 @@ bundles:
       - {name: frame_id, type: string, capacity: 16}
       - {name: linear_acceleration, type: double, length: 3}
       - {name: angular_velocity, type: double, length: 3}
+    ros2:
+      message: sensor_msgs/msg/Imu
+      topic: sensors/imu_0/data_raw
   - name: magnetometer
     id: 0x107
     producer: mcu
@@ -70,6 +73,9 @@ bundles:
     signals:
       - {name: frame_id, type: string, capacity: 16}
       - {name: magnetic_field, type: double, length: 3}
+    ros2:
+      message: sensor_msgs/msg/MagneticField
+      topic: sensors/imu_0/mag
   - name: nmea
     id: 0x108
     producer: mcu

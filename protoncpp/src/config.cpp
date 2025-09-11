@@ -11,7 +11,7 @@
  */
 
 #include "protoncpp/config.hpp"
-#include "yaml-cpp/yaml.h"
+
 #include <iostream>
 
 using namespace proton;
@@ -22,9 +22,9 @@ Config::Config(std::string file) {
   std::string yaml_file_name = file.substr(file.find_last_of('/') + 1);
   name_ = yaml_file_name.substr(0, yaml_file_name.find(".yaml"));
 
-  YAML::Node config = YAML::LoadFile(file);
+  yaml_node_ = YAML::LoadFile(file);
 
-  for (auto node : config[keys::NODES]) {
+  for (auto node : yaml_node_[keys::NODES]) {
     auto transport = node[keys::TRANSPORT];
 
     std::string type, device, ip;
@@ -76,7 +76,7 @@ Config::Config(std::string file) {
   }
 
   // Get bundle configs
-  for (auto bundle : config[keys::BUNDLES]) {
+  for (auto bundle : yaml_node_[keys::BUNDLES]) {
     std::vector<SignalConfig> signal_configs;
 
     // Get signal configs for this bundle
