@@ -114,8 +114,14 @@ void update_imu()
   auto& imu_bundle = node.getBundle("imu");
 
   imu_bundle.getSignal("frame_id").setValue<std::string>("imu_0_link");
-  imu_bundle.getSignal("linear_acceleration").setValue<proton::list_double>({static_cast<double>(rand()), static_cast<double>(rand()), static_cast<double>(rand())});
-  imu_bundle.getSignal("angular_velocity").setValue<proton::list_double>({static_cast<double>(rand()), static_cast<double>(rand()), static_cast<double>(rand())});
+  imu_bundle.getSignal("linear_acceleration").setValue<proton::list_double>(
+    {static_cast<double>(rand()),
+     static_cast<double>(rand()),
+     static_cast<double>(rand())});
+  imu_bundle.getSignal("angular_velocity").setValue<proton::list_double>(
+    {static_cast<double>(rand()),
+     static_cast<double>(rand()),
+     static_cast<double>(rand())});
 
   node.sendBundle(imu_bundle);
 }

@@ -120,6 +120,10 @@ void PROTON_BUNDLE_CmdLightsCallback() {
 
 void PROTON_BUNDLE_BatteryCallback() {
   cb_counts[CALLBACK_BATTERY]++;
+  printf("Received Bundle {\r\n");
+  printf("  id: 0x%x\r\n", PROTON_BUNDLE__BATTERY);
+  printf("  percentage: %f\r\n", battery_bundle.percentage);
+  printf("}\r\n", battery_bundle.percentage);
 }
 
 void PROTON_BUNDLE_PinoutCommandCallback() {
