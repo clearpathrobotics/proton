@@ -35,11 +35,13 @@ import os
 
 
 class Variable:
-    def __init__(self, name, type, length=0, capacity=0):
+    def __init__(self, name, type, length=0, capacity=0, const=False, init=None):
         self.name = name
         self.type = type
         self.length = length
         self.capacity = capacity
+        self.const = const
+        self.init = init
 
 class Struct:
     def __init__(self, name, vars):
@@ -89,12 +91,18 @@ class CWriter:
         self.write(f'#endif  // PROTONC__{self.header_guard}', indent_level=0)
 
     def write_variable(self, variable: Variable, indent_level=0):
-        var_string = f"{variable.type} {variable.name}"
+        if variable.const:
+            var_string = f"const {variable.type} {variable.name}"
+        else:
+            var_string = f"{variable.type} {variable.name}"
 
         if isinstance(variable.length, str) or variable.length > 0:
             var_string += f"[{variable.length}]"
         if isinstance(variable.capacity, str) or variable.capacity > 0:
             var_string += f"[{variable.capacity}]"
+
+        if variable.init is not None:
+            var_string += f" = {variable.init}"
         var_string += ";"
 
         self.write(var_string, indent_level)

@@ -120,13 +120,13 @@ class ProtonCGenerator:
         for b in self.config.bundles:
             vars = []
             for s in b.signals:
-                if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
+                if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING and not s.is_const:
                     string_struct = Struct(
                         s.name,
                         [
                             Variable("list", "char *", s.length_define),
                             Variable(
-                                "strings", "char", s.length_define, s.capacity_define
+                                "strings", "char", s.length_define, s.capacity_define, const=s.is_const
                             ),
                         ],
                     )
@@ -138,6 +138,7 @@ class ProtonCGenerator:
                             type=self.SIGNAL_TYPE_MAP[s.type],
                             length=0 if s.length == 0 else s.length_define,
                             capacity=0 if s.capacity == 0 else s.capacity_define,
+                            const=s.is_const
                         )
                     )
             s = Struct(b.struct_name, vars)
@@ -170,7 +171,7 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Signal Enums", indent_level=0)
         self.header_writer.write_newline()
         for b in self.config.bundles:
-            e = [s.name for s in b.signals]
+            e = [s.name for s in b.signals if not s.is_const]
             self.header_writer.write_enum(b.signals_enum_name, e)
             self.header_writer.write_newline()
         self.header_writer.write_newline()
@@ -179,16 +180,20 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Constant definitions", indent_level=0)
         self.header_writer.write_newline()
         for b in self.config.bundles:
-            num_defines = 0
-            for s in b.signals:
+            default_value = "{"
+            for i, s in enumerate(b.signals):
                 if s.length > 0:
                     self.header_writer.write_define(f"{s.length_define} {s.length}")
-                    num_defines += 1
                 if s.capacity > 0:
                     self.header_writer.write_define(f"{s.capacity_define} {s.capacity}")
-                    num_defines += 1
-            if num_defines > 0:
-                self.header_writer.write_newline()
+                self.header_writer.write_define(f"{s.value_define} {s.c_value}")
+                if i < len(b.signals) - 1:
+                  default_value += f"{s.value_define}, "
+                else:
+                  default_value += f"{s.value_define}"
+            default_value += "}"
+            self.header_writer.write_define(f"{b.default_value_define} {default_value}")
+            self.header_writer.write_newline()
 
     def generate_bundle_ids(self):
         self.header_writer.write_comment("Bundle IDs", indent_level=0)
@@ -225,7 +230,7 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
         for b in self.config.bundles:
             self.src_writer.write_variable(
-                Variable(b.bundle_variable_name, f"{b.struct_name}_t")
+                Variable(b.bundle_variable_name, f"{b.struct_name}_t", init=b.default_value_define)
             )
         self.src_writer.write_newline()
 
@@ -253,6 +258,8 @@ class ProtonCGenerator:
                 Function(b.init_function_name, [], "void")
             )
             for s in b.signals:
+                if s.is_const:
+                    continue
                 self.src_writer.write(
                     f"{b.signals_variable_name}[{s.signal_enum_name}].signal.which_signal = {self.SIGNAL_TAG_MAP[s.type]};"
                 )
@@ -691,7 +698,7 @@ def main():
         "--config",
         type=str,
         action="store",
-        default="/home/rkreinin/proto_ws/src/proton/protonc/tests/a300/config/a300.yaml",
+        default="/home/rkreinin/proto_ws/src/proton/examples/a300/a300.yaml",
         help="Configuration file path.",
     )
 
@@ -700,7 +707,7 @@ def main():
         "--destination",
         type=str,
         action="store",
-        default="/home/rkreinin/proto_ws/src/proton/protonc/tests/a300/generated/",
+        default="/home/rkreinin/proto_ws/src/proton/build/examples/a300/generated",
         help="Destination folder path for generated files.",
     )
 
