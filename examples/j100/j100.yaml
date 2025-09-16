@@ -54,28 +54,32 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
+      - {name: stop_power_status, type: bool, value: True}
       - {name: external_stop_present, type: bool}
+      - {name: needs_reset, type: bool, value: False}
   - name: imu
     id: 0x106
     producer: mcu
     consumer: pc
     signals:
-      - {name: frame_id, type: string, capacity: 16}
+      - {name: frame_id, type: string, value: imu_0_link}
       - {name: linear_acceleration, type: double, length: 3}
+      - {name: linear_acceleration_covariance, type: double, value: [0.03924, 0, 0, 0, 0.03924, 0, 0, 0, 0.03924]}
       - {name: angular_velocity, type: double, length: 3}
+      - {name: angular_velocity_covariance, type: double, value: [0.0000010966, 0, 0, 0, 0.0000010966, 0, 0, 0, 0.0000010966]}
   - name: magnetometer
     id: 0x107
     producer: mcu
     consumer: pc
     signals:
-      - {name: frame_id, type: string, capacity: 16}
+      - {name: frame_id, type: string, value: imu_0_link}
       - {name: magnetic_field, type: double, length: 3}
   - name: nmea
     id: 0x108
     producer: mcu
     consumer: pc
     signals:
-      - {name: frame_id, type: string, capacity: 16}
+      - {name: frame_id, type: string, value: gps_0_link}
       - {name: sentence, type: string, capacity: 324}
   - name: motor_feedback
     id: 0x109

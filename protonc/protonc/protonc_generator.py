@@ -698,7 +698,7 @@ def main():
         "--config",
         type=str,
         action="store",
-        default="/home/rkreinin/proto_ws/src/proton/examples/a300/a300.yaml",
+        default="/home/rkreinin/proto_ws/src/proton/examples/j100/j100.yaml",
         help="Configuration file path.",
     )
 
@@ -707,7 +707,7 @@ def main():
         "--destination",
         type=str,
         action="store",
-        default="/home/rkreinin/proto_ws/src/proton/build/examples/a300/generated",
+        default="/home/rkreinin/proto_ws/src/proton/build/examples/j100/generated",
         help="Destination folder path for generated files.",
     )
 

@@ -92,7 +92,7 @@ void BundleHandle::printBundleVerbose() {
 
 void BundleHandle::addSignal(SignalConfig config) {
   auto sig = std::shared_ptr<Signal>(bundle_->add_signals());
-  signals_.emplace(config.name, SignalHandle(config, sig));
+  signals_.emplace(config.name, SignalHandle(config, name_, sig));
 }
 
 SignalHandle &BundleHandle::getSignal(const std::string &signal_name) {

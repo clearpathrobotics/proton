@@ -77,37 +77,6 @@ Config::Config(std::string file) {
 
   // Get bundle configs
   for (auto bundle : yaml_node_[keys::BUNDLES]) {
-    std::vector<SignalConfig> signal_configs;
-
-    // Get signal configs for this bundle
-    for (auto signal : bundle[keys::SIGNALS]) {
-      uint32_t length, capacity;
-
-      try {
-        length = signal[keys::LENGTH].as<uint32_t>();
-      } catch (const YAML::TypedBadConversion<uint32_t> &e) {
-        length = 0;
-      }
-
-      try {
-        capacity = signal[keys::CAPACITY].as<uint32_t>();
-      } catch (const YAML::TypedBadConversion<uint32_t> &e) {
-        capacity = 0;
-      }
-
-      SignalConfig config = {signal[keys::NAME].as<std::string>(),
-                             bundle[keys::NAME].as<std::string>(),
-                             signal[keys::TYPE].as<std::string>(), length,
-                             capacity};
-
-      signal_configs.push_back(config);
-    }
-
-    BundleConfig bundle_config = {
-        bundle[keys::NAME].as<std::string>(), bundle[keys::ID].as<uint32_t>(),
-        bundle[keys::PRODUCER].as<std::string>(),
-        bundle[keys::CONSUMER].as<std::string>(), signal_configs};
-
-    bundles_.push_back(bundle_config);
+    bundles_.push_back(bundle.as<BundleConfig>());
   }
 }

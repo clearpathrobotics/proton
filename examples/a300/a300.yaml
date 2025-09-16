@@ -37,8 +37,8 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
-      - {name: measured_voltages, type: float, length: 13}
-      - {name: measured_currents, type: float, length: 13}
+      - {name: measured_voltages, type: list_float, length: 13}
+      - {name: measured_currents, type: list_float, length: 13}
   - name: emergency_stop
     id: 0x103
     producer: mcu
@@ -50,7 +50,7 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
-      - {name: temperatures, type: float, length: 18}
+      - {name: temperatures, type: list_float, length: 18}
   - name: stop_status
     id: 0x105
     producer: mcu
@@ -62,10 +62,10 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
-      - {name: rails, type: bool, length: 1}
-      - {name: inputs, type: bool, length: 7}
-      - {name: outputs, type: bool, length: 7}
-      - {name: output_periods, type: uint32, length: 7}
+      - {name: rails, type: list_bool, length: 1}
+      - {name: inputs, type: list_bool, length: 7}
+      - {name: outputs, type: list_bool, length: 7}
+      - {name: output_periods, type: list_uint32, length: 7}
   - name: alerts
     id: 0x107
     producer: mcu
@@ -106,8 +106,8 @@ bundles:
     producer: pc
     consumer: mcu
     signals:
-      - {name: rails, type: bool, length: 1}
-      - {name: outputs, type: uint32, length: 7}
+      - {name: rails, type: list_bool, length: 1}
+      - {name: outputs, type: list_uint32, length: 7}
   - name: cmd_shutdown
     id: 0x300
     producer: pc
@@ -130,11 +130,11 @@ bundles:
       - {name: const_bool, type: bool, value: True}
       - {name: const_string, type: string, value: "const_string"}
       - {name: const_bytes, type: bytes, value: [1, 2, 3]}
-      - {name: const_list_doubles, type: double, value: [1.23, 2.34, 3.45]}
-      - {name: const_list_floats, type: float, value: [1.234, 2.345, 3.456]}
-      - {name: const_list_int32s, type: int32, value: [1, 2, 3]}
-      - {name: const_list_int64s, type: int64, value: [4, 5, 6]}
-      - {name: const_list_uint32s, type: uint32, value: [7, 8, 9]}
-      - {name: const_list_uint64s, type: uint64, value: [10, 11, 12]}
-      - {name: const_list_bools, type: bool, value: [True, False, True]}
-      - {name: const_list_string, type: string, value: ["test1", "test2", "test3"]}
+      - {name: const_list_doubles, type: list_double, value: [1.23, 2.34, 3.45]}
+      - {name: const_list_floats, type: list_float, value: [1.234, 2.345, 3.456]}
+      - {name: const_list_int32s, type: list_int32, value: [1, 2, 3]}
+      - {name: const_list_int64s, type: list_int64, value: [4, 5, 6]}
+      - {name: const_list_uint32s, type: list_uint32, value: [7, 8, 9]}
+      - {name: const_list_uint64s, type: list_uint64, value: [10, 11, 12]}
+      - {name: const_list_bools, type: list_bool, value: [True, False, True]}
+      - {name: const_list_string, type: list_string, value: ["test1", "test2", "test3"]}

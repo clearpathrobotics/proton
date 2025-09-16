@@ -14,18 +14,15 @@
 
 using namespace proton;
 
-SignalHandle::SignalHandle(SignalConfig config, std::shared_ptr<Signal> ptr) {
+SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, std::shared_ptr<Signal> ptr) {
   name_ = config.name;
-  bundle_name_ = config.bundle_name;
+  bundle_name_ = bundle_name;
   length_ = config.length;
   capacity_ = config.capacity;
+  const_ = !config.value.IsNull();
 
   try {
-    if (length_ == 0) {
-      type_ = signal_map::ScalarSignalMap.at(config.type_string);
-    } else {
-      type_ = signal_map::ListSignalMap.at(config.type_string);
-    }
+    type_ = signal_map::SignalMap.at(config.type_string);
   } catch (std::out_of_range &e) {
     throw std::runtime_error("Invalid signal type " + config.type_string +
                              " for signal " + name_);
@@ -35,98 +32,203 @@ SignalHandle::SignalHandle(SignalConfig config, std::shared_ptr<Signal> ptr) {
 
   switch (type_) {
   case Signal::SignalCase::kDoubleValue: {
-    signal_->set_double_value(0.0);
+    if (const_)
+    {
+      signal_->set_double_value(config.value.as<double>());
+    }
+    else
+    {
+      signal_->set_double_value(proton::default_values::DOUBLE);
+    }
     break;
   }
 
   case Signal::SignalCase::kFloatValue: {
-    signal_->set_float_value(0.0f);
+    if (const_)
+    {
+      signal_->set_float_value(config.value.as<float>());
+    }
+    else
+    {
+      signal_->set_float_value(proton::default_values::FLOAT);
+    }
     break;
   }
 
   case Signal::SignalCase::kInt32Value: {
-    signal_->set_int32_value(0);
+    if (const_)
+    {
+      signal_->set_int32_value(config.value.as<int32_t>());
+    }
+    else
+    {
+      signal_->set_int32_value(proton::default_values::INT32);
+    }
     break;
   }
 
   case Signal::SignalCase::kInt64Value: {
-    signal_->set_int64_value(0);
+    if (const_)
+    {
+      signal_->set_int64_value(config.value.as<int64_t>());
+    }
+    else
+    {
+      signal_->set_int64_value(proton::default_values::INT64);
+    }
     break;
   }
 
   case Signal::SignalCase::kUint32Value: {
-    signal_->set_uint32_value(0);
+    if (const_)
+    {
+      signal_->set_uint32_value(config.value.as<uint32_t>());
+    }
+    else
+    {
+      signal_->set_uint32_value(proton::default_values::UINT32);
+    }
     break;
   }
 
   case Signal::SignalCase::kUint64Value: {
-    signal_->set_uint64_value(0);
+    if (const_)
+    {
+      signal_->set_uint64_value(config.value.as<uint64_t>());
+    }
+    else
+    {
+      signal_->set_uint64_value(proton::default_values::UINT64);
+    }
     break;
   }
 
   case Signal::SignalCase::kBoolValue: {
-    signal_->set_bool_value(false);
+    if (const_)
+    {
+      signal_->set_bool_value(config.value.as<bool>());
+    }
+    else
+    {
+      signal_->set_bool_value(proton::default_values::BOOL);
+    }
     break;
   }
 
   case Signal::SignalCase::kStringValue: {
     auto str = signal_->mutable_string_value();
-    str->resize(capacity_);
+    if (const_)
+    {
+      str->assign(config.value.as<std::string>());
+    }
+    else
+    {
+      str->resize(capacity_);
+    }
     break;
   }
 
   case Signal::SignalCase::kBytesValue: {
     auto bytes = signal_->mutable_bytes_value();
     bytes->resize(capacity_);
+    if (const_)
+    {
+      auto v = config.value.as<proton::bytes>();
+      bytes->assign(v.begin(), v.end());
+    }
     break;
   }
 
   case Signal::SignalCase::kListDoubleValue: {
     auto *list = signal_->mutable_list_double_value();
-    list->mutable_doubles()->Resize(length_, 0.0);
+    list->mutable_doubles()->Resize(length_, proton::default_values::DOUBLE);
+    if (const_)
+    {
+      auto v = config.value.as<proton::list_double>();
+      list->mutable_doubles()->Assign(v.begin(), v.end());
+    }
     break;
   }
 
   case Signal::SignalCase::kListFloatValue: {
     auto *list = signal_->mutable_list_float_value();
-    list->mutable_floats()->Resize(length_, 0.0f);
+    list->mutable_floats()->Resize(length_, proton::default_values::FLOAT);
+    if (const_)
+    {
+      auto v = config.value.as<proton::list_float>();
+      list->mutable_floats()->Assign(v.begin(), v.end());
+    }
     break;
   }
 
   case Signal::SignalCase::kListInt32Value: {
     auto *list = signal_->mutable_list_int32_value();
-    list->mutable_int32s()->Resize(length_, 0);
+    list->mutable_int32s()->Resize(length_, proton::default_values::INT32);
+    if (const_)
+    {
+      auto v = config.value.as<proton::list_int32>();
+      list->mutable_int32s()->Assign(v.begin(), v.end());
+    }
     break;
   }
 
   case Signal::SignalCase::kListInt64Value: {
     auto *list = signal_->mutable_list_int64_value();
-    list->mutable_int64s()->Resize(length_, 0);
+    list->mutable_int64s()->Resize(length_, proton::default_values::INT64);
+    if (const_)
+    {
+      auto v = config.value.as<proton::list_int64>();
+      list->mutable_int64s()->Assign(v.begin(), v.end());
+    }
     break;
   }
 
   case Signal::SignalCase::kListUint32Value: {
     auto *list = signal_->mutable_list_uint32_value();
-    list->mutable_uint32s()->Resize(length_, 0);
+    list->mutable_uint32s()->Resize(length_, proton::default_values::UINT32);
+    if (const_)
+    {
+      auto v = config.value.as<proton::list_uint32>();
+      list->mutable_uint32s()->Assign(v.begin(), v.end());
+    }
     break;
   }
 
   case Signal::SignalCase::kListUint64Value: {
     auto *list = signal_->mutable_list_uint64_value();
-    list->mutable_uint64s()->Resize(length_, 0);
+    list->mutable_uint64s()->Resize(length_, proton::default_values::UINT64);
+    if (const_)
+    {
+      auto v = config.value.as<proton::list_uint64>();
+      list->mutable_uint64s()->Assign(v.begin(), v.end());
+    }
     break;
   }
 
   case Signal::SignalCase::kListBoolValue: {
     auto *list = signal_->mutable_list_bool_value();
-    list->mutable_bools()->Resize(length_, false);
+    list->mutable_bools()->Resize(length_, proton::default_values::BOOL);
+    if (const_)
+    {
+      auto v = config.value.as<proton::list_bool>();
+      list->mutable_bools()->Assign(v.begin(), v.end());
+    }
     break;
   }
 
   case Signal::SignalCase::kListStringValue: {
     auto *list = signal_->mutable_list_string_value();
+
     for (uint32_t i = 0; i < length_; i++) {
       list->add_strings("");
+    }
+
+    if (const_)
+    {
+      auto v = config.value.as<proton::list_string>();
+      for (uint32_t i = 0; i < length_; i++) {
+        list->set_strings(i, v.at(i));
+      }
     }
     break;
   }
