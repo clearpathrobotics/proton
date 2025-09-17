@@ -54,7 +54,7 @@ class ProtonCGenerator:
         ProtonConfig.Signal.SignalTypes.LIST_UINT32: "uint32_t",
         ProtonConfig.Signal.SignalTypes.LIST_UINT64: "uint64_t",
         ProtonConfig.Signal.SignalTypes.LIST_BOOL: "bool",
-        ProtonConfig.Signal.SignalTypes.LIST_STRING: "char",
+        ProtonConfig.Signal.SignalTypes.LIST_STRING: "char*",
     }
 
     SIGNAL_TAG_MAP = {
@@ -348,11 +348,19 @@ class ProtonCGenerator:
     def generate_consumer_callbacks(self):
         self.header_writer.write_comment("Consumer callbacks", indent_level=0)
         self.header_writer.write_newline()
+
+        self.src_writer.write_comment("Weak Consumer callbacks", indent_level=0)
+        self.src_writer.write_newline()
+
         for b in self.config.bundles:
             if b.consumer == self.target:
                 self.header_writer.write_function_prototype(
                     Function(b.callback_function_name, [], "void")
                 )
+                self.src_writer.write_function_start(
+                    Function(b.callback_function_name, [], "__attribute__((weak)) void")
+                )
+                self.src_writer.write_function_end()
         self.header_writer.write_newline()
 
     def generate_transport_prototypes(self):
@@ -698,7 +706,7 @@ def main():
         "--config",
         type=str,
         action="store",
-        default="/home/rkreinin/proto_ws/src/proton/examples/j100/j100.yaml",
+        default="/home/rkreinin/proto_ws/src/proton/examples/a300/a300.yaml",
         help="Configuration file path.",
     )
 
@@ -707,7 +715,7 @@ def main():
         "--destination",
         type=str,
         action="store",
-        default="/home/rkreinin/proto_ws/src/proton/build/examples/j100/generated",
+        default="/home/rkreinin/proto_ws/src/proton/build/examples/a300/generated",
         help="Destination folder path for generated files.",
     )
 
@@ -716,7 +724,7 @@ def main():
         "--target",
         type=str,
         action="store",
-        default="mcu",
+        default="pc",
         help="Target node for generation.",
     )
 

@@ -97,7 +97,6 @@ int main()
   node.registerCallback("log", logger_callback);
 
   auto& const_b = node.getBundle("test_const");
-  const_b.printBundleVerbose();
 
   //std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);

@@ -14,6 +14,129 @@
 
 #include <iostream>
 
+namespace YAML {
+
+template<>
+struct convert<proton::SignalConfig> {
+  static bool decode(const Node& node, proton::SignalConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.name = node[proton::keys::NAME].as<std::string>();
+    rhs.type_string = node[proton::keys::TYPE].as<std::string>();
+
+    auto length_key = node[proton::keys::LENGTH];
+    if (length_key.IsDefined())
+    {
+      rhs.length = length_key.as<uint32_t>();
+    }
+
+    auto capacity_key = node[proton::keys::CAPACITY];
+    if (capacity_key.IsDefined())
+    {
+      rhs.capacity = capacity_key.as<uint32_t>();
+    }
+
+    auto value_key = node[proton::keys::VALUE];
+    if (value_key.IsDefined())
+    {
+      rhs.value = value_key;
+
+      if (value_key.IsScalar() && rhs.type_string == proton::value_types::STRING)
+      {
+        rhs.capacity = value_key.size();
+      }
+      else if (value_key.IsSequence())
+      {
+        if (rhs.type_string == proton::value_types::BYTES)
+        {
+          rhs.capacity = value_key.size();
+        }
+        else
+        {
+          rhs.length = value_key.size();
+        }
+      }
+    }
+
+    return true;
+  }
+};
+
+template<>
+struct convert<proton::BundleConfig> {
+  static bool decode(const Node& node, proton::BundleConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.name = node[proton::keys::NAME].as<std::string>();
+    rhs.id = node[proton::keys::ID].as<uint32_t>();
+    rhs.producer = node[proton::keys::PRODUCER].as<std::string>();
+    rhs.consumer = node[proton::keys::CONSUMER].as<std::string>();
+
+    YAML::Node signals = node[proton::keys::SIGNALS];
+
+    if (signals.IsDefined() && !signals.IsNull())
+    {
+      // Get signal configs for this bundle
+      for (auto signal : signals) {
+        rhs.signals.push_back(signal.as<proton::SignalConfig>());
+      }
+    }
+
+    return true;
+  }
+};
+
+template<>
+struct convert<proton::TransportConfig> {
+  static bool decode(const Node& node, proton::TransportConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.type = node[proton::keys::TYPE].as<std::string>();
+
+    auto ip_node = node[proton::keys::IP];
+    auto port_node = node[proton::keys::PORT];
+    auto device_node = node[proton::keys::DEVICE];
+
+    if (rhs.type == proton::transport_types::UDP4)
+    {
+      rhs.ip = ip_node.as<std::string>();
+      rhs.port = port_node.as<uint32_t>();
+    }
+    else if (rhs.type == proton::transport_types::SERIAL)
+    {
+      rhs.device = device_node.as<std::string>();
+    }
+    else
+    {
+      return false;
+    }
+
+    return true;
+  }
+};
+
+template<>
+struct convert<proton::NodeConfig> {
+  static bool decode(const Node& node, proton::NodeConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.name = node[proton::keys::NAME].as<std::string>();
+    rhs.transport = node[proton::keys::TRANSPORT].as<proton::TransportConfig>();
+
+    return true;
+  }
+};
+
+}
+
 using namespace proton;
 
 Config::Config() {}
@@ -24,55 +147,9 @@ Config::Config(std::string file) {
 
   yaml_node_ = YAML::LoadFile(file);
 
+  // Get node configs
   for (auto node : yaml_node_[keys::NODES]) {
-    auto transport = node[keys::TRANSPORT];
-
-    std::string type, device, ip;
-    uint32_t port;
-
-    type = transport[keys::TYPE].as<std::string>();
-
-    if (type == transport_types::UDP4)
-    {
-      ip = transport[keys::IP].as<std::string>();
-      port = transport[keys::PORT].as<uint32_t>();
-
-      try {
-        device = transport[keys::DEVICE].as<std::string>();
-      }
-      catch (YAML::TypedBadConversion<std::string>& e)
-      {}
-    }
-    else if (type == transport_types::SERIAL)
-    {
-      device = transport[keys::DEVICE].as<std::string>();
-
-      try {
-        ip = transport[keys::IP].as<std::string>();
-      }
-      catch (YAML::TypedBadConversion<std::string>& e)
-      {}
-
-      try {
-        port = transport[keys::PORT].as<uint32_t>();
-      }
-      catch (YAML::TypedBadConversion<uint32_t>& e)
-      {}
-    }
-
-    TransportConfig transport_config = {
-      type,
-      device,
-      ip,
-      port
-    };
-
-    NodeConfig node_config = {
-      node[keys::NAME].as<std::string>(),
-      transport_config
-    };
-
-    nodes_.push_back(node_config);
+    nodes_.push_back(node.as<NodeConfig>());
   }
 
   // Get bundle configs
