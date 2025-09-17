@@ -51,9 +51,9 @@ void update_status()
   auto& status_bundle = node.getBundle("status");
   status_bundle.getSignal("hardware_id").setValue<std::string>("J100_MCU");
   status_bundle.getSignal("firmware_version").setValue<std::string>("3.0.0");
-  status_bundle.getSignal("mcu_uptime_s").setValue<uint32_t>(rand());
+  status_bundle.getSignal("mcu_uptime_s").setValue<int32_t>(rand());
   status_bundle.getSignal("mcu_uptime_ns").setValue<uint32_t>(rand());
-  status_bundle.getSignal("connection_uptime_s").setValue<uint32_t>(rand());
+  status_bundle.getSignal("connection_uptime_s").setValue<int32_t>(rand());
   status_bundle.getSignal("connection_uptime_ns").setValue<uint32_t>(rand());
 
   node.sendBundle(status_bundle);
@@ -99,7 +99,7 @@ void update_temperature()
 
 void update_emergency_stop()
 {
-  node.getBundle("emergency_stop").getSignal("stopped").setValue<bool>(true);
+  node.getBundle("emergency_stop").getSignal("data").setValue<bool>(true);
   node.sendBundle("emergency_stop");
 }
 
@@ -113,7 +113,6 @@ void update_imu()
 {
   auto& imu_bundle = node.getBundle("imu");
 
-  imu_bundle.getSignal("frame_id").setValue<std::string>("imu_0_link");
   imu_bundle.getSignal("linear_acceleration").setValue<proton::list_double>(
     {static_cast<double>(rand()),
      static_cast<double>(rand()),
@@ -130,7 +129,6 @@ void update_magnetometer()
 {
   auto& mag_bundle = node.getBundle("magnetometer");
 
-  mag_bundle.getSignal("frame_id").setValue<std::string>("imu_0_link");
   mag_bundle.getSignal("magnetic_field").setValue<proton::list_double>({static_cast<double>(rand()), static_cast<double>(rand()), static_cast<double>(rand())});
 
   node.sendBundle(mag_bundle);
@@ -155,7 +153,6 @@ void update_nmea()
 {
   auto& nmea_bundle = node.getBundle("nmea");
 
-  nmea_bundle.getSignal("frame_id").setValue<std::string>("gps_0_link");
   nmea_bundle.getSignal("sentence").setValue<std::string>(gen_random_string(rand() % nmea_bundle.getSignal("sentence").getCapacity()));
 
   node.sendBundle(nmea_bundle);

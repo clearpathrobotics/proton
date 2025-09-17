@@ -39,8 +39,9 @@ struct convert<proton::SignalConfig> {
     }
 
     auto value_key = node[proton::keys::VALUE];
-    if (value_key.IsDefined())
+    if (value_key.IsDefined() && !value_key.IsNull())
     {
+      rhs.is_const = true;
       rhs.value = value_key;
 
       if (value_key.IsScalar() && rhs.type_string == proton::value_types::STRING)
@@ -58,6 +59,10 @@ struct convert<proton::SignalConfig> {
           rhs.length = value_key.size();
         }
       }
+    }
+    else
+    {
+      rhs.is_const = false;
     }
 
     return true;

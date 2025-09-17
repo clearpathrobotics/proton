@@ -26,17 +26,24 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
+      - {name: frame_id, type: string, value: mcu_link}
       - {name: hardware_id, type: string, capacity: 10}
       - {name: firmware_version, type: string, capacity: 10}
-      - {name: mcu_uptime_s, type: uint32}
+      - {name: mcu_uptime_s, type: int32}
       - {name: mcu_uptime_ns, type: uint32}
-      - {name: connection_uptime_s, type: uint32}
+      - {name: connection_uptime_s, type: int32}
       - {name: connection_uptime_ns, type: uint32}
   - name: power
     id: 0x102
     producer: mcu
     consumer: pc
     signals:
+      - {name: frame_id, type: string, value: mcu_link}
+      - {name: shore_power_connected, type: int32, value: -1}
+      - {name: battery_connected, type: int32, value: 1}
+      - {name: power_12v_user_nominal, type: int32, value: -1}
+      - {name: charger_connected, type: int32, value: -1}
+      - {name: charging_complete, type: int32, value: -1}
       - {name: measured_voltages, type: list_float, length: 13}
       - {name: measured_currents, type: list_float, length: 13}
   - name: emergency_stop
@@ -50,18 +57,23 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
+      - {name: frame_id, type: string, value: mcu_link}
       - {name: temperatures, type: list_float, length: 18}
   - name: stop_status
     id: 0x105
     producer: mcu
     consumer: pc
     signals:
+      - {name: frame_id, type: string, value: mcu_link}
+      - {name: stop_power_status, type: bool, value: True}
+      - {name: external_stop_present, type: bool, value: False}
       - {name: needs_reset, type: bool}
   - name: pinout_state
     id: 0x106
     producer: mcu
     consumer: pc
     signals:
+      - {name: frame_id, type: string, value: mcu_link}
       - {name: rails, type: list_bool, length: 1}
       - {name: inputs, type: list_bool, length: 7}
       - {name: outputs, type: list_bool, length: 7}
@@ -72,7 +84,6 @@ bundles:
     consumer: pc
     signals:
       - {name: data, type: string, capacity: 86}
-
   - name: cmd_fans
     id: 0x200
     producer: pc
@@ -91,10 +102,9 @@ bundles:
     producer: pc
     consumer: mcu
     signals:
-      - {name: front_left_light, type: bytes, capacity: 3}
-      - {name: front_right_light, type: bytes, capacity: 3}
-      - {name: rear_left_light, type: bytes, capacity: 3}
-      - {name: rear_right_light, type: bytes, capacity: 3}
+      - {name: red, type: bytes, capacity: 4}
+      - {name: green, type: bytes, capacity: 4}
+      - {name: blue, type: bytes, capacity: 4}
   - name: battery
     id: 0x203
     producer: pc
@@ -116,25 +126,3 @@ bundles:
     id: 0x301
     producer: pc
     consumer: mcu
-  - name: test_const
-    id: 0x1000
-    producer: mcu
-    consumer: pc
-    signals:
-      - {name: const_double, type: double, value: 1.234}
-      - {name: const_float, type: float, value: 1.234}
-      - {name: const_int32, type: int32, value: -1}
-      - {name: const_int64, type: int64, value: -2}
-      - {name: const_uint32, type: uint32, value: 3}
-      - {name: const_uint64, type: uint64, value: 4}
-      - {name: const_bool, type: bool, value: True}
-      - {name: const_string, type: string, value: "const_string"}
-      - {name: const_bytes, type: bytes, value: [1, 2, 3]}
-      - {name: const_list_doubles, type: list_double, value: [1.23, 2.34, 3.45]}
-      - {name: const_list_floats, type: list_float, value: [1.234, 2.345, 3.456]}
-      - {name: const_list_int32s, type: list_int32, value: [1, 2, 3]}
-      - {name: const_list_int64s, type: list_int64, value: [4, 5, 6]}
-      - {name: const_list_uint32s, type: list_uint32, value: [7, 8, 9]}
-      - {name: const_list_uint64s, type: list_uint64, value: [10, 11, 12]}
-      - {name: const_list_bools, type: list_bool, value: [True, False, True]}
-      - {name: const_list_string, type: list_string, value: ["test1", "test2", "test3"]}

@@ -24,36 +24,45 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
+      - {name: frame_id, type: string, value: mcu_link}
       - {name: hardware_id, type: string, capacity: 10}
       - {name: firmware_version, type: string, capacity: 10}
-      - {name: mcu_uptime_s, type: uint32}
+      - {name: mcu_uptime_s, type: int32}
       - {name: mcu_uptime_ns, type: uint32}
-      - {name: connection_uptime_s, type: uint32}
+      - {name: connection_uptime_s, type: int32}
       - {name: connection_uptime_ns, type: uint32}
   - name: power
     id: 0x102
     producer: mcu
     consumer: pc
     signals:
-      - {name: measured_voltages, type: float, length: 3}
-      - {name: measured_currents, type: float, length: 4}
+      - {name: frame_id, type: string, value: mcu_link}
+      - {name: shore_power_connected, type: int32, value: -1}
+      - {name: battery_connected, type: int32, value: 1}
+      - {name: power_12v_user_nominal, type: int32, value: -1}
+      - {name: charger_connected, type: int32, value: -1}
+      - {name: charging_complete, type: int32, value: -1}
+      - {name: measured_voltages, type: list_float, length: 3}
+      - {name: measured_currents, type: list_float, length: 4}
   - name: emergency_stop
     id: 0x103
     producer: mcu
     consumer: pc
     signals:
-      - {name: stopped, type: bool}
+      - {name: data, type: bool}
   - name: temperature
     id: 0x104
     producer: mcu
     consumer: pc
     signals:
-      - {name: temperatures, type: float, length: 2}
+      - {name: frame_id, type: string, value: mcu_link}
+      - {name: temperatures, type: list_float, length: 2}
   - name: stop_status
     id: 0x105
     producer: mcu
     consumer: pc
     signals:
+      - {name: frame_id, type: string, value: mcu_link}
       - {name: stop_power_status, type: bool, value: True}
       - {name: external_stop_present, type: bool}
       - {name: needs_reset, type: bool, value: False}
@@ -63,17 +72,17 @@ bundles:
     consumer: pc
     signals:
       - {name: frame_id, type: string, value: imu_0_link}
-      - {name: linear_acceleration, type: double, length: 3}
-      - {name: linear_acceleration_covariance, type: double, value: [0.03924, 0, 0, 0, 0.03924, 0, 0, 0, 0.03924]}
-      - {name: angular_velocity, type: double, length: 3}
-      - {name: angular_velocity_covariance, type: double, value: [0.0000010966, 0, 0, 0, 0.0000010966, 0, 0, 0, 0.0000010966]}
+      - {name: linear_acceleration, type: list_double, length: 3}
+      - {name: linear_acceleration_covariance, type: list_double, value: [0.03924, 0, 0, 0, 0.03924, 0, 0, 0, 0.03924]}
+      - {name: angular_velocity, type: list_double, length: 3}
+      - {name: angular_velocity_covariance, type: list_double, value: [0.0000010966, 0, 0, 0, 0.0000010966, 0, 0, 0, 0.0000010966]}
   - name: magnetometer
     id: 0x107
     producer: mcu
     consumer: pc
     signals:
       - {name: frame_id, type: string, value: imu_0_link}
-      - {name: magnetic_field, type: double, length: 3}
+      - {name: magnetic_field, type: list_double, length: 3}
   - name: nmea
     id: 0x108
     producer: mcu
@@ -86,13 +95,14 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
-      - {name: current, type: float, length: 2}
-      - {name: bridge_temperature, type: float, length: 2}
-      - {name: motor_temperature, type: float, length: 2}
-      - {name: driver_fault, type: bool, length: 2}
-      - {name: duty_cycle, type: float, length: 2}
-      - {name: measured_velocity, type: float, length: 2}
-      - {name: measured_travel, type: float, length: 2}
+      - {name: frame_id, type: string, value: mcu_link}
+      - {name: current, type: list_float, length: 2}
+      - {name: bridge_temperature, type: list_float, length: 2}
+      - {name: motor_temperature, type: list_float, length: 2}
+      - {name: driver_fault, type: list_bool, length: 2}
+      - {name: duty_cycle, type: list_float, length: 2}
+      - {name: measured_velocity, type: list_float, length: 2}
+      - {name: measured_travel, type: list_float, length: 2}
       - {name: commanded_mode, type: int32}
       - {name: actual_mode, type: int32}
 
@@ -114,4 +124,4 @@ bundles:
     consumer: mcu
     signals:
       - {name: mode, type: int32}
-      - {name: command, type: float, length: 2}
+      - {name: command, type: list_float, length: 2}

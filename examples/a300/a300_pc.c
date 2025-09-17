@@ -69,7 +69,7 @@ int socket_init() {
   servaddr.sin_port = htons(PROTON_NODE__MCU__PORT);
 
   if (connect(sock_send, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0) {
-    printf("connect error\r\n");
+    //printf("connect error\r\n");
     return 1;
   }
 
@@ -143,13 +143,13 @@ void PROTON_BUNDLE_AlertsCallback()
 
 void update_lights()
 {
-  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY; i++)
-  {
-    cmd_lights_bundle.front_left_light[i] = rand() % 255;
-    cmd_lights_bundle.front_right_light[i] = rand() % 255;
-    cmd_lights_bundle.rear_left_light[i] = rand() % 255;
-    cmd_lights_bundle.rear_right_light[i] = rand() % 255;
-  }
+  // for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY; i++)
+  // {
+  //   cmd_lights_bundle.front_left_light[i] = rand() % 255;
+  //   cmd_lights_bundle.front_right_light[i] = rand() % 255;
+  //   cmd_lights_bundle.rear_left_light[i] = rand() % 255;
+  //   cmd_lights_bundle.rear_right_light[i] = rand() % 255;
+  // }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__CMD_LIGHTS);
 }

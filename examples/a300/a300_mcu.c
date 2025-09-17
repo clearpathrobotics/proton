@@ -198,132 +198,132 @@ void update_alerts() {
   PROTON_BUNDLE_Send(PROTON_BUNDLE__ALERTS);
 }
 
-void print_const_bundle() {
-  printf("%lf\r\n", test_const_bundle.const_double);
-  printf("%f\r\n", test_const_bundle.const_float);
-  printf("%d\r\n", test_const_bundle.const_int32);
-  printf("%ld\r\n", test_const_bundle.const_int64);
-  printf("%u\r\n", test_const_bundle.const_uint32);
-  printf("%lu\r\n", test_const_bundle.const_uint64);
-  printf("%u\r\n", test_const_bundle.const_bool);
-  printf("%s\r\n", test_const_bundle.const_string);
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_BYTES__CAPACITY; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_BYTES__CAPACITY - 1)
-    {
-      printf("%u]\r\n", test_const_bundle.const_bytes[i]);
-    }
-    else
-    {
-      printf("%u, ", test_const_bundle.const_bytes[i]);
-    }
-  }
+// void print_const_bundle() {
+//   printf("%lf\r\n", test_const_bundle.const_double);
+//   printf("%f\r\n", test_const_bundle.const_float);
+//   printf("%d\r\n", test_const_bundle.const_int32);
+//   printf("%ld\r\n", test_const_bundle.const_int64);
+//   printf("%u\r\n", test_const_bundle.const_uint32);
+//   printf("%lu\r\n", test_const_bundle.const_uint64);
+//   printf("%u\r\n", test_const_bundle.const_bool);
+//   printf("%s\r\n", test_const_bundle.const_string);
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_BYTES__CAPACITY; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_BYTES__CAPACITY - 1)
+//     {
+//       printf("%u]\r\n", test_const_bundle.const_bytes[i]);
+//     }
+//     else
+//     {
+//       printf("%u, ", test_const_bundle.const_bytes[i]);
+//     }
+//   }
 
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_DOUBLES__LENGTH; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_DOUBLES__LENGTH - 1)
-    {
-      printf("%lf]\r\n", test_const_bundle.const_list_doubles[i]);
-    }
-    else
-    {
-      printf("%lf, ", test_const_bundle.const_list_doubles[i]);
-    }
-  }
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_DOUBLES__LENGTH; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_DOUBLES__LENGTH - 1)
+//     {
+//       printf("%lf]\r\n", test_const_bundle.const_list_doubles[i]);
+//     }
+//     else
+//     {
+//       printf("%lf, ", test_const_bundle.const_list_doubles[i]);
+//     }
+//   }
 
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_FLOATS__LENGTH; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_FLOATS__LENGTH - 1)
-    {
-      printf("%f]\r\n", test_const_bundle.const_list_floats[i]);
-    }
-    else
-    {
-      printf("%f, ", test_const_bundle.const_list_floats[i]);
-    }
-  }
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_FLOATS__LENGTH; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_FLOATS__LENGTH - 1)
+//     {
+//       printf("%f]\r\n", test_const_bundle.const_list_floats[i]);
+//     }
+//     else
+//     {
+//       printf("%f, ", test_const_bundle.const_list_floats[i]);
+//     }
+//   }
 
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT32S__LENGTH; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT32S__LENGTH - 1)
-    {
-      printf("%d]\r\n", test_const_bundle.const_list_int32s[i]);
-    }
-    else
-    {
-      printf("%d, ", test_const_bundle.const_list_int32s[i]);
-    }
-  }
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT32S__LENGTH; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT32S__LENGTH - 1)
+//     {
+//       printf("%d]\r\n", test_const_bundle.const_list_int32s[i]);
+//     }
+//     else
+//     {
+//       printf("%d, ", test_const_bundle.const_list_int32s[i]);
+//     }
+//   }
 
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT64S__LENGTH; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT64S__LENGTH - 1)
-    {
-      printf("%ld]\r\n", test_const_bundle.const_list_int64s[i]);
-    }
-    else
-    {
-      printf("%ld, ", test_const_bundle.const_list_int64s[i]);
-    }
-  }
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT64S__LENGTH; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT64S__LENGTH - 1)
+//     {
+//       printf("%ld]\r\n", test_const_bundle.const_list_int64s[i]);
+//     }
+//     else
+//     {
+//       printf("%ld, ", test_const_bundle.const_list_int64s[i]);
+//     }
+//   }
 
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT32S__LENGTH; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT32S__LENGTH - 1)
-    {
-      printf("%u]\r\n", test_const_bundle.const_list_uint32s[i]);
-    }
-    else
-    {
-      printf("%u, ", test_const_bundle.const_list_uint32s[i]);
-    }
-  }
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT32S__LENGTH; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT32S__LENGTH - 1)
+//     {
+//       printf("%u]\r\n", test_const_bundle.const_list_uint32s[i]);
+//     }
+//     else
+//     {
+//       printf("%u, ", test_const_bundle.const_list_uint32s[i]);
+//     }
+//   }
 
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT64S__LENGTH; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT64S__LENGTH - 1)
-    {
-      printf("%u]\r\n", test_const_bundle.const_list_uint64s[i]);
-    }
-    else
-    {
-      printf("%u, ", test_const_bundle.const_list_uint64s[i]);
-    }
-  }
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT64S__LENGTH; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT64S__LENGTH - 1)
+//     {
+//       printf("%u]\r\n", test_const_bundle.const_list_uint64s[i]);
+//     }
+//     else
+//     {
+//       printf("%u, ", test_const_bundle.const_list_uint64s[i]);
+//     }
+//   }
 
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_BOOLS__LENGTH; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_BOOLS__LENGTH - 1)
-    {
-      printf("%u]\r\n", test_const_bundle.const_list_bools[i]);
-    }
-    else
-    {
-      printf("%u, ", test_const_bundle.const_list_bools[i]);
-    }
-  }
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_BOOLS__LENGTH; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_BOOLS__LENGTH - 1)
+//     {
+//       printf("%u]\r\n", test_const_bundle.const_list_bools[i]);
+//     }
+//     else
+//     {
+//       printf("%u, ", test_const_bundle.const_list_bools[i]);
+//     }
+//   }
 
-  printf("[");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_STRING__LENGTH; i++)
-  {
-    if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_STRING__LENGTH - 1)
-    {
-      printf("%s]\r\n", test_const_bundle.const_list_string[i]);
-    }
-    else
-    {
-      printf("%s, ", test_const_bundle.const_list_string[i]);
-    }
-  }
-}
+//   printf("[");
+//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_STRING__LENGTH; i++)
+//   {
+//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_STRING__LENGTH - 1)
+//     {
+//       printf("%s]\r\n", test_const_bundle.const_list_string[i]);
+//     }
+//     else
+//     {
+//       printf("%s, ", test_const_bundle.const_list_string[i]);
+//     }
+//   }
+// }
 
 void update_pinout_state() {
   pinout_state_bundle.rails[0] = true;
@@ -378,7 +378,6 @@ void *timer_1hz(void *arg) {
   uint32_t i = 0;
   while (1) {
     LOG_INFO("1hz timer %ld", i++);
-    print_const_bundle();
     update_status(i);
     update_emergency_stop();
     update_stop_status();

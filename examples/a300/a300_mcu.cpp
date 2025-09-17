@@ -51,9 +51,9 @@ void update_status()
   auto& status_bundle = node.getBundle("status");
   status_bundle.getSignal("hardware_id").setValue<std::string>("A300_MCU");
   status_bundle.getSignal("firmware_version").setValue<std::string>("3.0.0");
-  status_bundle.getSignal("mcu_uptime_s").setValue<uint32_t>(rand());
+  status_bundle.getSignal("mcu_uptime_s").setValue<int32_t>(rand());
   status_bundle.getSignal("mcu_uptime_ns").setValue<uint32_t>(rand());
-  status_bundle.getSignal("connection_uptime_s").setValue<uint32_t>(rand());
+  status_bundle.getSignal("connection_uptime_s").setValue<int32_t>(rand());
   status_bundle.getSignal("connection_uptime_ns").setValue<uint32_t>(rand());
 
   node.sendBundle(status_bundle);

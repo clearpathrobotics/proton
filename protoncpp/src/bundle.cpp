@@ -91,7 +91,18 @@ void BundleHandle::printBundleVerbose() {
 }
 
 void BundleHandle::addSignal(SignalConfig config) {
-  auto sig = std::shared_ptr<Signal>(bundle_->add_signals());
+  std::shared_ptr<Signal> sig;
+  // Non-constant signals are added to the bundle
+  if (!config.is_const)
+  {
+    sig = std::shared_ptr<Signal>(bundle_->add_signals());
+  }
+  // Constant signals exist just to store their value
+  else
+  {
+    sig = std::make_shared<Signal>();
+  }
+
   signals_.emplace(config.name, SignalHandle(config, name_, sig));
 }
 

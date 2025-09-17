@@ -125,29 +125,29 @@ class ProtonConfig:
                         self.capacity = len(self.value)
 
             match self.type:
-                case ProtonConfig.Signal.SignalTypes.BYTES:
+                case (ProtonConfig.Signal.SignalTypes.BYTES | ProtonConfig.Signal.SignalTypes.STRING):
                     assert self.capacity > 0, (
                         f"{self.type} type signals must have a non-zero capacity"
                     )
-                case ProtonConfig.Signal.SignalTypes.STRING:
-                    assert self.capacity > 0, (
-                        f"{self.type} type signals must have a non-zero capacity"
-                    )
-                    # List of strings
-                    if self.length > 0:
-                        self.type = ProtonConfig.Signal.SignalTypes(f"list_{self.type}")
                 case (
-                    ProtonConfig.Signal.SignalTypes.DOUBLE
-                    | ProtonConfig.Signal.SignalTypes.FLOAT
-                    | ProtonConfig.Signal.SignalTypes.INT32
-                    | ProtonConfig.Signal.SignalTypes.INT64
-                    | ProtonConfig.Signal.SignalTypes.UINT32
-                    | ProtonConfig.Signal.SignalTypes.UINT64
-                    | ProtonConfig.Signal.SignalTypes.BOOL
+                    ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
+                    | ProtonConfig.Signal.SignalTypes.LIST_FLOAT
+                    | ProtonConfig.Signal.SignalTypes.LIST_INT32
+                    | ProtonConfig.Signal.SignalTypes.LIST_INT64
+                    | ProtonConfig.Signal.SignalTypes.LIST_UINT32
+                    | ProtonConfig.Signal.SignalTypes.LIST_UINT64
+                    | ProtonConfig.Signal.SignalTypes.LIST_BOOL
                 ):
-                    # List of type
-                    if self.length > 0:
-                        self.type = ProtonConfig.Signal.SignalTypes(f"list_{self.type}")
+                    assert self.length > 0, (
+                        f"{self.type} type signals must have a non-zero length"
+                    )
+                case (ProtonConfig.Signal.SignalTypes.LIST_STRING):
+                    assert self.length > 0, (
+                        f"{self.type} type signals must have a non-zero length"
+                    )
+                    assert self.capacity > 0, (
+                        f"{self.type} type signals must have a non-zero capacity"
+                    )
 
             self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}'
             self.capacity_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.CAPACITY_SUFFIX}'
@@ -176,7 +176,6 @@ class ProtonConfig:
                     self.c_value = f"\"{self.value}\""
                 case (ProtonConfig.Signal.SignalTypes.LIST_FLOAT):
                     list_def = ""
-                    print(self.value)
                     for (i, v) in enumerate(self.value):
                         if i != len(self.value) - 1:
                             list_def += f"{v}f, "
@@ -207,9 +206,6 @@ class ProtonConfig:
                         else:
                             list_def += f"{v}"
                     self.c_value = f"{{{list_def}}}"
-
-            #print(f'signal {self.name} type {self.type} length {self.length} cap {self.capacity}')
-
 
 
     class Bundle:

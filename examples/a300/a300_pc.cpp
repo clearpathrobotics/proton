@@ -12,10 +12,9 @@ std::vector<std::string> logs;
 void update_lights()
 {
   auto& cmd_lights_bundle = node.getBundle("cmd_lights");
-  cmd_lights_bundle.getSignal("front_left_light").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
-  cmd_lights_bundle.getSignal("front_right_light").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
-  cmd_lights_bundle.getSignal("rear_left_light").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
-  cmd_lights_bundle.getSignal("rear_right_light").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
+  cmd_lights_bundle.getSignal("red").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255});
+  cmd_lights_bundle.getSignal("green").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255});
+  cmd_lights_bundle.getSignal("blue").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255});
 
   node.sendBundle("cmd_lights");
 }
@@ -96,16 +95,14 @@ int main()
 
   node.registerCallback("log", logger_callback);
 
-  auto& const_b = node.getBundle("test_const");
-
-  //std::thread stats_thread(run_stats_thread);
+  std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);
   std::thread send_20hz_thread(run_20hz_thread);
 
   node.startStatsThread();
   node.spin();
 
-  //stats_thread.join();
+  stats_thread.join();
   send_1hz_thread.join();
   send_20hz_thread.join();
 

@@ -95,6 +95,7 @@ struct SignalConfig {
   std::string type_string;
   uint32_t length;
   uint32_t capacity;
+  bool is_const;
   ::YAML::Node value;
 };
 
