@@ -61,6 +61,7 @@ public:
   template <typename T> const T getValue() const;
   template <typename T> void setValue(const T value);
   template <typename T> void setValue(uint16_t index, const T value);
+  template <typename T> void setValue(uint16_t index, uint16_t subindex, const T value);
 
   std::string getName() { return name_; }
   std::string getBundleName() { return bundle_name_; }

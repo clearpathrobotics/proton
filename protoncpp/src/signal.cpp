@@ -206,6 +206,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name,
 
     for (uint32_t i = 0; i < length_; i++) {
       list->add_bytes("");
+      list->mutable_bytes(i)->resize(capacity_);
     }
 
     if (const_) {
@@ -782,4 +783,24 @@ void SignalHandle::setValue<proton::bytes>(uint16_t index,
                              " is constant and cannot be set");
   }
   signal_->mutable_list_bytes_value()->mutable_bytes(index)->assign(value.begin(), value.end());
+}
+
+template <>
+void SignalHandle::setValue<uint8_t>(uint16_t index, uint16_t subindex,
+                                           const uint8_t value) {
+  if (type_ != proton::Signal::SignalCase::kListBytesValue) {
+    throw std::runtime_error("Signal " + name_ +
+                             " is not of proton::list_bytes type");
+  }
+  if (index >= length_) {
+    throw std::out_of_range("Index " + std::to_string(index) + " out of range");
+  }
+  if (subindex >= capacity_) {
+    throw std::out_of_range("Subindex " + std::to_string(subindex) + " out of range");
+  }
+  if (const_) {
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
+  }
+  signal_->mutable_list_bytes_value()->mutable_bytes(index)->at(subindex) = value;
 }
