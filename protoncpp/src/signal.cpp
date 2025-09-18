@@ -201,6 +201,22 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name,
     break;
   }
 
+  case Signal::SignalCase::kListBytesValue: {
+    auto *list = signal_->mutable_list_bytes_value();
+
+    for (uint32_t i = 0; i < length_; i++) {
+      list->add_bytes("");
+    }
+
+    if (const_) {
+      auto v = config.value.as<proton::list_bytes>();
+      for (uint32_t i = 0; i < length_; i++) {
+        list->mutable_bytes(i)->assign(v.at(i).begin(), v.at(i).end());
+      }
+    }
+    break;
+  }
+
   default:
     break;
   }
@@ -349,6 +365,23 @@ const proton::list_string SignalHandle::getValue<proton::list_string>() const {
   }
   return {signal_->list_string_value().strings().begin(),
           signal_->list_string_value().strings().end()};
+}
+
+template <>
+const proton::list_bytes SignalHandle::getValue<proton::list_bytes>() const {
+  if (type_ != proton::Signal::SignalCase::kListBytesValue) {
+    throw std::runtime_error("Signal " + name_ +
+                             " is not of proton::list_bytes type");
+  }
+
+  proton::list_bytes list;
+
+  for (auto i = 0; i < length_; i++)
+  {
+    list.push_back({signal_->list_bytes_value().bytes(i).begin(), signal_->list_bytes_value().bytes(i).end()});
+  }
+
+  return list;
 }
 
 template <> void SignalHandle::setValue<double>(const double value) {
@@ -572,6 +605,24 @@ void SignalHandle::setValue<proton::list_string>(
 }
 
 template <>
+void SignalHandle::setValue<proton::list_bytes>(
+    const proton::list_bytes value) {
+  if (type_ != proton::Signal::SignalCase::kListBytesValue) {
+    throw std::runtime_error("Signal " + name_ +
+                             " is not of proton::list_bytes type");
+  }
+  if (const_) {
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
+  }
+
+  for (auto i = 0; i < std::min(std::size_t(length_), value.size()); i++)
+  {
+    signal_->mutable_list_bytes_value()->mutable_bytes(i)->assign(value.at(i).begin(), value.at(i).end());
+  }
+}
+
+template <>
 void SignalHandle::setValue<double>(uint16_t index, const double value) {
   if (type_ != proton::Signal::SignalCase::kListDoubleValue) {
     throw std::runtime_error("Signal " + name_ +
@@ -613,7 +664,8 @@ void SignalHandle::setValue<int32_t>(uint16_t index, int32_t value) {
     throw std::out_of_range("Index " + std::to_string(index) + " out of range");
   }
   if (const_) {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
   }
   signal_->mutable_list_int32_value()->mutable_int32s()->Set(index, value);
 }
@@ -628,7 +680,8 @@ void SignalHandle::setValue<int64_t>(uint16_t index, const int64_t value) {
     throw std::out_of_range("Index " + std::to_string(index) + " out of range");
   }
   if (const_) {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
   }
   signal_->mutable_list_int64_value()->mutable_int64s()->Set(index, value);
 }
@@ -643,7 +696,8 @@ void SignalHandle::setValue<uint32_t>(uint16_t index, const uint32_t value) {
     throw std::out_of_range("Index " + std::to_string(index) + " out of range");
   }
   if (const_) {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
   }
   signal_->mutable_list_uint32_value()->mutable_uint32s()->Set(index, value);
 }
@@ -658,7 +712,8 @@ void SignalHandle::setValue<uint64_t>(uint16_t index, const uint64_t value) {
     throw std::out_of_range("Index " + std::to_string(index) + " out of range");
   }
   if (const_) {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
   }
   signal_->mutable_list_uint64_value()->mutable_uint64s()->Set(index, value);
 }
@@ -673,7 +728,8 @@ void SignalHandle::setValue<bool>(uint16_t index, const bool value) {
     throw std::out_of_range("Index " + std::to_string(index) + " out of range");
   }
   if (const_) {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
   }
   signal_->mutable_list_bool_value()->mutable_bools()->Set(index, value);
 }
@@ -689,7 +745,8 @@ void SignalHandle::setValue<std::string>(uint16_t index,
     throw std::out_of_range("Index " + std::to_string(index) + " out of range");
   }
   if (const_) {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
   }
   *signal_->mutable_list_string_value()->mutable_strings(index) = value;
 }
@@ -704,7 +761,25 @@ void SignalHandle::setValue<uint8_t>(uint16_t index, const uint8_t value) {
     throw std::out_of_range("Index " + std::to_string(index) + " out of range");
   }
   if (const_) {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
   }
   (*signal_->mutable_bytes_value())[index] = value;
+}
+
+template <>
+void SignalHandle::setValue<proton::bytes>(uint16_t index,
+                                           const proton::bytes value) {
+  if (type_ != proton::Signal::SignalCase::kListBytesValue) {
+    throw std::runtime_error("Signal " + name_ +
+                             " is not of proton::list_bytes type");
+  }
+  if (index >= length_) {
+    throw std::out_of_range("Index " + std::to_string(index) + " out of range");
+  }
+  if (const_) {
+    throw std::runtime_error("Signal " + name_ +
+                             " is constant and cannot be set");
+  }
+  signal_->mutable_list_bytes_value()->mutable_bytes(index)->assign(value.begin(), value.end());
 }

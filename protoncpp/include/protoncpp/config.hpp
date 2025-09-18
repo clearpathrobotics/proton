@@ -61,6 +61,7 @@ namespace value_types {
   inline static const std::string LIST_UINT64 = "list_uint64";
   inline static const std::string LIST_BOOL = "list_bool";
   inline static const std::string LIST_STRING = "list_string";
+  inline static const std::string LIST_BYTES = "list_bytes";
 } // namespace value_types
 
 namespace signal_map {
@@ -81,7 +82,8 @@ namespace signal_map {
       {value_types::LIST_UINT32, proton::Signal::SignalCase::kListUint32Value},
       {value_types::LIST_UINT64, proton::Signal::SignalCase::kListUint64Value},
       {value_types::LIST_BOOL, proton::Signal::SignalCase::kListBoolValue},
-      {value_types::LIST_STRING, proton::Signal::SignalCase::kListStringValue}
+      {value_types::LIST_STRING, proton::Signal::SignalCase::kListStringValue},
+      {value_types::LIST_BYTES, proton::Signal::SignalCase::kListBytesValue}
   };
 }
 

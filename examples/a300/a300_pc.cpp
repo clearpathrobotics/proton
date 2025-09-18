@@ -11,10 +11,11 @@ std::vector<std::string> logs;
 
 void update_lights()
 {
-  auto& cmd_lights_bundle = node.getBundle("cmd_lights");
-  cmd_lights_bundle.getSignal("red").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255});
-  cmd_lights_bundle.getSignal("green").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255});
-  cmd_lights_bundle.getSignal("blue").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255});
+  auto& cmd_lights_signal = node.getBundle("cmd_lights").getSignal("lights");
+  for (auto i = 0; i < cmd_lights_signal.getLength(); i++)
+  {
+    cmd_lights_signal.setValue<proton::bytes>(i, {rand() % 255, rand() % 255, rand() % 255});
+  }
 
   node.sendBundle("cmd_lights");
 }

@@ -29,6 +29,7 @@ using list_uint32 = std::vector<uint32_t>;
 using list_uint64 = std::vector<uint64_t>;
 using list_bool = std::vector<bool>;
 using list_string = std::vector<std::string>;
+using list_bytes = std::vector<bytes>;
 
 namespace default_values {
   inline static const double DOUBLE = 0.0;
@@ -48,6 +49,7 @@ namespace default_values {
   inline static const proton::list_uint64 LIST_UINT64 = {};
   inline static const proton::list_bool LIST_BOOL = {};
   inline static const proton::list_string LIST_STRING = {};
+  inline static const proton::list_bytes LIST_BYTES = {};
 }
 
 class SignalHandle {
