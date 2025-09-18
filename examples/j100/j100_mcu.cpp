@@ -8,7 +8,7 @@
 
 proton::Node node;
 
-void send_log(char *file, const char* func, int line, uint8_t level, char *msg, ...);
+void send_log(const char *file, const char* func, int line, uint8_t level, std::string msg, ...);
 
 #define LOG_DEBUG(message, ...)                                                \
   send_log(__FILE_NAME__, __func__, __LINE__, 10U, message, ##__VA_ARGS__)
@@ -21,9 +21,9 @@ void send_log(char *file, const char* func, int line, uint8_t level, char *msg, 
 #define LOG_FATAL(message, ...)                                                \
   send_log(__FILE_NAME__, __func__, __LINE__, 50U, message, ##__VA_ARGS__)
 
-void send_log(char *file, const char* func, int line, uint8_t level, char *msg, ...) {
+void send_log(const char *file, const char* func, int line, uint8_t level, std::string msg, ...) {
   auto& log_bundle = node.getBundle("log");
-  log_bundle.getSignal("name").setValue<std::string>("J100_mcu_cpp");
+  log_bundle.getSignal("name").setValue<std::string>("j100_mcu_cpp");
   log_bundle.getSignal("file").setValue<std::string>(file);
   log_bundle.getSignal("line").setValue<uint32_t>(line);
   log_bundle.getSignal("level").setValue<uint32_t>(level);
@@ -32,13 +32,13 @@ void send_log(char *file, const char* func, int line, uint8_t level, char *msg, 
   va_list args;
   va_start(args, msg);
   // Get string size
-  int size = std::vsnprintf(nullptr, 0, msg, args);
+  int size = std::vsnprintf(nullptr, 0, msg.c_str(), args);
   va_end(args);
 
   std::string message(size, '\0');
 
   va_start(args, msg);
-  std::vsnprintf(message.data(), size + 1, msg, args);
+  std::vsnprintf(message.data(), size + 1, msg.c_str(), args);
   va_end(args);
 
   log_bundle.getSignal("msg").setValue<std::string>(message);

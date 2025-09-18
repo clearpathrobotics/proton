@@ -1,12 +1,4 @@
-#include <pthread.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <termios.h>
-#include <unistd.h>
-#include <time.h>
-#include <stdio.h>
-#include <stdarg.h>
-
+#include "utils.h"
 #include "proton__j100_mcu.h"
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
@@ -21,19 +13,6 @@ proton_buffer_t proton_mcu_write_buffer = {write_buf_, PROTON_MAX_MESSAGE_SIZE};
 
 int serial_port;
 
-void send_log(char *file, int line, uint8_t level, char *msg, ...);
-
-#define LOG_DEBUG(message, ...)                                                \
-  send_log(__FILE_NAME__, __LINE__, 10U, message, ##__VA_ARGS__)
-#define LOG_INFO(message, ...)                                                 \
-  send_log(__FILE_NAME__, __LINE__, 20U, message, ##__VA_ARGS__)
-#define LOG_WARNING(message, ...)                                              \
-  send_log(__FILE_NAME__, __LINE__, 30U, message, ##__VA_ARGS__)
-#define LOG_ERROR(message, ...)                                                \
-  send_log(__FILE_NAME__, __LINE__, 40U, message, ##__VA_ARGS__)
-#define LOG_FATAL(message, ...)                                                \
-  send_log(__FILE_NAME__, __LINE__, 50U, message, ##__VA_ARGS__)
-
 typedef enum {
   CALLBACK_WIFI_CONNECTED,
   CALLBACK_HMI,
@@ -42,49 +21,6 @@ typedef enum {
 } callback_e;
 
 uint32_t cb_counts[CALLBACK_COUNT];
-
-int msleep(long msec) {
-  struct timespec ts;
-  int res;
-
-  if (msec < 0) {
-    return -1;
-  }
-
-  ts.tv_sec = msec / 1000;
-  ts.tv_nsec = (msec % 1000) * 1000000;
-
-  do {
-    res = nanosleep(&ts, &ts);
-  } while (res);
-
-  return res;
-}
-
-
-int serialInit()
-{
-  serial_port = open(PROTON_NODE__MCU__DEVICE, O_RDWR | O_NOCTTY | O_SYNC);
-
-  if (serial_port == -1) {
-    printf("Error opening serial device\r\n");
-    return -1;
-  }
-
-  struct termios tty;
-
-  if (tcgetattr(serial_port, &tty) != 0) {
-    return -1;
-  }
-
-  cfsetospeed(&tty, B921600);
-  cfsetispeed(&tty, B921600);
-  tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8; // 8-bit
-  tty.c_cflag |= (CLOCAL | CREAD);            // enable receiver
-  tcsetattr(serial_port, TCSANOW, &tty);
-
-  return 0;
-}
 
 void PROTON_BUNDLE_WifiConnectedCallback() {
   cb_counts[CALLBACK_WIFI_CONNECTED]++;
@@ -102,9 +38,10 @@ void PROTON_BUNDLE_MotorCommandCallback() {
   motor_feedback_bundle.measured_velocity[1] = motor_command_bundle.command[1];
 }
 
-void send_log(char *file, int line, uint8_t level, char *msg, ...) {
+void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
   strcpy(log_bundle.name, "J100_proton");
   strcpy(log_bundle.file, file);
+  strcpy(log_bundle.function, func);
   log_bundle.line = line;
   log_bundle.level = level;
 
@@ -119,8 +56,8 @@ void send_log(char *file, int line, uint8_t level, char *msg, ...) {
 void update_power() {
   for (uint8_t i = 0; i < PROTON_SIGNALS__POWER__MEASURED_VOLTAGES__LENGTH;
        i++) {
-    power_bundle.measured_currents[i] = (float)rand();
-    power_bundle.measured_voltages[i] = (float)rand();
+    power_bundle.measured_currents[i] = rand_float();
+    power_bundle.measured_voltages[i] = rand_float();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__POWER);
@@ -129,7 +66,7 @@ void update_power() {
 void update_temperature() {
   for (uint8_t i = 0; i < PROTON_SIGNALS__TEMPERATURE__TEMPERATURES__LENGTH;
        i++) {
-    temperature_bundle.temperatures[i] = (float)rand();
+    temperature_bundle.temperatures[i] = rand_float();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__TEMPERATURE);
@@ -137,10 +74,10 @@ void update_temperature() {
 
 void update_status(uint32_t ms) {
   status_bundle.connection_uptime_s = ms / 1000;
-  status_bundle.connection_uptime_ns = rand();
+  status_bundle.connection_uptime_ns = rand_uint32();
 
   status_bundle.mcu_uptime_s = ms / 1000;
-  status_bundle.mcu_uptime_ns = rand();
+  status_bundle.mcu_uptime_ns = rand_uint32();
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__STATUS);
 }
@@ -163,8 +100,8 @@ void update_stop_status() {
 void update_imu() {
   for (uint8_t i = 0; i < PROTON_SIGNALS__IMU__LINEAR_ACCELERATION__LENGTH; i++)
   {
-    imu_bundle.linear_acceleration[i] = (double)rand();
-    imu_bundle.angular_velocity[i] = (double)rand();
+    imu_bundle.linear_acceleration[i] = rand_double();
+    imu_bundle.angular_velocity[i] = rand_double();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__IMU);
@@ -173,25 +110,20 @@ void update_imu() {
 void update_mag() {
   for (uint8_t i = 0; i < PROTON_SIGNALS__MAGNETOMETER__MAGNETIC_FIELD__LENGTH; i++)
   {
-    magnetometer_bundle.magnetic_field[i] = (double)rand();
+    magnetometer_bundle.magnetic_field[i] = rand_double();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__MAGNETOMETER);
 }
 
 void update_nmea() {
-  static const char alphanum[] =
-      "0123456789"
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-      "abcdefghijklmnopqrstuvwxyz";
-
   char tmp[PROTON_SIGNALS__NMEA__SENTENCE__CAPACITY];
 
   uint16_t i;
 
   for (i = 0; i < (rand() % (PROTON_SIGNALS__NMEA__SENTENCE__CAPACITY - 1)); i++)
   {
-    tmp[i] = alphanum[rand()% (sizeof(alphanum) - 1)];
+    tmp[i] = rand_char();
   }
 
   tmp[i+1] = '\0';
@@ -203,19 +135,19 @@ void update_motor_feedback() {
 
   for (uint8_t i = 0; i < 2; i++)
   {
-    motor_feedback_bundle.current[i] = (float)rand();
-    motor_feedback_bundle.bridge_temperature[i] = (float)rand();
-    motor_feedback_bundle.motor_temperature[i] = (float)rand();
-    motor_feedback_bundle.driver_fault[i] = (bool)(rand() % 2);
-    motor_feedback_bundle.duty_cycle[i] = (float)rand();
-    motor_feedback_bundle.measured_travel[i] = (float)rand();
+    motor_feedback_bundle.current[i] = rand_float();
+    motor_feedback_bundle.bridge_temperature[i] = rand_float();
+    motor_feedback_bundle.motor_temperature[i] = rand_float();
+    motor_feedback_bundle.driver_fault[i] = rand_bool();
+    motor_feedback_bundle.duty_cycle[i] = rand_float();
+    motor_feedback_bundle.measured_travel[i] = rand_float();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__MOTOR_FEEDBACK);
 }
 
 bool PROTON_TRANSPORT__McuConnect() {
-  return serialInit() == 0;
+  return serial_init(PROTON_NODE__MCU__DEVICE) == 0;
 }
 
 bool PROTON_TRANSPORT__McuDisconnect() { return true; }
@@ -368,8 +300,6 @@ int main() {
   pthread_mutex_init(&lock, NULL);
 
   PROTON_Init();
-
-  serialInit();
 
   printf("INIT\r\n");
 

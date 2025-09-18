@@ -1,12 +1,4 @@
-#include <pthread.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <termios.h>
-#include <unistd.h>
-#include <time.h>
-#include <stdio.h>
-#include <stdarg.h>
-
+#include "utils.h"
 #include "proton__j100_pc.h"
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
@@ -23,7 +15,7 @@ int serial_port;
 
 #define MAX_LOGS 100
 
-char * logs[MAX_LOGS][PROTON_SIGNALS__LOG__MSG__CAPACITY];
+char logs[MAX_LOGS][PROTON_SIGNALS__LOG__MSG__CAPACITY];
 uint8_t log_index = 0;
 
 typedef enum {
@@ -41,48 +33,6 @@ typedef enum {
 } callback_e;
 
 uint32_t cb_counts[CALLBACK_COUNT];
-
-int msleep(long msec) {
-  struct timespec ts;
-  int res;
-
-  if (msec < 0) {
-    return -1;
-  }
-
-  ts.tv_sec = msec / 1000;
-  ts.tv_nsec = (msec % 1000) * 1000000;
-
-  do {
-    res = nanosleep(&ts, &ts);
-  } while (res);
-
-  return res;
-}
-
-int serialInit()
-{
-  serial_port = open(PROTON_NODE__PC__DEVICE, O_RDWR | O_NOCTTY | O_SYNC);
-
-  if (serial_port == -1) {
-    printf("Error opening serial device\r\n");
-    return -1;
-  }
-
-  struct termios tty;
-
-  if (tcgetattr(serial_port, &tty) != 0) {
-    return -1;
-  }
-
-  cfsetospeed(&tty, B921600);
-  cfsetispeed(&tty, B921600);
-  tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8; // 8-bit
-  tty.c_cflag |= (CLOCAL | CREAD);            // enable receiver
-  tcsetattr(serial_port, TCSANOW, &tty);
-
-  return 0;
-}
 
 void PROTON_BUNDLE_LogCallback()
 {
@@ -136,7 +86,9 @@ void PROTON_BUNDLE_MotorFeedbackCallback()
   cb_counts[CALLBACK_MOTOR_FEEDBACK]++;
 }
 
-bool PROTON_TRANSPORT__PcConnect() { return serialInit() == 0; }
+bool PROTON_TRANSPORT__PcConnect() {
+  return serial_init(PROTON_NODE__PC__DEVICE) == 0;
+}
 
 bool PROTON_TRANSPORT__PcDisconnect() { return true; }
 

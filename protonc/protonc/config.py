@@ -218,10 +218,11 @@ class ProtonConfig:
         CONSUMER = "consumer"
         SIGNALS = "signals"
         BUNDLE_SUFFIX = "_bundle"
+        HANDLE_SUFFIX = "_handle"
         BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE__"
         BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
         BUNDLE_ID_PREFIX = "PROTON_BUNDLE_ID__"
-        SIGNALS_SUFFIX = "_signals"
+        SIGNAL_HANDLES_SUFFIX = "_signal_handles"
         INIT_FUNCTION_SUFFIX = "PROTON_BUNDLE_Init"
         CALLBACK_PREFIX = "PROTON_BUNDLE_"
         CALLBACK_SUFFIX = "Callback"
@@ -236,8 +237,8 @@ class ProtonConfig:
             self.needs_init = False
 
             self.bundle_enum_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name.upper()}'
-            self.internal_bundle_variable_name = f'_{self.name}{self.BUNDLE_SUFFIX}'
-            self.signals_variable_name = f'_{self.name}{self.SIGNALS_SUFFIX}'
+            self.internal_handle_variable_name = f'_{self.name}{self.HANDLE_SUFFIX}'
+            self.signal_handles_variable_name = f'_{self.name}{self.SIGNAL_HANDLES_SUFFIX}'
             self.struct_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name}'
             self.bundle_variable_name = f'{self.name}{self.BUNDLE_SUFFIX}'
             self.signals_enum_name = f'{self.BUNDLE_SIGNAL_ENUM_PREFIX}{self.name}'

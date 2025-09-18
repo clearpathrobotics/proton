@@ -1,13 +1,4 @@
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <time.h>
-
+#include "utils.h"
 #include "proton__a300_mcu.h"
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
@@ -22,19 +13,6 @@ proton_buffer_t proton_mcu_write_buffer = {write_buf_, PROTON_MAX_MESSAGE_SIZE};
 
 int sock_send, sock_recv;
 
-void send_log(char *file, int line, uint8_t level, char *msg, ...);
-
-#define LOG_DEBUG(message, ...)                                                \
-  send_log(__FILE_NAME__, __LINE__, 10U, message, ##__VA_ARGS__)
-#define LOG_INFO(message, ...)                                                 \
-  send_log(__FILE_NAME__, __LINE__, 20U, message, ##__VA_ARGS__)
-#define LOG_WARNING(message, ...)                                              \
-  send_log(__FILE_NAME__, __LINE__, 30U, message, ##__VA_ARGS__)
-#define LOG_ERROR(message, ...)                                                \
-  send_log(__FILE_NAME__, __LINE__, 40U, message, ##__VA_ARGS__)
-#define LOG_FATAL(message, ...)                                                \
-  send_log(__FILE_NAME__, __LINE__, 50U, message, ##__VA_ARGS__)
-
 typedef enum {
   CALLBACK_CMD_FANS,
   CALLBACK_DISPLAY_STATUS,
@@ -48,63 +26,6 @@ typedef enum {
 
 uint32_t cb_counts[CALLBACK_COUNT];
 
-int msleep(long msec) {
-  struct timespec ts;
-  int res;
-
-  if (msec < 0) {
-    return -1;
-  }
-
-  ts.tv_sec = msec / 1000;
-  ts.tv_nsec = (msec % 1000) * 1000000;
-
-  do {
-    res = nanosleep(&ts, &ts);
-  } while (res);
-
-  return res;
-}
-
-int socket_init() {
-  struct sockaddr_in servaddr;
-  sock_send = socket(AF_INET, SOCK_DGRAM, 0);
-
-  memset(&servaddr, 0, sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = htonl((in_addr_t)PROTON_NODE__PC__IP);
-  servaddr.sin_port = htons(PROTON_NODE__PC__PORT);
-
-  if (connect(sock_send, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0) {
-    printf("connect error\r\n");
-    return 1;
-  }
-
-  printf("Send Socket connected\r\n");
-
-  struct sockaddr_in servaddr2;
-  sock_recv = socket(AF_INET, SOCK_DGRAM, 0);
-
-  memset(&servaddr2, 0, sizeof(servaddr2));
-  servaddr2.sin_family = AF_INET;
-  servaddr2.sin_addr.s_addr = htonl((in_addr_t)PROTON_NODE__MCU__IP);
-  servaddr2.sin_port = htons(PROTON_NODE__MCU__PORT);
-
-  // Put the socket in non-blocking mode:
-  if (fcntl(sock_recv, F_SETFL, fcntl(sock_recv, F_GETFL) | O_NONBLOCK) < 0) {
-    printf("Set non-blocking error\r\n");
-    return 2;
-  }
-
-  if (bind(sock_recv, (struct sockaddr *)&servaddr2, sizeof(servaddr2)) != 0) {
-    printf("bind error\r\n");
-    return 3;
-  }
-
-  printf("Receive Socket bound\r\n");
-
-  return 0;
-}
 
 void PROTON_BUNDLE_CmdFansCallback() {
   cb_counts[CALLBACK_CMD_FANS]++;
@@ -116,11 +37,7 @@ void PROTON_BUNDLE_DisplayStatusCallback() {
 
 void PROTON_BUNDLE_CmdLightsCallback() {
   cb_counts[CALLBACK_CMD_LIGHTS]++;
-  printf("cmd_lights:\r\n");
-  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__LIGHTS__LENGTH; i++)
-  {
-    printf("\t[%hhu, %hhu, %hhu]\r\n", cmd_lights_bundle.lights[i][0], cmd_lights_bundle.lights[i][1], cmd_lights_bundle.lights[i][2]);
-  }
+  PROTON_BUNDLE_Print(PROTON_BUNDLE__CMD_LIGHTS);
 }
 
 void PROTON_BUNDLE_BatteryCallback() {
@@ -140,9 +57,10 @@ void PROTON_BUNDLE_ClearNeedsResetCallback() {
   stop_status_bundle.needs_reset = false;
 }
 
-void send_log(char *file, int line, uint8_t level, char *msg, ...) {
+void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
   strcpy(log_bundle.name, "A300_proton");
   strcpy(log_bundle.file, file);
+  strcpy(log_bundle.function, func);
   log_bundle.line = line;
   log_bundle.level = level;
 
@@ -157,19 +75,17 @@ void send_log(char *file, int line, uint8_t level, char *msg, ...) {
 void update_power() {
   for (uint8_t i = 0; i < PROTON_SIGNALS__POWER__MEASURED_VOLTAGES__LENGTH;
        i++) {
-    power_bundle.measured_currents[i] = (float)rand();
-    power_bundle.measured_voltages[i] = (float)rand();
+    power_bundle.measured_currents[i] = rand_float();
+    power_bundle.measured_voltages[i] = rand_float();
   }
 
-  if (!PROTON_BUNDLE_Send(PROTON_BUNDLE__POWER)) {
-    // printf("Failed to send power\r\n");
-  }
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__POWER);
 }
 
 void update_temperature() {
   for (uint8_t i = 0; i < PROTON_SIGNALS__TEMPERATURE__TEMPERATURES__LENGTH;
        i++) {
-    temperature_bundle.temperatures[i] = (float)rand();
+    temperature_bundle.temperatures[i] = rand_float();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__TEMPERATURE);
@@ -177,10 +93,10 @@ void update_temperature() {
 
 void update_status(uint32_t ms) {
   status_bundle.connection_uptime_s = ms / 1000;
-  status_bundle.connection_uptime_ns = rand();
+  status_bundle.connection_uptime_ns = rand_uint32();
 
   status_bundle.mcu_uptime_s = ms / 1000;
-  status_bundle.mcu_uptime_ns = rand();
+  status_bundle.mcu_uptime_ns = rand_uint32();
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__STATUS);
 }
@@ -199,149 +115,27 @@ void update_alerts() {
   PROTON_BUNDLE_Send(PROTON_BUNDLE__ALERTS);
 }
 
-// void print_const_bundle() {
-//   printf("%lf\r\n", test_const_bundle.const_double);
-//   printf("%f\r\n", test_const_bundle.const_float);
-//   printf("%d\r\n", test_const_bundle.const_int32);
-//   printf("%ld\r\n", test_const_bundle.const_int64);
-//   printf("%u\r\n", test_const_bundle.const_uint32);
-//   printf("%lu\r\n", test_const_bundle.const_uint64);
-//   printf("%u\r\n", test_const_bundle.const_bool);
-//   printf("%s\r\n", test_const_bundle.const_string);
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_BYTES__CAPACITY; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_BYTES__CAPACITY - 1)
-//     {
-//       printf("%u]\r\n", test_const_bundle.const_bytes[i]);
-//     }
-//     else
-//     {
-//       printf("%u, ", test_const_bundle.const_bytes[i]);
-//     }
-//   }
-
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_DOUBLES__LENGTH; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_DOUBLES__LENGTH - 1)
-//     {
-//       printf("%lf]\r\n", test_const_bundle.const_list_doubles[i]);
-//     }
-//     else
-//     {
-//       printf("%lf, ", test_const_bundle.const_list_doubles[i]);
-//     }
-//   }
-
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_FLOATS__LENGTH; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_FLOATS__LENGTH - 1)
-//     {
-//       printf("%f]\r\n", test_const_bundle.const_list_floats[i]);
-//     }
-//     else
-//     {
-//       printf("%f, ", test_const_bundle.const_list_floats[i]);
-//     }
-//   }
-
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT32S__LENGTH; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT32S__LENGTH - 1)
-//     {
-//       printf("%d]\r\n", test_const_bundle.const_list_int32s[i]);
-//     }
-//     else
-//     {
-//       printf("%d, ", test_const_bundle.const_list_int32s[i]);
-//     }
-//   }
-
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT64S__LENGTH; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_INT64S__LENGTH - 1)
-//     {
-//       printf("%ld]\r\n", test_const_bundle.const_list_int64s[i]);
-//     }
-//     else
-//     {
-//       printf("%ld, ", test_const_bundle.const_list_int64s[i]);
-//     }
-//   }
-
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT32S__LENGTH; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT32S__LENGTH - 1)
-//     {
-//       printf("%u]\r\n", test_const_bundle.const_list_uint32s[i]);
-//     }
-//     else
-//     {
-//       printf("%u, ", test_const_bundle.const_list_uint32s[i]);
-//     }
-//   }
-
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT64S__LENGTH; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_UINT64S__LENGTH - 1)
-//     {
-//       printf("%u]\r\n", test_const_bundle.const_list_uint64s[i]);
-//     }
-//     else
-//     {
-//       printf("%u, ", test_const_bundle.const_list_uint64s[i]);
-//     }
-//   }
-
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_BOOLS__LENGTH; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_BOOLS__LENGTH - 1)
-//     {
-//       printf("%u]\r\n", test_const_bundle.const_list_bools[i]);
-//     }
-//     else
-//     {
-//       printf("%u, ", test_const_bundle.const_list_bools[i]);
-//     }
-//   }
-
-//   printf("[");
-//   for (uint8_t i = 0; i < PROTON_SIGNALS__TEST_CONST__CONST_LIST_STRING__LENGTH; i++)
-//   {
-//     if (i == PROTON_SIGNALS__TEST_CONST__CONST_LIST_STRING__LENGTH - 1)
-//     {
-//       printf("%s]\r\n", test_const_bundle.const_list_string[i]);
-//     }
-//     else
-//     {
-//       printf("%s, ", test_const_bundle.const_list_string[i]);
-//     }
-//   }
-// }
-
 void update_pinout_state() {
   pinout_state_bundle.rails[0] = true;
 
   for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_STATE__OUTPUTS__LENGTH; i++) {
-    pinout_state_bundle.outputs[i] = i % 2;
+    pinout_state_bundle.outputs[i] = rand_bool();
   }
 
   for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_STATE__OUTPUT_PERIODS__LENGTH;
        i++) {
-    pinout_state_bundle.output_periods[i] = rand();
+    pinout_state_bundle.output_periods[i] = rand_uint32();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__PINOUT_STATE);
 }
 
-bool PROTON_TRANSPORT__McuConnect() { return socket_init() == 0; }
+bool PROTON_TRANSPORT__McuConnect() {
+  sock_recv = socket_init(PROTON_NODE__MCU__IP, PROTON_NODE__MCU__PORT, true);
+  sock_send = socket_init(PROTON_NODE__PC__IP, PROTON_NODE__PC__PORT, false);
+
+  return (sock_recv >= 0 && sock_send >=0);
+}
 
 bool PROTON_TRANSPORT__McuDisconnect() { return true; }
 

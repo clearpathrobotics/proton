@@ -27,9 +27,9 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   }
 
   proton_list_t * signal_list = (proton_list_t *)msg->signals;
-  proton_signal_t * signals = (proton_signal_t *)signal_list->data;
+  proton_signal_handle_t * signal_handles = (proton_signal_handle_t *)signal_list->data;
 
-  if (!signal_list || !signals)
+  if (!signal_list || !signal_handles)
   {
     return false;
   }
@@ -39,7 +39,7 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   {
     if (field->tag == proton_Bundle_signals_tag)
     {
-      proton_Signal * signal = &(signals[signal_list->size++].signal);
+      proton_Signal * signal = &(signal_handles[signal_list->size++].signal);
 
       // This is the last signal in the list, reset size counter
       if (signal_list->size == signal_list->length)
@@ -92,7 +92,7 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
         {
           return false;
         }
-        if (!pb_encode_submessage(ostream, proton_Signal_fields, &(signals[i].signal)))
+        if (!pb_encode_submessage(ostream, proton_Signal_fields, &(signal_handles[i].signal)))
         {
           return false;
         }

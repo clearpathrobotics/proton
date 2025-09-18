@@ -13,14 +13,14 @@
 #include "protonc/proton.h"
 #include <stdio.h>
 
-void PROTON_InitBundle(proton_bundle_t *bundle, uint32_t id,
-                       proton_signal_t *signals, uint32_t signal_count) {
-  if (signals && bundle) {
-    bundle->arg.data = signals;
-    bundle->arg.length = signal_count;
-    bundle->arg.size = 0;
-    bundle->bundle.id = id;
-    bundle->bundle.signals = &bundle->arg;
+void PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
+                       proton_signal_handle_t *signal_handles, uint32_t signal_count) {
+  if (signal_handles && handle) {
+    handle->arg.data = signal_handles;
+    handle->arg.length = signal_count;
+    handle->arg.size = 0;
+    handle->bundle.id = id;
+    handle->bundle.signals = &handle->arg;
   } else {
     // Error
   }
@@ -36,46 +36,46 @@ void PROTON_InitNode(proton_node_t *node, proton_transport_t transport,
   node->connected = false;
 }
 
-int PROTON_Encode(proton_bundle_t *bundle, uint8_t *buffer,
+int PROTON_Encode(proton_bundle_handle_t *handle, uint8_t *buffer,
                   size_t buffer_length) {
-  proton_signal_t *signal;
+  proton_signal_handle_t *signal_handle;
 
   // Copy non-list field values from struct to signal
-  for (uint8_t i = 0; i < bundle->arg.length; i++) {
-    signal = &((proton_signal_t *)bundle->arg.data)[i];
-    switch (signal->signal.which_signal) {
+  for (uint8_t i = 0; i < handle->arg.length; i++) {
+    signal_handle = &((proton_signal_handle_t *)handle->arg.data)[i];
+    switch (signal_handle->signal.which_signal) {
     case proton_Signal_double_value_tag: {
-      signal->signal.signal.double_value = *((double *)signal->arg.data);
+      signal_handle->signal.signal.double_value = *((double *)signal_handle->arg.data);
       break;
     }
 
     case proton_Signal_float_value_tag: {
-      signal->signal.signal.float_value = *((float *)signal->arg.data);
+      signal_handle->signal.signal.float_value = *((float *)signal_handle->arg.data);
       break;
     }
 
     case proton_Signal_int32_value_tag: {
-      signal->signal.signal.int32_value = *((int32_t *)signal->arg.data);
+      signal_handle->signal.signal.int32_value = *((int32_t *)signal_handle->arg.data);
       break;
     }
 
     case proton_Signal_int64_value_tag: {
-      signal->signal.signal.int64_value = *((int64_t *)signal->arg.data);
+      signal_handle->signal.signal.int64_value = *((int64_t *)signal_handle->arg.data);
       break;
     }
 
     case proton_Signal_uint32_value_tag: {
-      signal->signal.signal.uint32_value = *((uint32_t *)signal->arg.data);
+      signal_handle->signal.signal.uint32_value = *((uint32_t *)signal_handle->arg.data);
       break;
     }
 
     case proton_Signal_uint64_value_tag: {
-      signal->signal.signal.uint64_value = *((uint64_t *)signal->arg.data);
+      signal_handle->signal.signal.uint64_value = *((uint64_t *)signal_handle->arg.data);
       break;
     }
 
     case proton_Signal_bool_value_tag: {
-      signal->signal.signal.bool_value = *((bool *)signal->arg.data);
+      signal_handle->signal.signal.bool_value = *((bool *)signal_handle->arg.data);
       break;
     }
 
@@ -86,7 +86,7 @@ int PROTON_Encode(proton_bundle_t *bundle, uint8_t *buffer,
 
   pb_ostream_t stream =
       pb_ostream_from_buffer((pb_byte_t *)buffer, buffer_length);
-  bool status = pb_encode(&stream, proton_Bundle_fields, &bundle->bundle);
+  bool status = pb_encode(&stream, proton_Bundle_fields, &handle->bundle);
   size_t bytes_written = stream.bytes_written;
 
   if (status) {
@@ -117,52 +117,52 @@ bool PROTON_DecodeId(uint32_t *id, const uint8_t *buffer,
   return false;
 }
 
-int PROTON_Decode(proton_bundle_t *bundle, const uint8_t *buffer,
+int PROTON_Decode(proton_bundle_handle_t *handle, const uint8_t *buffer,
                   size_t buffer_length) {
   pb_istream_t stream =
       pb_istream_from_buffer((const pb_byte_t *)buffer, buffer_length);
 
-  bool status = pb_decode(&stream, proton_Bundle_fields, &bundle->bundle);
+  bool status = pb_decode(&stream, proton_Bundle_fields, &handle->bundle);
   size_t bytes_left = stream.bytes_left;
 
   if (status) {
-    proton_signal_t *signal;
+    proton_signal_handle_t * signal_handle;
 
-    for (uint8_t i = 0; i < bundle->arg.length; i++) {
-      signal = &((proton_signal_t *)bundle->arg.data)[i];
-      switch (signal->signal.which_signal) {
+    for (uint8_t i = 0; i < handle->arg.length; i++) {
+      signal_handle = &((proton_signal_handle_t *)handle->arg.data)[i];
+      switch (signal_handle->signal.which_signal) {
       case proton_Signal_double_value_tag: {
-        *((double *)signal->arg.data) = signal->signal.signal.double_value;
+        *((double *)signal_handle->arg.data) = signal_handle->signal.signal.double_value;
         break;
       }
 
       case proton_Signal_float_value_tag: {
-        *((float *)signal->arg.data) = signal->signal.signal.float_value;
+        *((float *)signal_handle->arg.data) = signal_handle->signal.signal.float_value;
         break;
       }
 
       case proton_Signal_int32_value_tag: {
-        *((int32_t *)signal->arg.data) = signal->signal.signal.int32_value;
+        *((int32_t *)signal_handle->arg.data) = signal_handle->signal.signal.int32_value;
         break;
       }
 
       case proton_Signal_int64_value_tag: {
-        *((int64_t *)signal->arg.data) = signal->signal.signal.int64_value;
+        *((int64_t *)signal_handle->arg.data) = signal_handle->signal.signal.int64_value;
         break;
       }
 
       case proton_Signal_uint32_value_tag: {
-        *((uint32_t *)signal->arg.data) = signal->signal.signal.uint32_value;
+        *((uint32_t *)signal_handle->arg.data) = signal_handle->signal.signal.uint32_value;
         break;
       }
 
       case proton_Signal_uint64_value_tag: {
-        *((uint64_t *)signal->arg.data) = signal->signal.signal.uint64_value;
+        *((uint64_t *)signal_handle->arg.data) = signal_handle->signal.signal.uint64_value;
         break;
       }
 
       case proton_Signal_bool_value_tag: {
-        *((bool *)signal->arg.data) = signal->signal.signal.bool_value;
+        *((bool *)signal_handle->arg.data) = signal_handle->signal.signal.bool_value;
         break;
       }
 
@@ -218,21 +218,21 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node) {
   return PROTON_OK;
 }
 
-void print_bundle(proton_Bundle bundle) {
+void PROTON_PrintBundle(proton_Bundle bundle) {
   proton_list_t *args = (proton_list_t *)bundle.signals;
   printf("Proton Bundle { \r\n");
   printf("\tID: 0x%x\r\n", bundle.id);
   printf("\tSignals { \r\n");
   for (int i = 0; i < args->length; i++) {
-    print_signal(((proton_signal_t *)args->data)[i].signal);
+    PROTON_PrintSignal(((proton_signal_handle_t *)args->data)[i].signal);
   }
   printf("\t}\r\n}\r\n");
 }
 
-void print_signal(proton_Signal signal) {
+void PROTON_PrintSignal(proton_Signal signal) {
   pb_size_t which = signal.which_signal;
 
-  proton_list_t * arg = proton_list_arg_init_default;
+  proton_list_t * arg;
 
   switch (which) {
   case proton_Signal_bool_value_tag: {
@@ -398,7 +398,7 @@ void print_signal(proton_Signal signal) {
   case proton_Signal_list_string_value_tag: {
     if (signal.signal.list_string_value.strings) {
       arg = (proton_list_t *)signal.signal.list_string_value.strings;
-      printf("\t\tlist_string_value: %p data %p length %u data[0] %c {\r\n", arg, arg->data, arg->length, ((char *)arg->data)[0]);
+      printf("\t\tlist_string_value: {\r\n");
       for (int i = 0; i < arg->length; i+= arg->capacity) {
         printf("\t\t\t%s\r\n", (((char (*)[arg->capacity])arg->data)[i]));
       }
@@ -420,7 +420,14 @@ void print_signal(proton_Signal signal) {
           uint8_t data = ((uint8_t (*)[arg->capacity])arg->data)[i][j];
           if (j == arg->capacity - 1)
           {
-            printf("0x%x]\r\n", data);
+            if (i == arg->length - 1)
+            {
+              printf("0x%x]\r\n", data);
+            }
+            else
+            {
+              printf("0x%x],\r\n", data);
+            }
           }
           else {
             printf("0x%x, ", data);

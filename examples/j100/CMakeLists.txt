@@ -1,5 +1,6 @@
 set(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/j100.yaml)
 set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/generated)
+set(UTILS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
 file(MAKE_DIRECTORY "${GENERATED_FOLDER}")
 
 # C++ Nodes
@@ -16,6 +17,7 @@ target_link_libraries(j100_mcu_cpp
 )
 
 target_compile_definitions(j100_mcu_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(j100_mcu_cpp PRIVATE -Wno-narrowing)
 
 ## PC
 
@@ -29,6 +31,7 @@ target_link_libraries(j100_pc_cpp
 )
 
 target_compile_definitions(j100_pc_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(j100_pc_cpp PRIVATE -Wno-narrowing)
 
 # C Nodes
 
@@ -52,6 +55,7 @@ add_custom_command(
 add_executable(j100_mcu_c
   j100_mcu.c
   ${GENERATED_FOLDER}/proton__j100_mcu.c
+  ${UTILS_FOLDER}/utils.c
 )
 
 target_link_libraries(j100_mcu_c
@@ -64,6 +68,7 @@ target_include_directories(j100_mcu_c
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
+        ${UTILS_FOLDER}
 )
 
 ## PC
@@ -86,6 +91,7 @@ add_custom_command(
 add_executable(j100_pc_c
   j100_pc.c
   ${GENERATED_FOLDER}/proton__j100_pc.c
+  ${UTILS_FOLDER}/utils.c
 )
 
 target_link_libraries(j100_pc_c
@@ -98,6 +104,7 @@ target_include_directories(j100_pc_c
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
+        ${UTILS_FOLDER}
 )
 
 # Install
