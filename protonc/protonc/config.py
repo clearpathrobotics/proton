@@ -67,6 +67,7 @@ class ProtonConfig:
             LIST_UINT64 = auto()
             LIST_BOOL = auto()
             LIST_STRING = auto()
+            LIST_BYTES = auto()
 
         DEFAULT_VALUES = {
             SignalTypes.DOUBLE: 0.0,
@@ -85,7 +86,8 @@ class ProtonConfig:
             SignalTypes.LIST_UINT32: {},
             SignalTypes.LIST_UINT64: {},
             SignalTypes.LIST_BOOL: {},
-            SignalTypes.LIST_STRING: {}
+            SignalTypes.LIST_STRING: {},
+            SignalTypes.LIST_BYTES: {}
         }
 
         def __init__(self, bundle: str, signal: dict):
@@ -141,7 +143,7 @@ class ProtonConfig:
                     assert self.length > 0, (
                         f"{self.type} type signals must have a non-zero length"
                     )
-                case (ProtonConfig.Signal.SignalTypes.LIST_STRING):
+                case (ProtonConfig.Signal.SignalTypes.LIST_STRING | ProtonConfig.Signal.SignalTypes.LIST_BYTES):
                     assert self.length > 0, (
                         f"{self.type} type signals must have a non-zero length"
                     )
@@ -197,7 +199,7 @@ class ProtonConfig:
                             list_def += f"\"{v}\", "
                         else:
                             list_def += f"\"{v}\""
-                        self.c_value =f"{{{list_def}}}"
+                    self.c_value =f"{{{list_def}}}"
                 case _:
                     list_def = ""
                     for (i, v) in enumerate(self.value):
@@ -323,9 +325,6 @@ class ProtonConfig:
         for node in nodes:
             self.nodes.append(ProtonConfig.Node(node))
 
-        # for n in self.nodes:
-        #     print(f"Node: {n.name} Transport: {n.type}")
-
     def parse_messages(self):
         try:
             bundles = self.dictionary[self.BUNDLES]
@@ -342,10 +341,3 @@ class ProtonConfig:
             if n.name == target:
                 self.target_node = n
 
-        # for m in self.bundles:
-        #     print(
-        #         f"Bundle: {m.name} type: {m.type} id: {m.id}, producer {m.producer}, consumer {m.consumer}"
-        #     )
-        #     print("Signals:")
-        #     for s in m.signals:
-        #         print(f"\t{s.signal}: type: {s.type}, length: {s.length}")

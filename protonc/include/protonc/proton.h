@@ -25,25 +25,6 @@
 #define PROTON_FRAME_HEADER_OVERHEAD sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_0) + sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_1) + PROTON_FRAME_HEADER_LENGTH_OVERHEAD
 #define PROTON_FRAME_OVERHEAD PROTON_FRAME_HEADER_OVERHEAD + PROTON_FRAME_CRC_OVERHEAD
 
-typedef enum {
-  PROTON_SIGNAL_TYPE_DOUBLE_VALUE,
-  PROTON_SIGNAL_TYPE_FLOAT_VALUE,
-  PROTON_SIGNAL_TYPE_INT32_VALUE,
-  PROTON_SIGNAL_TYPE_INT64_VALUE,
-  PROTON_SIGNAL_TYPE_UINT32_VALUE,
-  PROTON_SIGNAL_TYPE_UINT64_VALUE,
-  PROTON_SIGNAL_TYPE_BOOL_VALUE,
-  PROTON_SIGNAL_TYPE_STRING_VALUE,
-  PROTON_SIGNAL_TYPE_BYTES_VALUE,
-  PROTON_SIGNAL_TYPE_LIST_DOUBLE_VALUE,
-  PROTON_SIGNAL_TYPE_LIST_FLOAT_VALUE,
-  PROTON_SIGNAL_TYPE_LIST_INT32_VALUE,
-  PROTON_SIGNAL_TYPE_LIST_INT64_VALUE,
-  PROTON_SIGNAL_TYPE_LIST_UINT32_VALUE,
-  PROTON_SIGNAL_TYPE_LIST_UINT64_VALUE,
-  PROTON_SIGNAL_TYPE_LIST_BOOL_VALUE,
-  PROTON_SIGNAL_TYPE_LIST_STRING_VALUE,
-} proton_signal_type_e;
 
 typedef enum {
   PROTON_OK = 0,
@@ -59,9 +40,10 @@ typedef size_t (*proton_transport_write_t)(const uint8_t *buf, size_t len);
 typedef bool (*proton_receive_t)(const uint8_t * buf, size_t len);
 
 typedef struct {
-  void *data;
-  size_t capacity;
-  size_t size;
+  void *data; // Pointer to start of data buffer
+  size_t length; // Length of list
+  size_t capacity; // Capacity of data buffer (strings and bytes only)
+  size_t size; // Current size of list (for decoding only)
 } proton_list_t;
 
 typedef struct {

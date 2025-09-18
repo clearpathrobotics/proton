@@ -34,6 +34,10 @@ message ListStrings {
   repeated string strings = 1;
 }
 
+message ListBytes {
+  repeated bytes bytes = 1;
+}
+
 message Signal {
   oneof signal {
     double double_value = 1;
@@ -54,5 +58,6 @@ message Signal {
     ListUint64s list_uint64_value = 15;
     ListBools list_bool_value = 16;
     ListStrings list_string_value = 17;
+    ListBytes list_bytes_value = 18;
   }
 }

@@ -143,13 +143,13 @@ void PROTON_BUNDLE_AlertsCallback()
 
 void update_lights()
 {
-  // for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY; i++)
-  // {
-  //   cmd_lights_bundle.front_left_light[i] = rand() % 255;
-  //   cmd_lights_bundle.front_right_light[i] = rand() % 255;
-  //   cmd_lights_bundle.rear_left_light[i] = rand() % 255;
-  //   cmd_lights_bundle.rear_right_light[i] = rand() % 255;
-  // }
+  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__LIGHTS__LENGTH; i++)
+  {
+    for (uint8_t j = 0; j < PROTON_SIGNALS__CMD_LIGHTS__LIGHTS__CAPACITY; j++)
+    {
+      cmd_lights_bundle.lights[i][j] = rand() % 255;
+    }
+  }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__CMD_LIGHTS);
 }

@@ -17,7 +17,7 @@ void PROTON_InitBundle(proton_bundle_t *bundle, uint32_t id,
                        proton_signal_t *signals, uint32_t signal_count) {
   if (signals && bundle) {
     bundle->arg.data = signals;
-    bundle->arg.capacity = signal_count;
+    bundle->arg.length = signal_count;
     bundle->arg.size = 0;
     bundle->bundle.id = id;
     bundle->bundle.signals = &bundle->arg;
@@ -41,7 +41,7 @@ int PROTON_Encode(proton_bundle_t *bundle, uint8_t *buffer,
   proton_signal_t *signal;
 
   // Copy non-list field values from struct to signal
-  for (uint8_t i = 0; i < bundle->arg.capacity; i++) {
+  for (uint8_t i = 0; i < bundle->arg.length; i++) {
     signal = &((proton_signal_t *)bundle->arg.data)[i];
     switch (signal->signal.which_signal) {
     case proton_Signal_double_value_tag: {
@@ -128,7 +128,7 @@ int PROTON_Decode(proton_bundle_t *bundle, const uint8_t *buffer,
   if (status) {
     proton_signal_t *signal;
 
-    for (uint8_t i = 0; i < bundle->arg.capacity; i++) {
+    for (uint8_t i = 0; i < bundle->arg.length; i++) {
       signal = &((proton_signal_t *)bundle->arg.data)[i];
       switch (signal->signal.which_signal) {
       case proton_Signal_double_value_tag: {
@@ -220,10 +220,10 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node) {
 
 void print_bundle(proton_Bundle bundle) {
   proton_list_t *args = (proton_list_t *)bundle.signals;
-  printf("Proton message { \r\n");
+  printf("Proton Bundle { \r\n");
   printf("\tID: 0x%x\r\n", bundle.id);
   printf("\tSignals { \r\n");
-  for (int i = 0; i < args->capacity; i++) {
+  for (int i = 0; i < args->length; i++) {
     print_signal(((proton_signal_t *)args->data)[i].signal);
   }
   printf("\t}\r\n}\r\n");
@@ -232,7 +232,7 @@ void print_bundle(proton_Bundle bundle) {
 void print_signal(proton_Signal signal) {
   pb_size_t which = signal.which_signal;
 
-  proton_list_t arg = proton_list_arg_init_default;
+  proton_list_t * arg = proton_list_arg_init_default;
 
   switch (which) {
   case proton_Signal_bool_value_tag: {
@@ -272,8 +272,8 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_string_value_tag: {
     if (signal.signal.string_value) {
-      arg = *(proton_list_t *)signal.signal.string_value;
-      printf("\t\tstring_value: %s\r\n", (char *)arg.data);
+      arg = (proton_list_t *)signal.signal.string_value;
+      printf("\t\tstring_value: %s\r\n", (char *)arg->data);
     } else {
       printf("\t\tNULL string\r\n");
     }
@@ -282,11 +282,11 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_bytes_value_tag: {
     if (signal.signal.bytes_value) {
-      arg = *(proton_list_t *)signal.signal.bytes_value;
+      arg = (proton_list_t *)signal.signal.bytes_value;
       printf("\t\tbytes_value: [");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("0x%x", ((uint8_t *)arg.data)[i]);
-        if (i != arg.capacity - 1) {
+      for (int i = 0; i < arg->capacity; i++) {
+        printf("0x%x", ((uint8_t *)arg->data)[i]);
+        if (i != arg->capacity - 1) {
           printf(", ");
         }
       }
@@ -299,10 +299,10 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_list_double_value_tag: {
     if (signal.signal.list_double_value.doubles) {
-      arg = *(proton_list_t *)signal.signal.list_double_value.doubles;
+      arg = (proton_list_t *)signal.signal.list_double_value.doubles;
       printf("\t\tlist_double_value: {\r\n");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("\t\t\t%lf\r\n", ((double *)arg.data)[i]);
+      for (int i = 0; i < arg->length; i++) {
+        printf("\t\t\t%lf\r\n", ((double *)arg->data)[i]);
       }
       printf("\t\t}\r\n");
     } else {
@@ -313,10 +313,10 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_list_float_value_tag: {
     if (signal.signal.list_float_value.floats) {
-      arg = *(proton_list_t *)signal.signal.list_float_value.floats;
+      arg = (proton_list_t *)signal.signal.list_float_value.floats;
       printf("\t\tlist_float_value: {\r\n");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("\t\t\t%f\r\n", ((float *)arg.data)[i]);
+      for (int i = 0; i < arg->length; i++) {
+        printf("\t\t\t%f\r\n", ((float *)arg->data)[i]);
       }
       printf("\t\t}\r\n");
     } else {
@@ -327,10 +327,10 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_list_int32_value_tag: {
     if (signal.signal.list_int32_value.int32s) {
-      arg = *(proton_list_t *)signal.signal.list_int32_value.int32s;
+      arg = (proton_list_t *)signal.signal.list_int32_value.int32s;
       printf("\t\tlist_int32_value: {\r\n");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("\t\t\t%d\r\n", ((int32_t *)arg.data)[i]);
+      for (int i = 0; i < arg->length; i++) {
+        printf("\t\t\t%d\r\n", ((int32_t *)arg->data)[i]);
       }
       printf("\t\t}\r\n");
     } else {
@@ -341,10 +341,10 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_list_int64_value_tag: {
     if (signal.signal.list_int64_value.int64s) {
-      arg = *(proton_list_t *)signal.signal.list_int64_value.int64s;
+      arg = (proton_list_t *)signal.signal.list_int64_value.int64s;
       printf("\t\tlist_int64_value: {\r\n");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("\t\t\t%ld\r\n", ((int64_t *)arg.data)[i]);
+      for (int i = 0; i < arg->length; i++) {
+        printf("\t\t\t%ld\r\n", ((int64_t *)arg->data)[i]);
       }
       printf("\t\t}\r\n");
     } else {
@@ -355,10 +355,10 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_list_uint32_value_tag: {
     if (signal.signal.list_uint32_value.uint32s) {
-      arg = *(proton_list_t *)signal.signal.list_uint32_value.uint32s;
+      arg = (proton_list_t *)signal.signal.list_uint32_value.uint32s;
       printf("\t\tlist_uint32_value: {\r\n");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("\t\t\t%u\r\n", ((uint32_t *)arg.data)[i]);
+      for (int i = 0; i < arg->length; i++) {
+        printf("\t\t\t%u\r\n", ((uint32_t *)arg->data)[i]);
       }
       printf("\t\t}\r\n");
     } else {
@@ -369,10 +369,10 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_list_uint64_value_tag: {
     if (signal.signal.list_uint64_value.uint64s) {
-      arg = *(proton_list_t *)signal.signal.list_uint64_value.uint64s;
+      arg = (proton_list_t *)signal.signal.list_uint64_value.uint64s;
       printf("\t\tlist_uint64_value: {\r\n");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("\t\t\t%lu\r\n", ((uint64_t *)arg.data)[i]);
+      for (int i = 0; i < arg->length; i++) {
+        printf("\t\t\t%lu\r\n", ((uint64_t *)arg->data)[i]);
       }
       printf("\t\t}\r\n");
     } else {
@@ -383,10 +383,10 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_list_bool_value_tag: {
     if (signal.signal.list_bool_value.bools) {
-      arg = *(proton_list_t *)signal.signal.list_bool_value.bools;
+      arg = (proton_list_t *)signal.signal.list_bool_value.bools;
       printf("\t\tlist_bool_value: {\r\n");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("\t\t\t%u\r\n", ((bool *)arg.data)[i]);
+      for (int i = 0; i < arg->length; i++) {
+        printf("\t\t\t%u\r\n", ((bool *)arg->data)[i]);
       }
       printf("\t\t}\r\n");
     } else {
@@ -397,14 +397,39 @@ void print_signal(proton_Signal signal) {
 
   case proton_Signal_list_string_value_tag: {
     if (signal.signal.list_string_value.strings) {
-      arg = *(proton_list_t *)signal.signal.list_string_value.strings;
-      printf("\t\tlist_string_value: {\r\n");
-      for (int i = 0; i < arg.capacity; i++) {
-        printf("\t\t\t%s\r\n", ((char **)arg.data)[i]);
+      arg = (proton_list_t *)signal.signal.list_string_value.strings;
+      printf("\t\tlist_string_value: %p data %p length %u data[0] %c {\r\n", arg, arg->data, arg->length, ((char *)arg->data)[0]);
+      for (int i = 0; i < arg->length; i+= arg->capacity) {
+        printf("\t\t\t%s\r\n", (((char (*)[arg->capacity])arg->data)[i]));
       }
       printf("\t\t}\r\n");
     } else {
-      printf("\t\tNULL string\r\n");
+      printf("\t\tNULL string list\r\n");
+    }
+    break;
+  }
+
+  case proton_Signal_list_bytes_value_tag: {
+    if (signal.signal.list_bytes_value.bytes) {
+      arg = (proton_list_t *)signal.signal.list_bytes_value.bytes;
+      printf("\t\tlist_bytes_value: {\r\n");
+      for (int i = 0; i < arg->length; i++) {
+        printf("\t\t\t[");
+        for (int j = 0; j < arg->capacity; j++)
+        {
+          uint8_t data = ((uint8_t (*)[arg->capacity])arg->data)[i][j];
+          if (j == arg->capacity - 1)
+          {
+            printf("0x%x]\r\n", data);
+          }
+          else {
+            printf("0x%x, ", data);
+          }
+        }
+      }
+      printf("\t\t}\r\n");
+    } else {
+      printf("\t\tNULL bytes list\r\n");
     }
     break;
   }

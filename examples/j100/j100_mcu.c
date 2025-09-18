@@ -146,10 +146,7 @@ void update_status(uint32_t ms) {
 }
 
 void update_emergency_stop() {
-  static bool stopped = false;
-
-  stopped = !stopped;
-  emergency_stop_bundle.stopped = stopped;
+  emergency_stop_bundle.data = !emergency_stop_bundle.data;
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__EMERGENCY_STOP);
 }
@@ -378,10 +375,6 @@ int main() {
 
   strcpy(status_bundle.firmware_version, "3.0.0");
   strcpy(status_bundle.hardware_id, "J100");
-
-  strcpy(imu_bundle.frame_id, "imu_0_link");
-  strcpy(magnetometer_bundle.frame_id, "imu_0_link");
-  strcpy(nmea_bundle.frame_id, "gps_0_link");
 
   pthread_t thread_50hz, thread_10hz, thread_1hz, thread_stats;
 

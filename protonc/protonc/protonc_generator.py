@@ -54,7 +54,8 @@ class ProtonCGenerator:
         ProtonConfig.Signal.SignalTypes.LIST_UINT32: "uint32_t",
         ProtonConfig.Signal.SignalTypes.LIST_UINT64: "uint64_t",
         ProtonConfig.Signal.SignalTypes.LIST_BOOL: "bool",
-        ProtonConfig.Signal.SignalTypes.LIST_STRING: "char*",
+        ProtonConfig.Signal.SignalTypes.LIST_STRING: "char",
+        ProtonConfig.Signal.SignalTypes.LIST_BYTES: "uint8_t",
     }
 
     SIGNAL_TAG_MAP = {
@@ -75,6 +76,7 @@ class ProtonCGenerator:
         ProtonConfig.Signal.SignalTypes.LIST_UINT64: "proton_Signal_list_uint64_value_tag",
         ProtonConfig.Signal.SignalTypes.LIST_BOOL: "proton_Signal_list_bool_value_tag",
         ProtonConfig.Signal.SignalTypes.LIST_STRING: "proton_Signal_list_string_value_tag",
+        ProtonConfig.Signal.SignalTypes.LIST_BYTES: "proton_Signal_list_bytes_value_tag",
     }
 
     SIGNAL_VARIABLE_MAP = {
@@ -86,6 +88,7 @@ class ProtonCGenerator:
         ProtonConfig.Signal.SignalTypes.LIST_UINT64: "uint64s",
         ProtonConfig.Signal.SignalTypes.LIST_BOOL: "bools",
         ProtonConfig.Signal.SignalTypes.LIST_STRING: "strings",
+        ProtonConfig.Signal.SignalTypes.LIST_BYTES: "bytes",
     }
 
     def __init__(self, config_file: str, destination_path: str):
@@ -120,27 +123,38 @@ class ProtonCGenerator:
         for b in self.config.bundles:
             vars = []
             for s in b.signals:
-                if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING and not s.is_const:
-                    string_struct = Struct(
-                        s.name,
-                        [
-                            Variable("list", "char *", s.length_define),
-                            Variable(
-                                "strings", "char", s.length_define, s.capacity_define, const=s.is_const
-                            ),
-                        ],
+                # if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING and not s.is_const:
+                #     string_struct = Struct(
+                #         s.name,
+                #         [
+                #             Variable("list", "char *", s.length_define),
+                #             Variable(
+                #                 "strings", "char", s.length_define, s.capacity_define, const=s.is_const
+                #             ),
+                #         ],
+                #     )
+                #     vars.append(string_struct)
+                # elif s.type == ProtonConfig.Signal.SignalTypes.LIST_BYTES and not s.is_const:
+                #     string_struct = Struct(
+                #         s.name,
+                #         [
+                #             Variable("list", "uint8_t *", s.length_define),
+                #             Variable(
+                #                 "bytes", "uint8_t", s.length_define, s.capacity_define, const=s.is_const
+                #             ),
+                #         ],
+                #     )
+                #     vars.append(string_struct)
+                # else:
+                vars.append(
+                    Variable(
+                        name=s.name,
+                        type=self.SIGNAL_TYPE_MAP[s.type],
+                        length=0 if s.length == 0 else s.length_define,
+                        capacity=0 if s.capacity == 0 else s.capacity_define,
+                        const=s.is_const
                     )
-                    vars.append(string_struct)
-                else:
-                    vars.append(
-                        Variable(
-                            name=s.name,
-                            type=self.SIGNAL_TYPE_MAP[s.type],
-                            length=0 if s.length == 0 else s.length_define,
-                            capacity=0 if s.capacity == 0 else s.capacity_define,
-                            const=s.is_const
-                        )
-                    )
+                )
             s = Struct(b.struct_name, vars)
             self.header_writer.write_typedef_struct(s, indent_level=0)
             self.header_writer.write_newline()
@@ -309,31 +323,57 @@ class ProtonCGenerator:
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name};"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length_define};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.length = {s.length_define};"
                         )
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
                         )
 
-                    case ProtonConfig.Signal.SignalTypes.LIST_STRING:
+                    case (ProtonConfig.Signal.SignalTypes.LIST_STRING | ProtonConfig.Signal.SignalTypes.LIST_BYTES):
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signals_variable_name}[{s.signal_enum_name}].arg;"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name}.list;"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name};"
                         )
                         self.src_writer.write(
-                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.length_define};"
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity_define};"
+                        )
+                        self.src_writer.write(
+                            f"{b.signals_variable_name}[{s.signal_enum_name}].arg.length = {s.length_define};"
                         )
                         self.src_writer.write(
                             f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
                         )
-                        self.src_writer.write_for_loop_start(s.length, indent_level=1)
-                        self.src_writer.write(
-                            f"{b.bundle_variable_name}.{s.name}.list[i] = {b.bundle_variable_name}.{s.name}.strings[i];",
-                            indent_level=2,
-                        )
-                        self.src_writer.write_for_loop_end(indent_level=1)
+                        # self.src_writer.write_for_loop_start(s.length, indent_level=1)
+                        # self.src_writer.write(
+                        #     f"{b.bundle_variable_name}.{s.name}.list[i] = {b.bundle_variable_name}.{s.name}.strings[i];",
+                        #     indent_level=2,
+                        # )
+                        # self.src_writer.write_for_loop_end(indent_level=1)
+
+                    # case ProtonConfig.Signal.SignalTypes.LIST_BYTES:
+                    #     self.src_writer.write(
+                    #         f"{b.signals_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signals_variable_name}[{s.signal_enum_name}].arg;"
+                    #     )
+                    #     self.src_writer.write(
+                    #         f"{b.signals_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name}.list;"
+                    #     )
+                    #     self.src_writer.write(
+                    #         f"{b.signals_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity_define};"
+                    #     )
+                    #     self.src_writer.write(
+                    #         f"{b.signals_variable_name}[{s.signal_enum_name}].arg.length = {s.length_define};"
+                    #     )
+                    #     self.src_writer.write(
+                    #         f"{b.signals_variable_name}[{s.signal_enum_name}].arg.size = 0;"
+                    #     )
+                    #     self.src_writer.write_for_loop_start(s.length, indent_level=1)
+                    #     self.src_writer.write(
+                    #         f"{b.bundle_variable_name}.{s.name}.list[i] = {b.bundle_variable_name}.{s.name}.bytes[i];",
+                    #         indent_level=2,
+                    #     )
+                    #     self.src_writer.write_for_loop_end(indent_level=1)
                 self.src_writer.write_newline()
             self.src_writer.write(
                 f"PROTON_InitBundle(&{b.internal_bundle_variable_name}, {b.bundle_enum_name}, {b.signals_variable_name}, {b.signals_enum_count});"
@@ -724,7 +764,7 @@ def main():
         "--target",
         type=str,
         action="store",
-        default="pc",
+        default="mcu",
         help="Target node for generation.",
     )
 

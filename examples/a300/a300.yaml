@@ -102,9 +102,7 @@ bundles:
     producer: pc
     consumer: mcu
     signals:
-      - {name: red, type: bytes, capacity: 4}
-      - {name: green, type: bytes, capacity: 4}
-      - {name: blue, type: bytes, capacity: 4}
+      - {name: lights, type: list_bytes, length: 4, capacity: 3}
   - name: battery
     id: 0x203
     producer: pc
