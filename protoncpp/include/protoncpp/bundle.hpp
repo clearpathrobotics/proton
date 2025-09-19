@@ -43,6 +43,7 @@ public:
   std::string getProducer() { return producer_; }
   std::string getConsumer() { return consumer_; }
   std::shared_ptr<Bundle> getBundlePtr() { return bundle_; }
+  Bundle& getBundle() { return *bundle_; }
   std::map<std::string, SignalHandle> getSignalMap() { return signals_; }
   BundleCallback getCallback() { return callback_; }
 

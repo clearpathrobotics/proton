@@ -26,19 +26,8 @@ struct convert<proton::SignalConfig> {
     rhs.name = node[proton::keys::NAME].as<std::string>();
     rhs.type_string = node[proton::keys::TYPE].as<std::string>();
 
-    auto length_key = node[proton::keys::LENGTH];
-    if (length_key.IsDefined())
-    {
-      rhs.length = length_key.as<uint32_t>();
-    }
-
-    auto capacity_key = node[proton::keys::CAPACITY];
-    if (capacity_key.IsDefined())
-    {
-      rhs.capacity = capacity_key.as<uint32_t>();
-    }
-
     auto value_key = node[proton::keys::VALUE];
+    // Constant value defined
     if (value_key.IsDefined() && !value_key.IsNull())
     {
       rhs.is_const = true;
@@ -54,6 +43,20 @@ struct convert<proton::SignalConfig> {
         {
           rhs.capacity = value_key.size();
         }
+        else if (rhs.type_string == proton::value_types::LIST_STRING || rhs.type_string == proton::value_types::LIST_BYTES)
+        {
+          // Set capacity to largest of values
+          for (auto v : value_key)
+          {
+            if (v.size() > rhs.capacity)
+            {
+              rhs.capacity = v.size();
+            }
+          }
+
+          // Set length to sequence size
+          rhs.length = value_key.size();
+        }
         else
         {
           rhs.length = value_key.size();
@@ -63,6 +66,35 @@ struct convert<proton::SignalConfig> {
     else
     {
       rhs.is_const = false;
+
+      auto length_key = node[proton::keys::LENGTH];
+      if (length_key.IsDefined())
+      {
+        rhs.length = length_key.as<uint32_t>();
+      }
+      else if (proton::signal_map::SignalMap.at(rhs.type_string) >= proton::Signal::SignalCase::kListDoubleValue)
+      {
+        throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string + " must define a length");
+      }
+
+      auto capacity_key = node[proton::keys::CAPACITY];
+      if (capacity_key.IsDefined())
+      {
+        rhs.capacity = capacity_key.as<uint32_t>();
+      }
+      else
+      {
+        switch(proton::signal_map::SignalMap.at(rhs.type_string))
+        {
+          case proton::Signal::SignalCase::kStringValue:
+          case proton::Signal::SignalCase::kBytesValue:
+          case proton::Signal::SignalCase::kListStringValue:
+          case proton::Signal::SignalCase::kListBytesValue:
+          {
+            throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string + " must define a capacity");
+          }
+        }
+      }
     }
 
     return true;

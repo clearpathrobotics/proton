@@ -41,7 +41,7 @@ BundleHandle &BundleManager::receiveBundle(const uint8_t *buffer,
 BundleHandle &BundleManager::setBundle(const Bundle &bundle) {
   for (auto &[name, handle] : bundles_) {
     if (handle.getId() == bundle.id()) {
-      *handle.getBundlePtr().get() = bundle;
+      handle.getBundle() = bundle;
       return handle;
     }
   }

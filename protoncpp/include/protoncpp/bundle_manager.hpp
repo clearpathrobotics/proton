@@ -24,7 +24,6 @@ public:
   BundleHandle &getBundle(const std::string &bundle_name);
   std::map<std::string, BundleHandle> getBundleMap() const;
   BundleHandle &receiveBundle(const uint8_t *buffer, const uint32_t len);
-
   BundleHandle &setBundle(const Bundle &bundle);
 
   void printAllBundles();
