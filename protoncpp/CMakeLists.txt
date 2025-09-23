@@ -9,14 +9,15 @@ if(NOT PROTOC_EXECUTABLE)
 endif()
 
 # YAML-CPP
-include(FetchContent)
+find_package(yaml-cpp REQUIRED)
+# include(FetchContent)
 
-FetchContent_Declare(
-  yaml-cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG 0.8.0
-)
-FetchContent_MakeAvailable(yaml-cpp)
+# FetchContent_Declare(
+#   yaml-cpp
+#   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+#   GIT_TAG 0.8.0
+# )
+# FetchContent_MakeAvailable(yaml-cpp)
 
 # -------------------------------
 # Proto files
@@ -114,7 +115,7 @@ target_link_libraries(protoncpp PUBLIC yaml-cpp::yaml-cpp)
 
 # Install
 
-install(TARGETS yaml-cpp EXPORT ProtonTargets)
+#install(TARGETS yaml-cpp EXPORT ProtonTargets)
 
 install(TARGETS protoncpp
     EXPORT ProtonTargets

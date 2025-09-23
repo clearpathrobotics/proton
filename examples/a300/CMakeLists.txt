@@ -42,15 +42,7 @@ set(GENERATED_C_FILES
   "${GENERATED_FOLDER}/proton__a300_mcu.h"
 )
 
-add_custom_command(
-  OUTPUT ${GENERATED_C_FILES}
-  COMMAND ${PROTONC_GENERATOR}
-    -c ${CONFIG_FILE}
-    -d ${GENERATED_FOLDER}
-    -t "mcu"
-  DEPENDS ${CONFIG_FILE}
-  COMMENT "Generating Proton C files for A300"
-)
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "mcu")
 
 add_executable(a300_mcu_c
   a300_mcu.c
@@ -78,15 +70,7 @@ set(GENERATED_C_FILES
   "${GENERATED_FOLDER}/proton__a300_pc.h"
 )
 
-add_custom_command(
-  OUTPUT ${GENERATED_C_FILES}
-  COMMAND ${PROTONC_GENERATOR}
-    -c ${CONFIG_FILE}
-    -d ${GENERATED_FOLDER}
-    -t "pc"
-  DEPENDS ${CONFIG_FILE}
-  COMMENT "Generating Proton C files for A300"
-)
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "pc")
 
 add_executable(a300_pc_c
   a300_pc.c
