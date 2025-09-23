@@ -35,7 +35,9 @@ function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET)
   # Add a custom target to execute the script
   add_custom_command(
     OUTPUT ${GENERATED_FILES}
-    COMMAND ${Python3_EXECUTABLE}
+    COMMAND ${CMAKE_COMMAND} -E env
+      PYTHONPATH=${CMAKE_SOURCE_DIR}/protonc
+      ${Python3_EXECUTABLE}
       ${PROTONC_GENERATOR}
       -c ${CONFIG_FILE}
       -d ${GENERATED_FOLDER}

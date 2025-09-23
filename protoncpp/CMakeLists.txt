@@ -72,7 +72,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.cc
   COMMAND cp ${GENERATED_DIR}/signal.pb.cc ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.cc ${GENERATED_SRC_DIR}
-  DEPENDS ${GENERATED_DIR}
+  DEPENDS ${GENERATED_FILES}
 )
 
 add_custom_command(
@@ -80,7 +80,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${GENERATED_DIR}
+  DEPENDS ${GENERATED_FILES}
 )
 
 add_custom_target(generate_protocpp ALL
@@ -108,14 +108,13 @@ target_include_directories(protoncpp
   PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+      $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(protoncpp PRIVATE protobuf::libprotobuf)
-target_link_libraries(protoncpp PUBLIC yaml-cpp::yaml-cpp)
+target_link_libraries(protoncpp PUBLIC yaml-cpp)
 
 # Install
-
-#install(TARGETS yaml-cpp EXPORT ProtonTargets)
 
 install(TARGETS protoncpp
     EXPORT ProtonTargets
