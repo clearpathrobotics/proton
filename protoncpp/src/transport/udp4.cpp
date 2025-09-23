@@ -89,7 +89,7 @@ bool Udp4Transport::connect()
 
   if (socket_[SOCKET_TARGET] == -1)
   {
-    socket_[SOCKET_TARGET] = initSocket(socket_endpoints_[SOCKET_TARGET], true, false);
+    socket_[SOCKET_TARGET] = initSocket(socket_endpoints_[SOCKET_TARGET], true, true);
   }
 
   if (socket_[SOCKET_PEER] == -1)

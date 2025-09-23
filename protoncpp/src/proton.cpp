@@ -139,7 +139,6 @@ void Node::spinOnce() {
 void Node::spin() {
   while (1) {
     spinOnce();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
 }
 
