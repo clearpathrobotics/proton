@@ -51,10 +51,10 @@ void update_status()
   auto& status_bundle = node.getBundle("status");
   status_bundle.getSignal("hardware_id").setValue<std::string>("A300_MCU");
   status_bundle.getSignal("firmware_version").setValue<std::string>("3.0.0");
-  status_bundle.getSignal("mcu_uptime_s").setValue<int32_t>(rand());
-  status_bundle.getSignal("mcu_uptime_ns").setValue<uint32_t>(rand());
-  status_bundle.getSignal("connection_uptime_s").setValue<int32_t>(rand());
-  status_bundle.getSignal("connection_uptime_ns").setValue<uint32_t>(rand());
+  status_bundle.getSignal("mcu_uptime_sec").setValue<int32_t>(rand());
+  status_bundle.getSignal("mcu_uptime_nanosec").setValue<uint32_t>(rand());
+  status_bundle.getSignal("connection_uptime_sec").setValue<int32_t>(rand());
+  status_bundle.getSignal("connection_uptime_nanosec").setValue<uint32_t>(rand());
 
   node.sendBundle(status_bundle);
 }
@@ -64,19 +64,15 @@ void update_power()
   auto& power_bundle = node.getBundle("power");
 
   auto& measured_voltages = power_bundle.getSignal("measured_voltages");
-  proton::list_float voltages(measured_voltages.getLength());
-
   for (auto i = 0; i < measured_voltages.getLength(); i++)
   {
-    voltages.at(i) = static_cast<float>(rand());
+    measured_voltages.setValue<float>(i, static_cast<float>(rand()));
   }
 
   auto& measured_currents = power_bundle.getSignal("measured_currents");
-  proton::list_float currents(measured_currents.getLength());
-
   for (auto i = 0; i < measured_currents.getLength(); i++)
   {
-    currents.at(i) = static_cast<float>(rand());
+    measured_currents.setValue<float>(i, static_cast<float>(rand()));
   }
 
   node.sendBundle(power_bundle);
@@ -87,11 +83,10 @@ void update_temperature()
   auto& temperature_bundle = node.getBundle("temperature");
 
   auto& temperatures_signal = temperature_bundle.getSignal("temperatures");
-  proton::list_float temperatures(temperatures_signal.getLength());
 
   for (auto i = 0; i < temperatures_signal.getLength(); i++)
   {
-    temperatures.at(i) = static_cast<float>(rand());
+    temperatures_signal.setValue<float>(i, static_cast<float>(rand()));
   }
 
   node.sendBundle(temperature_bundle);
@@ -169,9 +164,27 @@ void run_stats_thread()
 void clear_needs_reset_callback(proton::BundleHandle& bundle)
 {
   needs_reset = false;
+
+  auto& response = node.getBundle("clear_needs_reset_response");
+  response.getSignal("success").setValue<bool>(true);
+  response.getSignal("message").setValue<std::string>("Needs Reset Cleared ");
+
+  node.sendBundle(response);
 }
 
-void cmd_lights_callback(proton::BundleHandle& bundle)
+
+void cmd_shutdown_callback(proton::BundleHandle& bundle)
+{
+  auto& response = node.getBundle("cmd_shutdown_response");
+  response.getSignal("success").setValue<bool>(true);
+  response.getSignal("message").setValue<std::string>("Shutting Down");
+
+  node.sendBundle(response);
+
+  exit(0);
+}
+
+void empty_callback(proton::BundleHandle& bundle)
 {
   bundle.printBundleVerbose();
 }
@@ -181,7 +194,7 @@ int main()
   node = proton::Node(CONFIG_FILE, "mcu");
 
   node.registerCallback("clear_needs_reset", clear_needs_reset_callback);
-  node.registerCallback("cmd_lights", cmd_lights_callback);
+  node.registerCallback("cmd_shutdown", cmd_shutdown_callback);
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);

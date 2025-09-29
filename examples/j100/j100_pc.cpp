@@ -43,7 +43,7 @@ void run_50hz_thread()
   while(1)
   {
     update_motor_command();
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
   }
 }
 

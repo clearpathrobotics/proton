@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "proton__j100_mcu.h"
+#include "stdarg.h"
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
 
@@ -34,8 +35,8 @@ void PROTON_BUNDLE_MotorCommandCallback() {
   cb_counts[CALLBACK_MOTOR_COMMAND]++;
   motor_feedback_bundle.actual_mode = motor_command_bundle.mode;
   motor_feedback_bundle.commanded_mode = motor_command_bundle.mode;
-  motor_feedback_bundle.measured_velocity[0] = motor_command_bundle.command[0];
-  motor_feedback_bundle.measured_velocity[1] = motor_command_bundle.command[1];
+  motor_feedback_bundle.drivers_measured_velocity[0] = motor_command_bundle.command[0];
+  motor_feedback_bundle.drivers_measured_velocity[1] = motor_command_bundle.command[1];
 }
 
 void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
@@ -72,12 +73,12 @@ void update_temperature() {
   PROTON_BUNDLE_Send(PROTON_BUNDLE__TEMPERATURE);
 }
 
-void update_status(uint32_t ms) {
-  status_bundle.connection_uptime_s = ms / 1000;
-  status_bundle.connection_uptime_ns = rand_uint32();
+void update_status(uint32_t s) {
+  status_bundle.connection_uptime_sec = s;
+  status_bundle.connection_uptime_nanosec = rand_uint32();
 
-  status_bundle.mcu_uptime_s = ms / 1000;
-  status_bundle.mcu_uptime_ns = rand_uint32();
+  status_bundle.mcu_uptime_sec = s;
+  status_bundle.mcu_uptime_nanosec = rand_uint32();
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__STATUS);
 }
@@ -98,26 +99,27 @@ void update_stop_status() {
 }
 
 void update_imu() {
-  for (uint8_t i = 0; i < PROTON_SIGNALS__IMU__LINEAR_ACCELERATION__LENGTH; i++)
-  {
-    imu_bundle.linear_acceleration[i] = rand_double();
-    imu_bundle.angular_velocity[i] = rand_double();
-  }
+
+  imu_bundle.linear_acceleration_x = rand_double();
+  imu_bundle.linear_acceleration_y = rand_double();
+  imu_bundle.linear_acceleration_z = rand_double();
+  imu_bundle.angular_velocity_x = rand_double();
+  imu_bundle.angular_velocity_y = rand_double();
+  imu_bundle.angular_velocity_z = rand_double();
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__IMU);
 }
 
 void update_mag() {
-  for (uint8_t i = 0; i < PROTON_SIGNALS__MAGNETOMETER__MAGNETIC_FIELD__LENGTH; i++)
-  {
-    magnetometer_bundle.magnetic_field[i] = rand_double();
-  }
+  magnetometer_bundle.magnetic_field_x = rand_double();
+  magnetometer_bundle.magnetic_field_y = rand_double();
+  magnetometer_bundle.magnetic_field_z = rand_double();
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__MAGNETOMETER);
 }
 
 void update_nmea() {
-  char tmp[PROTON_SIGNALS__NMEA__SENTENCE__CAPACITY];
+  char tmp[PROTON_SIGNALS__NMEA__SENTENCE__CAPACITY] = {0};
 
   uint16_t i;
 
@@ -127,6 +129,7 @@ void update_nmea() {
   }
 
   tmp[i+1] = '\0';
+  strcpy(nmea_bundle.sentence, tmp);
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__NMEA);
 }
@@ -135,101 +138,44 @@ void update_motor_feedback() {
 
   for (uint8_t i = 0; i < 2; i++)
   {
-    motor_feedback_bundle.current[i] = rand_float();
-    motor_feedback_bundle.bridge_temperature[i] = rand_float();
-    motor_feedback_bundle.motor_temperature[i] = rand_float();
-    motor_feedback_bundle.driver_fault[i] = rand_bool();
-    motor_feedback_bundle.duty_cycle[i] = rand_float();
-    motor_feedback_bundle.measured_travel[i] = rand_float();
+    motor_feedback_bundle.drivers_current[i] = rand_float();
+    motor_feedback_bundle.drivers_bridge_temperature[i] = rand_float();
+    motor_feedback_bundle.drivers_motor_temperature[i] = rand_float();
+    motor_feedback_bundle.drivers_driver_fault[i] = rand_bool();
+    motor_feedback_bundle.drivers_duty_cycle[i] = rand_float();
+    motor_feedback_bundle.drivers_measured_travel[i] = rand_float();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__MOTOR_FEEDBACK);
 }
 
 bool PROTON_TRANSPORT__McuConnect() {
-  return serial_init(PROTON_NODE__MCU__DEVICE) == 0;
+  serial_port = serial_init(PROTON_NODE__MCU__DEVICE);
+  return serial_port >= 0;
 }
 
 bool PROTON_TRANSPORT__McuDisconnect() { return true; }
 
 size_t PROTON_TRANSPORT__McuRead(uint8_t *buf, size_t len) {
-  // Read header first
-  int ret = read(serial_port, buf, PROTON_FRAME_HEADER_OVERHEAD);
+  size_t bytes_read = serial_read(serial_port, buf, len);
 
-  if (ret < 0) {
-    return 0;
-  }
-
-  // Get payload length from header
-  uint16_t payload_len = PROTON_GetFramedPayloadLength(buf);
-
-  // Invalid header
-  if (payload_len == 0)
+  if (bytes_read > 0)
   {
-    return 0;
+    rx += bytes_read + PROTON_FRAME_OVERHEAD;
   }
 
-  // Read payload
-  ret = read(serial_port, buf, payload_len);
-
-  if (ret != payload_len)
-  {
-    return 0;
-  }
-
-  uint8_t crc[2];
-
-  ret = read(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
-
-  // Check for valid CRC16
-  if (ret != PROTON_FRAME_CRC_OVERHEAD || !PROTON_CheckFramedPayload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))))
-  {
-    return 0;
-  }
-
-  rx += payload_len + PROTON_FRAME_OVERHEAD;
-
-  return payload_len;
+  return bytes_read;
 }
 
 size_t PROTON_TRANSPORT__McuWrite(const uint8_t *buf, size_t len) {
-  uint8_t header[4];
-  uint8_t crc[2];
+  size_t bytes_written = serial_write(serial_port, buf, len);
 
-  if (!PROTON_FillFrameHeader(header, len))
+  if (bytes_written > 0)
   {
-    return 0;
+    tx += bytes_written + PROTON_FRAME_OVERHEAD;
   }
 
-  if (!PROTON_FillCRC16(buf, len, crc))
-  {
-    return 0;
-  }
-
-  // Write header
-  int ret = write(serial_port, header, PROTON_FRAME_HEADER_OVERHEAD);
-
-  if (ret < 0) {
-    return 0;
-  }
-
-  // Write payload
-  ret = write(serial_port, buf, len);
-
-  if (ret < 0) {
-    return 0;
-  }
-
-  // Write CRC16
-  ret = write(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
-
-  if (ret < 0) {
-    return 0;
-  }
-
-  tx += len + PROTON_FRAME_OVERHEAD;
-
-  return len;
+  return bytes_written;
 }
 
 pthread_mutex_t lock;

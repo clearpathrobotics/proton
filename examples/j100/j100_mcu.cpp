@@ -8,7 +8,7 @@
 
 proton::Node node;
 
-void send_log(const char *file, const char* func, int line, uint8_t level, std::string msg, ...);
+void send_log(char *file, const char* func, int line, uint8_t level, char *msg, ...);
 
 #define LOG_DEBUG(message, ...)                                                \
   send_log(__FILE_NAME__, __func__, __LINE__, 10U, message, ##__VA_ARGS__)
@@ -21,9 +21,9 @@ void send_log(const char *file, const char* func, int line, uint8_t level, std::
 #define LOG_FATAL(message, ...)                                                \
   send_log(__FILE_NAME__, __func__, __LINE__, 50U, message, ##__VA_ARGS__)
 
-void send_log(const char *file, const char* func, int line, uint8_t level, std::string msg, ...) {
+void send_log(char *file, const char* func, int line, uint8_t level, char *msg, ...) {
   auto& log_bundle = node.getBundle("log");
-  log_bundle.getSignal("name").setValue<std::string>("j100_mcu_cpp");
+  log_bundle.getSignal("name").setValue<std::string>("J100_mcu_cpp");
   log_bundle.getSignal("file").setValue<std::string>(file);
   log_bundle.getSignal("line").setValue<uint32_t>(line);
   log_bundle.getSignal("level").setValue<uint32_t>(level);
@@ -32,13 +32,13 @@ void send_log(const char *file, const char* func, int line, uint8_t level, std::
   va_list args;
   va_start(args, msg);
   // Get string size
-  int size = std::vsnprintf(nullptr, 0, msg.c_str(), args);
+  int size = std::vsnprintf(nullptr, 0, msg, args);
   va_end(args);
 
   std::string message(size, '\0');
 
   va_start(args, msg);
-  std::vsnprintf(message.data(), size + 1, msg.c_str(), args);
+  std::vsnprintf(message.data(), size + 1, msg, args);
   va_end(args);
 
   log_bundle.getSignal("msg").setValue<std::string>(message);
@@ -51,10 +51,10 @@ void update_status()
   auto& status_bundle = node.getBundle("status");
   status_bundle.getSignal("hardware_id").setValue<std::string>("J100_MCU");
   status_bundle.getSignal("firmware_version").setValue<std::string>("3.0.0");
-  status_bundle.getSignal("mcu_uptime_s").setValue<int32_t>(rand());
-  status_bundle.getSignal("mcu_uptime_ns").setValue<uint32_t>(rand());
-  status_bundle.getSignal("connection_uptime_s").setValue<int32_t>(rand());
-  status_bundle.getSignal("connection_uptime_ns").setValue<uint32_t>(rand());
+  status_bundle.getSignal("mcu_uptime_sec").setValue<int32_t>(rand());
+  status_bundle.getSignal("mcu_uptime_nanosec").setValue<uint32_t>(rand());
+  status_bundle.getSignal("connection_uptime_sec").setValue<int32_t>(rand());
+  status_bundle.getSignal("connection_uptime_nanosec").setValue<uint32_t>(rand());
 
   node.sendBundle(status_bundle);
 }
@@ -68,7 +68,7 @@ void update_power()
 
   for (auto i = 0; i < measured_voltages.getLength(); i++)
   {
-    voltages.at(i) = static_cast<float>(rand());
+    measured_voltages.setValue<float>(i, static_cast<float>(rand()));
   }
 
   auto& measured_currents = power_bundle.getSignal("measured_currents");
@@ -76,7 +76,7 @@ void update_power()
 
   for (auto i = 0; i < measured_currents.getLength(); i++)
   {
-    currents.at(i) = static_cast<float>(rand());
+    measured_currents.setValue<float>(i, static_cast<float>(rand()));
   }
 
   node.sendBundle(power_bundle);
@@ -91,7 +91,7 @@ void update_temperature()
 
   for (auto i = 0; i < temperatures_signal.getLength(); i++)
   {
-    temperatures.at(i) = static_cast<float>(rand());
+    temperatures_signal.setValue<float>(i, static_cast<float>(rand()));
   }
 
   node.sendBundle(temperature_bundle);
@@ -113,14 +113,13 @@ void update_imu()
 {
   auto& imu_bundle = node.getBundle("imu");
 
-  imu_bundle.getSignal("linear_acceleration").setValue<proton::list_double>(
-    {static_cast<double>(rand()),
-     static_cast<double>(rand()),
-     static_cast<double>(rand())});
-  imu_bundle.getSignal("angular_velocity").setValue<proton::list_double>(
-    {static_cast<double>(rand()),
-     static_cast<double>(rand()),
-     static_cast<double>(rand())});
+  imu_bundle.getSignal("linear_acceleration_x").setValue<double>(static_cast<double>(rand()));
+  imu_bundle.getSignal("linear_acceleration_y").setValue<double>(static_cast<double>(rand()));
+  imu_bundle.getSignal("linear_acceleration_z").setValue<double>(static_cast<double>(rand()));
+
+  imu_bundle.getSignal("angular_velocity_x").setValue<double>(static_cast<double>(rand()));
+  imu_bundle.getSignal("angular_velocity_y").setValue<double>(static_cast<double>(rand()));
+  imu_bundle.getSignal("angular_velocity_z").setValue<double>(static_cast<double>(rand()));
 
   node.sendBundle(imu_bundle);
 }
@@ -129,7 +128,9 @@ void update_magnetometer()
 {
   auto& mag_bundle = node.getBundle("magnetometer");
 
-  mag_bundle.getSignal("magnetic_field").setValue<proton::list_double>({static_cast<double>(rand()), static_cast<double>(rand()), static_cast<double>(rand())});
+  mag_bundle.getSignal("magnetic_field_x").setValue<double>(static_cast<double>(rand()));
+  mag_bundle.getSignal("magnetic_field_y").setValue<double>(static_cast<double>(rand()));
+  mag_bundle.getSignal("magnetic_field_z").setValue<double>(static_cast<double>(rand()));
 
   node.sendBundle(mag_bundle);
 }
@@ -162,13 +163,13 @@ void update_motor_feedback()
 {
   auto& feedback_bundle = node.getBundle("motor_feedback");
 
-  feedback_bundle.getSignal("current").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
-  feedback_bundle.getSignal("bridge_temperature").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
-  feedback_bundle.getSignal("motor_temperature").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
-  feedback_bundle.getSignal("driver_fault").setValue<proton::list_bool>({static_cast<bool>(rand() % 2), static_cast<bool>(rand() % 2)});
-  feedback_bundle.getSignal("duty_cycle").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
-  feedback_bundle.getSignal("measured_velocity").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
-  feedback_bundle.getSignal("measured_travel").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("drivers_current").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("drivers_bridge_temperature").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("drivers_motor_temperature").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("drivers_driver_fault").setValue<proton::list_bool>({static_cast<bool>(rand() % 2), static_cast<bool>(rand() % 2)});
+  feedback_bundle.getSignal("drivers_duty_cycle").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("drivers_measured_velocity").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  feedback_bundle.getSignal("drivers_measured_travel").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
 
   node.sendBundle(feedback_bundle);
 }

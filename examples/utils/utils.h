@@ -35,6 +35,8 @@ void send_log(const char *file, const char* func, int line, uint8_t level, char 
 int msleep(long msec);
 int socket_init(uint32_t ip, uint32_t port, bool server);
 int serial_init(const char * device);
+size_t serial_read(int serial_port, uint8_t *buf, size_t len);
+size_t serial_write(int serial_port, const uint8_t *buf, size_t len);
 
 float rand_float();
 double rand_double();

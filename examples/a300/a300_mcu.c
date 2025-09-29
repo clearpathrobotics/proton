@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "proton__a300_mcu.h"
+#include <stdlib.h>
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
 
@@ -37,7 +38,6 @@ void PROTON_BUNDLE_DisplayStatusCallback() {
 
 void PROTON_BUNDLE_CmdLightsCallback() {
   cb_counts[CALLBACK_CMD_LIGHTS]++;
-  PROTON_BUNDLE_Print(PROTON_BUNDLE__CMD_LIGHTS);
 }
 
 void PROTON_BUNDLE_BatteryCallback() {
@@ -50,11 +50,22 @@ void PROTON_BUNDLE_PinoutCommandCallback() {
 
 void PROTON_BUNDLE_CmdShutdownCallback() {
   cb_counts[CALLBACK_CMD_SHUTDOWN]++;
+  strcpy(cmd_shutdown_response_bundle.message, "SHUTTING DOWN");
+  cmd_shutdown_response_bundle.success = true;
+
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__CMD_SHUTDOWN_RESPONSE);
+
+  exit(0);
 }
 
 void PROTON_BUNDLE_ClearNeedsResetCallback() {
   cb_counts[CALLBACK_CLEAR_NEEDS_RESET]++;
   stop_status_bundle.needs_reset = false;
+
+  strcpy(clear_needs_reset_response_bundle.message, "Needs Reset Cleared");
+  clear_needs_reset_response_bundle.success = true;
+
+  PROTON_BUNDLE_Send(PROTON_BUNDLE__CLEAR_NEEDS_RESET_RESPONSE);
 }
 
 void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
@@ -91,12 +102,12 @@ void update_temperature() {
   PROTON_BUNDLE_Send(PROTON_BUNDLE__TEMPERATURE);
 }
 
-void update_status(uint32_t ms) {
-  status_bundle.connection_uptime_s = ms / 1000;
-  status_bundle.connection_uptime_ns = rand_uint32();
+void update_status(uint32_t s) {
+  status_bundle.connection_uptime_sec = s;
+  status_bundle.connection_uptime_nanosec = rand_uint32();
 
-  status_bundle.mcu_uptime_s = ms / 1000;
-  status_bundle.mcu_uptime_ns = rand_uint32();
+  status_bundle.mcu_uptime_sec = s;
+  status_bundle.mcu_uptime_nanosec = rand_uint32();
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__STATUS);
 }

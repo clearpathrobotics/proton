@@ -41,7 +41,6 @@ void PROTON_BUNDLE_LogCallback() {
 
 void PROTON_BUNDLE_StatusCallback() {
   cb_counts[CALLBACK_STATUS]++;
-  PROTON_BUNDLE_Print(PROTON_BUNDLE__STATUS);
 }
 
 void PROTON_BUNDLE_PowerCallback() { cb_counts[CALLBACK_POWER]++; }

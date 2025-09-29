@@ -11,7 +11,7 @@
  */
 
 #include "utils.h"
-
+#include "protonc/proton.h"
 
 __attribute__((weak)) void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...)
 {}
@@ -88,7 +88,85 @@ int serial_init(const char * device)
   tty.c_cflag |= (CLOCAL | CREAD);            // enable receiver
   tcsetattr(serial_port, TCSANOW, &tty);
 
-  return 0;
+  printf("Opened serial device %d\r\n", serial_port);
+
+  return serial_port;
+}
+
+size_t serial_read(int serial_port, uint8_t *buf, size_t len) {
+  // Read header first
+  int ret = read(serial_port, buf, PROTON_FRAME_HEADER_OVERHEAD);
+
+  if (ret < 0) {
+    return 0;
+  }
+
+  // Get payload length from header
+  uint16_t payload_len = PROTON_GetFramedPayloadLength(buf);
+
+  // Invalid header
+  if (payload_len == 0)
+  {
+    return 0;
+  }
+
+  // Read payload
+  ret = read(serial_port, buf, payload_len);
+
+  if (ret != payload_len)
+  {
+    return 0;
+  }
+
+  uint8_t crc[2];
+
+  ret = read(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
+
+  // Check for valid CRC16
+  if (ret != PROTON_FRAME_CRC_OVERHEAD || !PROTON_CheckFramedPayload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))))
+  {
+    return 0;
+  }
+
+  return payload_len;
+}
+
+size_t serial_write(int serial_port, const uint8_t *buf, size_t len) {
+  uint8_t header[4];
+  uint8_t crc[2];
+
+  if (!PROTON_FillFrameHeader(header, len))
+  {
+    return 0;
+  }
+
+  if (!PROTON_FillCRC16(buf, len, crc))
+  {
+    return 0;
+  }
+
+  // Write header
+  int ret = write(serial_port, header, PROTON_FRAME_HEADER_OVERHEAD);
+
+  if (ret < 0) {
+    return 0;
+  }
+
+  // Write payload
+  ret = write(serial_port, buf, len);
+
+  if (ret < 0) {
+    return 0;
+  }
+
+  // Write CRC16
+  ret = write(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
+
+  if (ret < 0) {
+    return 0;
+  }
+
+  return len;
 }
 
 float rand_float()
