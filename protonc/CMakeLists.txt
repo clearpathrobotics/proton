@@ -152,12 +152,6 @@ target_include_directories(${PROJECT_NAME}
 
 # Install
 
-# In protonc/CMakeLists.txt
-if(NOT PROJECT_IS_TOP_LEVEL)
-  # Don't install if we're being built as a subproject
-  set(CMAKE_SKIP_INSTALL_RULES ON)
-endif()
-
 install(TARGETS protonc
     EXPORT ProtonTargets
     LIBRARY DESTINATION lib
