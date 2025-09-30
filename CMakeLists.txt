@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.28)
 project(proton LANGUAGES C CXX VERSION 0.0.0)
 
-find_package(Protobuf REQUIRED)
+if(NOT CMAKE_CROSSCOMPILING)
+  find_package(Protobuf REQUIRED)
+endif()
 
 add_subdirectory(protonc)
 add_subdirectory(protoncpp)
