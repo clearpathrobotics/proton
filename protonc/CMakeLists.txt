@@ -27,6 +27,9 @@ if(NOT PROTOC_EXECUTABLE)
 endif()
 
 # Protonc generator
+
+set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/protonc/protonc/protonc_generator.py)
+
 function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/protonc/protonc/protonc_generator.py)
