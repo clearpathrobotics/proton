@@ -12,12 +12,12 @@ FetchContent_Declare(
   GIT_TAG        0.4.9.1
   SOURCE_SUBDIR  null
 )
-# FetchContent_MakeAvailable(nanopb)
+FetchContent_MakeAvailable(nanopb)
 
-FetchContent_GetProperties(nanopb)
-if(NOT proton_POPULATED)
-  FetchContent_Populate(nanopb)
-endif()
+# FetchContent_GetProperties(nanopb)
+# if(NOT proton_POPULATED)
+#   FetchContent_Populate(nanopb)
+# endif()
 
 
 # Protobuf compiler
