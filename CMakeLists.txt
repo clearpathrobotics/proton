@@ -9,6 +9,12 @@ option(PROTON_BUILD_PROTONC "Build protonc library" ON)
 option(PROTON_BUILD_PROTONCPP "Build protoncpp library" ON)
 option(PROTON_BUILD_EXAMPLES "Build proton examples" ON)
 
+# In protonc/CMakeLists.txt
+if(NOT PROJECT_IS_TOP_LEVEL)
+  # Don't install if we're being built as a subproject
+  set(CMAKE_SKIP_INSTALL_RULES ON)
+endif()
+
 if (PROTON_BUILD_PROTONC)
   add_subdirectory(protonc)
 endif()
