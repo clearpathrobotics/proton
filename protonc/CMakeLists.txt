@@ -32,7 +32,7 @@ set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/protonc/protonc/protonc_generator.py)
 
 function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
-  #set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/protonc/protonc/protonc_generator.py)
+  set(PROTONC_GENERATOR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/protonc/protonc_generator.py)
   # Add a custom target to execute the script
   add_custom_command(
     OUTPUT ${GENERATED_FILES}
