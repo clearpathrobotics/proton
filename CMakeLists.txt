@@ -5,9 +5,21 @@ if(NOT CMAKE_CROSSCOMPILING)
   find_package(Protobuf)
 endif()
 
-add_subdirectory(protonc)
-add_subdirectory(protoncpp)
-add_subdirectory(examples)
+option(PROTON_BUILD_PROTONC "Build protonc library" ON)
+option(PROTON_BUILD_PROTONCPP "Build protoncpp library" ON)
+option(PROTON_BUILD_EXAMPLES "Build proton examples" ON)
+
+if (PROTON_BUILD_PROTONC)
+  add_subdirectory(protonc)
+endif()
+
+if (PROTON_BUILD_PROTONCPP)
+  add_subdirectory(protoncpp)
+endif()
+
+if (PROTON_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 
 # Export targets from both libraries
 include(CMakePackageConfigHelpers)

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 project(protoncpp CXX)
 
 # Protobuf compiler
-find_package(Protobuf REQUIRED)
+# find_package(Protobuf REQUIRED)
 find_program(PROTOC_EXECUTABLE protoc)
 if(NOT PROTOC_EXECUTABLE)
   message(FATAL_ERROR "Could not find protoc")
