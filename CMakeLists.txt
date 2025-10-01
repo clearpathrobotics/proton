@@ -36,16 +36,16 @@ write_basic_package_version_file(
     COMPATIBILITY AnyNewerVersion
 )
 
-install(
-    EXPORT ProtonTargets
-    NAMESPACE proton::
-    DESTINATION lib/cmake/proton
-)
+# install(
+#     EXPORT ProtonTargets
+#     NAMESPACE proton::
+#     DESTINATION lib/cmake/proton
+# )
 
-install(
-    FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
-        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
-    DESTINATION lib/cmake/proton
-)
+# install(
+#     FILES
+#         ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
+#         ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
+#         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
+#     DESTINATION lib/cmake/proton
+# )
