@@ -35,8 +35,8 @@ void PROTON_BUNDLE_MotorCommandCallback() {
   cb_counts[CALLBACK_MOTOR_COMMAND]++;
   motor_feedback_bundle.actual_mode = motor_command_bundle.mode;
   motor_feedback_bundle.commanded_mode = motor_command_bundle.mode;
-  motor_feedback_bundle.drivers_measured_velocity[0] = motor_command_bundle.command[0];
-  motor_feedback_bundle.drivers_measured_velocity[1] = motor_command_bundle.command[1];
+  motor_feedback_bundle.drivers_measured_velocity[0] = motor_command_bundle.drivers[0];
+  motor_feedback_bundle.drivers_measured_velocity[1] = motor_command_bundle.drivers[1];
 }
 
 void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
@@ -90,10 +90,7 @@ void update_emergency_stop() {
 }
 
 void update_stop_status() {
-  static bool external_stop = false;
-
-  external_stop = !external_stop;
-  stop_status_bundle.external_stop_present = external_stop;
+  stop_status_bundle.external_stop_present = !stop_status_bundle.external_stop_present;
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__STOP_STATUS);
 }

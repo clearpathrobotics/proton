@@ -123,21 +123,21 @@ bool PROTON_MUTEX__McuUnlock() { return pthread_mutex_unlock(&lock) == 0; }
 
 void update_wifi_connected()
 {
-  wifi_connected_bundle.connected = !wifi_connected_bundle.connected;
+  wifi_connected_bundle.data = !wifi_connected_bundle.data;
   PROTON_BUNDLE_Send(PROTON_BUNDLE__WIFI_CONNECTED);
 }
 
 void update_hmi()
 {
-  hmi_bundle.state = rand() % 8;
+  hmi_bundle.data = rand() % 8;
   PROTON_BUNDLE_Send(PROTON_BUNDLE__HMI);
 }
 
 void update_motor_command()
 {
   motor_command_bundle.mode = -1;
-  motor_command_bundle.command[0] = 1.0f;
-  motor_command_bundle.command[1] = -1.0f;
+  motor_command_bundle.drivers[0] = 1.0f;
+  motor_command_bundle.drivers[1] = -1.0f;
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__MOTOR_COMMAND);
 }

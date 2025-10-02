@@ -2,11 +2,11 @@ nodes:
   - name: pc
     transport:
       type: serial
-      device: /tmp/ttyPC
+      device: /dev/clearpath/j100
   - name: mcu
     transport:
       type: serial
-      device: /tmp/ttyMCU
+      device: /dev/clearpath/j100
 bundles:
   - name: log
     id: 0x100
@@ -25,8 +25,8 @@ bundles:
     consumer: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: hardware_id, type: string, capacity: 10}
-      - {name: firmware_version, type: string, capacity: 10}
+      - {name: hardware_id, type: string, capacity: 16}
+      - {name: firmware_version, type: string, capacity: 32}
       - {name: mcu_uptime_sec, type: int32}
       - {name: mcu_uptime_nanosec, type: uint32}
       - {name: connection_uptime_sec, type: int32}
@@ -42,8 +42,18 @@ bundles:
       - {name: power_12v_user_nominal, type: int32, value: -1}
       - {name: charger_connected, type: int32, value: -1}
       - {name: charging_complete, type: int32, value: -1}
+
       - {name: measured_voltages, type: list_float, length: 3}
+      - {name: J100_MEASURED_BATTERY, type: uint32, value: 0}
+      - {name: J100_MEASURED_5V, type: uint32, value: 1}
+      - {name: J100_MEASURED_12V, type: uint32, value: 2}
+
       - {name: measured_currents, type: list_float, length: 4}
+      - {name: J100_TOTAL_CURRENT, type: uint32, value: 0}
+      - {name: J100_COMPUTER_CURRENT, type: uint32, value: 1}
+      - {name: J100_DRIVE_CURRENT, type: uint32, value: 2}
+      - {name: J100_USER_CURRENT, type: uint32, value: 3}
+
   - name: emergency_stop
     id: 0x103
     producer: mcu
@@ -57,6 +67,8 @@ bundles:
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: temperatures, type: list_float, length: 2}
+      - {name: J100_MCU, type: uint32, value: 0}
+      - {name: J100_PCB, type: uint32, value: 1}
   - name: stop_status
     id: 0x105
     producer: mcu
@@ -118,20 +130,23 @@ bundles:
     producer: pc
     consumer: mcu
     signals:
-      - {name: connected, type: bool}
+      - {name: data, type: bool}
   - name: hmi
     id: 0x201
     producer: pc
     consumer: mcu
     signals:
-      - {name: state, type: uint32}
+      - {name: data, type: uint32}
   - name: motor_command
     id: 0x202
     producer: pc
     consumer: mcu
     signals:
       - {name: mode, type: int32}
-      - {name: command, type: list_float, length: 2}
+      - {name: drivers, type: list_float, length: 2}
+      - {name: MODE_VELOCITY, type: int32, value: 0}
+      - {name: MODE_PWM, type: int32, value: 1}
+      - {name: MODE_NONE, type: int32, value: -1}
 
 ros2:
   topics:

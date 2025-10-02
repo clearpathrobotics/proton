@@ -23,7 +23,7 @@ bool SerialTransport::connect() {
     return true;
   }
 
-  serial_port_ = open(device_.first.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
+  serial_port_ = open(device_.first.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
 
   if (serial_port_ == -1) {
     std::cerr << "Error " << errno << " opening serial device " << device_.first
@@ -41,11 +41,37 @@ bool SerialTransport::connect() {
     return false;
   }
 
-  cfsetospeed(&tty, B921600);
-  cfsetispeed(&tty, B921600);
-  tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8; // 8-bit
-  tty.c_cflag |= (CLOCAL | CREAD);            // enable receiver
+  cfsetospeed(&tty, B1152000);
+  cfsetispeed(&tty, B1152000);
+
+    // Control modes
+  tty.c_cflag &= ~PARENB;    // No parity
+  tty.c_cflag &= ~CSTOPB;    // 1 stop bit
+  tty.c_cflag &= ~CSIZE;
+  tty.c_cflag |= CS8;        // 8 data bits
+  tty.c_cflag &= ~CRTSCTS;   // No hardware flow control
+  tty.c_cflag |= CREAD | CLOCAL; // Enable receiver, ignore modem lines
+
+  // Local modes - RAW mode
+  tty.c_lflag &= ~ICANON;    // Non-canonical mode
+  tty.c_lflag &= ~ECHO;
+  tty.c_lflag &= ~ECHOE;
+  tty.c_lflag &= ~ECHONL;
+  tty.c_lflag &= ~ISIG;
+
+  // Input modes
+  tty.c_iflag &= ~(IXON | IXOFF | IXANY); // No software flow control
+  tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
+
+  // Output modes - no processing
+  tty.c_oflag &= ~OPOST;
+  tty.c_oflag &= ~ONLCR;
+  tty.c_cc[VTIME] = 0;
+  tty.c_cc[VMIN] = 0;
+
   tcsetattr(serial_port_, TCSANOW, &tty);
+
+  tcflush(serial_port_, TCIOFLUSH);
 
   connected_ = true;
 
@@ -63,10 +89,20 @@ size_t SerialTransport::read(uint8_t *buf, size_t len) {
   }
 
   // Read header
-  int ret = ::read(serial_port_, buf, HEADER_OVERHEAD);
+  ssize_t bytes_read = 0;
+  int ret = 0;
 
-  if (ret < 0) {
-    return 0;
+  while(bytes_read < HEADER_OVERHEAD)
+  {
+    ret = ::read(serial_port_, buf, HEADER_OVERHEAD);
+
+    if (ret < 0) {
+      return 0;
+    }
+    else
+    {
+      bytes_read += ret;
+    }
   }
 
   size_t payload_len = getPayloadLength(buf);
@@ -77,17 +113,36 @@ size_t SerialTransport::read(uint8_t *buf, size_t len) {
   }
 
   // Read payload
-  ret = ::read(serial_port_, buf, payload_len);
-
-  if (ret < 0)
+  bytes_read = 0;
+  while(bytes_read < payload_len)
   {
-    return 0;
+    ret = ::read(serial_port_, buf, payload_len);
+
+    if (ret < 0) {
+      return 0;
+    }
+    else
+    {
+      bytes_read += ret;
+    }
   }
 
   uint8_t crc[2];
 
   // Read CRC
-  ret = ::read(serial_port_, crc, CRC16_OVERHEAD);
+  bytes_read = 0;
+  while(bytes_read < CRC16_OVERHEAD)
+  {
+    ret = ::read(serial_port_, crc, CRC16_OVERHEAD);
+
+    if (ret < 0) {
+      return 0;
+    }
+    else
+    {
+      bytes_read += ret;
+    }
+  }
 
   if (ret != CRC16_OVERHEAD || !checkFramedPayload(buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8))))
   {
