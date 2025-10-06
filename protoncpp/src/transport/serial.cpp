@@ -13,6 +13,7 @@
 #include "protoncpp/transport/serial.hpp"
 #include <string.h>
 #include <vector>
+#include <poll.h>
 
 using namespace proton;
 
@@ -83,26 +84,66 @@ bool SerialTransport::disconnect() {
   return true;
 }
 
-size_t SerialTransport::read(uint8_t *buf, size_t len) {
-  if (!connected_) {
-    return 0;
-  }
+size_t SerialTransport::poll(uint8_t *buf, size_t len) {
+  struct pollfd fds[1];
+  fds[0].fd = serial_port_;
+  fds[0].events = POLLIN;
 
   // Read header
   ssize_t bytes_read = 0;
   int ret = 0;
 
-  while(bytes_read < HEADER_OVERHEAD)
+  // Poll until len bytes have been read
+  while(bytes_read < len)
   {
-    ret = ::read(serial_port_, buf, HEADER_OVERHEAD);
+    // Poll until data is available
+    int ret = ::poll(fds, 1, -1);
 
-    if (ret < 0) {
-      return 0;
+    if (ret > 0)
+    {
+      if (fds[0].revents & POLLIN)
+      {
+        ret = ::read(serial_port_, buf, len - bytes_read);
+
+        if (ret < 0) {
+          return 0;
+        }
+        else
+        {
+          bytes_read += ret;
+        }
+      }
+
+      if(fds[0].revents & (POLLERR | POLLHUP | POLLNVAL))
+      {
+        // Error or device disconnected
+        std::cerr << "Device error or disconnected" << std::endl;
+        return 0;
+      }
     }
     else
     {
-      bytes_read += ret;
+      std::cerr << "Poll" << std::endl;
+      return 0;
     }
+  }
+
+  return bytes_read;
+}
+
+size_t SerialTransport::read(uint8_t *buf, size_t len) {
+  if (!connected_) {
+    return 0;
+  }
+
+  ssize_t bytes_read = 0;
+
+  // Read header
+  bytes_read = this->poll(buf, HEADER_OVERHEAD);
+
+  if (bytes_read != HEADER_OVERHEAD)
+  {
+    return 0;
   }
 
   size_t payload_len = getPayloadLength(buf);
@@ -113,38 +154,19 @@ size_t SerialTransport::read(uint8_t *buf, size_t len) {
   }
 
   // Read payload
-  bytes_read = 0;
-  while(bytes_read < payload_len)
-  {
-    ret = ::read(serial_port_, buf, payload_len);
+  bytes_read = this->poll(buf, payload_len);
 
-    if (ret < 0) {
-      return 0;
-    }
-    else
-    {
-      bytes_read += ret;
-    }
+  if (bytes_read != payload_len)
+  {
+    return 0;
   }
 
   uint8_t crc[2];
 
   // Read CRC
-  bytes_read = 0;
-  while(bytes_read < CRC16_OVERHEAD)
-  {
-    ret = ::read(serial_port_, crc, CRC16_OVERHEAD);
+  bytes_read = this->poll(crc, CRC16_OVERHEAD);
 
-    if (ret < 0) {
-      return 0;
-    }
-    else
-    {
-      bytes_read += ret;
-    }
-  }
-
-  if (ret != CRC16_OVERHEAD || !checkFramedPayload(buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8))))
+  if (bytes_read != CRC16_OVERHEAD || !checkFramedPayload(buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8))))
   {
     return 0;
   }
