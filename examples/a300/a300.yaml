@@ -143,19 +143,19 @@ bundles:
 
 ros2:
   topics:
-    - {topic: /rosout,                          message: rcl_interfaces/msg/Log,                    qos.profile: rosout,      bundle: log}
-    - {topic: platform/mcu/status,              message: clearpath_platform_msgs/msg/Status,        qos.profile: sensor_data, bundle: status}
-    - {topic: platform/mcu/status/power,        message: clearpath_platform_msgs/msg/Power,         qos.profile: sensor_data, bundle: power}
-    - {topic: platform/mcu/status/stop,         message: clearpath_platform_msgs/msg/StopStatus,    qos.profile: sensor_data, bundle: stop_status}
-    - {topic: platform/mcu/status/temperature,  message: clearpath_platform_msgs/msg/Temperature,   qos.profile: sensor_data, bundle: temperature}
-    - {topic: platform/mcu/status/pinout,       message: clearpath_platform_msgs/msg/PinoutState,   qos.profile: sensor_data, bundle: pinout_state}
-    - {topic: platform/mcu/status/alerts,       message: std_msgs/msg/String,                       qos.profile: sensor_data, bundle: alerts}
-    - {topic: platform/display/status,          message: clearpath_platform_msgs/msg/DisplayStatus, qos.profile: sensor_data, bundle: display_status}
-    - {topic: platform/emergency_stop,          message: std_msgs/msg/Bool,                         qos.profile: sensor_data, bundle: emergency_stop}
-    - {topic: platform/bms/state,               message: sensor_msgs/msg/BatteryState,              qos.profile: sensor_data, bundle: battery}
-    - {topic: platform/mcu/_cmd_fans,           message: clearpath_platform_msgs/msg/Fans,          qos.profile: sensor_data, bundle: cmd_fans}
-    - {topic: platform/mcu/_cmd_lights,         message: clearpath_platform_msgs/msg/Lights,        qos.profile: sensor_data, bundle: cmd_lights}
-    - {topic: platform/mcu/_cmd_pinout,         message: clearpath_platform_msgs/msg/PinoutCommand, qos.profile: sensor_data, bundle: pinout_command}
+    - {topic: /rosout,                          message: rcl_interfaces/msg/Log,                    qos: rosout,      bundle: log}
+    - {topic: platform/mcu/status,              message: clearpath_platform_msgs/msg/Status,        qos: sensor_data, bundle: status}
+    - {topic: platform/mcu/status/power,        message: clearpath_platform_msgs/msg/Power,         qos: sensor_data, bundle: power}
+    - {topic: platform/mcu/status/stop,         message: clearpath_platform_msgs/msg/StopStatus,    qos: sensor_data, bundle: stop_status}
+    - {topic: platform/mcu/status/temperature,  message: clearpath_platform_msgs/msg/Temperature,   qos: sensor_data, bundle: temperature}
+    - {topic: platform/mcu/status/pinout,       message: clearpath_platform_msgs/msg/PinoutState,   qos: sensor_data, bundle: pinout_state}
+    - {topic: platform/mcu/status/alerts,       message: std_msgs/msg/String,                       qos: sensor_data, bundle: alerts}
+    - {topic: platform/display/status,          message: clearpath_platform_msgs/msg/DisplayStatus, qos: sensor_data, bundle: display_status}
+    - {topic: platform/emergency_stop,          message: std_msgs/msg/Bool,                         qos: sensor_data, bundle: emergency_stop}
+    - {topic: platform/bms/state,               message: sensor_msgs/msg/BatteryState,              qos: sensor_data, bundle: battery}
+    - {topic: platform/mcu/_cmd_fans,           message: clearpath_platform_msgs/msg/Fans,          qos: sensor_data, bundle: cmd_fans}
+    - {topic: platform/mcu/_cmd_lights,         message: clearpath_platform_msgs/msg/Lights,        qos: sensor_data, bundle: cmd_lights}
+    - {topic: platform/mcu/_cmd_pinout,         message: clearpath_platform_msgs/msg/PinoutCommand, qos: sensor_data, bundle: pinout_command}
   services:
-    - {topic: platform/mcu/cmd_shutdown,            service: std_srvs/srv/SetBool, qos.profile: services, request: cmd_shutdown, response: cmd_shutdown_response, timeout: 100}
-    - {topic: platform/mcu/clear_estop_needs_reset, service: std_srvs/srv/Trigger, qos.profile: services, request: clear_needs_reset, response: clear_needs_reset_response, timeout: 100}
+    - {topic: platform/mcu/cmd_shutdown,            service: std_srvs/srv/SetBool, qos: services, request: cmd_shutdown, response: cmd_shutdown_response, timeout: 100}
+    - {topic: platform/mcu/clear_estop_needs_reset, service: std_srvs/srv/Trigger, qos: services, request: clear_needs_reset, response: clear_needs_reset_response, timeout: 100}
