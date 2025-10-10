@@ -22,7 +22,7 @@ class BundleManager {
 public:
   void addBundle(BundleConfig config);
   BundleHandle &getBundle(const std::string &bundle_name);
-  std::map<std::string, BundleHandle> getBundleMap() const;
+  std::map<std::string, BundleHandle> &getBundleMap();
   BundleHandle &receiveBundle(const uint8_t *buffer, const uint32_t len);
   BundleHandle &setBundle(const Bundle &bundle);
 

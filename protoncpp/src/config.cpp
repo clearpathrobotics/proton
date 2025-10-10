@@ -46,7 +46,7 @@ struct convert<proton::SignalConfig> {
         else if (rhs.type_string == proton::value_types::LIST_STRING || rhs.type_string == proton::value_types::LIST_BYTES)
         {
           // Set capacity to largest of values
-          for (auto v : value_key)
+          for (const auto& v : value_key)
           {
             if (v.size() > rhs.capacity)
             {
@@ -118,7 +118,7 @@ struct convert<proton::BundleConfig> {
     if (signals.IsDefined() && !signals.IsNull())
     {
       // Get signal configs for this bundle
-      for (auto signal : signals) {
+      for (const auto& signal : signals) {
         rhs.signals.push_back(signal.as<proton::SignalConfig>());
       }
     }

@@ -44,28 +44,28 @@ namespace keys {
 } // namespace keys
 
 namespace value_types {
-  inline static const std::string DOUBLE = "double";
-  inline static const std::string FLOAT = "float";
-  inline static const std::string INT32 = "int32";
-  inline static const std::string INT64 = "int64";
-  inline static const std::string UINT32 = "uint32";
-  inline static const std::string UINT64 = "uint64";
-  inline static const std::string BOOL = "bool";
-  inline static const std::string STRING = "string";
-  inline static const std::string BYTES = "bytes";
-  inline static const std::string LIST_DOUBLE = "list_double";
-  inline static const std::string LIST_FLOAT = "list_float";
-  inline static const std::string LIST_INT32 = "list_int32";
-  inline static const std::string LIST_INT64 = "list_int64";
-  inline static const std::string LIST_UINT32 = "list_uint32";
-  inline static const std::string LIST_UINT64 = "list_uint64";
-  inline static const std::string LIST_BOOL = "list_bool";
-  inline static const std::string LIST_STRING = "list_string";
-  inline static const std::string LIST_BYTES = "list_bytes";
+  static constexpr std::string_view DOUBLE = "double";
+  static constexpr std::string_view FLOAT = "float";
+  static constexpr std::string_view INT32 = "int32";
+  static constexpr std::string_view INT64 = "int64";
+  static constexpr std::string_view UINT32 = "uint32";
+  static constexpr std::string_view UINT64 = "uint64";
+  static constexpr std::string_view BOOL = "bool";
+  static constexpr std::string_view STRING = "string";
+  static constexpr std::string_view BYTES = "bytes";
+  static constexpr std::string_view LIST_DOUBLE = "list_double";
+  static constexpr std::string_view LIST_FLOAT = "list_float";
+  static constexpr std::string_view LIST_INT32 = "list_int32";
+  static constexpr std::string_view LIST_INT64 = "list_int64";
+  static constexpr std::string_view LIST_UINT32 = "list_uint32";
+  static constexpr std::string_view LIST_UINT64 = "list_uint64";
+  static constexpr std::string_view LIST_BOOL = "list_bool";
+  static constexpr std::string_view LIST_STRING = "list_string";
+  static constexpr std::string_view LIST_BYTES = "list_bytes";
 } // namespace value_types
 
 namespace signal_map {
-  const std::map<std::string, proton::Signal::SignalCase> SignalMap = {
+  const std::map<std::string_view, proton::Signal::SignalCase> SignalMap = {
       {value_types::DOUBLE, proton::Signal::SignalCase::kDoubleValue},
       {value_types::FLOAT, proton::Signal::SignalCase::kFloatValue},
       {value_types::INT32, proton::Signal::SignalCase::kInt32Value},

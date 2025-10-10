@@ -43,9 +43,10 @@ public:
   std::string getProducer() { return producer_; }
   std::string getConsumer() { return consumer_; }
   std::shared_ptr<Bundle> getBundlePtr() { return bundle_; }
-  Bundle& getBundle() { return *bundle_; }
   std::map<std::string, SignalHandle> getSignalMap() { return signals_; }
   BundleCallback getCallback() { return callback_; }
+
+  void setBundle(const Bundle &bundle) { *bundle_ = bundle; }
 
   void incrementRxCount() { rx_count_++; };
   void resetRxCount() { rx_count_ = 0; };
