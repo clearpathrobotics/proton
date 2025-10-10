@@ -40,10 +40,10 @@ typedef size_t (*proton_transport_write_t)(const uint8_t *buf, size_t len);
 typedef bool (*proton_receive_t)(const uint8_t * buf, size_t len);
 
 typedef struct {
-  void *data; // Pointer to start of data buffer
   size_t length; // Length of list
   size_t capacity; // Capacity of data buffer (strings and bytes only)
   size_t size; // Current size of list (for decoding only)
+  void *data; // Pointer to start of data buffer
 } proton_list_t;
 
 typedef struct {
