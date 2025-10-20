@@ -1,12 +1,4 @@
-#include <pthread.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <termios.h>
-#include <unistd.h>
-#include <time.h>
-#include <stdio.h>
-#include <stdarg.h>
-
+#include "utils.h"
 #include "proton__j100_pc.h"
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
@@ -23,7 +15,7 @@ int serial_port;
 
 #define MAX_LOGS 100
 
-char * logs[MAX_LOGS][PROTON_SIGNALS__LOG__MSG__CAPACITY];
+char logs[MAX_LOGS][PROTON_SIGNALS__LOG__MSG__CAPACITY];
 uint8_t log_index = 0;
 
 typedef enum {
@@ -41,48 +33,6 @@ typedef enum {
 } callback_e;
 
 uint32_t cb_counts[CALLBACK_COUNT];
-
-int msleep(long msec) {
-  struct timespec ts;
-  int res;
-
-  if (msec < 0) {
-    return -1;
-  }
-
-  ts.tv_sec = msec / 1000;
-  ts.tv_nsec = (msec % 1000) * 1000000;
-
-  do {
-    res = nanosleep(&ts, &ts);
-  } while (res);
-
-  return res;
-}
-
-int serialInit()
-{
-  serial_port = open(PROTON_NODE__PC__DEVICE, O_RDWR | O_NOCTTY | O_SYNC);
-
-  if (serial_port == -1) {
-    printf("Error opening serial device\r\n");
-    return -1;
-  }
-
-  struct termios tty;
-
-  if (tcgetattr(serial_port, &tty) != 0) {
-    return -1;
-  }
-
-  cfsetospeed(&tty, B921600);
-  cfsetispeed(&tty, B921600);
-  tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8; // 8-bit
-  tty.c_cflag |= (CLOCAL | CREAD);            // enable receiver
-  tcsetattr(serial_port, TCSANOW, &tty);
-
-  return 0;
-}
 
 void PROTON_BUNDLE_LogCallback()
 {
@@ -136,88 +86,33 @@ void PROTON_BUNDLE_MotorFeedbackCallback()
   cb_counts[CALLBACK_MOTOR_FEEDBACK]++;
 }
 
-bool PROTON_TRANSPORT__PcConnect() { return serialInit() == 0; }
+bool PROTON_TRANSPORT__PcConnect() {
+  serial_port = serial_init(PROTON_NODE__PC__DEVICE);
+  return serial_port >= 0;
+}
 
 bool PROTON_TRANSPORT__PcDisconnect() { return true; }
 
 size_t PROTON_TRANSPORT__PcRead(uint8_t *buf, size_t len) {
-  // Read header first
-  int ret = read(serial_port, buf, PROTON_FRAME_HEADER_OVERHEAD);
+  size_t bytes_read = serial_read(serial_port, buf, len);
 
-  if (ret < 0) {
-    return 0;
-  }
-
-  // Get payload length from header
-  uint16_t payload_len = PROTON_GetFramedPayloadLength(buf);
-
-  // Invalid header
-  if (payload_len == 0)
+  if (bytes_read > 0)
   {
-    return 0;
+    rx += bytes_read + PROTON_FRAME_OVERHEAD;
   }
 
-  // Read payload
-  ret = read(serial_port, buf, payload_len);
-
-  if (ret != payload_len)
-  {
-    return 0;
-  }
-
-  uint8_t crc[2];
-
-  ret = read(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
-
-  // Check for valid CRC16
-  if (ret != PROTON_FRAME_CRC_OVERHEAD || !PROTON_CheckFramedPayload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))))
-  {
-    return 0;
-  }
-
-  rx += payload_len + PROTON_FRAME_OVERHEAD;
-
-  return payload_len;
+  return bytes_read;
 }
 
 size_t PROTON_TRANSPORT__PcWrite(const uint8_t *buf, size_t len) {
-  uint8_t header[4];
-  uint8_t crc[2];
+  size_t bytes_written = serial_write(serial_port, buf, len);
 
-  if (!PROTON_FillFrameHeader(header, len))
+  if (bytes_written > 0)
   {
-    return 0;
+    tx += bytes_written + PROTON_FRAME_OVERHEAD;
   }
 
-  if (!PROTON_FillCRC16(buf, len, crc))
-  {
-    return 0;
-  }
-
-  // Write header
-  int ret = write(serial_port, header, PROTON_FRAME_HEADER_OVERHEAD);
-
-  if (ret < 0) {
-    return 0;
-  }
-
-  // Write payload
-  ret = write(serial_port, buf, len);
-
-  if (ret < 0) {
-    return 0;
-  }
-
-  // Write CRC16
-  ret = write(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
-
-  if (ret < 0) {
-    return 0;
-  }
-
-  tx += len + PROTON_FRAME_OVERHEAD;
-
-  return len;
+  return bytes_written;
 }
 
 pthread_mutex_t lock;
@@ -228,21 +123,21 @@ bool PROTON_MUTEX__McuUnlock() { return pthread_mutex_unlock(&lock) == 0; }
 
 void update_wifi_connected()
 {
-  wifi_connected_bundle.connected = !wifi_connected_bundle.connected;
+  wifi_connected_bundle.data = !wifi_connected_bundle.data;
   PROTON_BUNDLE_Send(PROTON_BUNDLE__WIFI_CONNECTED);
 }
 
 void update_hmi()
 {
-  hmi_bundle.state = rand() % 8;
+  hmi_bundle.data = rand() % 8;
   PROTON_BUNDLE_Send(PROTON_BUNDLE__HMI);
 }
 
 void update_motor_command()
 {
   motor_command_bundle.mode = -1;
-  motor_command_bundle.command[0] = 1.0f;
-  motor_command_bundle.command[1] = -1.0f;
+  motor_command_bundle.drivers[0] = 1.0f;
+  motor_command_bundle.drivers[1] = -1.0f;
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__MOTOR_COMMAND);
 }

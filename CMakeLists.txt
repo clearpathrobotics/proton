@@ -1,12 +1,51 @@
-cmake_minimum_required(VERSION 3.8)
-project(proton)
+cmake_minimum_required(VERSION 3.28)
+project(proton LANGUAGES C CXX VERSION 0.0.0)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+if(NOT CMAKE_CROSSCOMPILING)
+  find_package(Protobuf)
 endif()
 
-#find_package(protobuf-compiler REQUIRED)
+option(PROTON_BUILD_PROTONC "Build protonc library" ON)
+option(PROTON_BUILD_PROTONCPP "Build protoncpp library" ON)
+option(PROTON_BUILD_EXAMPLES "Build proton examples" ON)
 
-add_subdirectory(protonc)
-add_subdirectory(protoncpp)
-add_subdirectory(examples)
+if (PROTON_BUILD_PROTONC)
+  add_subdirectory(protonc)
+endif()
+
+if (PROTON_BUILD_PROTONCPP)
+  add_subdirectory(protoncpp)
+endif()
+
+if (PROTON_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
+
+# Export targets from both libraries
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    cmake/protonConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
+    INSTALL_DESTINATION lib/cmake/proton
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+# install(
+#     EXPORT ProtonTargets
+#     NAMESPACE proton::
+#     DESTINATION lib/cmake/proton
+# )
+
+# install(
+#     FILES
+#         ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
+#         ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
+#         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
+#     DESTINATION lib/cmake/proton
+# )

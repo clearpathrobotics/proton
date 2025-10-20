@@ -1,14 +1,5 @@
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <time.h>
-
 #include "proton__a300_pc.h"
+#include "utils.h"
 
 #define PROTON_MAX_MESSAGE_SIZE 1024
 
@@ -24,7 +15,7 @@ int sock_send, sock_recv;
 
 #define MAX_LOGS 100
 
-char * logs[MAX_LOGS][PROTON_SIGNALS__LOG__MSG__CAPACITY];
+char logs[MAX_LOGS][PROTON_SIGNALS__LOG__MSG__CAPACITY];
 uint8_t log_index = 0;
 
 typedef enum {
@@ -41,158 +32,78 @@ typedef enum {
 
 uint32_t cb_counts[CALLBACK_COUNT];
 
-int msleep(long msec) {
-  struct timespec ts;
-  int res;
-
-  if (msec < 0) {
-    return -1;
-  }
-
-  ts.tv_sec = msec / 1000;
-  ts.tv_nsec = (msec % 1000) * 1000000;
-
-  do {
-    res = nanosleep(&ts, &ts);
-  } while (res);
-
-  return res;
-}
-
-int socket_init() {
-  struct sockaddr_in servaddr;
-  sock_send = socket(AF_INET, SOCK_DGRAM, 0);
-
-  memset(&servaddr, 0, sizeof(servaddr));
-  servaddr.sin_family = AF_INET;
-  servaddr.sin_addr.s_addr = htonl((in_addr_t)PROTON_NODE__MCU__IP);
-  servaddr.sin_port = htons(PROTON_NODE__MCU__PORT);
-
-  if (connect(sock_send, (struct sockaddr *)&servaddr, sizeof(servaddr)) != 0) {
-    printf("connect error\r\n");
-    return 1;
-  }
-
-  printf("Send Socket connected\r\n");
-
-  struct sockaddr_in servaddr2;
-  sock_recv = socket(AF_INET, SOCK_DGRAM, 0);
-
-  memset(&servaddr2, 0, sizeof(servaddr2));
-  servaddr2.sin_family = AF_INET;
-  servaddr2.sin_addr.s_addr = htonl((in_addr_t)PROTON_NODE__PC__IP);
-  servaddr2.sin_port = htons(PROTON_NODE__PC__PORT);
-
-  // Put the socket in non-blocking mode:
-  if (fcntl(sock_recv, F_SETFL, fcntl(sock_recv, F_GETFL) | O_NONBLOCK) < 0) {
-    printf("Set non-blocking error\r\n");
-    return 2;
-  }
-
-  if (bind(sock_recv, (struct sockaddr *)&servaddr2, sizeof(servaddr2)) != 0) {
-    printf("bind error\r\n");
-    return 3;
-  }
-
-  printf("Receive Socket bound\r\n");
-
-  return 0;
-}
-
-void PROTON_BUNDLE_LogCallback()
-{
+void PROTON_BUNDLE_LogCallback() {
   cb_counts[CALLBACK_LOG]++;
-  strncpy(logs[log_index++], log_bundle.msg, PROTON_SIGNALS__LOG__MSG__CAPACITY);
+  strncpy(logs[log_index++], log_bundle.msg,
+          PROTON_SIGNALS__LOG__MSG__CAPACITY);
   memset(log_bundle.msg, '\0', PROTON_SIGNALS__LOG__MSG__CAPACITY);
 }
 
-void PROTON_BUNDLE_StatusCallback()
-{
+void PROTON_BUNDLE_StatusCallback() {
   cb_counts[CALLBACK_STATUS]++;
 }
 
-void PROTON_BUNDLE_PowerCallback()
-{
-  cb_counts[CALLBACK_POWER]++;
-}
+void PROTON_BUNDLE_PowerCallback() { cb_counts[CALLBACK_POWER]++; }
 
-void PROTON_BUNDLE_EmergencyStopCallback()
-{
-  cb_counts[CALLBACK_ESTOP]++;
-}
+void PROTON_BUNDLE_EmergencyStopCallback() { cb_counts[CALLBACK_ESTOP]++; }
 
-void PROTON_BUNDLE_TemperatureCallback()
-{
-  cb_counts[CALLBACK_TEMPERATURE]++;
-}
+void PROTON_BUNDLE_TemperatureCallback() { cb_counts[CALLBACK_TEMPERATURE]++; }
 
-void PROTON_BUNDLE_StopStatusCallback()
-{
-  cb_counts[CALLBACK_STOP_STATUS]++;
-}
+void PROTON_BUNDLE_StopStatusCallback() { cb_counts[CALLBACK_STOP_STATUS]++; }
 
-void PROTON_BUNDLE_PinoutStateCallback()
-{
-  cb_counts[CALLBACK_PINOUT_STATE]++;
-}
+void PROTON_BUNDLE_PinoutStateCallback() { cb_counts[CALLBACK_PINOUT_STATE]++; }
 
-void PROTON_BUNDLE_AlertsCallback()
-{
-  cb_counts[CALLBACK_ALERTS]++;
-}
+void PROTON_BUNDLE_AlertsCallback() { cb_counts[CALLBACK_ALERTS]++; }
 
-void update_lights()
-{
-  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__FRONT_LEFT_LIGHT__CAPACITY; i++)
-  {
-    cmd_lights_bundle.front_left_light[i] = rand() % 255;
-    cmd_lights_bundle.front_right_light[i] = rand() % 255;
-    cmd_lights_bundle.rear_left_light[i] = rand() % 255;
-    cmd_lights_bundle.rear_right_light[i] = rand() % 255;
+void update_lights() {
+  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__LIGHTS__LENGTH; i++) {
+    for (uint8_t j = 0; j < PROTON_SIGNALS__CMD_LIGHTS__LIGHTS__CAPACITY; j++) {
+      cmd_lights_bundle.lights[i][j] = rand_uint8();
+    }
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__CMD_LIGHTS);
 }
 
-void update_fans()
-{
-  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_FANS__FAN_SPEEDS__CAPACITY; i++)
-  {
-    cmd_fans_bundle.fan_speeds[i] = rand() % 255;
+void update_fans() {
+  for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_FANS__FANS__CAPACITY; i++) {
+    cmd_fans_bundle.fans[i] = rand_uint8();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__CMD_FANS);
 }
 
-void update_display_status()
-{
-  strncpy(display_status_bundle.string_1, "TEST_STRING", PROTON_SIGNALS__DISPLAY_STATUS__STRING_1__CAPACITY);
-  strncpy(display_status_bundle.string_2, "TEST_STRING2", PROTON_SIGNALS__DISPLAY_STATUS__STRING_2__CAPACITY);
+void update_display_status() {
+  strncpy(display_status_bundle.string1, "TEST_STRING",
+          PROTON_SIGNALS__DISPLAY_STATUS__STRING1__CAPACITY);
+  strncpy(display_status_bundle.string2, "TEST_STRING2",
+          PROTON_SIGNALS__DISPLAY_STATUS__STRING2__CAPACITY);
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__DISPLAY_STATUS);
 }
 
-void update_battery()
-{
-  battery_bundle.percentage = (float)rand();
+void update_battery() {
+  battery_bundle.percentage = rand_float();
   PROTON_BUNDLE_Send(PROTON_BUNDLE__BATTERY);
 }
 
-void update_pinout_command()
-{
-  for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH; i++)
-  {
-    pinout_command_bundle.rails[i] = rand() % 2;
+void update_pinout_command() {
+  for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH; i++) {
+    pinout_command_bundle.rails[i] = rand_bool();
   }
-  for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH; i++)
-  {
-    pinout_command_bundle.rails[i] = rand() % 2;
+  for (uint8_t i = 0; i < PROTON_SIGNALS__PINOUT_COMMAND__RAILS__LENGTH; i++) {
+    pinout_command_bundle.rails[i] = rand_bool();
   }
 
   PROTON_BUNDLE_Send(PROTON_BUNDLE__PINOUT_COMMAND);
 }
 
-bool PROTON_TRANSPORT__PcConnect() { return socket_init() == 0; }
+bool PROTON_TRANSPORT__PcConnect() {
+  sock_recv = socket_init(PROTON_NODE__PC__IP, PROTON_NODE__PC__PORT, true);
+  sock_send = socket_init(PROTON_NODE__MCU__IP, PROTON_NODE__MCU__PORT, false);
+
+  return (sock_recv >= 0 && sock_send >= 0);
+}
 
 bool PROTON_TRANSPORT__PcDisconnect() { return true; }
 
@@ -245,7 +156,7 @@ void *timer_20hz(void *arg) {
   }
 }
 
-void * stats(void *arg) {
+void *stats(void *arg) {
   uint32_t i = 0;
   while (1) {
     printf("\033[2J\033[1;1H");
@@ -262,8 +173,7 @@ void * stats(void *arg) {
     printf("alerts: %d\r\n", cb_counts[CALLBACK_ALERTS]);
     printf("----------- Logs ------------\r\n");
 
-    for (uint8_t i = 0; i < log_index; i++)
-    {
+    for (uint8_t i = 0; i < log_index; i++) {
       printf("%s\r\n", logs[i]);
     }
 
@@ -275,8 +185,7 @@ void * stats(void *arg) {
     rx = 0.0;
     tx = 0.0;
 
-    for (uint8_t i = 0; i < CALLBACK_COUNT; i++)
-    {
+    for (uint8_t i = 0; i < CALLBACK_COUNT; i++) {
       cb_counts[i] = 0;
     }
 

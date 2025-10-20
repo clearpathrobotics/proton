@@ -11,8 +11,168 @@
  */
 
 #include "protoncpp/config.hpp"
-#include "yaml-cpp/yaml.h"
+
 #include <iostream>
+
+namespace YAML {
+
+template<>
+struct convert<proton::SignalConfig> {
+  static bool decode(const Node& node, proton::SignalConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.name = node[proton::keys::NAME].as<std::string>();
+    rhs.type_string = node[proton::keys::TYPE].as<std::string>();
+
+    auto value_key = node[proton::keys::VALUE];
+    // Constant value defined
+    if (value_key.IsDefined() && !value_key.IsNull())
+    {
+      rhs.is_const = true;
+      rhs.value = value_key;
+
+      if (value_key.IsScalar() && rhs.type_string == proton::value_types::STRING)
+      {
+        rhs.capacity = value_key.size();
+      }
+      else if (value_key.IsSequence())
+      {
+        if (rhs.type_string == proton::value_types::BYTES)
+        {
+          rhs.capacity = value_key.size();
+        }
+        else if (rhs.type_string == proton::value_types::LIST_STRING || rhs.type_string == proton::value_types::LIST_BYTES)
+        {
+          // Set capacity to largest of values
+          for (const auto& v : value_key)
+          {
+            if (v.size() > rhs.capacity)
+            {
+              rhs.capacity = v.size();
+            }
+          }
+
+          // Set length to sequence size
+          rhs.length = value_key.size();
+        }
+        else
+        {
+          rhs.length = value_key.size();
+        }
+      }
+    }
+    else
+    {
+      rhs.is_const = false;
+
+      auto length_key = node[proton::keys::LENGTH];
+      if (length_key.IsDefined())
+      {
+        rhs.length = length_key.as<uint32_t>();
+      }
+      else if (proton::signal_map::SignalMap.at(rhs.type_string) >= proton::Signal::SignalCase::kListDoubleValue)
+      {
+        throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string + " must define a length");
+      }
+
+      auto capacity_key = node[proton::keys::CAPACITY];
+      if (capacity_key.IsDefined())
+      {
+        rhs.capacity = capacity_key.as<uint32_t>();
+      }
+      else
+      {
+        switch(proton::signal_map::SignalMap.at(rhs.type_string))
+        {
+          case proton::Signal::SignalCase::kStringValue:
+          case proton::Signal::SignalCase::kBytesValue:
+          case proton::Signal::SignalCase::kListStringValue:
+          case proton::Signal::SignalCase::kListBytesValue:
+          {
+            throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string + " must define a capacity");
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+};
+
+template<>
+struct convert<proton::BundleConfig> {
+  static bool decode(const Node& node, proton::BundleConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.name = node[proton::keys::NAME].as<std::string>();
+    rhs.id = node[proton::keys::ID].as<uint32_t>();
+    rhs.producer = node[proton::keys::PRODUCER].as<std::string>();
+    rhs.consumer = node[proton::keys::CONSUMER].as<std::string>();
+
+    YAML::Node signals = node[proton::keys::SIGNALS];
+
+    if (signals.IsDefined() && !signals.IsNull())
+    {
+      // Get signal configs for this bundle
+      for (const auto& signal : signals) {
+        rhs.signals.push_back(signal.as<proton::SignalConfig>());
+      }
+    }
+
+    return true;
+  }
+};
+
+template<>
+struct convert<proton::TransportConfig> {
+  static bool decode(const Node& node, proton::TransportConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.type = node[proton::keys::TYPE].as<std::string>();
+
+    auto ip_node = node[proton::keys::IP];
+    auto port_node = node[proton::keys::PORT];
+    auto device_node = node[proton::keys::DEVICE];
+
+    if (rhs.type == proton::transport_types::UDP4)
+    {
+      rhs.ip = ip_node.as<std::string>();
+      rhs.port = port_node.as<uint32_t>();
+    }
+    else if (rhs.type == proton::transport_types::SERIAL)
+    {
+      rhs.device = device_node.as<std::string>();
+    }
+    else
+    {
+      return false;
+    }
+
+    return true;
+  }
+};
+
+template<>
+struct convert<proton::NodeConfig> {
+  static bool decode(const Node& node, proton::NodeConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.name = node[proton::keys::NAME].as<std::string>();
+    rhs.transport = node[proton::keys::TRANSPORT].as<proton::TransportConfig>();
+
+    return true;
+  }
+};
+
+}
 
 using namespace proton;
 
@@ -22,92 +182,15 @@ Config::Config(std::string file) {
   std::string yaml_file_name = file.substr(file.find_last_of('/') + 1);
   name_ = yaml_file_name.substr(0, yaml_file_name.find(".yaml"));
 
-  YAML::Node config = YAML::LoadFile(file);
+  yaml_node_ = YAML::LoadFile(file);
 
-  for (auto node : config[keys::NODES]) {
-    auto transport = node[keys::TRANSPORT];
-
-    std::string type, device, ip;
-    uint32_t port;
-
-    type = transport[keys::TYPE].as<std::string>();
-
-    if (type == transport_types::UDP4)
-    {
-      ip = transport[keys::IP].as<std::string>();
-      port = transport[keys::PORT].as<uint32_t>();
-
-      try {
-        device = transport[keys::DEVICE].as<std::string>();
-      }
-      catch (YAML::TypedBadConversion<std::string>& e)
-      {}
-    }
-    else if (type == transport_types::SERIAL)
-    {
-      device = transport[keys::DEVICE].as<std::string>();
-
-      try {
-        ip = transport[keys::IP].as<std::string>();
-      }
-      catch (YAML::TypedBadConversion<std::string>& e)
-      {}
-
-      try {
-        port = transport[keys::PORT].as<uint32_t>();
-      }
-      catch (YAML::TypedBadConversion<uint32_t>& e)
-      {}
-    }
-
-    TransportConfig transport_config = {
-      type,
-      device,
-      ip,
-      port
-    };
-
-    NodeConfig node_config = {
-      node[keys::NAME].as<std::string>(),
-      transport_config
-    };
-
-    nodes_.push_back(node_config);
+  // Get node configs
+  for (auto node : yaml_node_[keys::NODES]) {
+    nodes_.push_back(node.as<NodeConfig>());
   }
 
   // Get bundle configs
-  for (auto bundle : config[keys::BUNDLES]) {
-    std::vector<SignalConfig> signal_configs;
-
-    // Get signal configs for this bundle
-    for (auto signal : bundle[keys::SIGNALS]) {
-      uint32_t length, capacity;
-
-      try {
-        length = signal[keys::LENGTH].as<uint32_t>();
-      } catch (const YAML::TypedBadConversion<uint32_t> &e) {
-        length = 0;
-      }
-
-      try {
-        capacity = signal[keys::CAPACITY].as<uint32_t>();
-      } catch (const YAML::TypedBadConversion<uint32_t> &e) {
-        capacity = 0;
-      }
-
-      SignalConfig config = {signal[keys::NAME].as<std::string>(),
-                             bundle[keys::NAME].as<std::string>(),
-                             signal[keys::TYPE].as<std::string>(), length,
-                             capacity};
-
-      signal_configs.push_back(config);
-    }
-
-    BundleConfig bundle_config = {
-        bundle[keys::NAME].as<std::string>(), bundle[keys::ID].as<uint32_t>(),
-        bundle[keys::PRODUCER].as<std::string>(),
-        bundle[keys::CONSUMER].as<std::string>(), signal_configs};
-
-    bundles_.push_back(bundle_config);
+  for (auto bundle : yaml_node_[keys::BUNDLES]) {
+    bundles_.push_back(bundle.as<BundleConfig>());
   }
 }

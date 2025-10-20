@@ -26,6 +26,11 @@ BundleHandle &BundleManager::getBundle(const std::string &bundle_name) {
   }
 }
 
+std::map<std::string, BundleHandle>& BundleManager::getBundleMap()
+{
+  return bundles_;
+}
+
 BundleHandle &BundleManager::receiveBundle(const uint8_t *buffer,
                                            const uint32_t len) {
   auto bundle = Bundle();
@@ -36,7 +41,7 @@ BundleHandle &BundleManager::receiveBundle(const uint8_t *buffer,
 BundleHandle &BundleManager::setBundle(const Bundle &bundle) {
   for (auto &[name, handle] : bundles_) {
     if (handle.getId() == bundle.id()) {
-      *handle.getBundlePtr().get() = bundle;
+      handle.setBundle(bundle);
       return handle;
     }
   }

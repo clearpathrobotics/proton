@@ -2,11 +2,11 @@ nodes:
   - name: pc
     transport:
       type: serial
-      device: /tmp/ttyPC
+      device: /dev/clearpath/j100
   - name: mcu
     transport:
       type: serial
-      device: /tmp/ttyMCU
+      device: /dev/clearpath/j100
 bundles:
   - name: log
     id: 0x100
@@ -24,71 +24,104 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
-      - {name: hardware_id, type: string, capacity: 10}
-      - {name: firmware_version, type: string, capacity: 10}
-      - {name: mcu_uptime_s, type: uint32}
-      - {name: mcu_uptime_ns, type: uint32}
-      - {name: connection_uptime_s, type: uint32}
-      - {name: connection_uptime_ns, type: uint32}
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: hardware_id, type: string, capacity: 16}
+      - {name: firmware_version, type: string, capacity: 32}
+      - {name: mcu_uptime_sec, type: int32}
+      - {name: mcu_uptime_nanosec, type: uint32}
+      - {name: connection_uptime_sec, type: int32}
+      - {name: connection_uptime_nanosec, type: uint32}
   - name: power
     id: 0x102
     producer: mcu
     consumer: pc
     signals:
-      - {name: measured_voltages, type: float, length: 3}
-      - {name: measured_currents, type: float, length: 4}
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: shore_power_connected, type: int32, value: -1}
+      - {name: battery_connected, type: int32, value: 1}
+      - {name: power_12v_user_nominal, type: int32, value: -1}
+      - {name: charger_connected, type: int32, value: -1}
+      - {name: charging_complete, type: int32, value: -1}
+
+      - {name: measured_voltages, type: list_float, length: 3}
+      - {name: J100_MEASURED_BATTERY, type: uint32, value: 0}
+      - {name: J100_MEASURED_5V, type: uint32, value: 1}
+      - {name: J100_MEASURED_12V, type: uint32, value: 2}
+
+      - {name: measured_currents, type: list_float, length: 4}
+      - {name: J100_TOTAL_CURRENT, type: uint32, value: 0}
+      - {name: J100_COMPUTER_CURRENT, type: uint32, value: 1}
+      - {name: J100_DRIVE_CURRENT, type: uint32, value: 2}
+      - {name: J100_USER_CURRENT, type: uint32, value: 3}
+
   - name: emergency_stop
     id: 0x103
     producer: mcu
     consumer: pc
     signals:
-      - {name: stopped, type: bool}
+      - {name: data, type: bool}
   - name: temperature
     id: 0x104
     producer: mcu
     consumer: pc
     signals:
-      - {name: temperatures, type: float, length: 2}
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: temperatures, type: list_float, length: 2}
+      - {name: J100_MCU, type: uint32, value: 0}
+      - {name: J100_PCB, type: uint32, value: 1}
   - name: stop_status
     id: 0x105
     producer: mcu
     consumer: pc
     signals:
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: stop_power_status, type: bool, value: True}
       - {name: external_stop_present, type: bool}
+      - {name: needs_reset, type: bool, value: False}
   - name: imu
     id: 0x106
     producer: mcu
     consumer: pc
     signals:
-      - {name: frame_id, type: string, capacity: 16}
-      - {name: linear_acceleration, type: double, length: 3}
-      - {name: angular_velocity, type: double, length: 3}
+      - {name: header_frame_id, type: string, value: imu_0_link}
+      - {name: linear_acceleration_x, type: double}
+      - {name: linear_acceleration_y, type: double}
+      - {name: linear_acceleration_z, type: double}
+      - {name: linear_acceleration_covariance, type: list_double, value: [0.03924, 0, 0, 0, 0.03924, 0, 0, 0, 0.03924]}
+      - {name: angular_velocity_x, type: double}
+      - {name: angular_velocity_y, type: double}
+      - {name: angular_velocity_z, type: double}
+      - {name: angular_velocity_covariance, type: list_double, value: [0.0000010966, 0, 0, 0, 0.0000010966, 0, 0, 0, 0.0000010966]}
   - name: magnetometer
     id: 0x107
     producer: mcu
     consumer: pc
     signals:
-      - {name: frame_id, type: string, capacity: 16}
-      - {name: magnetic_field, type: double, length: 3}
+      - {name: header_frame_id, type: string, value: imu_0_link}
+      - {name: magnetic_field_x, type: double}
+      - {name: magnetic_field_y, type: double}
+      - {name: magnetic_field_z, type: double}
+      - {name: magnetic_field_covariance, type: list_double, value: [-1.0, 0, 0, 0, -1.0, 0, 0, 0, -1.0]}
   - name: nmea
     id: 0x108
     producer: mcu
     consumer: pc
     signals:
-      - {name: frame_id, type: string, capacity: 16}
+      - {name: header_frame_id, type: string, value: gps_0_link}
       - {name: sentence, type: string, capacity: 324}
   - name: motor_feedback
     id: 0x109
     producer: mcu
     consumer: pc
     signals:
-      - {name: current, type: float, length: 2}
-      - {name: bridge_temperature, type: float, length: 2}
-      - {name: motor_temperature, type: float, length: 2}
-      - {name: driver_fault, type: bool, length: 2}
-      - {name: duty_cycle, type: float, length: 2}
-      - {name: measured_velocity, type: float, length: 2}
-      - {name: measured_travel, type: float, length: 2}
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: drivers_current, type: list_float, length: 2}
+      - {name: drivers_bridge_temperature, type: list_float, length: 2}
+      - {name: drivers_motor_temperature, type: list_float, length: 2}
+      - {name: drivers_driver_fault, type: list_bool, length: 2}
+      - {name: drivers_duty_cycle, type: list_float, length: 2}
+      - {name: drivers_measured_velocity, type: list_float, length: 2}
+      - {name: drivers_measured_travel, type: list_float, length: 2}
       - {name: commanded_mode, type: int32}
       - {name: actual_mode, type: int32}
 
@@ -97,17 +130,36 @@ bundles:
     producer: pc
     consumer: mcu
     signals:
-      - {name: connected, type: bool}
+      - {name: data, type: bool}
   - name: hmi
     id: 0x201
     producer: pc
     consumer: mcu
     signals:
-      - {name: state, type: uint32}
+      - {name: data, type: uint32}
   - name: motor_command
     id: 0x202
     producer: pc
     consumer: mcu
     signals:
       - {name: mode, type: int32}
-      - {name: command, type: float, length: 2}
+      - {name: drivers, type: list_float, length: 2}
+      - {name: MODE_VELOCITY, type: int32, value: 0}
+      - {name: MODE_PWM, type: int32, value: 1}
+      - {name: MODE_NONE, type: int32, value: -1}
+
+ros2:
+  topics:
+    - {topic: /rosout,                          message: rcl_interfaces/msg/Log,                    qos.profile: rosout,       bundle: log}
+    - {topic: platform/mcu/status,              message: clearpath_platform_msgs/msg/Status,        qos.profile: sensor_data,  bundle: status}
+    - {topic: platform/mcu/status/power,        message: clearpath_platform_msgs/msg/Power,         qos.profile: sensor_data,  bundle: power}
+    - {topic: platform/mcu/status/temperature,  message: clearpath_platform_msgs/msg/Temperature,   qos.profile: sensor_data,  bundle: temperature}
+    - {topic: platform/mcu/status/stop,         message: clearpath_platform_msgs/msg/StopStatus,    qos.profile: sensor_data,  bundle: stop_status}
+    - {topic: platform/emergency_stop,          message: std_msgs/msg/Bool,                         qos.profile: sensor_data,  bundle: emergency_stop}
+    - {topic: platform/motors/feedback,         message: clearpath_platform_msgs/msg/Feedback,      qos.profile: sensor_data,  bundle: motor_feedback}
+    - {topic: sensors/imu_0/data_raw,           message: sensor_msgs/msg/Imu,                       qos.profile: sensor_data,  bundle: imu}
+    - {topic: sensors/imu_0/mag,                message: sensor_msgs/msg/MagneticField,             qos.profile: sensor_data,  bundle: magnetometer}
+    - {topic: sensors/gps_0/nmea_sentence,      message: nmea_msgs/msg/Sentence,                    qos.profile: sensor_data,  bundle: nmea}
+    - {topic: platform/wifi_connected,          message: std_msgs/msg/Bool,                         qos.profile: sensor_data,  bundle: wifi_connected}
+    - {topic: platform/mcu/_hmi,                message: std_msgs/msg/UInt8,                        qos.profile: sensor_data,  bundle: hmi}
+    - {topic: platform/motors/cmd_drive,        message: clearpath_platform_msgs/msg/Drive,         qos.profile: sensor_data,  bundle: motor_command}

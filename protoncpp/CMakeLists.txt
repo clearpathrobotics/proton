@@ -2,21 +2,14 @@ cmake_minimum_required(VERSION 3.14)
 project(protoncpp CXX)
 
 # Protobuf compiler
-find_package(Protobuf REQUIRED)
+# find_package(Protobuf REQUIRED)
 find_program(PROTOC_EXECUTABLE protoc)
 if(NOT PROTOC_EXECUTABLE)
   message(FATAL_ERROR "Could not find protoc")
 endif()
 
 # YAML-CPP
-include(FetchContent)
-
-FetchContent_Declare(
-  yaml-cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG 0.8.0
-)
-FetchContent_MakeAvailable(yaml-cpp)
+find_package(yaml-cpp REQUIRED)
 
 # -------------------------------
 # Proto files
@@ -71,7 +64,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.cc
   COMMAND cp ${GENERATED_DIR}/signal.pb.cc ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.cc ${GENERATED_SRC_DIR}
-  DEPENDS ${GENERATED_DIR}
+  DEPENDS ${GENERATED_FILES}
 )
 
 add_custom_command(
@@ -79,7 +72,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${GENERATED_DIR}
+  DEPENDS ${GENERATED_FILES}
 )
 
 add_custom_target(generate_protocpp ALL
@@ -101,11 +94,26 @@ add_library(protoncpp
   ${GENERATED_HDRS}
 )
 
+add_library(proton::protoncpp ALIAS protoncpp)
+
 target_include_directories(protoncpp
   PUBLIC
-      ${CMAKE_CURRENT_SOURCE_DIR}/include
-      ${CMAKE_CURRENT_BINARY_DIR}/include
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+      $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(protoncpp PRIVATE protobuf::libprotobuf)
-target_link_libraries(protoncpp PUBLIC yaml-cpp::yaml-cpp)
+target_link_libraries(protoncpp PUBLIC yaml-cpp)
+
+# Install
+
+install(TARGETS protoncpp
+    EXPORT ProtonTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)

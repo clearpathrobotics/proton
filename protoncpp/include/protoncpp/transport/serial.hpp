@@ -53,6 +53,7 @@ public:
   static bool checkFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
 
 private:
+  size_t poll(uint8_t * buf, size_t len);
   serial_device device_;
   int serial_port_;
 };

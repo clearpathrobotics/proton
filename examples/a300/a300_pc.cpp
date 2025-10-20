@@ -11,25 +11,25 @@ std::vector<std::string> logs;
 
 void update_lights()
 {
-  auto& cmd_lights_bundle = node.getBundle("cmd_lights");
-  cmd_lights_bundle.getSignal("front_left_light").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
-  cmd_lights_bundle.getSignal("front_right_light").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
-  cmd_lights_bundle.getSignal("rear_left_light").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
-  cmd_lights_bundle.getSignal("rear_right_light").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
+  auto& cmd_lights_signal = node.getBundle("cmd_lights").getSignal("lights");
+  for (auto i = 0; i < cmd_lights_signal.getLength(); i++)
+  {
+    cmd_lights_signal.setValue<proton::bytes>(i, {rand() % 255, rand() % 255, rand() % 255});
+  }
 
   node.sendBundle("cmd_lights");
 }
 
 void update_fans()
 {
-  node.getBundle("cmd_fans").getSignal("fan_speeds").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255});
+  node.getBundle("cmd_fans").getSignal("fans").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255});
   node.sendBundle("cmd_fans");
 }
 
 void update_display_status()
 {
-  node.getBundle("display_status").getSignal("string_1").setValue<std::string>("TEST_STRING_1");
-  node.getBundle("display_status").getSignal("string_2").setValue<std::string>("TEST_STRING_1");
+  node.getBundle("display_status").getSignal("string1").setValue<std::string>("TEST_STRING_1");
+  node.getBundle("display_status").getSignal("string2").setValue<std::string>("TEST_STRING_1");
   node.sendBundle("display_status");
 }
 

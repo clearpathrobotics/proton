@@ -10,14 +10,44 @@ FetchContent_Declare(
   nanopb
   GIT_REPOSITORY https://github.com/nanopb/nanopb.git
   GIT_TAG        0.4.9.1
+  SOURCE_SUBDIR  null
 )
 FetchContent_MakeAvailable(nanopb)
+
+# FetchContent_GetProperties(nanopb)
+# if(NOT proton_POPULATED)
+#   FetchContent_Populate(nanopb)
+# endif()
+
 
 # Protobuf compiler
 find_program(PROTOC_EXECUTABLE protoc)
 if(NOT PROTOC_EXECUTABLE)
   message(FATAL_ERROR "Could not find protoc")
 endif()
+
+# Protonc generator
+
+set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/protonc/protonc/protonc_generator.py)
+
+function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  set(PROTONC_GENERATOR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/protonc/protonc_generator.py)
+  # Add a custom target to execute the script
+  add_custom_command(
+    OUTPUT ${GENERATED_FILES}
+    COMMAND ${CMAKE_COMMAND} -E env
+      PYTHONPATH=${CMAKE_SOURCE_DIR}/protonc
+      ${Python3_EXECUTABLE}
+      ${PROTONC_GENERATOR}
+      -c ${CONFIG_FILE}
+      -d ${GENERATED_FOLDER}
+      -t ${TARGET}
+    DEPENDS ${CONFIG_FILE} # Regenerate if config changes
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Running Python script: ${Python3_EXECUTABLE} ${PROTONC_GENERATOR} -c ${CONFIG_FILE} -d ${GENERATED_FOLDER} -t ${TARGET}"
+  )
+endfunction()
 
 # -------------------------------
 # Proto files
@@ -80,7 +110,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.c
   COMMAND cp ${GENERATED_DIR}/signal.pb.c ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.c ${GENERATED_SRC_DIR}
-  DEPENDS ${GENERATED_DIR}
+  DEPENDS ${GENERATED_FILES}
 )
 
 add_custom_command(
@@ -88,7 +118,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${GENERATED_DIR}
+  DEPENDS ${GENERATED_FILES}
 )
 
 add_custom_target(generate_protoc ALL
@@ -101,7 +131,7 @@ add_custom_target(generate_protoc ALL
 # -------------------------------
 # protonc library
 # -------------------------------
-add_library(${PROJECT_NAME}
+add_library(protonc
     src/proton.c
     src/proton_field_callbacks.c
     ${nanopb_SOURCE_DIR}/pb_common.c
@@ -111,14 +141,29 @@ add_library(${PROJECT_NAME}
     ${GENERATED_HEADERS}
 )
 
+add_library(proton::protonc ALIAS protonc)
+
 target_include_directories(${PROJECT_NAME}
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_BINARY_DIR}/include
-        ${nanopb_SOURCE_DIR}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+        $<BUILD_INTERFACE:${nanopb_SOURCE_DIR}>
 )
 
-# -------------------------------
-# Protonc generator
-# -------------------------------
-find_program(PROTONC_GENERATOR protonc_generator)
+# Install
+
+# install(TARGETS protonc
+#     EXPORT ProtonTargets
+#     LIBRARY DESTINATION lib
+#     ARCHIVE DESTINATION lib
+#     RUNTIME DESTINATION bin
+# )
+
+# install(DIRECTORY
+#         include/
+#         DESTINATION include)
+
+# install(DIRECTORY
+#         ${GENERATED_INC_DIR}/
+#         DESTINATION include/protonc)
+

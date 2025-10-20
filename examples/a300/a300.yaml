@@ -3,12 +3,12 @@ nodes:
     transport:
       type: udp4
       ip: 127.0.0.1
-      port: 11417
+      port: 11416
   - name: mcu
     transport:
       type: udp4
       ip: 127.0.0.1
-      port: 11416
+      port: 11417
 bundles:
   - name: log
     id: 0x100
@@ -26,75 +26,83 @@ bundles:
     producer: mcu
     consumer: pc
     signals:
+      - {name: header_frame_id, type: string, value: mcu_link}
       - {name: hardware_id, type: string, capacity: 10}
       - {name: firmware_version, type: string, capacity: 10}
-      - {name: mcu_uptime_s, type: uint32}
-      - {name: mcu_uptime_ns, type: uint32}
-      - {name: connection_uptime_s, type: uint32}
-      - {name: connection_uptime_ns, type: uint32}
+      - {name: mcu_uptime_sec, type: int32}
+      - {name: mcu_uptime_nanosec, type: uint32}
+      - {name: connection_uptime_sec, type: int32}
+      - {name: connection_uptime_nanosec, type: uint32}
   - name: power
     id: 0x102
     producer: mcu
     consumer: pc
     signals:
-      - {name: measured_voltages, type: float, length: 13}
-      - {name: measured_currents, type: float, length: 13}
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: shore_power_connected, type: int32, value: -1}
+      - {name: battery_connected, type: int32, value: 1}
+      - {name: power_12v_user_nominal, type: int32, value: -1}
+      - {name: charger_connected, type: int32, value: -1}
+      - {name: charging_complete, type: int32, value: -1}
+      - {name: measured_voltages, type: list_float, length: 13}
+      - {name: measured_currents, type: list_float, length: 13}
   - name: emergency_stop
     id: 0x103
     producer: mcu
     consumer: pc
     signals:
-      - {name: stopped, type: bool}
+      - {name: data, type: bool}
   - name: temperature
     id: 0x104
     producer: mcu
     consumer: pc
     signals:
-      - {name: temperatures, type: float, length: 18}
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: temperatures, type: list_float, length: 18}
   - name: stop_status
     id: 0x105
     producer: mcu
     consumer: pc
     signals:
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: stop_power_status, type: bool, value: True}
+      - {name: external_stop_present, type: bool, value: False}
       - {name: needs_reset, type: bool}
   - name: pinout_state
     id: 0x106
     producer: mcu
     consumer: pc
     signals:
-      - {name: rails, type: bool, length: 1}
-      - {name: inputs, type: bool, length: 7}
-      - {name: outputs, type: bool, length: 7}
-      - {name: output_periods, type: uint32, length: 7}
+      - {name: header_frame_id, type: string, value: mcu_link}
+      - {name: rails, type: list_bool, length: 1}
+      - {name: inputs, type: list_bool, length: 7}
+      - {name: outputs, type: list_bool, length: 7}
+      - {name: output_periods, type: list_uint32, length: 7}
   - name: alerts
     id: 0x107
     producer: mcu
     consumer: pc
     signals:
-      - {name: alert_string, type: string, capacity: 86}
-
+      - {name: data, type: string, capacity: 86}
   - name: cmd_fans
     id: 0x200
     producer: pc
     consumer: mcu
     signals:
-      - {name: fan_speeds, type: bytes, capacity: 8}
+      - {name: fans, type: bytes, capacity: 8}
   - name: display_status
     id: 0x201
     producer: pc
     consumer: mcu
     signals:
-      - {name: string_1, type: string, capacity: 50}
-      - {name: string_2, type: string, capacity: 50}
+      - {name: string1, type: string, capacity: 50}
+      - {name: string2, type: string, capacity: 50}
   - name: cmd_lights
     id: 0x202
     producer: pc
     consumer: mcu
     signals:
-      - {name: front_left_light, type: bytes, capacity: 3}
-      - {name: front_right_light, type: bytes, capacity: 3}
-      - {name: rear_left_light, type: bytes, capacity: 3}
-      - {name: rear_right_light, type: bytes, capacity: 3}
+      - {name: lights, type: list_bytes, length: 4, capacity: 3}
   - name: battery
     id: 0x203
     producer: pc
@@ -106,13 +114,48 @@ bundles:
     producer: pc
     consumer: mcu
     signals:
-      - {name: rails, type: bool, length: 1}
-      - {name: outputs, type: uint32, length: 7}
+      - {name: rails, type: list_bool, length: 1}
+      - {name: outputs, type: list_uint32, length: 7}
   - name: cmd_shutdown
     id: 0x300
     producer: pc
     consumer: mcu
-  - name: clear_needs_reset
+    signals:
+      - {name: data, type: bool}
+  - name: cmd_shutdown_response
     id: 0x301
+    producer: mcu
+    consumer: pc
+    signals:
+      - {name: success, type: bool}
+      - {name: message, type: string, capacity: 64}
+  - name: clear_needs_reset
+    id: 0x302
     producer: pc
     consumer: mcu
+  - name: clear_needs_reset_response
+    id: 0x303
+    producer: mcu
+    consumer: pc
+    signals:
+      - {name: success, type: bool}
+      - {name: message, type: string, capacity: 64}
+
+ros2:
+  topics:
+    - {topic: /rosout,                          message: rcl_interfaces/msg/Log,                    qos: rosout,      bundle: log}
+    - {topic: platform/mcu/status,              message: clearpath_platform_msgs/msg/Status,        qos: sensor_data, bundle: status}
+    - {topic: platform/mcu/status/power,        message: clearpath_platform_msgs/msg/Power,         qos: sensor_data, bundle: power}
+    - {topic: platform/mcu/status/stop,         message: clearpath_platform_msgs/msg/StopStatus,    qos: sensor_data, bundle: stop_status}
+    - {topic: platform/mcu/status/temperature,  message: clearpath_platform_msgs/msg/Temperature,   qos: sensor_data, bundle: temperature}
+    - {topic: platform/mcu/status/pinout,       message: clearpath_platform_msgs/msg/PinoutState,   qos: sensor_data, bundle: pinout_state}
+    - {topic: platform/mcu/status/alerts,       message: std_msgs/msg/String,                       qos: sensor_data, bundle: alerts}
+    - {topic: platform/display/status,          message: clearpath_platform_msgs/msg/DisplayStatus, qos: sensor_data, bundle: display_status}
+    - {topic: platform/emergency_stop,          message: std_msgs/msg/Bool,                         qos: sensor_data, bundle: emergency_stop}
+    - {topic: platform/bms/state,               message: sensor_msgs/msg/BatteryState,              qos: sensor_data, bundle: battery}
+    - {topic: platform/mcu/_cmd_fans,           message: clearpath_platform_msgs/msg/Fans,          qos: sensor_data, bundle: cmd_fans}
+    - {topic: platform/mcu/_cmd_lights,         message: clearpath_platform_msgs/msg/Lights,        qos: sensor_data, bundle: cmd_lights}
+    - {topic: platform/mcu/_cmd_pinout,         message: clearpath_platform_msgs/msg/PinoutCommand, qos: sensor_data, bundle: pinout_command}
+  services:
+    - {topic: platform/mcu/cmd_shutdown,            service: std_srvs/srv/SetBool, qos: services, request: cmd_shutdown, response: cmd_shutdown_response, timeout: 100}
+    - {topic: platform/mcu/clear_estop_needs_reset, service: std_srvs/srv/Trigger, qos: services, request: clear_needs_reset, response: clear_needs_reset_response, timeout: 100}

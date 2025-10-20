@@ -31,6 +31,19 @@ BundleHandle::BundleHandle(BundleConfig config) {
   }
 }
 
+BundleHandle::BundleHandle()
+{
+  name_ = "UNKNOWN";
+  id_ = 0;
+  producer_ = "UNKNOWN";
+  consumer_ = "UNKNOWN";
+  bundle_ = std::make_shared<Bundle>();
+  bundle_->set_id(id_);
+  callback_ = nullptr;
+  rx_count_ = rxps_ = 0;
+  tx_count_ = txps_ = 0;
+}
+
 void BundleHandle::registerCallback(BundleCallback callback)
 {
   if (callback)
@@ -78,15 +91,39 @@ void BundleHandle::printBundleVerbose() {
 }
 
 void BundleHandle::addSignal(SignalConfig config) {
-  auto sig = std::shared_ptr<Signal>(bundle_->add_signals());
-  signals_.emplace(config.name, SignalHandle(config, sig));
+  std::shared_ptr<Signal> sig;
+  // Non-constant signals are added to the bundle
+  if (!config.is_const)
+  {
+    sig = std::shared_ptr<Signal>(bundle_->add_signals());
+  }
+  // Constant signals exist just to store their value
+  else
+  {
+    sig = std::make_shared<Signal>();
+  }
+
+  signals_.emplace(config.name, SignalHandle(config, name_, sig));
 }
 
 SignalHandle &BundleHandle::getSignal(const std::string &signal_name) {
   try {
     return signals_.at(signal_name);
   } catch (std::out_of_range &e) {
-    throw std::runtime_error("Invalid signal_ name_ " + signal_name +
+    throw std::runtime_error("Invalid signal name " + signal_name +
                              " in bundle " + name_);
   }
+}
+
+const SignalHandle BundleHandle::getConstSignal(const std::string &signal_name) const {
+  try {
+    return signals_.at(signal_name);
+  } catch (std::out_of_range &e) {
+    throw std::runtime_error("Invalid signal name " + signal_name +
+                             " in bundle " + name_);
+  }
+}
+
+bool BundleHandle::hasSignal(const std::string &signal_name) const {
+  return signals_.find(signal_name) != signals_.end();
 }

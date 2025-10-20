@@ -41,10 +41,12 @@ class ProtonConfig:
         TYPE = "type"
         LENGTH = "length"
         CAPACITY = "capacity"
+        VALUE = "value"
 
         SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
         LENGTH_SUFFIX = "__LENGTH"
         CAPACITY_SUFFIX = "__CAPACITY"
+        VALUE_SUFFIX = "__DEFAULT_VALUE"
 
         # Signal types
         class SignalTypes(StrEnum):
@@ -65,6 +67,28 @@ class ProtonConfig:
             LIST_UINT64 = auto()
             LIST_BOOL = auto()
             LIST_STRING = auto()
+            LIST_BYTES = auto()
+
+        DEFAULT_VALUES = {
+            SignalTypes.DOUBLE: 0.0,
+            SignalTypes.FLOAT: 0.0,
+            SignalTypes.INT32: 0,
+            SignalTypes.INT64: 0,
+            SignalTypes.UINT32: 0,
+            SignalTypes.UINT64: 0,
+            SignalTypes.BOOL: False,
+            SignalTypes.STRING: "",
+            SignalTypes.BYTES: {},
+            SignalTypes.LIST_DOUBLE: {},
+            SignalTypes.LIST_FLOAT: {},
+            SignalTypes.LIST_INT32: {},
+            SignalTypes.LIST_INT64: {},
+            SignalTypes.LIST_UINT32: {},
+            SignalTypes.LIST_UINT64: {},
+            SignalTypes.LIST_BOOL: {},
+            SignalTypes.LIST_STRING: {},
+            SignalTypes.LIST_BYTES: {}
+        }
 
         def __init__(self, bundle: str, signal: dict):
             self.bundle: str = bundle
@@ -76,45 +100,115 @@ class ProtonConfig:
             self.capacity: int = 0
 
             try:
+                self.value = signal[self.VALUE]
+            except KeyError:
+                self.value = None
+
+            try:
                 self.length = signal[self.LENGTH]
             except KeyError:
-                pass
+                if (self.value is not None and
+                   isinstance(self.value, List) and
+                   self.type is not ProtonConfig.Signal.SignalTypes.BYTES):
+                    self.length = len(self.value)
 
             try:
                 self.capacity = signal[self.CAPACITY]
             except KeyError:
-                pass
+                if self.value is not None:
+                    if self.type == ProtonConfig.Signal.SignalTypes.STRING:
+                        if isinstance(self.value, List):
+                            for s in self.value:
+                                if len(s) + 1 > self.capacity:
+                                    self.capacity = len(s) + 1
+                        else:
+                            self.capacity = len(self.value) + 1 # +1 for null termination
+                    elif self.type == ProtonConfig.Signal.SignalTypes.BYTES:
+                        self.capacity = len(self.value)
+
+            match self.type:
+                case (ProtonConfig.Signal.SignalTypes.BYTES | ProtonConfig.Signal.SignalTypes.STRING):
+                    assert self.capacity > 0, (
+                        f"{self.type} type signals must have a non-zero capacity"
+                    )
+                case (
+                    ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
+                    | ProtonConfig.Signal.SignalTypes.LIST_FLOAT
+                    | ProtonConfig.Signal.SignalTypes.LIST_INT32
+                    | ProtonConfig.Signal.SignalTypes.LIST_INT64
+                    | ProtonConfig.Signal.SignalTypes.LIST_UINT32
+                    | ProtonConfig.Signal.SignalTypes.LIST_UINT64
+                    | ProtonConfig.Signal.SignalTypes.LIST_BOOL
+                ):
+                    assert self.length > 0, (
+                        f"{self.type} type signals must have a non-zero length"
+                    )
+                case (ProtonConfig.Signal.SignalTypes.LIST_STRING | ProtonConfig.Signal.SignalTypes.LIST_BYTES):
+                    assert self.length > 0, (
+                        f"{self.type} type signals must have a non-zero length"
+                    )
+                    assert self.capacity > 0, (
+                        f"{self.type} type signals must have a non-zero capacity"
+                    )
 
             self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}'
             self.capacity_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.CAPACITY_SUFFIX}'
             self.length_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.LENGTH_SUFFIX}'
+            self.value_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.VALUE_SUFFIX}'
 
-            #print(f'signal {self.name} type {self.type} length {self.length} cap {self.capacity}')
+            self.is_const = self.value is not None
+
+            if not self.is_const:
+                self.value = self.DEFAULT_VALUES[self.type]
+
+            self.c_value = None
 
             match self.type:
-                case ProtonConfig.Signal.SignalTypes.BYTES:
-                    assert self.capacity > 0, (
-                        f"{self.type} type signals must have a non-zero capacity"
-                    )
+                case (ProtonConfig.Signal.SignalTypes.DOUBLE |
+                      ProtonConfig.Signal.SignalTypes.INT32 |
+                      ProtonConfig.Signal.SignalTypes.INT64 |
+                      ProtonConfig.Signal.SignalTypes.UINT32 |
+                      ProtonConfig.Signal.SignalTypes.UINT64):
+                    self.c_value = self.value
+                case (ProtonConfig.Signal.SignalTypes.FLOAT):
+                    self.c_value = f"{self.value}f"
+                case ProtonConfig.Signal.SignalTypes.BOOL:
+                    self.c_value = "true" if self.value else "false"
                 case ProtonConfig.Signal.SignalTypes.STRING:
-                    assert self.capacity > 0, (
-                        f"{self.type} type signals must have a non-zero capacity"
-                    )
-                    # List of strings
-                    if self.length > 0:
-                        self.type = ProtonConfig.Signal.SignalTypes(f"list_{self.type}")
-                case (
-                    ProtonConfig.Signal.SignalTypes.DOUBLE
-                    | ProtonConfig.Signal.SignalTypes.FLOAT
-                    | ProtonConfig.Signal.SignalTypes.INT32
-                    | ProtonConfig.Signal.SignalTypes.INT64
-                    | ProtonConfig.Signal.SignalTypes.UINT32
-                    | ProtonConfig.Signal.SignalTypes.UINT64
-                    | ProtonConfig.Signal.SignalTypes.BOOL
-                ):
-                    # List of type
-                    if self.length > 0:
-                        self.type = ProtonConfig.Signal.SignalTypes(f"list_{self.type}")
+                    self.c_value = f"\"{self.value}\""
+                case (ProtonConfig.Signal.SignalTypes.LIST_FLOAT):
+                    list_def = ""
+                    for (i, v) in enumerate(self.value):
+                        if i != len(self.value) - 1:
+                            list_def += f"{v}f, "
+                        else:
+                            list_def += f"{v}f"
+                    self.c_value =f"{{{list_def}}}"
+                case (ProtonConfig.Signal.SignalTypes.LIST_BOOL):
+                    list_def = ""
+                    for (i, v) in enumerate(self.value):
+                        if i != len(self.value) - 1:
+                            list_def += f"{"true" if v else "false"}, "
+                        else:
+                            list_def += f"{"true" if v else "false"}"
+                    self.c_value =f"{{{list_def}}}"
+                case (ProtonConfig.Signal.SignalTypes.LIST_STRING):
+                    list_def = ""
+                    for (i, v) in enumerate(self.value):
+                        if i != len(self.value) - 1:
+                            list_def += f"\"{v}\", "
+                        else:
+                            list_def += f"\"{v}\""
+                    self.c_value =f"{{{list_def}}}"
+                case _:
+                    list_def = ""
+                    for (i, v) in enumerate(self.value):
+                        if i != len(self.value) - 1:
+                            list_def += f"{v}, "
+                        else:
+                            list_def += f"{v}"
+                    self.c_value = f"{{{list_def}}}"
+
 
     class Bundle:
         # Bundle keys
@@ -124,13 +218,15 @@ class ProtonConfig:
         CONSUMER = "consumer"
         SIGNALS = "signals"
         BUNDLE_SUFFIX = "_bundle"
+        HANDLE_SUFFIX = "_handle"
         BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE__"
         BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
         BUNDLE_ID_PREFIX = "PROTON_BUNDLE_ID__"
-        SIGNALS_SUFFIX = "_signals"
+        SIGNAL_HANDLES_SUFFIX = "_signal_handles"
         INIT_FUNCTION_SUFFIX = "PROTON_BUNDLE_Init"
         CALLBACK_PREFIX = "PROTON_BUNDLE_"
         CALLBACK_SUFFIX = "Callback"
+        DEFAULT_VALUE_SUFFIX = "__DEFAULT_VALUE"
 
         def __init__(self, bundle: dict):
             self.name = bundle[self.NAME]
@@ -141,14 +237,16 @@ class ProtonConfig:
             self.needs_init = False
 
             self.bundle_enum_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name.upper()}'
-            self.internal_bundle_variable_name = f'_{self.name}{self.BUNDLE_SUFFIX}'
-            self.signals_variable_name = f'_{self.name}{self.SIGNALS_SUFFIX}'
+            self.internal_handle_variable_name = f'_{self.name}{self.HANDLE_SUFFIX}'
+            self.signal_handles_variable_name = f'_{self.name}{self.SIGNAL_HANDLES_SUFFIX}'
             self.struct_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name}'
             self.bundle_variable_name = f'{self.name}{self.BUNDLE_SUFFIX}'
             self.signals_enum_name = f'{self.BUNDLE_SIGNAL_ENUM_PREFIX}{self.name}'
             self.signals_enum_count = f'{self.signals_enum_name.upper()}_COUNT'
             self.init_function_name = f'{self.INIT_FUNCTION_SUFFIX}{self.name.title().replace('_', '')}'
             self.callback_function_name = f'{self.CALLBACK_PREFIX}{self.name.title().replace('_', '')}{self.CALLBACK_SUFFIX}'
+            self.default_value_define = f'{self.bundle_enum_name}{self.DEFAULT_VALUE_SUFFIX}'
+            self.default_value = []
 
             try:
                 for signal in bundle[self.SIGNALS]:
@@ -228,9 +326,6 @@ class ProtonConfig:
         for node in nodes:
             self.nodes.append(ProtonConfig.Node(node))
 
-        # for n in self.nodes:
-        #     print(f"Node: {n.name} Transport: {n.type}")
-
     def parse_messages(self):
         try:
             bundles = self.dictionary[self.BUNDLES]
@@ -247,10 +342,3 @@ class ProtonConfig:
             if n.name == target:
                 self.target_node = n
 
-        # for m in self.bundles:
-        #     print(
-        #         f"Bundle: {m.name} type: {m.type} id: {m.id}, producer {m.producer}, consumer {m.consumer}"
-        #     )
-        #     print("Signals:")
-        #     for s in m.signals:
-        #         print(f"\t{s.signal}: type: {s.type}, length: {s.length}")
