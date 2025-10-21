@@ -117,3 +117,16 @@ install(TARGETS protoncpp
 
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)
+
+# Testing
+
+# GTest
+find_package(GTest REQUIRED)
+
+add_executable(bundle_test tests/bundle.cpp)
+target_link_libraries(bundle_test GTest::gtest_main proton::protoncpp)
+set(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/bundle.yaml)
+target_compile_definitions(bundle_test PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+
+include(GoogleTest)
+gtest_discover_tests(bundle_test)

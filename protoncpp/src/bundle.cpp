@@ -25,7 +25,7 @@ BundleHandle::BundleHandle(BundleConfig config) {
   rx_count_ = rxps_ = 0;
   tx_count_ = txps_ = 0;
 
-  // Add each signal_ for this bundle
+  // Add each signal for this bundle
   for (auto s : config.signals) {
     addSignal(s);
   }
@@ -91,16 +91,16 @@ void BundleHandle::printBundleVerbose() {
 }
 
 void BundleHandle::addSignal(SignalConfig config) {
-  std::shared_ptr<Signal> sig;
+  Signal* sig;
   // Non-constant signals are added to the bundle
   if (!config.is_const)
   {
-    sig = std::shared_ptr<Signal>(bundle_->add_signals());
+    sig = bundle_->add_signals();
   }
   // Constant signals exist just to store their value
   else
   {
-    sig = std::make_shared<Signal>();
+    sig = new Signal();
   }
 
   signals_.emplace(config.name, SignalHandle(config, name_, sig));
