@@ -57,6 +57,8 @@ class SignalHandle {
 public:
   SignalHandle(SignalConfig config, std::string bundle_name, Signal* signal);
 
+  ~SignalHandle();
+
   // Value getter and setter
   template <typename T> const T getValue() const;
   template <typename T> void setValue(const T value);
