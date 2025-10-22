@@ -8,6 +8,7 @@ endif()
 option(PROTON_BUILD_PROTONC "Build protonc library" ON)
 option(PROTON_BUILD_PROTONCPP "Build protoncpp library" ON)
 option(PROTON_BUILD_EXAMPLES "Build proton examples" ON)
+option(PROTON_BUILD_TESTS "Build proton tests" ON)
 
 if (PROTON_BUILD_PROTONC)
   add_subdirectory(protonc)
@@ -19,6 +20,10 @@ endif()
 
 if (PROTON_BUILD_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+if (PROTON_BUILD_TESTS)
+  add_subdirectory(tests)
 endif()
 
 # Export targets from both libraries
@@ -49,3 +54,4 @@ write_basic_package_version_file(
 #         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
 #     DESTINATION lib/cmake/proton
 # )
+

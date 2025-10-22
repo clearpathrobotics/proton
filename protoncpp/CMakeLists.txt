@@ -118,26 +118,3 @@ install(TARGETS protoncpp
 
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)
-
-# Testing
-
-# GTest
-find_package(GTest REQUIRED)
-
-## Signals
-add_executable(signal_test tests/signal_test.cpp tests/utils.cpp)
-target_include_directories(signal_test PRIVATE tests)
-target_link_libraries(signal_test GTest::gtest_main proton::protoncpp)
-set(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.yaml)
-target_compile_definitions(signal_test PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-
-## Bundles
-add_executable(bundle_test tests/bundle_test.cpp tests/utils.cpp)
-target_include_directories(signal_test PRIVATE tests)
-target_link_libraries(bundle_test GTest::gtest_main proton::protoncpp)
-set(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.yaml)
-target_compile_definitions(bundle_test PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-
-include(GoogleTest)
-gtest_discover_tests(signal_test)
-gtest_discover_tests(bundle_test)

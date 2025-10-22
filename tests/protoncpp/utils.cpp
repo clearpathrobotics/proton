@@ -24,14 +24,3 @@ std::map<std::string, proton::BundleHandle> getBundles(std::string config_file)
   return bundles;
 }
 
-// template<typename T>
-// void AssertSignalValue(proton::SignalHandle& handle, const T& value)
-// {
-//   ASSERT_EQ(handle.getValue<T>(), value);
-// }
-
-// template<>
-// void AssertSignalValue<std::string>(proton::SignalHandle& handle, const std::string& value)
-// {
-//   ASSERT_STREQ(handle.getValue<std::string>().c_str(), value.c_str());
-// }

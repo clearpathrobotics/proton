@@ -10,7 +10,7 @@
  * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
  */
 
-#include "utils.hpp"
+#include "protoncpp/utils.hpp"
 
 using namespace proton;
 

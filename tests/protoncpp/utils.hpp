@@ -10,8 +10,8 @@
  * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
  */
 
-#ifndef PROTONCPP_TESTS_UTILS_HPP
-#define PROTONCPP_TESTS_UTILS_HPP
+#ifndef PROTONCPP_TESTS_PROTONCPP_UTILS_HPP
+#define PROTONCPP_TESTS_PROTONCPP_UTILS_HPP
 
 #include "protoncpp/proton.hpp"
 #include <gtest/gtest.h>
@@ -31,4 +31,4 @@ inline void AssertSignalValue<std::string>(proton::SignalHandle& handle, const s
   ASSERT_STREQ(handle.getValue<std::string>().c_str(), value.c_str());
 }
 
-#endif  // PROTONCPP_TESTS_UTILS_HPP
+#endif  // PROTONCPP_TESTS_PROTONCPP_UTILS_HPP
