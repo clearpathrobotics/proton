@@ -10,136 +10,11 @@
  * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
  */
 
-#include <gtest/gtest.h>
-#include "protoncpp/proton.hpp"
+#include "utils.hpp"
 
 using namespace proton;
 
-Config config;
 std::map<std::string, BundleHandle> bundles;
-
-void InitProton()
-{
-  config = Config(CONFIG_FILE);
-  auto bundle_configs = config.getBundles();
-  for (auto& config: bundle_configs)
-  {
-    bundles.emplace(config.name, BundleHandle(config));
-  }
-}
-
-template<typename T>
-void AssertSignalValue(SignalHandle& handle, T value)
-{
-  ASSERT_EQ(handle.getValue<T>(), value);
-}
-
-template<>
-void AssertSignalValue<std::string>(SignalHandle& handle, std::string value)
-{
-  ASSERT_STREQ(handle.getValue<std::string>().c_str(), value.c_str());
-}
-
-void AssertSignalsEqual(const proton::Signal& first, const proton::Signal& second)
-{
-  // Make sure they are of the same case
-  ASSERT_EQ(first.signal_case(), second.signal_case());
-
-  switch (first.signal_case()) {
-  case proton::Signal::SignalCase::kDoubleValue: {
-    ASSERT_EQ(first.double_value(), second.double_value());
-    break;
-  }
-
-  case proton::Signal::SignalCase::kFloatValue: {
-    ASSERT_EQ(first.float_value(), second.float_value());
-    break;
-  }
-
-  case proton::Signal::SignalCase::kInt32Value: {
-    ASSERT_EQ(first.int32_value(), second.int32_value());
-    break;
-  }
-
-  case proton::Signal::SignalCase::kInt64Value: {
-    ASSERT_EQ(first.int64_value(), second.int64_value());
-    break;
-  }
-
-  case proton::Signal::SignalCase::kUint32Value: {
-    ASSERT_EQ(first.uint32_value(), second.uint32_value());
-    break;
-  }
-
-  case proton::Signal::SignalCase::kUint64Value: {
-    ASSERT_EQ(first.uint64_value(), second.uint64_value());
-    break;
-  }
-
-  case proton::Signal::SignalCase::kBoolValue: {
-    ASSERT_EQ(first.bool_value(), second.bool_value());
-    break;
-  }
-
-  case proton::Signal::SignalCase::kStringValue: {
-    ASSERT_STREQ(first.string_value().c_str(), second.string_value().c_str());
-    break;
-  }
-
-  case proton::Signal::SignalCase::kBytesValue: {
-    ASSERT_STREQ(first.bytes_value().c_str(), second.bytes_value().c_str());
-    break;
-  }
-
-  // case proton::Signal::SignalCase::kListDoubleValue: {
-  //   ASSERT_EQ(first.list_double_value(), second.list_double_value());
-  //   break;
-  // }
-
-  // case proton::Signal::SignalCase::kListFloatValue: {
-  //   ASSERT_EQ(first.list_float_value(), second.list_float_value());
-  //   break;
-  // }
-
-  // case proton::Signal::SignalCase::kListInt32Value: {
-  //   ASSERT_EQ(first.list_int32_value(), second.list_int32_value());
-  //   break;
-  // }
-
-  // case proton::Signal::SignalCase::kListInt64Value: {
-  //   ASSERT_EQ(first.list_int64_value(), second.list_int64_value());
-  //   break;
-  // }
-
-  // case proton::Signal::SignalCase::kListUint32Value: {
-  //   ASSERT_EQ(first.list_uint32_value(), second.list_uint32_value());
-  //   break;
-  // }
-
-  // case proton::Signal::SignalCase::kListUint64Value: {
-  //   ASSERT_EQ(first.list_uint64_value(), second.list_uint64_value());
-  //   break;
-  // }
-
-  // case proton::Signal::SignalCase::kListBoolValue: {
-  //   ASSERT_EQ(first.list_bool_value(), second.list_bool_value());
-  //   break;
-  // }
-
-  // case proton::Signal::SignalCase::kListStringValue: {
-  //   ASSERT_EQ(first.list_string_value(), second.list_string_value());
-  //   break;
-  // }
-
-  // case proton::Signal::SignalCase::kListBytesValue: {
-  //   ASSERT_EQ(first.list_bytes_value(), second.list_bytes_value());
-  //   break;
-  // }
-
-  default:
-    break;
-  }
-}
 
 TEST(SignalValues, DoubleValue) {
   auto& bundle = bundles.at("value_test");
@@ -280,39 +155,121 @@ TEST(SignalValues, BytesValue) {
   proton::bytes value = {0, 1, 2, 3};
   signal.setValue<proton::bytes>(value);
 
-  proton::bytes signal_value = signal.getValue<proton::bytes>();
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
+}
+
+TEST(SignalValues, ListDoubleValue) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_double_value");
+
+  // Set a value
+  proton::list_double value = {10.0, -12.34};
+  signal.setValue<proton::list_double>(value);
 
   // Check that the value is correctly set
   AssertSignalValue(signal, value);
 }
 
-TEST(BundleTests, Serialize)
-{
-  auto& handle = bundles.at("value_test");
-  auto bundle = handle.getBundlePtr();
+TEST(SignalValues, ListFloatValue) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_float_value");
 
-  // Serialize bundle to string
-  std::string serialized = bundle->SerializeAsString();
+  // Set a value
+  proton::list_float value = {12.3f, -12.345f};
+  signal.setValue<proton::list_float>(value);
 
-  // Create copy of bundle by parsing serialized string
-  auto deserialized_bundle = Bundle();
-  deserialized_bundle.ParseFromString(serialized);
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
+}
 
-  // Check that the IDs match
-  ASSERT_EQ(bundle->id(), deserialized_bundle.id());
-  // Check that the number of signals match
-  ASSERT_EQ(bundle->signals_size(), deserialized_bundle.signals_size());
+TEST(SignalValues, ListInt32Value) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_int32_value");
 
-  for (int i = 0; i < bundle->signals_size(); i++)
-  {
-    // Check that each signal equal
-    AssertSignalsEqual(bundle->signals(i), deserialized_bundle.signals(i));
-  }
+  // Set a value
+  proton::list_int32 value = {-1, 2};
+  signal.setValue<proton::list_int32>(value);
+
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
+}
+
+TEST(SignalValues, ListInt64Value) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_int64_value");
+
+  // Set a value
+  proton::list_int64 value = {-1, 2};
+  signal.setValue<proton::list_int64>(value);
+
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
+}
+
+TEST(SignalValues, ListUint32Value) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_uint32_value");
+
+  // Set a value
+  proton::list_uint32 value = {1, 2};
+  signal.setValue<proton::list_uint32>(value);
+
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
+}
+
+TEST(SignalValues, ListUint64Value) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_uint64_value");
+
+  // Set a value
+  proton::list_uint64 value = {1, 2};
+  signal.setValue<proton::list_uint64>(value);
+
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
+}
+
+TEST(SignalValues, ListBoolValue) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_bool_value");
+
+  // Set a value
+  proton::list_bool value = {true, false};
+  signal.setValue<proton::list_bool>(value);
+
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
+}
+
+TEST(SignalValues, ListStringValue) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_string_value");
+
+  // Set a value
+  proton::list_string value = {"string1", "string2"};
+  signal.setValue<proton::list_string>(value);
+
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
+}
+
+TEST(SignalValues, ListBytesValue) {
+  auto& bundle = bundles.at("value_test");
+  auto& signal = bundle.getSignal("list_bytes_value");
+
+  // Set a value
+  proton::list_bytes value = {{1, 2}, {3, 4}};
+  signal.setValue<proton::list_bytes>(value);
+
+  // Check that the value is correctly set
+  AssertSignalValue(signal, value);
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  InitProton();
+  bundles = getBundles(CONFIG_FILE);
   return RUN_ALL_TESTS();
 }

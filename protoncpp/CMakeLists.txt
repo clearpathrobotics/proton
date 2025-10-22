@@ -49,13 +49,14 @@ set(GENERATED_HEADERS
 )
 
 add_custom_command(
-    OUTPUT ${GENERATED_FILES}
-    COMMAND protoc
-        --proto_path=${PROTO_PATH}
-        --cpp_out=${GENERATED_DIR} signal.proto bundle.proto
-    DEPENDS  ${PROTO_FILES}
-    WORKING_DIRECTORY ${PROTO_PATH}
-    COMMENT "Generating cpp protobuf files for ${PROTO_NAME}.proto"
+  OUTPUT ${GENERATED_FILES}
+  COMMAND protoc
+      --proto_path=${PROTO_PATH}
+      --cpp_out=${GENERATED_DIR}
+      ${PROTO_FILES}
+  DEPENDS ${PROTO_FILES}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating cpp protobuf files for ${PROTO_NAME}.proto"
 )
 
 add_custom_command(
@@ -64,7 +65,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.cc
   COMMAND cp ${GENERATED_DIR}/signal.pb.cc ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.cc ${GENERATED_SRC_DIR}
-  DEPENDS ${GENERATED_FILES}
+  DEPENDS ${PROTO_FILES}
 )
 
 add_custom_command(
@@ -72,7 +73,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${GENERATED_FILES}
+  DEPENDS ${PROTO_FILES}
 )
 
 add_custom_target(generate_protocpp ALL
@@ -123,10 +124,20 @@ install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)
 # GTest
 find_package(GTest REQUIRED)
 
-add_executable(bundle_test tests/bundle.cpp)
+## Signals
+add_executable(signal_test tests/signal_test.cpp tests/utils.cpp)
+target_include_directories(signal_test PRIVATE tests)
+target_link_libraries(signal_test GTest::gtest_main proton::protoncpp)
+set(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.yaml)
+target_compile_definitions(signal_test PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+
+## Bundles
+add_executable(bundle_test tests/bundle_test.cpp tests/utils.cpp)
+target_include_directories(signal_test PRIVATE tests)
 target_link_libraries(bundle_test GTest::gtest_main proton::protoncpp)
-set(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/bundle.yaml)
+set(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/test.yaml)
 target_compile_definitions(bundle_test PRIVATE CONFIG_FILE="${CONFIG_FILE}")
 
 include(GoogleTest)
+gtest_discover_tests(signal_test)
 gtest_discover_tests(bundle_test)
