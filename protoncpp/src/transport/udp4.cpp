@@ -55,36 +55,31 @@ int Udp4Transport::initSocket(socket_endpoint s, bool server, bool blocking)
 
   if (server)
   {
-    std::cout << "Binding server " << std::hex << s.first << ":" << std::dec << s.second << std::endl;
     int one = 1;
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     if (::bind(sock, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) != 0)
     {
-      std::cerr << "Bind error" << std::endl;
+      std::cerr << "Bind error: {" << s.first << ", " << s.second << "}" << std::endl;
       return -1;
     }
   }
   else
   {
-    std::cout << "Connecting to " << std::hex << s.first << ":" << std::dec << s.second << std::endl;
     if (::connect(sock, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) != 0)
     {
-      std::cout << "Connect error" << std::endl;
+      std::cout << "Connect error: {" << s.first << ", " << s.second << "}" << std::endl;
       return -1;
     }
   }
 
-  std::cout << "Init socket " << sock << std::endl;
-
   return sock;
 }
 
-
-bool Udp4Transport::connect()
+Status Udp4Transport::connect()
 {
-  if (connected_)
+  if (state_ != State::DISCONNECTED)
   {
-    return true;
+    return Status::INVALID_STATE_TRANSITION;
   }
 
   if (socket_[SOCKET_TARGET] == -1)
@@ -97,46 +92,64 @@ bool Udp4Transport::connect()
     socket_[SOCKET_PEER] = initSocket(socket_endpoints_[SOCKET_PEER], false, false);
   }
 
-  connected_ = socket_[SOCKET_TARGET] != -1 && socket_[SOCKET_PEER] != -1;
-
-  return connected_;
-}
-
-bool Udp4Transport::disconnect()
-{
-  return true;
-}
-
-size_t Udp4Transport::read(uint8_t * buf, size_t len)
-{
-  if (!connected_)
+  if (socket_[SOCKET_TARGET] == -1 || socket_[SOCKET_PEER] == -1)
   {
-    return 0;
+    state_ = State::ERROR;
+    return Status::CONNECTION_ERROR;
   }
 
-  int ret = ::recv(socket_[SOCKET_TARGET], buf, len, 0);
+  state_ = State::CONNECTED;
+  return Status::OK;
+}
+
+Status Udp4Transport::disconnect()
+{
+  if (state_ == State::ERROR)
+  {
+    return Status::INVALID_STATE_TRANSITION;
+  }
+
+  state_ = State::DISCONNECTED;
+  return Status::OK;
+}
+
+Status Udp4Transport::read(uint8_t *buf, const size_t& len, size_t& bytes_read)
+{
+  if (!connected())
+  {
+    return Status::INVALID_STATE;
+  }
+
+  if (buf == nullptr)
+  {
+    return Status::NULL_PTR;
+  }
+
+  ssize_t ret = ::recv(socket_[SOCKET_TARGET], buf, len, 0);
 
   if (ret < 0)
   {
-    return 0;
+    return Status::READ_ERROR;
   }
 
-  return ret;
+  bytes_read = ret;
+  return Status::OK;
 }
 
-size_t Udp4Transport::write(const uint8_t * buf, size_t len)
+Status Udp4Transport::write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
 {
-  if (!connected_)
+  if (!connected())
   {
-    return 0;
+    return Status::INVALID_STATE;
   }
 
-  int ret = send(socket_[SOCKET_PEER], buf, len, 0);
+  ssize_t ret = ::send(socket_[SOCKET_PEER], buf, len, 0);
 
-  if (ret < 0)
+  if (ret != len)
   {
-    return 0;
+    return Status::WRITE_ERROR;
   }
 
-  return ret;
+  bytes_written = ret;
+  return Status::OK;
 }

@@ -39,21 +39,21 @@ public:
 
   SerialTransport(serial_device device);
 
-  bool connect() override;
-  bool disconnect() override;
-  size_t read(uint8_t * buf, size_t len) override;
-  size_t write(const uint8_t * buf, size_t len) override;
+  Status connect() override;
+  Status disconnect() override;
+  Status read(uint8_t *buf, const size_t& len, size_t& bytes_read) override;
+  Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written) override;
 
   int initDevice(serial_device s, bool server, bool blocking);
 
   static uint16_t getCRC16(const uint8_t *data, size_t len);
   static bool fillFrameHeader(uint8_t * header, const uint16_t payload_len);
   static bool fillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
-  static size_t getPayloadLength(const uint8_t * header_buf);
+  static Status getPayloadLength(const uint8_t * header_buf, size_t& length);
   static bool checkFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
 
 private:
-  size_t poll(uint8_t * buf, size_t len);
+  ssize_t poll(uint8_t * buf, size_t len);
   serial_device device_;
   int serial_port_;
 };

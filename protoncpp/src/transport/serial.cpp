@@ -19,9 +19,14 @@ using namespace proton;
 
 SerialTransport::SerialTransport(serial_device device) : device_(device) {}
 
-bool SerialTransport::connect() {
-  if (connected_) {
-    return true;
+Status SerialTransport::connect() {
+  if (state_ != State::DISCONNECTED)
+  {
+    return Status::INVALID_STATE_TRANSITION;
+  }
+
+  if (connected()) {
+    return Status::OK;
   }
 
   serial_port_ = open(device_.first.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
@@ -29,17 +34,15 @@ bool SerialTransport::connect() {
   if (serial_port_ == -1) {
     std::cerr << "Error " << errno << " opening serial device " << device_.first
               << ": " << strerror(errno) << std::endl;
-    return false;
+    return Status::CONNECTION_ERROR;
   }
-
-  std::cout << "opened fd " << serial_port_ << std::endl;
 
   struct termios tty;
 
   if (tcgetattr(serial_port_, &tty) != 0) {
     std::cerr << "Error " << errno << "from tcgetattr: " << strerror(errno)
               << std::endl;
-    return false;
+    return Status::CONNECTION_ERROR;
   }
 
   cfsetospeed(&tty, B1152000);
@@ -74,17 +77,26 @@ bool SerialTransport::connect() {
 
   tcflush(serial_port_, TCIOFLUSH);
 
-  connected_ = true;
+  state_ = State::CONNECTED;
 
-  return connected_;
+  return Status::OK;
 }
 
-bool SerialTransport::disconnect() {
-  ::close(serial_port_);
-  return true;
+Status SerialTransport::disconnect() {
+  if (state_ == State::ERROR)
+  {
+    return Status::INVALID_STATE_TRANSITION;
+  }
+
+  if (::close(serial_port_) != 0)
+  {
+    return Status::CONNECTION_ERROR;
+  }
+
+  return Status::OK;
 }
 
-size_t SerialTransport::poll(uint8_t *buf, size_t len) {
+ssize_t SerialTransport::poll(uint8_t *buf, size_t len) {
   struct pollfd fds[1];
   fds[0].fd = serial_port_;
   fds[0].events = POLLIN;
@@ -106,7 +118,7 @@ size_t SerialTransport::poll(uint8_t *buf, size_t len) {
         ret = ::read(serial_port_, buf, len - bytes_read);
 
         if (ret < 0) {
-          return 0;
+          return ret;
         }
         else
         {
@@ -118,65 +130,68 @@ size_t SerialTransport::poll(uint8_t *buf, size_t len) {
       {
         // Error or device disconnected
         std::cerr << "Device error or disconnected" << std::endl;
-        return 0;
+        disconnect();
+        return -1;
       }
     }
     else
     {
-      std::cerr << "Poll" << std::endl;
-      return 0;
+      std::cerr << "Poll timeout" << std::endl;
+      return ret;
     }
   }
 
   return bytes_read;
 }
 
-size_t SerialTransport::read(uint8_t *buf, size_t len) {
-  if (!connected_) {
-    return 0;
+Status SerialTransport::read(uint8_t *buf, const size_t& len, size_t& bytes_read) {
+  if (!connected()) {
+    return Status::INVALID_STATE;
   }
 
-  ssize_t bytes_read = 0;
+  ssize_t count = 0;
 
   // Read header
-  bytes_read = this->poll(buf, HEADER_OVERHEAD);
+  count = this->poll(buf, HEADER_OVERHEAD);
 
-  if (bytes_read != HEADER_OVERHEAD)
+  if (count != HEADER_OVERHEAD)
   {
-    return 0;
+    return Status::READ_ERROR;
   }
 
-  size_t payload_len = getPayloadLength(buf);
+  size_t payload_len = 0;
+  Status status = getPayloadLength(buf, payload_len);
 
-  if (payload_len == 0)
+  if (status != Status::OK)
   {
-    return 0;
+    return status;
   }
 
   // Read payload
-  bytes_read = this->poll(buf, payload_len);
+  count = this->poll(buf, payload_len);
 
-  if (bytes_read != payload_len)
+  if (count != payload_len)
   {
-    return 0;
+    return Status::READ_ERROR;
   }
 
   uint8_t crc[2];
 
   // Read CRC
-  bytes_read = this->poll(crc, CRC16_OVERHEAD);
+  count = this->poll(crc, CRC16_OVERHEAD);
 
-  if (bytes_read != CRC16_OVERHEAD || !checkFramedPayload(buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8))))
+  if (count != CRC16_OVERHEAD || !checkFramedPayload(buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8))))
   {
-    return 0;
+    return Status::CRC16_ERROR;
   }
 
-  return payload_len;
+  bytes_read = payload_len;
+  return Status::OK;
 }
 
-size_t SerialTransport::write(const uint8_t *buf, size_t len) {
-  if (!connected_) {
-    return 0;
+Status SerialTransport::write(const uint8_t *buf, const size_t& len, size_t& bytes_written) {
+  if (!connected()) {
+    return Status::INVALID_STATE;
   }
 
   uint8_t header[4];
@@ -184,31 +199,33 @@ size_t SerialTransport::write(const uint8_t *buf, size_t len) {
 
   if (!fillFrameHeader(header, len) || !fillCRC16(buf, len, crc))
   {
-    return 0;
+    return Status::CRC16_ERROR;
   }
 
   // Write header
   int ret = ::write(serial_port_, header, HEADER_OVERHEAD);
 
   if (ret != HEADER_OVERHEAD) {
-    return 0;
+    return Status::WRITE_ERROR;
   }
 
   // Write payload
   ret = ::write(serial_port_, buf, len);
 
   if (ret != len) {
-    return 0;
+    return Status::WRITE_ERROR;
   }
 
   // Write CRC16
   ret = ::write(serial_port_, crc, CRC16_OVERHEAD);
 
-  if (ret != CRC16_OVERHEAD) {
-    return 0;
+  if (ret != CRC16_OVERHEAD)
+  {
+    return Status::WRITE_ERROR;
   }
 
-  return len;
+  bytes_written = ret;
+  return Status::OK;
 }
 
 uint16_t SerialTransport::getCRC16(const uint8_t *data, size_t len) {
@@ -257,13 +274,14 @@ bool SerialTransport::checkFramedPayload(const uint8_t *payload, const size_t pa
   return getCRC16(payload, payload_len) == frame_crc;
 }
 
-size_t SerialTransport::getPayloadLength(const uint8_t * header_buf)
+Status SerialTransport::getPayloadLength(const uint8_t * header_buf, size_t& length)
 {
   if (header_buf[0] != FRAME_HEADER1 || header_buf[1] != FRAME_HEADER2)
   {
-    return 0;
+    return Status::INVALID_HEADER;
   }
 
-  return (header_buf[2] | header_buf[3] << 8);
+  length = header_buf[2] | (header_buf[3] << 8);
+  return Status::OK;
 }
 

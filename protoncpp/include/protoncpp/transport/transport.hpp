@@ -17,25 +17,35 @@
 #include <stdio.h>
 #include <memory>
 
+#include "protoncpp/status.hpp"
+
 namespace proton {
 
 class Transport {
 public:
-  Transport() : connected_(false) {}
+
+  enum State {
+    DISCONNECTED,
+    CONNECTED,
+    ERROR
+  };
+
+  Transport() : state_(State::DISCONNECTED) {}
 
   virtual ~Transport()
   {}
 
-  virtual bool connect() = 0;
-  virtual bool disconnect() = 0;
+  virtual Status connect() = 0;
+  virtual Status disconnect() = 0;
 
-  virtual size_t read(uint8_t *buf, size_t len) = 0;
-  virtual size_t write(const uint8_t *buf, size_t len) = 0;
+  virtual Status read(uint8_t *buf, const size_t& len, size_t& bytes_read) = 0;
+  virtual Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written) = 0;
 
-  bool connected() { return connected_; }
+  State state() { return state_; }
+  bool connected() { return state_ == State::CONNECTED; }
 
 protected:
-  bool connected_;
+  State state_;
 };
 
 class TransportManager {
@@ -52,45 +62,44 @@ public:
     return false;
   }
 
-  bool connect() {
+  Status connect() {
     if (transport_)
     {
       return transport_->connect();
     }
-    return false;
+    return Status::ERROR;
   }
 
-  bool disconnect() {
+  Status disconnect() {
     if (transport_)
     {
       return transport_->disconnect();
     }
-    return false;
+    return Status::ERROR;
   }
 
-  size_t read(uint8_t *buf, size_t len)
+  Status read(uint8_t *buf, const size_t& len, size_t& bytes_read)
   {
     if (transport_)
     {
-      return transport_->read(buf, len);
+      return transport_->read(buf, len, bytes_read);
     }
 
-    return 0;
+    return Status::ERROR;
   }
 
-  size_t write(const uint8_t *buf, size_t len)
+  Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
   {
     if (transport_)
     {
-      return transport_->write(buf, len);
+      return transport_->write(buf, len, bytes_written);
     }
 
-    return 0;
+    return Status::ERROR;
   }
 
 public:
   std::unique_ptr<Transport> transport_;
-
 };
 
 } // namespace proton

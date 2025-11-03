@@ -20,8 +20,43 @@ using namespace proton;
 
 Node::Node() {}
 
-Node::Node(const std::string config_file, const std::string target)
-    : config_(config_file), target_(target), rx_(0), tx_(0), rx_kbps_(0.0), tx_kbps_(0.0) {
+Node::Node(const std::string config_file, const std::string target, bool auto_configure, bool auto_activate)
+    : config_(config_file), target_(target), state_(State::UNCONFIGURED), rx_(0), tx_(0), rx_kbps_(0.0), tx_kbps_(0.0)
+{
+  Status status;
+
+  if (!auto_configure && auto_activate)
+  {
+    throw std::runtime_error("Auto activate cannot be enabled without auto configure");
+  }
+
+  if (auto_configure)
+  {
+    status = configure();
+
+    if (status != Status::OK)
+    {
+      throw std::runtime_error("Configuration error: " + std::to_string(status));
+    }
+
+    if (auto_activate)
+    {
+      status = activate();
+
+      if (status != Status::OK)
+      {
+        throw std::runtime_error("Activation error: " + std::to_string(status));
+      }
+    }
+  }
+}
+
+Status Node::configure()
+{
+  if (state_ != State::UNCONFIGURED)
+  {
+    return Status::INVALID_STATE_TRANSITION;
+  }
 
   for (auto b : config_.getBundles()) {
     addBundle(b);
@@ -58,10 +93,26 @@ Node::Node(const std::string config_file, const std::string target)
     setTransport(std::make_unique<SerialTransport>(device));
   }
 
-  if (!connect())
+  state_ = State::INACTIVE;
+  return Status::OK;
+}
+
+Status Node::activate()
+{
+  if (state_ != State::INACTIVE)
   {
-    std::cerr << "Connect error" << std::endl;
+    return Status::INVALID_STATE_TRANSITION;
   }
+
+  Status status = connect();
+
+  if (status != Status::OK)
+  {
+    return status;
+  }
+
+  state_ = State::ACTIVE;
+  return Status::OK;
 }
 
 void Node::startStatsThread()
@@ -69,13 +120,13 @@ void Node::startStatsThread()
   stats_thread_ = std::thread(&Node::runStatsThread, this);
 }
 
-void Node::sendBundle(const std::string &bundle_name) {
-  sendBundle(getBundle(bundle_name));
+Status Node::sendBundle(const std::string &bundle_name) {
+  return sendBundle(getBundle(bundle_name));
 }
 
-void Node::sendBundle(BundleHandle &bundle_handle) {
+Status Node::sendBundle(BundleHandle &bundle_handle) {
   if (!connected()) {
-    return;
+    return Status::INVALID_STATE;
   }
 
   auto bundle = bundle_handle.getBundlePtr().get();
@@ -84,15 +135,26 @@ void Node::sendBundle(BundleHandle &bundle_handle) {
 
   if (bundle->SerializeToArray(buf.get(), bundle->ByteSizeLong()))
   {
-    tx_ += write(buf.get(), bundle->ByteSizeLong());
+    size_t bytes_written = 0;
 
-    if (target_node_config_.transport.type == transport_types::SERIAL)
+    Status status = write(buf.get(), bundle->ByteSizeLong(), bytes_written);
+
+    if (status == Status::OK)
     {
-      tx_ += SerialTransport::FRAME_OVERHEAD;
+      tx_ += bytes_written;
+
+      if (target_node_config_.transport.type == transport_types::SERIAL)
+      {
+        tx_ += SerialTransport::FRAME_OVERHEAD;
+      }
+
+      bundle_handle.incrementTxCount();
     }
 
-    bundle_handle.incrementTxCount();
+    return status;
   }
+
+  return Status::SERIALIZATION_ERROR;
 }
 
 bool Node::registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback)
@@ -108,17 +170,13 @@ bool Node::registerCallback(const std::string &bundle_name, BundleHandle::Bundle
   return false;
 }
 
-
-void Node::spinOnce() {
-  if (!connected()) {
-    return;
-  }
-
+Status Node::pollForBundle()
+{
   uint8_t read_buf[PROTON_MAX_MESSAGE_SIZE];
+  size_t bytes_read = 0;
+  Status status = read(read_buf, PROTON_MAX_MESSAGE_SIZE, bytes_read);
 
-  size_t bytes_read = read(read_buf, PROTON_MAX_MESSAGE_SIZE);
-
-  if (bytes_read > 0) {
+  if (status == Status::OK) {
     auto& bundle = receiveBundle(read_buf, bytes_read);
     bundle.incrementRxCount();
     rx_ += bytes_read;
@@ -134,11 +192,51 @@ void Node::spinOnce() {
       callback(bundle);
     }
   }
+  else
+  {
+    std::cerr << "Read error " << status << std::endl;
+  }
+
+  return status;
 }
 
-void Node::spin() {
+Status Node::spinOnce() {
+  if (state_ != State::ACTIVE) {
+    return Status::INVALID_STATE;
+  }
+
+  switch (transport_->state())
+  {
+    case Transport::State::DISCONNECTED:
+    {
+      transport_->connect();
+      break;
+    }
+
+    case Transport::State::ERROR:
+    {
+      transport_->disconnect();
+      break;
+    }
+
+    case Transport::State::CONNECTED:
+    {
+      return pollForBundle();
+    }
+  }
+
+  return Status::OK;
+}
+
+Status Node::spin() {
+  Status status;
   while (1) {
-    spinOnce();
+    status = spinOnce();
+
+    if (status != Status::OK)
+    {
+      return status;
+    }
   }
 }
 

@@ -17,6 +17,7 @@
 #include <thread>
 #include <vector>
 
+#include "protoncpp/status.hpp"
 #include "protoncpp/bundle.pb.h"
 #include "protoncpp/bundle_manager.hpp"
 #include "protoncpp/config.hpp"
@@ -29,16 +30,26 @@ static constexpr size_t PROTON_MAX_MESSAGE_SIZE = UINT16_MAX;
 
 class Node : public BundleManager, public TransportManager {
 public:
+  enum State {
+    UNCONFIGURED,
+    INACTIVE,
+    ACTIVE,
+    SHUTDOWN
+  };
+
   Node();
-  Node(const std::string config_file, const std::string target);
+  Node(const std::string config_file, const std::string target, bool auto_configure = true, bool auto_activate = true);
+
+  Status configure();
+  Status activate();
+  Status spinOnce();
+  Status spin();
 
   Config getConfig() { return config_; }
 
-  void spinOnce();
-  void spin();
-
-  void sendBundle(const std::string &bundle_name);
-  void sendBundle(BundleHandle &bundle_handle);
+  Status pollForBundle();
+  Status sendBundle(const std::string &bundle_name);
+  Status sendBundle(BundleHandle &bundle_handle);
 
   double getRxKbps() { return rx_kbps_; }
   double getTxKbps() { return tx_kbps_; }
@@ -58,6 +69,7 @@ private:
   Config config_;
   NodeConfig target_node_config_;
   std::string target_;
+  State state_;
 
   // Stats
   uint64_t rx_, tx_;
