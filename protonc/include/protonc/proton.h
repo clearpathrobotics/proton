@@ -77,6 +77,9 @@ typedef struct {
 } proton_node_t;
 
 #define proton_list_arg_init_default {NULL, 0, 0, 0}
+#define proton_buffer_default {NULL, 0}
+#define proton_transport_default {NULL, NULL, NULL, NULL}
+#define proton_node_default {proton_transport_default, false, NULL, proton_buffer_default, proton_buffer_default}
 
 void PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
                        proton_signal_handle_t *signal_handles, uint32_t signal_count);

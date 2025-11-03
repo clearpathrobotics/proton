@@ -8,8 +8,6 @@ set(CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/test.yaml)
 ## Protonc
 
 set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/generated)
-
-## Signals
 set(GENERATED_C_FILES
   "${GENERATED_FOLDER}/proton__test_producer.c"
   "${GENERATED_FOLDER}/proton__test_producer.h"
@@ -17,6 +15,7 @@ set(GENERATED_C_FILES
 
 protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "producer")
 
+### Signals
 add_executable(signal_test_c
   protonc/signal_test.cpp
   protonc/utils.cpp
@@ -29,6 +28,23 @@ target_link_libraries(signal_test_c PRIVATE
 )
 
 target_include_directories(signal_test_c PRIVATE
+  ${GENERATED_FOLDER}
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+### Bundles
+add_executable(proton_test_c
+  protonc/proton_test.cpp
+  protonc/utils.cpp
+  ${GENERATED_FOLDER}/proton__test_producer.c
+)
+
+target_link_libraries(proton_test_c PRIVATE
+  GTest::gtest_main
+  proton::protonc
+)
+
+target_include_directories(proton_test_c PRIVATE
   ${GENERATED_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}
 )

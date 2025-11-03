@@ -213,6 +213,11 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node) {
         }
       }
     }
+    else
+    {
+      printf("Error\r\n");
+      return PROTON_ERR;
+    }
   }
 
   return PROTON_OK;

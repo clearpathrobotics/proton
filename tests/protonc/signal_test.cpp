@@ -12,12 +12,12 @@
 
 #include "protonc/utils.hpp"
 
-#define PROTON_BUFFER_SIZE 1024
 
-uint8_t buffer[PROTON_BUFFER_SIZE];
+TEST(PROTONC_Signal, Values) {
+  // Buffer to encode/decode with
+  #define BUFFER_SIZE 1024
+  uint8_t buffer[BUFFER_SIZE];
 
-
-TEST(PROTONC_SignalValues, Values) {
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handles[PROTON_SIGNALS__VALUE_TEST_COUNT];
@@ -157,7 +157,7 @@ TEST(PROTONC_SignalValues, Values) {
   PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT);
 
   // Encode bundle
-  int bytes_written = PROTON_Encode(&test_bundle_handle, buffer, PROTON_BUFFER_SIZE);
+  int bytes_written = PROTON_Encode(&test_bundle_handle, buffer, BUFFER_SIZE);
 
   // More than 0 bytes written if encoding is successful
   EXPECT_GT(bytes_written, 0);
@@ -165,7 +165,7 @@ TEST(PROTONC_SignalValues, Values) {
   uint32_t id = 0;
 
   // Decode ID
-  EXPECT_TRUE(PROTON_DecodeId(&id, buffer, PROTON_BUFFER_SIZE));
+  EXPECT_TRUE(PROTON_DecodeId(&id, buffer, BUFFER_SIZE));
 
   // ID should be the same
   EXPECT_EQ(id, PROTON_BUNDLE__VALUE_TEST);
