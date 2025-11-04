@@ -228,7 +228,7 @@ SignalHandle::~SignalHandle()
   if (const_)
   {
     // Const signals are created with new, rather than from a Bundle.
-    delete signal_;
+    //delete signal_;
   }
 }
 
