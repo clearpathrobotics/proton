@@ -1,10 +1,16 @@
 nodes:
   - name: pc
+    heartbeat:
+      enabled: true
+      period: 100
     transport:
       type: udp4
       ip: 127.0.0.1
       port: 11416
   - name: mcu
+    heartbeat:
+      enabled: true
+      period: 100
     transport:
       type: udp4
       ip: 127.0.0.1

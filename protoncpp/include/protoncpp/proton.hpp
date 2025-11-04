@@ -17,10 +17,10 @@
 #include <thread>
 #include <vector>
 
-#include "protoncpp/status.hpp"
 #include "protoncpp/bundle.pb.h"
 #include "protoncpp/bundle_manager.hpp"
 #include "protoncpp/config.hpp"
+#include "protoncpp/status.hpp"
 #include "protoncpp/transport/serial.hpp"
 #include "protoncpp/transport/udp4.hpp"
 
@@ -30,15 +30,11 @@ static constexpr size_t PROTON_MAX_MESSAGE_SIZE = UINT16_MAX;
 
 class Node : public BundleManager, public TransportManager {
 public:
-  enum State {
-    UNCONFIGURED,
-    INACTIVE,
-    ACTIVE,
-    SHUTDOWN
-  };
+  enum State { UNCONFIGURED, INACTIVE, ACTIVE, SHUTDOWN };
 
   Node();
-  Node(const std::string config_file, const std::string target, bool auto_configure = true, bool auto_activate = true);
+  Node(const std::string config_file, const std::string target,
+       bool auto_configure = true, bool auto_activate = true);
 
   Status configure();
   Status activate();
@@ -50,12 +46,15 @@ public:
   Status pollForBundle();
   Status sendBundle(const std::string &bundle_name);
   Status sendBundle(BundleHandle &bundle_handle);
+  Status sendHeartbeat();
 
   double getRxKbps() { return rx_kbps_; }
   double getTxKbps() { return tx_kbps_; }
 
-  bool registerCallback(const std::string &bundle_name,
-                        BundleHandle::BundleCallback callback);
+  Status registerCallback(const std::string &bundle_name,
+                          BundleHandle::BundleCallback callback);
+  Status registerHeartbeatCallback(const std::string &producer,
+                                         BundleHandle::BundleCallback callback);
 
   std::string getTarget() { return target_node_config_.name; }
   NodeConfig getNode() { return target_node_config_; }
@@ -65,16 +64,17 @@ public:
 
 private:
   void runStatsThread();
+  void runHeartbeatThread();
 
   Config config_;
   NodeConfig target_node_config_;
-  std::string target_;
+  std::string target_, peer_;
   State state_;
 
   // Stats
   uint64_t rx_, tx_;
   double rx_kbps_, tx_kbps_;
-  std::thread stats_thread_;
+  std::thread stats_thread_, heartbeat_thread_;
 };
 
 } // namespace proton

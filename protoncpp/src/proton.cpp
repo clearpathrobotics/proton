@@ -72,6 +72,7 @@ Status Node::configure()
     // Peer node config
     else {
       peer_config = n;
+      peer_ = peer_config.name;
     }
   }
 
@@ -93,6 +94,16 @@ Status Node::configure()
     setTransport(std::make_unique<SerialTransport>(device));
   }
 
+  if (target_config.heartbeat.enabled)
+  {
+    addHeartbeat(target_, peer_);
+  }
+
+  if (peer_config.heartbeat.enabled)
+  {
+    addHeartbeat(peer_, target_);
+  }
+
   state_ = State::INACTIVE;
   return Status::OK;
 }
@@ -109,6 +120,12 @@ Status Node::activate()
   if (status != Status::OK)
   {
     return status;
+  }
+
+  // Start heartbeat thread
+  if (target_node_config_.heartbeat.enabled)
+  {
+    heartbeat_thread_ = std::thread(&Node::runHeartbeatThread, this);
   }
 
   state_ = State::ACTIVE;
@@ -157,17 +174,35 @@ Status Node::sendBundle(BundleHandle &bundle_handle) {
   return Status::SERIALIZATION_ERROR;
 }
 
-bool Node::registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback)
+Status Node::sendHeartbeat()
+{
+  return sendBundle(getHeartbeat(target_));
+}
+
+Status Node::registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback)
 {
   auto& bundle = getBundle(bundle_name);
 
   if (callback && bundle.getConsumer() == target_)
   {
     bundle.registerCallback(callback);
-    return true;
+    return Status::OK;
   }
 
-  return false;
+  return Status::ERROR;
+}
+
+Status Node::registerHeartbeatCallback(const std::string &producer, BundleHandle::BundleCallback callback)
+{
+  auto& bundle = getHeartbeat(producer);
+
+  if (callback && bundle.getConsumer() == target_)
+  {
+    bundle.registerCallback(callback);
+    return Status::OK;
+  }
+
+  return Status::ERROR;
 }
 
 Status Node::pollForBundle()
@@ -177,7 +212,7 @@ Status Node::pollForBundle()
   Status status = read(read_buf, PROTON_MAX_MESSAGE_SIZE, bytes_read);
 
   if (status == Status::OK) {
-    auto& bundle = receiveBundle(read_buf, bytes_read);
+    auto& bundle = receiveBundle(read_buf, bytes_read, peer_);
     bundle.incrementRxCount();
     rx_ += bytes_read;
 
@@ -258,9 +293,26 @@ void Node::runStatsThread()
         handle.resetRxCount();
         handle.resetTxCount();
       }
+
+      for (auto& [name, handle] : heartbeat_bundles_)
+      {
+        handle.setRxps(handle.getRxCount());
+        handle.setTxps(handle.getTxCount());
+        handle.resetRxCount();
+        handle.resetTxCount();
+      }
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+}
+
+void Node::runHeartbeatThread()
+{
+  while(1)
+  {
+    sendHeartbeat();
+    std::this_thread::sleep_for(std::chrono::milliseconds(target_node_config_.heartbeat.period));
   }
 }
 
@@ -281,6 +333,14 @@ void Node::printStats()
   }
   std::cout << "----- Consumed Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
+  {
+    if (handle.getConsumer() == target_)
+    {
+      std::cout << name << ": " << handle.getRxps() << std::endl;
+    }
+  }
+  std::cout << "----- Heartbeats (hz) -----" << std::endl;
+  for (auto& [name, handle] : heartbeat_bundles_)
   {
     if (handle.getConsumer() == target_)
     {

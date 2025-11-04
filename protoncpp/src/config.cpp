@@ -109,9 +109,13 @@ struct convert<proton::BundleConfig> {
     }
 
     rhs.name = node[proton::keys::NAME].as<std::string>();
-    rhs.id = node[proton::keys::ID].as<uint32_t>();
     rhs.producer = node[proton::keys::PRODUCER].as<std::string>();
     rhs.consumer = node[proton::keys::CONSUMER].as<std::string>();
+    rhs.id = node[proton::keys::ID].as<uint32_t>();
+    if (rhs.id == 0U)
+    {
+      throw std::runtime_error("Bundle ID cannot be 0");
+    }
 
     YAML::Node signals = node[proton::keys::SIGNALS];
 
@@ -159,6 +163,35 @@ struct convert<proton::TransportConfig> {
 };
 
 template<>
+struct convert<proton::HeartbeatConfig> {
+  static bool decode(const Node& node, proton::HeartbeatConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    if (node[proton::keys::ENABLED])
+    {
+      rhs.enabled = node[proton::keys::ENABLED].as<bool>();
+    }
+    else
+    {
+      rhs.enabled = false;
+    }
+
+    if (node[proton::keys::PERIOD])
+    {
+      rhs.period = node[proton::keys::PERIOD].as<uint32_t>();
+    }
+    else
+    {
+      rhs.period = 1000;
+    }
+
+    return true;
+  }
+};
+
+template<>
 struct convert<proton::NodeConfig> {
   static bool decode(const Node& node, proton::NodeConfig& rhs) {
     if(!node.IsDefined() || node.IsNull()) {
@@ -167,6 +200,14 @@ struct convert<proton::NodeConfig> {
 
     rhs.name = node[proton::keys::NAME].as<std::string>();
     rhs.transport = node[proton::keys::TRANSPORT].as<proton::TransportConfig>();
+    if (node[proton::keys::HEARTBEAT])
+    {
+      rhs.heartbeat = node[proton::keys::HEARTBEAT].as<proton::HeartbeatConfig>();
+    }
+    else
+    {
+      rhs.heartbeat.enabled = false;
+    }
 
     return true;
   }

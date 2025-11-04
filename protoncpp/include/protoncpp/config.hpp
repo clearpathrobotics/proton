@@ -29,6 +29,9 @@ namespace keys {
   static const char *const NODES = "nodes";
   static const char *const BUNDLES = "bundles";
   static const char *const NAME = "name";
+  static const char *const HEARTBEAT = "heartbeat";
+  static const char *const ENABLED = "enabled";
+  static const char *const PERIOD = "period";
   static const char *const TRANSPORT = "transport";
   static const char *const TYPE = "type";
   static const char *const IP = "ip";
@@ -116,8 +119,14 @@ struct TransportConfig {
   uint32_t port;
 };
 
+struct HeartbeatConfig {
+  bool enabled;
+  uint32_t period;
+};
+
 struct NodeConfig {
   std::string name;
+  HeartbeatConfig heartbeat;
   TransportConfig transport;
 };
 
