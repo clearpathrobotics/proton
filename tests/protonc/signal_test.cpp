@@ -154,27 +154,30 @@ TEST(PROTONC_Signal, Values) {
   test_signal_handles[PROTON_SIGNALS__VALUE_TEST__LIST_BYTES_VALUE].arg.size = 0;
 
   // Initialise bundle
-  PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT);
+  proton_status_e status = PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT);
+  EXPECT_EQ(status, PROTON_OK);
 
   // Encode bundle
-  int bytes_written = PROTON_Encode(&test_bundle_handle, buffer, BUFFER_SIZE);
+  size_t bytes_encoded;
+  status = PROTON_Encode(&test_bundle_handle, buffer, BUFFER_SIZE, &bytes_encoded);
+  EXPECT_EQ(status, PROTON_OK);
 
   // More than 0 bytes written if encoding is successful
-  EXPECT_GT(bytes_written, 0);
+  EXPECT_GT(bytes_encoded, 0);
 
   uint32_t id = 0;
 
   // Decode ID
-  EXPECT_TRUE(PROTON_DecodeId(&id, buffer, BUFFER_SIZE));
+  EXPECT_EQ(PROTON_DecodeId(&id, buffer, BUFFER_SIZE), PROTON_OK);
 
   // ID should be the same
   EXPECT_EQ(id, PROTON_BUNDLE__VALUE_TEST);
 
   // Decode bundle in place
-  int bytes_left = PROTON_Decode(&test_bundle_handle, buffer, bytes_written);
+  status = PROTON_Decode(&test_bundle_handle, buffer, bytes_encoded);
 
   // Check that all bytes were successfully decoded
-  EXPECT_EQ(bytes_left, 0);
+  EXPECT_EQ(status, PROTON_OK);
 
   // Data in test struct should be decoded correctly
   EXPECT_EQ(test_bundle.double_value, double_value);

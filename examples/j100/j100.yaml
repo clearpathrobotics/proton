@@ -2,11 +2,11 @@ nodes:
   - name: pc
     transport:
       type: serial
-      device: /dev/clearpath/j100
+      device: /tmp/ttyPC
   - name: mcu
     transport:
       type: serial
-      device: /dev/clearpath/j100
+      device: /tmp/ttyMCU
 bundles:
   - name: log
     id: 0x100
