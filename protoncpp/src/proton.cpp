@@ -176,7 +176,11 @@ Status Node::sendBundle(BundleHandle &bundle_handle) {
 
 Status Node::sendHeartbeat()
 {
-  return sendBundle(getHeartbeat(target_));
+  auto& heartbeat = getHeartbeat(target_);
+  auto& signal = heartbeat.getSignal("heartbeat");
+  // Increment heartbeat
+  signal.setValue<uint32_t>(signal.getValue<uint32_t>() + 1);
+  return sendBundle(heartbeat);
 }
 
 Status Node::registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback)
@@ -251,6 +255,8 @@ Status Node::spinOnce() {
     case Transport::State::ERROR:
     {
       transport_->disconnect();
+      // Reset heartbeat count
+      getHeartbeat(target_).getSignal("heartbeat").setValue<uint32_t>(0);
       break;
     }
 

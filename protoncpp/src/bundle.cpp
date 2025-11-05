@@ -20,11 +20,7 @@ BundleHandle::BundleHandle(BundleConfig config) {
   producer_ = config.producer;
   consumer_ = config.consumer;
   bundle_ = std::make_shared<Bundle>();
-  // Don't set ID for a heartbeat bundle
-  if (id_ > 0)
-  {
-    bundle_->set_id(id_);
-  }
+  bundle_->set_id(id_);
   callback_ = nullptr;
   rx_count_ = rxps_ = 0;
   tx_count_ = txps_ = 0;
