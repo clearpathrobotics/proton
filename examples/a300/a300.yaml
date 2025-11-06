@@ -15,6 +15,7 @@ nodes:
       type: udp4
       ip: 127.0.0.1
       port: 11417
+
 bundles:
   - name: log
     id: 0x100

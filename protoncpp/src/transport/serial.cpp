@@ -20,7 +20,7 @@ using namespace proton;
 SerialTransport::SerialTransport(serial_device device) : device_(device) {}
 
 Status SerialTransport::connect() {
-  if (state_ != State::DISCONNECTED)
+  if (state_ != TransportState::DISCONNECTED)
   {
     return Status::INVALID_STATE_TRANSITION;
   }
@@ -77,13 +77,13 @@ Status SerialTransport::connect() {
 
   tcflush(serial_port_, TCIOFLUSH);
 
-  state_ = State::CONNECTED;
+  state_ = TransportState::CONNECTED;
 
   return Status::OK;
 }
 
 Status SerialTransport::disconnect() {
-  if (state_ == State::ERROR)
+  if (state_ == TransportState::ERR)
   {
     return Status::INVALID_STATE_TRANSITION;
   }

@@ -136,13 +136,13 @@ public:
   Config(std::string file);
 
   std::vector<BundleConfig> getBundles() { return bundles_; }
-  std::vector<NodeConfig> getNodes() { return nodes_; }
+  std::map<std::string, NodeConfig>& getNodes() { return nodes_; }
   std::string getName() { return name_; }
   ::YAML::Node getYamlNode() { return yaml_node_; }
 
 private:
   std::vector<BundleConfig> bundles_;
-  std::vector<NodeConfig> nodes_;
+  std::map<std::string, NodeConfig> nodes_;
   std::string name_;
   ::YAML::Node yaml_node_;
 };

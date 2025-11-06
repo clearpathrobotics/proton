@@ -15,11 +15,11 @@
 
 using namespace proton;
 
-Udp4Transport::Udp4Transport(socket_endpoint target, socket_endpoint peer)
+Udp4Transport::Udp4Transport(socket_endpoint node, socket_endpoint peer)
 {
-  socket_endpoints_[SOCKET_TARGET] = target;
+  socket_endpoints_[SOCKET_NODE] = node;
   socket_endpoints_[SOCKET_PEER] = peer;
-  socket_[SOCKET_TARGET] = -1;
+  socket_[SOCKET_NODE] = -1;
   socket_[SOCKET_PEER] = -1;
 }
 
@@ -77,14 +77,14 @@ int Udp4Transport::initSocket(socket_endpoint s, bool server, bool blocking)
 
 Status Udp4Transport::connect()
 {
-  if (state_ != State::DISCONNECTED)
+  if (state_ != TransportState::DISCONNECTED)
   {
     return Status::INVALID_STATE_TRANSITION;
   }
 
-  if (socket_[SOCKET_TARGET] == -1)
+  if (socket_[SOCKET_NODE] == -1)
   {
-    socket_[SOCKET_TARGET] = initSocket(socket_endpoints_[SOCKET_TARGET], true, true);
+    socket_[SOCKET_NODE] = initSocket(socket_endpoints_[SOCKET_NODE], true, true);
   }
 
   if (socket_[SOCKET_PEER] == -1)
@@ -92,24 +92,27 @@ Status Udp4Transport::connect()
     socket_[SOCKET_PEER] = initSocket(socket_endpoints_[SOCKET_PEER], false, false);
   }
 
-  if (socket_[SOCKET_TARGET] == -1 || socket_[SOCKET_PEER] == -1)
+
+  if (socket_[SOCKET_NODE] == -1 || socket_[SOCKET_PEER] == -1)
   {
-    state_ = State::ERROR;
+    state_ = TransportState::ERR;
     return Status::CONNECTION_ERROR;
   }
 
-  state_ = State::CONNECTED;
+  std::cout << "Init sockets" << std::endl;
+
+  state_ = TransportState::CONNECTED;
   return Status::OK;
 }
 
 Status Udp4Transport::disconnect()
 {
-  if (state_ == State::ERROR)
+  if (state_ == TransportState::ERR)
   {
     return Status::INVALID_STATE_TRANSITION;
   }
 
-  state_ = State::DISCONNECTED;
+  state_ = TransportState::DISCONNECTED;
   return Status::OK;
 }
 
@@ -125,7 +128,7 @@ Status Udp4Transport::read(uint8_t *buf, const size_t& len, size_t& bytes_read)
     return Status::NULL_PTR;
   }
 
-  ssize_t ret = ::recv(socket_[SOCKET_TARGET], buf, len, 0);
+  ssize_t ret = ::recv(socket_[SOCKET_NODE], buf, len, 0);
 
   if (ret < 0)
   {

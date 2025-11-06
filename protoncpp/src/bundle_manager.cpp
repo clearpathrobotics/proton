@@ -62,14 +62,6 @@ std::map<std::string, BundleHandle>& BundleManager::getBundleMap()
   return bundles_;
 }
 
-BundleHandle &BundleManager::receiveBundle(const uint8_t *buffer,
-                                           const uint32_t len,
-                                           const std::string& producer) {
-  auto bundle = Bundle();
-  bundle.ParseFromArray(buffer, len);
-  return setBundle(bundle, producer);
-}
-
 BundleHandle &BundleManager::setBundle(const Bundle &bundle, const std::string& producer) {
   // Heartbeat bundles have an id of 0
   if (bundle.id() == 0)
@@ -98,7 +90,6 @@ BundleHandle &BundleManager::setBundle(const Bundle &bundle, const std::string& 
       }
     }
   }
-
 
   throw std::runtime_error("Invalid bundle received with ID " + bundle.id());
 }

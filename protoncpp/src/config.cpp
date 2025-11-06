@@ -227,7 +227,8 @@ Config::Config(std::string file) {
 
   // Get node configs
   for (auto node : yaml_node_[keys::NODES]) {
-    nodes_.push_back(node.as<NodeConfig>());
+    NodeConfig config = node.as<NodeConfig>();
+    nodes_.emplace(config.name, config);
   }
 
   // Get bundle configs

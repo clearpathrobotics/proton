@@ -26,7 +26,6 @@ public:
   BundleHandle &getBundle(const std::string &bundle_name);
   BundleHandle &getHeartbeat(const std::string &producer);
   std::map<std::string, BundleHandle> &getBundleMap();
-  BundleHandle &receiveBundle(const uint8_t *buffer, const uint32_t len, const std::string& producer);
   BundleHandle &setBundle(const Bundle &bundle, const std::string& producer);
 
   void printAllBundles();

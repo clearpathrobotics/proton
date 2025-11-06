@@ -17,20 +17,13 @@
 #include <stdio.h>
 #include <memory>
 
-#include "protoncpp/status.hpp"
+#include "protoncpp/common.hpp"
 
 namespace proton {
 
 class Transport {
 public:
-
-  enum State {
-    DISCONNECTED,
-    CONNECTED,
-    ERROR
-  };
-
-  Transport() : state_(State::DISCONNECTED) {}
+  Transport() : state_(TransportState::DISCONNECTED) {}
 
   virtual ~Transport()
   {}
@@ -41,11 +34,11 @@ public:
   virtual Status read(uint8_t *buf, const size_t& len, size_t& bytes_read) = 0;
   virtual Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written) = 0;
 
-  State state() { return state_; }
-  bool connected() { return state_ == State::CONNECTED; }
+  TransportState state() { return state_; }
+  bool connected() { return state_ == TransportState::CONNECTED; }
 
 protected:
-  State state_;
+  TransportState state_;
 };
 
 class TransportManager {
@@ -67,7 +60,7 @@ public:
     {
       return transport_->connect();
     }
-    return Status::ERROR;
+    return Status::NULL_PTR;
   }
 
   Status disconnect() {
@@ -75,7 +68,7 @@ public:
     {
       return transport_->disconnect();
     }
-    return Status::ERROR;
+    return Status::NULL_PTR;
   }
 
   Status read(uint8_t *buf, const size_t& len, size_t& bytes_read)
@@ -85,7 +78,7 @@ public:
       return transport_->read(buf, len, bytes_read);
     }
 
-    return Status::ERROR;
+    return Status::NULL_PTR;
   }
 
   Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
@@ -95,10 +88,10 @@ public:
       return transport_->write(buf, len, bytes_written);
     }
 
-    return Status::ERROR;
+    return Status::NULL_PTR;
   }
 
-public:
+protected:
   std::unique_ptr<Transport> transport_;
 };
 

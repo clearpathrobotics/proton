@@ -1,0 +1,36 @@
+nodes:
+  - name: mcu
+    heartbeat:
+      enabled: true
+      period: 100
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11417
+      - id: 1
+        type: serial
+        device: /dev/clearpath/j100
+  - name: ros2
+    heartbeat:
+      enabled: true
+      period: 1000
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11416
+  - name: ros2_control
+    heartbeat:
+      enabled: true
+      period: 1000
+    endpoints:
+      - id: 0
+        type: serial
+        device: /dev/clearpath/j100
+
+connections:
+  - first: {node: mcu, id: 0}
+    second: {node: ros2, id: 0}
+  - first: {node: mcu, id: 1}
+    second: {node: ros2_control, id: 0}

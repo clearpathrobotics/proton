@@ -20,8 +20,8 @@ using namespace proton;
 
 Node::Node() {}
 
-Node::Node(const std::string config_file, const std::string target, bool auto_configure, bool auto_activate)
-    : config_(config_file), target_(target), state_(State::UNCONFIGURED), rx_(0), tx_(0), rx_kbps_(0.0), tx_kbps_(0.0)
+Node::Node(const std::string config_file, const std::string name, bool auto_configure, bool auto_activate)
+    : config_(config_file), name_(name), state_(NodeState::UNCONFIGURED), rx_(0), tx_(0), rx_kbps_(0.0), tx_kbps_(0.0)
 {
   Status status;
 
@@ -53,7 +53,7 @@ Node::Node(const std::string config_file, const std::string target, bool auto_co
 
 Status Node::configure()
 {
-  if (state_ != State::UNCONFIGURED)
+  if (state_ != NodeState::UNCONFIGURED)
   {
     return Status::INVALID_STATE_TRANSITION;
   }
@@ -62,73 +62,67 @@ Status Node::configure()
     addBundle(b);
   }
 
-  NodeConfig target_config, peer_config;
+  // Get config for this node
+  node_config_ = config_.getNodes().at(name_);
 
-  for (auto n : config_.getNodes()) {
-    // Target node config
-    if (n.name == target_) {
-      target_config = n;
+  // Find all peers
+  for (auto& [name, peer_config]: config_.getNodes()) {
+    if (name != name_) {
+      peers_.emplace(
+        name,
+        Peer(
+          node_config_,
+          peer_config,
+          std::bind(&Node::readCompleteCallback, this, std::placeholders::_1, std::placeholders::_2)
+        )
+      );
     }
-    // Peer node config
-    else {
-      peer_config = n;
-      peer_ = peer_config.name;
+  }
+
+  if (node_config_.heartbeat.enabled)
+  {
+    // Add a heartbeat bundle to send to each peer
+    for (auto& [peer_name, peer] : peers_)
+    {
+      addHeartbeat(name_, peer_name);
     }
   }
 
-  target_node_config_ = target_config;
-
-  auto transport_type = target_config.transport.type;
-  if (transport_type == transport_types::UDP4) {
-    auto target_endpoint =
-        proton::socket_endpoint(target_config.transport.ip,
-                                target_config.transport.port);
-    auto peer_endpoint =
-        proton::socket_endpoint(peer_config.transport.ip,
-                                peer_config.transport.port);
-    setTransport(
-        std::make_unique<Udp4Transport>(target_endpoint, peer_endpoint));
-  }
-  else if (transport_type == transport_types::SERIAL) {
-    auto device = proton::serial_device(target_config.transport.device, 0);
-    setTransport(std::make_unique<SerialTransport>(device));
-  }
-
-  if (target_config.heartbeat.enabled)
+  for (auto& [peer_name, peer] : peers_)
   {
-    addHeartbeat(target_, peer_);
+    // Add a heartbeat bundle to receive from each peer
+    if (peer.getConfig().heartbeat.enabled)
+    {
+      addHeartbeat(peer_name, name_);
+    }
   }
 
-  if (peer_config.heartbeat.enabled)
-  {
-    addHeartbeat(peer_, target_);
-  }
+  std::cout << "Configured" << std::endl;
 
-  state_ = State::INACTIVE;
+  state_ = NodeState::INACTIVE;
   return Status::OK;
 }
 
 Status Node::activate()
 {
-  if (state_ != State::INACTIVE)
+  if (state_ != NodeState::INACTIVE)
   {
     return Status::INVALID_STATE_TRANSITION;
   }
 
-  Status status = connect();
-
-  if (status != Status::OK)
+  for (auto& [name, peer]: peers_)
   {
-    return status;
+    peer.run();
   }
 
   // Start heartbeat thread
-  if (target_node_config_.heartbeat.enabled)
+  if (node_config_.heartbeat.enabled)
   {
     heartbeat_thread_ = std::thread(&Node::runHeartbeatThread, this);
   }
 
-  state_ = State::ACTIVE;
+  std::cout << "Activated" << std::endl;
+  state_ = NodeState::ACTIVE;
   return Status::OK;
 }
 
@@ -142,7 +136,9 @@ Status Node::sendBundle(const std::string &bundle_name) {
 }
 
 Status Node::sendBundle(BundleHandle &bundle_handle) {
-  if (!connected()) {
+  auto& peer = peers_.at(bundle_handle.getConsumer());
+
+  if (!peer.connected()) {
     return Status::INVALID_STATE;
   }
 
@@ -154,13 +150,13 @@ Status Node::sendBundle(BundleHandle &bundle_handle) {
   {
     size_t bytes_written = 0;
 
-    Status status = write(buf.get(), bundle->ByteSizeLong(), bytes_written);
+    Status status = peer.write(buf.get(), bundle->ByteSizeLong(), bytes_written);
 
     if (status == Status::OK)
     {
       tx_ += bytes_written;
 
-      if (target_node_config_.transport.type == transport_types::SERIAL)
+      if (peer.getConfig().transport.type == transport_types::SERIAL)
       {
         tx_ += SerialTransport::FRAME_OVERHEAD;
       }
@@ -176,7 +172,12 @@ Status Node::sendBundle(BundleHandle &bundle_handle) {
 
 Status Node::sendHeartbeat()
 {
-  auto& heartbeat = getHeartbeat(target_);
+  if (!node_config_.heartbeat.enabled)
+  {
+    return Status::ERROR;
+  }
+
+  auto& heartbeat = getHeartbeat(name_);
   auto& signal = heartbeat.getSignal("heartbeat");
   // Increment heartbeat
   signal.setValue<uint32_t>(signal.getValue<uint32_t>() + 1);
@@ -187,7 +188,7 @@ Status Node::registerCallback(const std::string &bundle_name, BundleHandle::Bund
 {
   auto& bundle = getBundle(bundle_name);
 
-  if (callback && bundle.getConsumer() == target_)
+  if (callback && bundle.getConsumer() == name_)
   {
     bundle.registerCallback(callback);
     return Status::OK;
@@ -200,7 +201,7 @@ Status Node::registerHeartbeatCallback(const std::string &producer, BundleHandle
 {
   auto& bundle = getHeartbeat(producer);
 
-  if (callback && bundle.getConsumer() == target_)
+  if (callback && bundle.getConsumer() == name_)
   {
     bundle.registerCallback(callback);
     return Status::OK;
@@ -209,64 +210,63 @@ Status Node::registerHeartbeatCallback(const std::string &producer, BundleHandle
   return Status::ERROR;
 }
 
-Status Node::pollForBundle()
+Status Node::readCompleteCallback(Bundle& bundle, const std::string& producer)
 {
-  uint8_t read_buf[PROTON_MAX_MESSAGE_SIZE];
-  size_t bytes_read = 0;
-  Status status = read(read_buf, PROTON_MAX_MESSAGE_SIZE, bytes_read);
-
-  if (status == Status::OK) {
-    auto& bundle = receiveBundle(read_buf, bytes_read, peer_);
-    bundle.incrementRxCount();
-    rx_ += bytes_read;
-
-    if (target_node_config_.transport.type == transport_types::SERIAL)
-    {
-      rx_ += SerialTransport::FRAME_OVERHEAD;
-    }
-
-    auto callback = bundle.getCallback();
-    if (callback)
-    {
-      callback(bundle);
-    }
-  }
-  else
-  {
-    std::cerr << "Read error " << status << std::endl;
-  }
-
-  return status;
+  read_queue_.push({bundle, producer});
+  return Status::OK;
 }
 
-Status Node::spinOnce() {
-  if (state_ != State::ACTIVE) {
-    return Status::INVALID_STATE;
+Status Node::waitForBundle()
+{
+  auto received_bundle = read_queue_.pop();
+
+  auto& handle = setBundle(received_bundle.bundle, received_bundle.producer);
+  handle.incrementRxCount();
+  rx_ += received_bundle.bundle.ByteSizeLong();
+
+  if (node_config_.transport.type == transport_types::SERIAL)
+  {
+    rx_ += SerialTransport::FRAME_OVERHEAD;
   }
 
-  switch (transport_->state())
+  auto callback = handle.getCallback();
+
+  if (callback)
   {
-    case Transport::State::DISCONNECTED:
-    {
-      transport_->connect();
-      break;
-    }
-
-    case Transport::State::ERROR:
-    {
-      transport_->disconnect();
-      // Reset heartbeat count
-      getHeartbeat(target_).getSignal("heartbeat").setValue<uint32_t>(0);
-      break;
-    }
-
-    case Transport::State::CONNECTED:
-    {
-      return pollForBundle();
-    }
+    callback(handle);
   }
 
   return Status::OK;
+}
+
+Status Node::spinOnce() {
+  if (state_ != NodeState::ACTIVE) {
+    return Status::INVALID_STATE;
+  }
+
+  return waitForBundle();
+
+  // switch (transport_->state())
+  // {
+  //   case TransportState::DISCONNECTED:
+  //   {
+  //     transport_->connect();
+  //     break;
+  //   }
+
+  //   case TransportState::ERROR:
+  //   {
+  //     transport_->disconnect();
+  //     // Reset heartbeat count
+  //     getHeartbeat(name_).getSignal("heartbeat").setValue<uint32_t>(0);
+  //     break;
+  //   }
+
+  //   case TransportState::CONNECTED:
+  //   {
+  //     return pollForBundle();
+  //   }
+  // }
 }
 
 Status Node::spin() {
@@ -318,7 +318,7 @@ void Node::runHeartbeatThread()
   while(1)
   {
     sendHeartbeat();
-    std::this_thread::sleep_for(std::chrono::milliseconds(target_node_config_.heartbeat.period));
+    std::this_thread::sleep_for(std::chrono::milliseconds(node_config_.heartbeat.period));
   }
 }
 
@@ -327,12 +327,18 @@ void Node::printStats()
   std::cout<< u8"\033[2J\033[1;1H";
   std::cout << "-------- Proton CPP Node --------" << std::endl;
   std::cout << "Config: " << config_.getName() << std::endl;
-  std::cout << "Target: " << target_ << std::endl;
+  std::cout << "Node: " << name_ << std::endl;
+  std::cout << "Peers: ";
+  for (auto& [name, peer]: peers_)
+  {
+    std::cout << name + " ";
+  }
+  std::cout << std::endl;
   std::cout << "Rx: " << getRxKbps() << " KB/s " << "Tx: " << getTxKbps() << " KB/s" << std::endl;
   std::cout << "----- Produced Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
   {
-    if (handle.getProducer() == target_)
+    if (handle.getProducer() == name_)
     {
       std::cout << name << ": " << handle.getTxps() << std::endl;
     }
@@ -340,7 +346,7 @@ void Node::printStats()
   std::cout << "----- Consumed Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
   {
-    if (handle.getConsumer() == target_)
+    if (handle.getConsumer() == name_)
     {
       std::cout << name << ": " << handle.getRxps() << std::endl;
     }
@@ -348,11 +354,101 @@ void Node::printStats()
   std::cout << "----- Heartbeats (hz) -----" << std::endl;
   for (auto& [name, handle] : heartbeat_bundles_)
   {
-    if (handle.getConsumer() == target_)
+    if (handle.getConsumer() == name_)
     {
       std::cout << name << ": " << handle.getRxps() << std::endl;
     }
   }
 
   std::cout << "---------------------------------" << std::endl;
+}
+
+Peer::Peer(const NodeConfig& node_config, const NodeConfig& peer_config, ReadCompleteCallback callback):
+ config_(peer_config), callback_(callback)
+{
+  auto transport_type = peer_config.transport.type;
+  if (transport_type == transport_types::UDP4) {
+    auto node_endpoint =
+        proton::socket_endpoint(node_config.transport.ip,
+                                node_config.transport.port);
+    auto peer_endpoint =
+        proton::socket_endpoint(peer_config.transport.ip,
+                                peer_config.transport.port);
+    setTransport(
+        std::make_unique<Udp4Transport>(node_endpoint, peer_endpoint));
+    std::cout << "Created transport " << transport_->state() << std::endl;
+  }
+  else if (transport_type == transport_types::SERIAL) {
+    auto device = proton::serial_device(node_config.transport.device, 0);
+    setTransport(std::make_unique<SerialTransport>(device));
+  }
+}
+
+void Peer::run()
+{
+  run_thread_ = std::thread(&Peer::spin, this);
+}
+
+void Peer::spin()
+{
+  Status status;
+  std::cout << "Peer state " << transport_->state() << std::endl;
+  while(1)
+  {
+    switch(transport_->state())
+    {
+      case TransportState::DISCONNECTED:
+      {
+        std::cout << "Connecting" << std::endl;
+        status = connect();
+        if (status != Status::OK)
+        {
+          std::cout << "Failed to connect to peer " << config_.name << std::endl;
+        }
+        break;
+      }
+
+      case TransportState::CONNECTED:
+      {
+        status = pollForBundle();
+        if (status != Status::OK)
+        {
+          std::cout << "Failed to poll for bundle on peer " << config_.name << std::endl;
+        }
+        break;
+      }
+
+      case TransportState::ERR:
+      {
+        status = disconnect();
+        if (status != Status::OK)
+        {
+          std::cout << "Failed to disconnect from peer " << config_.name << std::endl;
+        }
+      }
+    }
+  }
+}
+
+Status Peer::pollForBundle()
+{
+  uint8_t read_buf[PROTON_MAX_MESSAGE_SIZE];
+  size_t bytes_read = 0;
+  Status status = read(read_buf, PROTON_MAX_MESSAGE_SIZE, bytes_read);
+
+  if (status == Status::OK) {
+    if (callback_ == nullptr)
+    {
+      return Status::NULL_PTR;
+    }
+
+    // Parse bundle
+    auto bundle = Bundle();
+    bundle.ParseFromArray(read_buf, bytes_read);
+
+    return callback_(bundle, config_.name);
+  }
+
+  std::cerr << "Read error " << status << std::endl;
+  return status;
 }

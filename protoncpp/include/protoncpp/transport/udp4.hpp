@@ -34,12 +34,12 @@ class Udp4Transport : public Transport
 {
 public:
   enum {
-    SOCKET_TARGET,
+    SOCKET_NODE,
     SOCKET_PEER,
     SOCKET_COUNT
   } sockets;
 
-  Udp4Transport(socket_endpoint target, socket_endpoint peer);
+  Udp4Transport(socket_endpoint node, socket_endpoint peer);
 
   Status connect() override;
   Status disconnect() override;
