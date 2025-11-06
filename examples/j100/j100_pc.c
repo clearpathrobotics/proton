@@ -86,6 +86,11 @@ void PROTON_BUNDLE_MotorFeedbackCallback()
   cb_counts[CALLBACK_MOTOR_FEEDBACK]++;
 }
 
+void PROTON_BUNDLE_McuHeartbeatCallback()
+{
+  printf("Received heartbeat %u\r\n", mcu_heartbeat_bundle.heartbeat);
+}
+
 bool PROTON_TRANSPORT__PcConnect() {
   serial_port = serial_init(PROTON_NODE__PC__DEVICE);
   return serial_port >= 0;
@@ -147,6 +152,7 @@ void *timer_1hz(void *arg) {
   while (1) {
     update_wifi_connected();
     update_hmi();
+    PROTON_BUNDLE_SendHeartbeat();
     msleep(1000);
   }
 }

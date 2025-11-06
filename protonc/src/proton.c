@@ -139,6 +139,11 @@ proton_status_e PROTON_DecodeId(uint32_t *id, const uint8_t *buffer,
         return PROTON_OK;
       }
     }
+    else if (tag == proton_Bundle_signals_tag) {
+      // No id tag but signals tag exists means ID is 0
+      *id = 0;
+      return PROTON_OK;
+    }
   }
 
   printf("DecodeId error: %s\r\n", stream.errmsg);

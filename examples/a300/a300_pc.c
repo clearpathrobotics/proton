@@ -55,6 +55,11 @@ void PROTON_BUNDLE_PinoutStateCallback() { cb_counts[CALLBACK_PINOUT_STATE]++; }
 
 void PROTON_BUNDLE_AlertsCallback() { cb_counts[CALLBACK_ALERTS]++; }
 
+void PROTON_BUNDLE_McuHeartbeatCallback()
+{
+  printf("Heartbeat received %u\r\n", mcu_heartbeat_bundle.heartbeat);
+}
+
 void update_lights() {
   for (uint8_t i = 0; i < PROTON_SIGNALS__CMD_LIGHTS__LIGHTS__LENGTH; i++) {
     for (uint8_t j = 0; j < PROTON_SIGNALS__CMD_LIGHTS__LIGHTS__CAPACITY; j++) {
@@ -144,6 +149,7 @@ void *timer_1hz(void *arg) {
     update_display_status();
     update_battery();
     update_pinout_command();
+    PROTON_BUNDLE_SendHeartbeat();
     msleep(1000);
   }
 }

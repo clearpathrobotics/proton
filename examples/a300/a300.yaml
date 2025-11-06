@@ -2,7 +2,7 @@ nodes:
   - name: pc
     heartbeat:
       enabled: true
-      period: 100
+      period: 1000
     transport:
       type: udp4
       ip: 127.0.0.1

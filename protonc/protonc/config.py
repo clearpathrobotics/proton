@@ -219,6 +219,7 @@ class ProtonConfig:
         SIGNALS = "signals"
         BUNDLE_SUFFIX = "_bundle"
         HANDLE_SUFFIX = "_handle"
+        HEARTBEAT_STRUCT_SUFFIX = "_heartbeat"
         BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE__"
         BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
         BUNDLE_ID_PREFIX = "PROTON_BUNDLE_ID__"
@@ -227,6 +228,7 @@ class ProtonConfig:
         CALLBACK_PREFIX = "PROTON_BUNDLE_"
         CALLBACK_SUFFIX = "Callback"
         DEFAULT_VALUE_SUFFIX = "__DEFAULT_VALUE"
+        HEARTBEAT_BUNDLE_ID = "PROTON_BUNDLE__HEARTBEAT"
 
         def __init__(self, bundle: dict):
             self.name = bundle[self.NAME]
@@ -265,6 +267,9 @@ class ProtonConfig:
         IP = "ip"
         PORT = "port"
         DEVICE = "device"
+        HEARTBEAT = "heartbeat"
+        ENABLED = "enabled"
+        PERIOD = "period"
 
         # Transport types
         UDP4 = "udp4"
@@ -276,17 +281,23 @@ class ProtonConfig:
         PORT_SUFFIX = "__PORT"
         DEVICE_SUFFIX = "__DEVICE"
 
+
         TRANSPORT_PREFIX = "PROTON_TRANSPORT__"
         TRANSPORT_CONNECT = "Connect"
         TRANSPORT_DISCONNECT = "Disconnect"
         TRANSPORT_READ = "Read"
         TRANSPORT_Write = "Write"
 
+        HEARTBEAT_PREFIX = "PROTON_HEARTBEAT__"
+        HEARTBEAT_ENABLED_SUFFIX = "__HEARTBEAT_ENABLED"
+        HEARTBEAT_PERIOD_SUFFIX = "__HEARTBEAT_PERIOD"
+
         MUTEX_PREFIX = "PROTON_MUTEX__"
         MUTEX_LOCK = "Lock"
         MUTEX_UNLOCK = "Unlock"
 
-        def __init__(self, node: dict):
+        def __init__(self, node: dict, peers: List[dict]):
+            self.peers = peers
             self.name = node[self.NAME]
             transport = node[self.TRANSPORT]
             self.type = transport[self.TYPE]
@@ -298,6 +309,31 @@ class ProtonConfig:
             self.transport_write_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_Write}'
             self.mutex_lock_func = f'{self.MUTEX_PREFIX}{self.name.title()}{self.MUTEX_LOCK}'
             self.mutex_unlock_func = f'{self.MUTEX_PREFIX}{self.name.title()}{self.MUTEX_UNLOCK}'
+
+            self.heartbeat_enabled = False
+            self.heartbeat_period = 1000
+            self.heartbeat_enabled_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.HEARTBEAT_ENABLED_SUFFIX}'
+            self.heartbeat_period_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.HEARTBEAT_PERIOD_SUFFIX}'
+            self.heartbeat_callback_function_name = f'{self.HEARTBEAT_PREFIX}{self.name.title()}Callback'
+
+            try:
+                heartbeat = node[self.HEARTBEAT]
+
+                try:
+                    if not isinstance(heartbeat[self.ENABLED], bool):
+                        raise RuntimeError(f"Invalid heartbeat enabled {heartbeat[self.ENABLED]}")
+                    self.heartbeat_enabled = heartbeat[self.ENABLED]
+                except KeyError:
+                    pass
+
+                try:
+                    if not isinstance(heartbeat[self.PERIOD], int) or heartbeat[self.PERIOD] <= 0:
+                        raise RuntimeError(f"Invalid heartbeat period {heartbeat[self.PERIOD]}")
+                    self.heartbeat_period = heartbeat[self.PERIOD]
+                except KeyError:
+                    pass
+            except KeyError:
+                pass
 
             match self.type:
                 case self.UDP4:
@@ -314,8 +350,10 @@ class ProtonConfig:
         self.nodes: List[ProtonConfig.Node] = []
         self.target_node: ProtonConfig.Node = None
         self.bundles: List[ProtonConfig.Bundle] = []
+        self.heartbeats: List[ProtonConfig.Bundle] = []
         self.parse_nodes()
-        self.parse_messages()
+        self.parse_bundles()
+        self.parse_heartbeats()
 
     def parse_nodes(self):
         try:
@@ -324,9 +362,10 @@ class ProtonConfig:
             print("Nodes key missing")
             return
         for node in nodes:
-            self.nodes.append(ProtonConfig.Node(node))
+            peers = [n for n in nodes if n != node]
+            self.nodes.append(ProtonConfig.Node(node, peers))
 
-    def parse_messages(self):
+    def parse_bundles(self):
         try:
             bundles = self.dictionary[self.BUNDLES]
         except KeyError:
@@ -336,6 +375,23 @@ class ProtonConfig:
             self.bundles.append(
                 ProtonConfig.Bundle(bundle)
             )
+
+    def parse_heartbeats(self):
+        for node in self.nodes:
+            if node.heartbeat_enabled:
+                heartbeat_bundle_dict: dict = {}
+                heartbeat_bundle_dict[ProtonConfig.Bundle.NAME] = f'{node.name}{ProtonConfig.Bundle.HEARTBEAT_STRUCT_SUFFIX}'
+                heartbeat_bundle_dict[ProtonConfig.Bundle.ID] = 0
+                heartbeat_bundle_dict[ProtonConfig.Bundle.PRODUCER] = node.name
+                heartbeat_bundle_dict[ProtonConfig.Bundle.CONSUMER] = node.peers[0][ProtonConfig.Node.NAME]
+
+                heartbeat_signal_dict: dict = {}
+                heartbeat_signal_dict[ProtonConfig.Signal.NAME] = 'heartbeat'
+                heartbeat_signal_dict[ProtonConfig.Signal.TYPE] = ProtonConfig.Signal.SignalTypes.UINT32
+
+                heartbeat_bundle_dict[ProtonConfig.Bundle.SIGNALS] = [heartbeat_signal_dict]
+                self.heartbeats.append(ProtonConfig.Bundle(heartbeat_bundle_dict))
+
 
     def set_target(self, target: str):
         for n in self.nodes:

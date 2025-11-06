@@ -18,6 +18,7 @@
 #include "pb_decode.h"
 #include "pb_encode.h"
 
+#define PROTON_BUNDLE__HEARTBEAT 0 // Heartbeat bundle ID
 #define PROTON_FRAME_HEADER_MAGIC_BYTE_0 (uint8_t)0x50
 #define PROTON_FRAME_HEADER_MAGIC_BYTE_1 (uint8_t)0x52
 #define PROTON_FRAME_HEADER_LENGTH_OVERHEAD sizeof(uint16_t)

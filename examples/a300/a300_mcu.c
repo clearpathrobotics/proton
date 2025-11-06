@@ -48,6 +48,11 @@ void PROTON_BUNDLE_PinoutCommandCallback() {
   cb_counts[CALLBACK_PINOUT_COMMAND]++;
 }
 
+void PROTON_BUNDLE_PcHeartbeatCallback()
+{
+  printf("Heartbeat received %u\r\n", pc_heartbeat_bundle.heartbeat);
+}
+
 void PROTON_BUNDLE_CmdShutdownCallback() {
   cb_counts[CALLBACK_CMD_SHUTDOWN]++;
   strcpy(cmd_shutdown_response_bundle.message, "SHUTTING DOWN");
@@ -199,6 +204,7 @@ void *timer_10hz(void *arg) {
     update_power();
     update_temperature();
     update_pinout_state();
+    PROTON_BUNDLE_SendHeartbeat();
     msleep(100);
   }
 }

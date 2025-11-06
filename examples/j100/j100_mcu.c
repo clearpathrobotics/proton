@@ -39,6 +39,10 @@ void PROTON_BUNDLE_MotorCommandCallback() {
   motor_feedback_bundle.drivers_measured_velocity[1] = motor_command_bundle.drivers[1];
 }
 
+void PROTON_BUNDLE_PcHeartbeatCallback() {
+  printf("Received heartbeat %u\r\n", pc_heartbeat_bundle.heartbeat);
+}
+
 void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
   strcpy(log_bundle.name, "J100_proton");
   strcpy(log_bundle.file, file);
@@ -198,6 +202,7 @@ void *timer_10hz(void *arg) {
     LOG_INFO("10hz timer %ld", i++);
     update_power();
     update_temperature();
+    PROTON_BUNDLE_SendHeartbeat();
     msleep(100);
   }
 }
