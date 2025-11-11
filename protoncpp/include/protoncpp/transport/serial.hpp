@@ -40,7 +40,7 @@ public:
   static constexpr uint8_t HEADER_OVERHEAD = sizeof(FRAME_HEADER1) + sizeof(FRAME_HEADER2) + LENGTH_OVERHEAD;
   static constexpr uint8_t FRAME_OVERHEAD = HEADER_OVERHEAD + CRC16_OVERHEAD;
 
-  SerialTransport(serial_device node, serial_device peer);
+  SerialTransport(serial_device device);
 
   Status connect() override;
   Status disconnect() override;
@@ -50,22 +50,20 @@ public:
   int initDevice(serial_device s, bool server, bool blocking);
 
   static uint16_t getCRC16(const uint8_t *data, size_t len);
-  static bool fillFrameHeader(uint8_t * header, const uint16_t payload_len);
-  static bool fillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
+  static Status fillFrameHeader(uint8_t * header, const uint16_t payload_len);
+  static Status fillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
   static Status getPayloadLength(const uint8_t * header_buf, size_t& length);
-  static bool checkFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
+  static Status checkFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
 
 private:
   ssize_t poll(uint8_t * buf, size_t len);
   bool wait();
-  std::vector<uint8_t> buildPacket(const uint8_t *buf, const size_t& len);
-  serial_device node_, peer_;
-  int serial_port_;
+  std::optional<std::vector<uint8_t>> buildPacket(const uint8_t *buf, const size_t& len);
 
+  serial_device device;
   asio::io_context io_context_;
-  asio::serial_port node_port_, peer_port_;
+  asio::serial_port port_;
   std::thread io_thread_;
-  std::vector<uint8_t> read_buffer_;
 };
 
 }

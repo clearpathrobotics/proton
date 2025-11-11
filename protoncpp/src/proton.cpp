@@ -359,9 +359,8 @@ Peer::Peer(const NodeConfig& node_config, const NodeConfig& peer_config, ReadCom
         std::make_unique<Udp4Transport>(node_endpoint, peer_endpoint));
   }
   else if (transport_type == transport_types::SERIAL) {
-    auto node_device = proton::serial_device(node_config.transport.device, 0);
     auto peer_device = proton::serial_device(peer_config.transport.device, 0);
-    setTransport(std::make_unique<SerialTransport>(node_device, peer_device));
+    setTransport(std::make_unique<SerialTransport>(peer_device));
   }
 
   state_ = NodeState::INACTIVE;
