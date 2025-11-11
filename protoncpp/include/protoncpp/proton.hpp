@@ -38,15 +38,20 @@ public:
   Peer(const NodeConfig& node_config, const NodeConfig& peer_config, ReadCompleteCallback callback);
 
   void run();
+  void heartbeat();
   NodeConfig getConfig() { return config_; }
+  NodeState getNodeState() { return state_; }
 
 private:
   void spin();
+  void checkHeartbeat();
   Status pollForBundle();
 
   NodeConfig config_;
   ReadCompleteCallback callback_;
-  std::thread run_thread_;
+  std::thread run_thread_, heartbeat_thread_;
+  NodeState state_;
+  int64_t last_heartbeat_ms_;
 };
 
 class Node : public BundleManager {
@@ -68,11 +73,9 @@ public:
   Status waitForBundle();
   Status readCompleteCallback(Bundle& bundle, const std::string& producer);
 
-
   Status sendBundle(const std::string &bundle_name);
   Status sendBundle(BundleHandle &bundle_handle);
   Status sendHeartbeat();
-
 
   double getRxKbps() { return rx_kbps_; }
   double getTxKbps() { return tx_kbps_; }

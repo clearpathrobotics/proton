@@ -16,6 +16,7 @@
 #include "protoncpp/bundle.hpp"
 #include <shared_mutex>
 #include <map>
+#include <optional>
 
 namespace proton {
 
@@ -26,7 +27,7 @@ public:
   BundleHandle &getBundle(const std::string &bundle_name);
   BundleHandle &getHeartbeat(const std::string &producer);
   std::map<std::string, BundleHandle> &getBundleMap();
-  BundleHandle &setBundle(const Bundle &bundle, const std::string& producer);
+  std::optional<std::string> updateBundle(const Bundle &bundle, const std::string& producer);
 
   void printAllBundles();
   void printAllBundlesVerbose();

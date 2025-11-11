@@ -144,22 +144,17 @@ Status Node::sendBundle(BundleHandle &bundle_handle) {
 
   auto bundle = bundle_handle.getBundlePtr().get();
 
-  auto buf = std::make_unique<uint8_t[]>(bundle->ByteSizeLong());
+  auto buf = std::vector<uint8_t>(bundle->ByteSizeLong());
 
-  if (bundle->SerializeToArray(buf.get(), bundle->ByteSizeLong()))
+  if (bundle->SerializeToArray(buf.data(), bundle->ByteSizeLong()))
   {
     size_t bytes_written = 0;
 
-    Status status = peer.write(buf.get(), bundle->ByteSizeLong(), bytes_written);
+    Status status = peer.write(buf.data(), bundle->ByteSizeLong(), bytes_written);
 
     if (status == Status::OK)
     {
       tx_ += bytes_written;
-
-      if (peer.getConfig().transport.type == transport_types::SERIAL)
-      {
-        tx_ += SerialTransport::FRAME_OVERHEAD;
-      }
 
       bundle_handle.incrementTxCount();
     }
@@ -220,23 +215,29 @@ Status Node::waitForBundle()
 {
   auto received_bundle = read_queue_.pop();
 
-  auto& handle = setBundle(received_bundle.bundle, received_bundle.producer);
-  handle.incrementRxCount();
-  rx_ += received_bundle.bundle.ByteSizeLong();
-
-  if (node_config_.transport.type == transport_types::SERIAL)
+  auto ret = updateBundle(received_bundle.bundle, received_bundle.producer);
+  if (ret)
   {
-    rx_ += SerialTransport::FRAME_OVERHEAD;
+    auto& handle = getBundle(ret.value());
+    handle.incrementRxCount();
+    rx_ += received_bundle.bundle.ByteSizeLong();
+
+    if (node_config_.transport.type == transport_types::SERIAL)
+    {
+      rx_ += SerialTransport::FRAME_OVERHEAD;
+    }
+
+    auto callback = handle.getCallback();
+
+    if (callback)
+    {
+      callback(handle);
+    }
+
+    return Status::OK;
   }
 
-  auto callback = handle.getCallback();
-
-  if (callback)
-  {
-    callback(handle);
-  }
-
-  return Status::OK;
+  return Status::ERROR;
 }
 
 Status Node::spinOnce() {
@@ -245,28 +246,6 @@ Status Node::spinOnce() {
   }
 
   return waitForBundle();
-
-  // switch (transport_->state())
-  // {
-  //   case TransportState::DISCONNECTED:
-  //   {
-  //     transport_->connect();
-  //     break;
-  //   }
-
-  //   case TransportState::ERROR:
-  //   {
-  //     transport_->disconnect();
-  //     // Reset heartbeat count
-  //     getHeartbeat(name_).getSignal("heartbeat").setValue<uint32_t>(0);
-  //     break;
-  //   }
-
-  //   case TransportState::CONNECTED:
-  //   {
-  //     return pollForBundle();
-  //   }
-  // }
 }
 
 Status Node::spin() {
@@ -328,12 +307,14 @@ void Node::printStats()
   std::cout << "-------- Proton CPP Node --------" << std::endl;
   std::cout << "Config: " << config_.getName() << std::endl;
   std::cout << "Node: " << name_ << std::endl;
-  std::cout << "Peers: ";
+  std::cout << "  State: " << state_ << std::endl;
+  std::cout << "Peers: " << std::endl;
   for (auto& [name, peer]: peers_)
   {
-    std::cout << name + " ";
+    std::cout << "  " << name << ":" << std::endl;
+    std::cout << "    Heartbeat: " << peer.getNodeState() << std::endl;
+    std::cout << "    Transport: " << peer.getTransportState() << std::endl;
   }
-  std::cout << std::endl;
   std::cout << "Rx: " << getRxKbps() << " KB/s " << "Tx: " << getTxKbps() << " KB/s" << std::endl;
   std::cout << "----- Produced Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
@@ -364,7 +345,7 @@ void Node::printStats()
 }
 
 Peer::Peer(const NodeConfig& node_config, const NodeConfig& peer_config, ReadCompleteCallback callback):
- config_(peer_config), callback_(callback)
+ config_(peer_config), callback_(callback), state_(NodeState::UNCONFIGURED)
 {
   auto transport_type = peer_config.transport.type;
   if (transport_type == transport_types::UDP4) {
@@ -376,30 +357,54 @@ Peer::Peer(const NodeConfig& node_config, const NodeConfig& peer_config, ReadCom
                                 peer_config.transport.port);
     setTransport(
         std::make_unique<Udp4Transport>(node_endpoint, peer_endpoint));
-    std::cout << "Created transport " << transport_->state() << std::endl;
   }
   else if (transport_type == transport_types::SERIAL) {
-    auto device = proton::serial_device(node_config.transport.device, 0);
-    setTransport(std::make_unique<SerialTransport>(device));
+    auto node_device = proton::serial_device(node_config.transport.device, 0);
+    auto peer_device = proton::serial_device(peer_config.transport.device, 0);
+    setTransport(std::make_unique<SerialTransport>(node_device, peer_device));
   }
+
+  state_ = NodeState::INACTIVE;
 }
 
 void Peer::run()
 {
   run_thread_ = std::thread(&Peer::spin, this);
+
+  if (config_.heartbeat.enabled)
+  {
+    heartbeat_thread_ = std::thread(&Peer::checkHeartbeat, this);
+  }
+}
+
+void Peer::checkHeartbeat()
+{
+  while(1)
+  {
+    std::this_thread::sleep_for(std::chrono::milliseconds(config_.heartbeat.period));
+
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - last_heartbeat_ms_ > config_.heartbeat.period)
+    {
+      state_ = NodeState::INACTIVE;
+    }
+  }
+}
+
+void Peer::heartbeat()
+{
+  state_ = NodeState::ACTIVE;
+  last_heartbeat_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 void Peer::spin()
 {
   Status status;
-  std::cout << "Peer state " << transport_->state() << std::endl;
   while(1)
   {
-    switch(transport_->state())
+    switch(getTransportState())
     {
       case TransportState::DISCONNECTED:
       {
-        std::cout << "Connecting" << std::endl;
         status = connect();
         if (status != Status::OK)
         {
@@ -418,13 +423,14 @@ void Peer::spin()
         break;
       }
 
-      case TransportState::ERR:
+      case TransportState::ERROR:
       {
         status = disconnect();
         if (status != Status::OK)
         {
-          std::cout << "Failed to disconnect from peer " << config_.name << std::endl;
+          std::cout << "Failed to disconnect from peer " << config_.name << ": " << status << std::endl;
         }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
       }
     }
   }
@@ -442,13 +448,25 @@ Status Peer::pollForBundle()
       return Status::NULL_PTR;
     }
 
+    if (config_.transport.type == transport_types::SERIAL)
+    {
+      bytes_read -= SerialTransport::FRAME_OVERHEAD;
+    }
+
     // Parse bundle
     auto bundle = Bundle();
-    bundle.ParseFromArray(read_buf, bytes_read);
+    if (!bundle.ParseFromArray(read_buf, bytes_read))
+    {
+      return Status::SERIALIZATION_ERROR;
+    }
+
+    if (bundle.id() == 0)
+    {
+      heartbeat();
+    }
 
     return callback_(bundle, config_.name);
   }
 
-  std::cerr << "Read error " << status << std::endl;
   return status;
 }

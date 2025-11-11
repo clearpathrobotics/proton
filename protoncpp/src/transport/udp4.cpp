@@ -95,24 +95,14 @@ Status Udp4Transport::connect()
 
   if (socket_[SOCKET_NODE] == -1 || socket_[SOCKET_PEER] == -1)
   {
-    state_ = TransportState::ERR;
     return Status::CONNECTION_ERROR;
   }
 
-  std::cout << "Init sockets" << std::endl;
-
-  state_ = TransportState::CONNECTED;
   return Status::OK;
 }
 
 Status Udp4Transport::disconnect()
 {
-  if (state_ == TransportState::ERR)
-  {
-    return Status::INVALID_STATE_TRANSITION;
-  }
-
-  state_ = TransportState::DISCONNECTED;
   return Status::OK;
 }
 
@@ -150,6 +140,7 @@ Status Udp4Transport::write(const uint8_t *buf, const size_t& len, size_t& bytes
 
   if (ret != len)
   {
+    std::cout << "Write error" << std::endl;
     return Status::WRITE_ERROR;
   }
 

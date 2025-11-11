@@ -21,18 +21,37 @@
 
 namespace proton {
 
-enum TransportState {
+enum class TransportState {
   DISCONNECTED,
   CONNECTED,
-  ERR
+  ERROR
 };
 
-enum NodeState {
+inline std::ostream& operator<<(std::ostream& os, TransportState state) {
+  switch(state)
+  {
+    case TransportState::DISCONNECTED: return os << "Disconnected";
+    case TransportState::CONNECTED: return os << "Connected";
+    case TransportState::ERROR: return os << "Error";
+    default: return os << "UNKNOWN";
+  }
+}
+
+enum class NodeState {
   UNCONFIGURED, // Node has not been configured yet
   INACTIVE,     // Node is configured but not active
-  ACTIVE,       // Node is configured and active
-  SHUTDOWN      // Node is shutdown due to error
+  ACTIVE        // Node is configured and active
 };
+
+inline std::ostream& operator<<(std::ostream& os, NodeState state) {
+  switch(state)
+  {
+    case NodeState::UNCONFIGURED: return os << "Unconfigured";
+    case NodeState::INACTIVE: return os << "Inactive";
+    case NodeState::ACTIVE: return os << "Active";
+    default: return os << "UNKNOWN";
+  }
+}
 
 enum Status {
   OK,    // No error
@@ -46,7 +65,28 @@ enum Status {
   WRITE_ERROR,
   INVALID_HEADER, // Invalid header received over serial
   CRC16_ERROR,    // CRC's do not match
+  INSUFFICIENT_BUFFER, // Buffer is too small to fit required data
+  RESOURCE_TEMPORARILY_UNAVAILABLE, // Resource temporarily unavailable
 };
+
+inline std::ostream& operator<<(std::ostream& os, Status state) {
+  switch(state)
+  {
+    case Status::OK: return os << "OK";
+    case Status::ERROR: return os << "Error";
+    case Status::NULL_PTR: return os << "Null Pointer";
+    case Status::INVALID_STATE: return os << "Invalid State";
+    case Status::INVALID_STATE_TRANSITION: return os << "Invalid State Transition";
+    case Status::CONNECTION_ERROR: return os << "Connection Error";
+    case Status::SERIALIZATION_ERROR: return os << "Serialization Error";
+    case Status::READ_ERROR: return os << "Read Error";
+    case Status::WRITE_ERROR: return os << "Write Error";
+    case Status::INVALID_HEADER: return os << "Invalid Header Error";
+    case Status::CRC16_ERROR: return os << "CRC16 Error";
+    case Status::INSUFFICIENT_BUFFER: return os << "Insufficient Buffer";
+    default: return os << "UNKNOWN";
+  }
+}
 
 template <typename T> class SafeQueue {
 public:

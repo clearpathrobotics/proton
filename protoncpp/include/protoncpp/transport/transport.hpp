@@ -34,7 +34,8 @@ public:
   virtual Status read(uint8_t *buf, const size_t& len, size_t& bytes_read) = 0;
   virtual Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written) = 0;
 
-  TransportState state() { return state_; }
+  void setState(TransportState state) { state_ = state; }
+  TransportState getState() { return state_; }
   bool connected() { return state_ == TransportState::CONNECTED; }
 
 protected:
@@ -55,10 +56,29 @@ public:
     return false;
   }
 
+  TransportState getTransportState() {
+    if (transport_)
+    {
+      return transport_->getState();
+    }
+
+    return TransportState::ERROR;
+  }
+
   Status connect() {
     if (transport_)
     {
-      return transport_->connect();
+      Status status = transport_->connect();
+      if (status != Status::OK)
+      {
+        onError(status);
+      }
+      else
+      {
+        transport_->setState(TransportState::CONNECTED);
+      }
+
+      return status;
     }
     return Status::NULL_PTR;
   }
@@ -66,7 +86,18 @@ public:
   Status disconnect() {
     if (transport_)
     {
-      return transport_->disconnect();
+      Status status = transport_->disconnect();
+
+      if (status != Status::OK)
+      {
+        onError(status);
+      }
+      else
+      {
+        transport_->setState(TransportState::DISCONNECTED);
+      }
+
+      return status;
     }
     return Status::NULL_PTR;
   }
@@ -75,7 +106,13 @@ public:
   {
     if (transport_)
     {
-      return transport_->read(buf, len, bytes_read);
+      Status status = transport_->read(buf, len, bytes_read);
+      if (status != Status::OK)
+      {
+        onError(status);
+      }
+
+      return status;
     }
 
     return Status::NULL_PTR;
@@ -85,10 +122,47 @@ public:
   {
     if (transport_)
     {
-      return transport_->write(buf, len, bytes_written);
+      Status status = transport_->write(buf, len, bytes_written);
+      if (status != Status::OK)
+      {
+        onError(status);
+      }
+
+      return status;
     }
 
     return Status::NULL_PTR;
+  }
+
+  void onError(Status error)
+  {
+    switch(error)
+    {
+      case Status::OK:
+      {
+        return;
+      }
+
+      case Status::ERROR:
+      case Status::READ_ERROR:
+      case Status::WRITE_ERROR:
+      case Status::CONNECTION_ERROR:
+      {
+        std::cout << "Transport Error " << error << std::endl;
+        transport_->setState(TransportState::ERROR);
+        break;
+      }
+
+      case Status::NULL_PTR:
+      {
+        throw std::runtime_error("NULL POINTER ERROR");
+      }
+
+      default:
+      {
+        break;
+      }
+    }
   }
 
 protected:

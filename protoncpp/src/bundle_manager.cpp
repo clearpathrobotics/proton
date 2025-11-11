@@ -43,7 +43,11 @@ BundleHandle &BundleManager::getBundle(const std::string &bundle_name) {
   try {
     return bundles_.at(bundle_name);
   } catch (std::out_of_range &e) {
-    throw std::runtime_error("Invalid bundle name " + bundle_name);
+    try {
+        return heartbeat_bundles_.at(bundle_name);
+    } catch (std::out_of_range &e) {
+      throw std::runtime_error("Invalid bundle name " + bundle_name);
+    }
   }
 }
 
@@ -62,7 +66,7 @@ std::map<std::string, BundleHandle>& BundleManager::getBundleMap()
   return bundles_;
 }
 
-BundleHandle &BundleManager::setBundle(const Bundle &bundle, const std::string& producer) {
+std::optional<std::string> BundleManager::updateBundle(const Bundle &bundle, const std::string& producer) {
   // Heartbeat bundles have an id of 0
   if (bundle.id() == 0)
   {
@@ -72,26 +76,30 @@ BundleHandle &BundleManager::setBundle(const Bundle &bundle, const std::string& 
       for (auto &[name, handle] : heartbeat_bundles_) {
         if (handle.getName() == producer) {
           std::unique_lock lock(heartbeat_mutex_);
-          handle.setBundle(bundle);
-          return handle;
+          handle.updateBundle(bundle);
+          return handle.getName();
         }
       }
+    }
+    else
+    {
+      std::cerr << "Invalid heartbeat received" << std::endl;
+      return std::nullopt;
     }
   }
   else
   {
     for (auto &[name, handle] : bundles_) {
       if (handle.getId() == bundle.id()) {
-        {
-          std::unique_lock lock(bundle_mutex_);
-          handle.setBundle(bundle);
-        }
-        return handle;
+        std::unique_lock lock(bundle_mutex_);
+        handle.updateBundle(bundle);
+        return handle.getName();
       }
     }
   }
 
-  throw std::runtime_error("Invalid bundle received with ID " + bundle.id());
+  std::cerr << "Invalid bundle received with ID " << bundle.id() << std::endl;
+  return std::nullopt;
 }
 
 void BundleManager::printAllBundles() {

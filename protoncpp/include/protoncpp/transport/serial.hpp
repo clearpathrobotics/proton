@@ -19,6 +19,9 @@
 #include <termios.h>
 #include <unistd.h>
 #include <iostream>
+#include <asio.hpp>
+#include <thread>
+#include <vector>
 
 #include "protoncpp/transport/transport.hpp"
 
@@ -37,7 +40,7 @@ public:
   static constexpr uint8_t HEADER_OVERHEAD = sizeof(FRAME_HEADER1) + sizeof(FRAME_HEADER2) + LENGTH_OVERHEAD;
   static constexpr uint8_t FRAME_OVERHEAD = HEADER_OVERHEAD + CRC16_OVERHEAD;
 
-  SerialTransport(serial_device device);
+  SerialTransport(serial_device node, serial_device peer);
 
   Status connect() override;
   Status disconnect() override;
@@ -54,8 +57,15 @@ public:
 
 private:
   ssize_t poll(uint8_t * buf, size_t len);
-  serial_device device_;
+  bool wait();
+  std::vector<uint8_t> buildPacket(const uint8_t *buf, const size_t& len);
+  serial_device node_, peer_;
   int serial_port_;
+
+  asio::io_context io_context_;
+  asio::serial_port node_port_, peer_port_;
+  std::thread io_thread_;
+  std::vector<uint8_t> read_buffer_;
 };
 
 }
