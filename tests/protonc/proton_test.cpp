@@ -34,7 +34,8 @@ TEST(PROTONC_Proton, InitNode) {
   producer_transport.read = PROTON_TRANSPORT__ProducerRead;
   producer_transport.write = PROTON_TRANSPORT__ProducerWrite;
 
-  PROTON_InitNode(&producer_node, producer_transport, PROTON_BUNDLE_Receive, proton_producer_read_buffer, proton_producer_write_buffer);
+  PROTON_Configure(&producer_node, producer_transport, PROTON_BUNDLE_Receive, proton_producer_read_buffer, proton_producer_write_buffer);
+  PROTON_Activate(&producer_node);
 
   ASSERT_EQ(producer_node.transport.connect, PROTON_TRANSPORT__ProducerConnect);
   ASSERT_EQ(producer_node.transport.disconnect, PROTON_TRANSPORT__ProducerDisconnect);
@@ -45,7 +46,7 @@ TEST(PROTONC_Proton, InitNode) {
   ASSERT_EQ(producer_node.read_buf.len, proton_producer_read_buffer.len);
   ASSERT_EQ(producer_node.write_buf.data, proton_producer_write_buffer.data);
   ASSERT_EQ(producer_node.write_buf.len, proton_producer_write_buffer.len);
-  EXPECT_FALSE(producer_node.connected);
+  ASSERT_EQ(producer_node.state, PROTON_NODE_ACTIVE);
 }
 
 
@@ -435,7 +436,7 @@ TEST(PROTONC_Proton, Decode) {
 //   node.transport.read = read_func;
 
 //   // Initialise node without defined buffers
-//   PROTON_InitNode(&node, node.transport, receive_func, proton_buffer_default, proton_buffer_default);
+//   PROTON_Configure(&node, node.transport, receive_func, proton_buffer_default, proton_buffer_default);
 
 //   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_ERROR);
 
@@ -443,7 +444,7 @@ TEST(PROTONC_Proton, Decode) {
 //   proton_buffer_t read_buffer = {buffer, sizeof(buffer)};
 
 //   // Initialise node with a read buffer
-//   PROTON_InitNode(&node, node.transport, receive_func, read_buffer, proton_buffer_default);
+//   PROTON_Configure(&node, node.transport, receive_func, read_buffer, proton_buffer_default);
 
 //   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_READ_ERROR);
 // }

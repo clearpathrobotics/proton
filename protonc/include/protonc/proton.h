@@ -26,15 +26,30 @@
 #define PROTON_FRAME_HEADER_OVERHEAD sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_0) + sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_1) + PROTON_FRAME_HEADER_LENGTH_OVERHEAD
 #define PROTON_FRAME_OVERHEAD PROTON_FRAME_HEADER_OVERHEAD + PROTON_FRAME_CRC_OVERHEAD
 
+typedef enum {
+  PROTON_OK,
+  PROTON_ERROR,
+  PROTON_NULL_PTR_ERROR,
+  PROTON_INVALID_STATE_ERROR,
+  PROTON_INVALID_STATE_TRANSITION_ERROR,
+  PROTON_CONNECTION_ERROR,
+  PROTON_SERIALIZATION_ERROR,
+  PROTON_READ_ERROR,
+  PROTON_WRITE_ERROR,
+  PROTON_CRC16_ERROR,
+} proton_status_e;
 
 typedef enum {
-  PROTON_OK = 0,
-  PROTON_ERROR = 1,
-  PROTON_READ_ERROR = 2,
-  PROTON_WRITE_ERROR = 3,
-  PROTON_NULL_PTR_ERROR = 3,
-  PROTON_CRC_ERROR = 4,
-} proton_status_e;
+  PROTON_NODE_UNCONFIGURED,
+  PROTON_NODE_INACTIVE,
+  PROTON_NODE_ACTIVE
+} proton_node_state_e;
+
+typedef enum {
+  PROTON_TRANSPORT_DISCONNECTED,
+  PROTON_TRANSPORT_CONNECTED,
+  PROTON_TRANSPORT_ERROR
+} proton_transport_state_e;
 
 typedef void (*proton_callback_t)(void);
 typedef bool (*proton_transport_connect_t)(void);
@@ -65,6 +80,7 @@ typedef struct {
   proton_transport_disconnect_t disconnect;
   proton_transport_read_t read;
   proton_transport_write_t write;
+  proton_transport_state_e state;
 } proton_transport_t;
 
 typedef struct {
@@ -73,8 +89,8 @@ typedef struct {
 } proton_buffer_t;
 
 typedef struct {
+  proton_node_state_e state;
   proton_transport_t transport;
-  bool connected;
   proton_receive_t receive;
   proton_buffer_t read_buf;
   proton_buffer_t write_buf;
@@ -82,13 +98,14 @@ typedef struct {
 
 #define proton_list_arg_init_default {NULL, 0, 0, 0}
 #define proton_buffer_default {NULL, 0}
-#define proton_transport_default {NULL, NULL, NULL, NULL}
-#define proton_node_default {proton_transport_default, false, NULL, proton_buffer_default, proton_buffer_default}
+#define proton_transport_default {NULL, NULL, NULL, NULL, PROTON_TRANSPORT_DISCONNECTED}
+#define proton_node_default {PROTON_NODE_UNCONFIGURED, proton_transport_default, NULL, proton_buffer_default, proton_buffer_default}
 
 proton_status_e PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
                        proton_signal_handle_t *signal_handles, uint32_t signal_count);
 
-proton_status_e PROTON_InitNode(proton_node_t *node, proton_transport_t transport, proton_receive_t receive, proton_buffer_t read_buf, proton_buffer_t write_buf);
+proton_status_e PROTON_Configure(proton_node_t *node, proton_transport_t transport, proton_receive_t receive, proton_buffer_t read_buf, proton_buffer_t write_buf);
+proton_status_e PROTON_Activate(proton_node_t * node);
 
 proton_status_e PROTON_Encode(proton_bundle_handle_t *handle, uint8_t *buffer, size_t buffer_length, size_t * bytes_encode);
 proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, const uint8_t *buffer, const size_t buffer_length);

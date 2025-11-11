@@ -28,7 +28,7 @@ proton_status_e PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
   return PROTON_NULL_PTR_ERROR;
 }
 
-proton_status_e PROTON_InitNode(proton_node_t *node,
+proton_status_e PROTON_Configure(proton_node_t *node,
                                 proton_transport_t transport,
                                 proton_receive_t receive,
                                 proton_buffer_t read_buf,
@@ -38,11 +38,33 @@ proton_status_e PROTON_InitNode(proton_node_t *node,
     node->receive = receive;
     node->read_buf = read_buf;
     node->write_buf = write_buf;
-    node->connected = false;
+    node->state = PROTON_NODE_INACTIVE;
+    node->transport.state = PROTON_TRANSPORT_DISCONNECTED;
     return PROTON_OK;
   }
 
   return PROTON_NULL_PTR_ERROR;
+}
+
+proton_status_e PROTON_Activate(proton_node_t *node)
+{
+  if (node == NULL ||
+      node->transport.connect == NULL ||
+      node->transport.disconnect == NULL ||
+      node->transport.write == NULL ||
+      node->transport.read == NULL ||
+      node->receive == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  if (node->state == PROTON_NODE_UNCONFIGURED)
+  {
+    return PROTON_INVALID_STATE_ERROR;
+  }
+
+  node->state = PROTON_NODE_ACTIVE;
+  return PROTON_OK;
 }
 
 proton_status_e PROTON_Encode(proton_bundle_handle_t *handle, uint8_t *buffer,
@@ -116,7 +138,7 @@ proton_status_e PROTON_Encode(proton_bundle_handle_t *handle, uint8_t *buffer,
     return PROTON_OK;
   } else {
     printf("Encode error: %s\r\n", stream.errmsg);
-    return PROTON_ERROR;
+    return PROTON_SERIALIZATION_ERROR;
   }
 }
 
@@ -147,7 +169,7 @@ proton_status_e PROTON_DecodeId(uint32_t *id, const uint8_t *buffer,
   }
 
   printf("DecodeId error: %s\r\n", stream.errmsg);
-  return PROTON_ERROR;
+  return PROTON_SERIALIZATION_ERROR;
 }
 
 proton_status_e PROTON_Decode(proton_bundle_handle_t *handle,
@@ -217,15 +239,13 @@ proton_status_e PROTON_Decode(proton_bundle_handle_t *handle,
     if (stream.bytes_left == 0) {
       return PROTON_OK;
     } else {
-      return PROTON_ERROR;
+      return PROTON_SERIALIZATION_ERROR;
     }
   } else {
     printf("Decode error: %s\r\n", stream.errmsg);
-    return PROTON_ERROR;
+    return PROTON_SERIALIZATION_ERROR;
   }
 }
-
-// proton_status_e PROTON_Send(proton_node_t *node, )
 
 proton_status_e PROTON_Spin(proton_node_t *node) {
   proton_status_e status;
@@ -242,16 +262,34 @@ proton_status_e PROTON_Spin(proton_node_t *node) {
 
 proton_status_e PROTON_SpinOnce(proton_node_t *node) {
   if (!node) {
-    return PROTON_ERROR;
+    return PROTON_NULL_PTR_ERROR;
   }
 
-  if (!node->connected) {
-    if (!node->transport.connect) {
-      return PROTON_ERROR;
+  if (node->state != PROTON_NODE_ACTIVE)
+  {
+    return PROTON_INVALID_STATE_ERROR;
+  }
+
+  size_t bytes_read = 0;
+
+  switch(node->transport.state)
+  {
+    case PROTON_TRANSPORT_DISCONNECTED:
+    {
+      if (node->transport.connect())
+      {
+        node->transport.state = PROTON_TRANSPORT_CONNECTED;
+      }
+      else
+      {
+        node->transport.state = PROTON_TRANSPORT_ERROR;
+        return PROTON_CONNECTION_ERROR;
+      }
+      break;
     }
-    node->connected = node->transport.connect();
-  } else {
-    if (node->transport.read && node->read_buf.data) {
+
+    case PROTON_TRANSPORT_CONNECTED:
+    {
       size_t bytes_read =
           node->transport.read(node->read_buf.data, node->read_buf.len);
       if (bytes_read > 0) {
@@ -259,8 +297,24 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node) {
           return PROTON_READ_ERROR;
         }
       }
-    } else {
-      printf("Error\r\n");
+      break;
+    }
+
+    case PROTON_TRANSPORT_ERROR:
+    {
+      if (node->transport.disconnect())
+      {
+        node->transport.state = PROTON_TRANSPORT_DISCONNECTED;
+      }
+      else
+      {
+        return PROTON_CONNECTION_ERROR;
+      }
+      break;
+    }
+
+    default:
+    {
       return PROTON_ERROR;
     }
   }
@@ -549,7 +603,7 @@ proton_status_e PROTON_CheckFramedPayload(const uint8_t *payload, const size_t p
   proton_status_e status = PROTON_CRC16(payload, payload_len, &crc);
   if (status == PROTON_OK && crc != frame_crc)
   {
-    return PROTON_CRC_ERROR;
+    return PROTON_CRC16_ERROR;
   }
 
   return status;

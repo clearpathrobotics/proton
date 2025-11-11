@@ -170,6 +170,7 @@ void * stats(void *arg) {
   while (1) {
     printf("\033[2J\033[1;1H");
     printf("--------- J100 PC C ---------\r\n");
+    printf("Node: %u Transport: %u\r\n", pc_node.state, pc_node.transport.state);
     printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", rx / 1000, tx / 1000);
     printf("--- Received Bundles (hz) ---\r\n");
     printf("log: %d\r\n", cb_counts[CALLBACK_LOG]);

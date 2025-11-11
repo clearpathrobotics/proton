@@ -66,7 +66,6 @@ enum Status {
   INVALID_HEADER, // Invalid header received over serial
   CRC16_ERROR,    // CRC's do not match
   INSUFFICIENT_BUFFER, // Buffer is too small to fit required data
-  RESOURCE_TEMPORARILY_UNAVAILABLE, // Resource temporarily unavailable
 };
 
 inline std::ostream& operator<<(std::ostream& os, Status state) {

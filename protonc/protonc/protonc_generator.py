@@ -528,10 +528,10 @@ class ProtonCGenerator:
         # Check that the node is connected
         self.src_writer.write_comment("Check that node is connected")
         self.src_writer.write_if_statement_start(
-            f"!{self.config.target_node.node_variable_name}.connected",
+            f"{self.config.target_node.node_variable_name}.state != PROTON_NODE_ACTIVE",
             indent_level=1,
         )
-        self.src_writer.write("return PROTON_WRITE_ERROR;", indent_level=2)
+        self.src_writer.write("return PROTON_INVALID_STATE_ERROR;", indent_level=2)
         self.src_writer.write_if_statement_end(indent_level=1)
         self.src_writer.write_newline()
 
@@ -613,10 +613,10 @@ class ProtonCGenerator:
         # Check that the node is connected
         self.src_writer.write_comment("Check that node is connected")
         self.src_writer.write_if_statement_start(
-            f"!{self.config.target_node.node_variable_name}.connected",
+            f"{self.config.target_node.node_variable_name}.state != PROTON_NODE_ACTIVE",
             indent_level=1,
         )
-        self.src_writer.write("return PROTON_WRITE_ERROR;", indent_level=2)
+        self.src_writer.write("return PROTON_INVALID_STATE_ERROR;", indent_level=2)
         self.src_writer.write_if_statement_end(indent_level=1)
         self.src_writer.write_newline()
 
@@ -791,9 +791,17 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
 
         self.src_writer.write(
-            f"return PROTON_InitNode(&{self.config.target_node.node_variable_name}, "
+            f"status = PROTON_Configure(&{self.config.target_node.node_variable_name}, "
             f"{self.config.target_node.name}_transport, PROTON_BUNDLE_Receive, "
             f"proton_{self.config.target_node.name}_read_buffer, proton_{self.config.target_node.name}_write_buffer);"
+        )
+        self.src_writer.write_if_statement_start("status != PROTON_OK")
+        self.src_writer.write("return status;", indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+
+        self.src_writer.write(
+            f"return PROTON_Activate(&{self.config.target_node.node_variable_name});"
         )
 
         self.src_writer.write_function_end()
