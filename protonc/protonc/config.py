@@ -228,6 +228,8 @@ class ProtonConfig:
         CALLBACK_PREFIX = "PROTON_BUNDLE_"
         CALLBACK_SUFFIX = "Callback"
         DEFAULT_VALUE_SUFFIX = "__DEFAULT_VALUE"
+        PRODUCERS_SUFFIX = "__PRODUCERS"
+        CONSUMERS_SUFFIX = "__CONSUMERS"
         HEARTBEAT_BUNDLE_ID = "PROTON_BUNDLE__HEARTBEAT"
 
         def __init__(self, bundle: dict):
@@ -249,6 +251,8 @@ class ProtonConfig:
             self.callback_function_name = f'{self.CALLBACK_PREFIX}{self.name.title().replace('_', '')}{self.CALLBACK_SUFFIX}'
             self.default_value_define = f'{self.bundle_enum_name}{self.DEFAULT_VALUE_SUFFIX}'
             self.default_value = []
+            self.producers_define = f'{self.BUNDLE_STRUCT_PREFIX}{self.name.upper()}{self.PRODUCERS_SUFFIX}'
+            self.consumers_define = f'{self.BUNDLE_STRUCT_PREFIX}{self.name.upper()}{self.CONSUMERS_SUFFIX}'
 
             try:
                 for signal in bundle[self.SIGNALS]:
@@ -280,7 +284,11 @@ class ProtonConfig:
         IP_SUFFIX = "__IP"
         PORT_SUFFIX = "__PORT"
         DEVICE_SUFFIX = "__DEVICE"
-
+        DEFAULT_VALUE_SUFFIX = "__DEFAULT_VALUE"
+        PEERS_SUFFIX = "__PEERS"
+        PEER_PREFIX = "PROTON_PEER__"
+        INIT_SUFFIX = "Init"
+        RECEIVE_SUFFIX = "Receive"
 
         TRANSPORT_PREFIX = "PROTON_TRANSPORT__"
         TRANSPORT_CONNECT = "Connect"
@@ -297,18 +305,27 @@ class ProtonConfig:
         MUTEX_UNLOCK = "Unlock"
 
         def __init__(self, node: dict, peers: List[dict]):
+            self.id = 0
             self.peers = peers
             self.name = node[self.NAME]
             transport = node[self.TRANSPORT]
             self.type = transport[self.TYPE]
             self.name_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.NAME_SUFFIX}'
+            self.default_value_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.DEFAULT_VALUE_SUFFIX}'
+            self.peers_value_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.PEERS_SUFFIX}{self.DEFAULT_VALUE_SUFFIX}'
+            self.heartbeat_value_define = f'{self.HEARTBEAT_PREFIX}{self.name.upper()}{self.DEFAULT_VALUE_SUFFIX}'
+            self.transport_value_define = f'{self.TRANSPORT_PREFIX}{self.name.upper()}{self.DEFAULT_VALUE_SUFFIX}'
             self.node_variable_name = f'{self.name}_node'
+            self.peer_variable_name = f'{self.name}_peers'
             self.transport_connect_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_CONNECT}'
             self.transport_disconnect_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_DISCONNECT}'
             self.transport_read_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_READ}'
             self.transport_write_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_Write}'
             self.mutex_lock_func = f'{self.MUTEX_PREFIX}{self.name.title()}{self.MUTEX_LOCK}'
             self.mutex_unlock_func = f'{self.MUTEX_PREFIX}{self.name.title()}{self.MUTEX_UNLOCK}'
+            self.peer_init_func = f'{self.PEER_PREFIX}{self.INIT_SUFFIX}{self.name.title()}'
+            self.receive_func = f'{self.PEER_PREFIX}{self.RECEIVE_SUFFIX}{self.name.title()}'
+            self.buffer_variable_name = f'proton_{self.name.lower()}_buffer'
 
             self.heartbeat_enabled = False
             self.heartbeat_period = 1000
@@ -348,6 +365,7 @@ class ProtonConfig:
     def __init__(self, dictionary: dict):
         self.dictionary = dictionary
         self.nodes: List[ProtonConfig.Node] = []
+        self.peers: List[ProtonConfig.Node] = []
         self.target_node: ProtonConfig.Node = None
         self.bundles: List[ProtonConfig.Bundle] = []
         self.heartbeats: List[ProtonConfig.Bundle] = []
@@ -397,4 +415,6 @@ class ProtonConfig:
         for n in self.nodes:
             if n.name == target:
                 self.target_node = n
+            else:
+                self.peers.append(n)
 

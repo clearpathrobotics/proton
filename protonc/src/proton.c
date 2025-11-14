@@ -15,31 +15,78 @@
 
 proton_status_e PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
                                   proton_signal_handle_t *signal_handles,
-                                  uint32_t signal_count) {
+                                  uint32_t signal_count,
+                                  proton_producer_t producers,
+                                  proton_consumer_t consumers) {
   if (signal_handles && handle) {
     handle->arg.data = signal_handles;
     handle->arg.length = signal_count;
     handle->arg.size = 0;
     handle->bundle.id = id;
     handle->bundle.signals = &handle->arg;
+    handle->producers = producers;
+    handle->consumers = consumers;
     return PROTON_OK;
   }
 
   return PROTON_NULL_PTR_ERROR;
 }
 
-proton_status_e PROTON_Configure(proton_node_t *node,
+proton_status_e PROTON_InitPeer(proton_peer_t * peer,
+                                proton_heartbeat_t heartbeat,
                                 proton_transport_t transport,
-                                proton_receive_t receive,
-                                proton_buffer_t read_buf,
-                                proton_buffer_t write_buf) {
-  if (node && receive) {
-    node->transport = transport;
-    node->receive = receive;
-    node->read_buf = read_buf;
-    node->write_buf = write_buf;
+                                proton_receive_t receive_func,
+                                proton_mutex_lock_t lock_func,
+                                proton_mutex_unlock_t unlock_func,
+                                proton_buffer_t read_buf)
+{
+  if (peer && TRANSPORT_VALID(transport) && receive_func && lock_func && unlock_func && read_buf.data)
+  {
+    if (heartbeat.enabled && heartbeat.period == 0)
+    {
+      return PROTON_ERROR;
+    }
+
+    peer->heartbeat = heartbeat;
+    peer->transport = transport;
+    peer->receive = receive_func;
+    peer->atomic_buffer.lock = lock_func;
+    peer->atomic_buffer.unlock = unlock_func;
+    peer->atomic_buffer.buffer = read_buf;
+    peer->state = PROTON_NODE_INACTIVE;
+
+    return PROTON_OK;
+  }
+
+  return PROTON_NULL_PTR_ERROR;
+}
+
+proton_status_e PROTON_Configure(proton_node_t * node,
+                                 proton_heartbeat_t heartbeat,
+                                 proton_mutex_lock_t lock_func,
+                                 proton_mutex_unlock_t unlock_func,
+                                 proton_buffer_t write_buf,
+                                 proton_peer_t * peers,
+                                 uint16_t peer_count) {
+  if (node && lock_func && unlock_func && write_buf.data && peers && peer_count > 0) {
+    node->peer_count = peer_count;
+    node->peers = peers;
+    node->heartbeat = heartbeat;
+    node->atomic_buffer.buffer = write_buf;
+    node->atomic_buffer.lock = lock_func;
+    node->atomic_buffer.unlock = unlock_func;
     node->state = PROTON_NODE_INACTIVE;
-    node->transport.state = PROTON_TRANSPORT_DISCONNECTED;
+
+    for (uint16_t p = 0; p < peer_count; p++)
+    {
+      if (peers[p].state == PROTON_NODE_UNCONFIGURED)
+      {
+        return PROTON_INVALID_STATE_ERROR;
+      }
+
+      peers[p].transport.state = PROTON_TRANSPORT_DISCONNECTED;
+    }
+
     return PROTON_OK;
   }
 
@@ -48,12 +95,7 @@ proton_status_e PROTON_Configure(proton_node_t *node,
 
 proton_status_e PROTON_Activate(proton_node_t *node)
 {
-  if (node == NULL ||
-      node->transport.connect == NULL ||
-      node->transport.disconnect == NULL ||
-      node->transport.write == NULL ||
-      node->transport.read == NULL ||
-      node->receive == NULL)
+  if (node == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
@@ -67,11 +109,15 @@ proton_status_e PROTON_Activate(proton_node_t *node)
   return PROTON_OK;
 }
 
-proton_status_e PROTON_Encode(proton_bundle_handle_t *handle, uint8_t *buffer,
-                              size_t buffer_length, size_t *bytes_encoded) {
-  if (handle == NULL || handle->arg.data == NULL || buffer == NULL ||
-      bytes_encoded == NULL) {
+proton_status_e PROTON_Encode(proton_node_t * node, proton_bundle_handle_t *handle, size_t *bytes_encoded) {
+  if (node == NULL || handle == NULL || handle->arg.data == NULL || bytes_encoded == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
+  }
+
+  if (node->state == PROTON_NODE_UNCONFIGURED)
+  {
+    return PROTON_INVALID_STATE_ERROR;
   }
 
   proton_signal_handle_t *signal_handle;
@@ -129,9 +175,23 @@ proton_status_e PROTON_Encode(proton_bundle_handle_t *handle, uint8_t *buffer,
     }
   }
 
+  // Lock atomic buffer
+  if (!node->atomic_buffer.lock())
+  {
+    return PROTON_MUTEX_ERROR;
+  }
+
+  // Create stream from atomic buffer
   pb_ostream_t stream =
-      pb_ostream_from_buffer((pb_byte_t *)buffer, buffer_length);
+      pb_ostream_from_buffer((pb_byte_t *)node->atomic_buffer.buffer.data, node->atomic_buffer.buffer.len);
+  // Encode bundle into stream
   bool status = pb_encode(&stream, proton_Bundle_fields, &handle->bundle);
+
+  // Unlock atomic buffer
+  if (!node->atomic_buffer.unlock())
+  {
+    return PROTON_MUTEX_ERROR;
+  }
 
   if (status) {
     *bytes_encoded = stream.bytes_written;
@@ -142,46 +202,84 @@ proton_status_e PROTON_Encode(proton_bundle_handle_t *handle, uint8_t *buffer,
   }
 }
 
-proton_status_e PROTON_DecodeId(uint32_t *id, const uint8_t *buffer,
-                                size_t buffer_length) {
-  if (id == NULL || buffer == NULL) {
+proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer) {
+  if (id == NULL || peer == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)buffer, buffer_length);
+  if (peer->state == PROTON_NODE_UNCONFIGURED)
+  {
+    return PROTON_INVALID_STATE_ERROR;
+  }
 
   pb_wire_type_t wire_type;
   uint32_t tag;
   bool eof;
+  proton_status_e status = PROTON_SERIALIZATION_ERROR;
+
+  // Lock atomic buffer
+  if (!peer->atomic_buffer.lock())
+  {
+    return PROTON_MUTEX_ERROR;
+  }
+
+  pb_istream_t stream =
+      pb_istream_from_buffer((const pb_byte_t *)peer->atomic_buffer.buffer.data, peer->atomic_buffer.buffer.len);
 
   if (pb_decode_tag(&stream, &wire_type, &tag, &eof)) {
     if (tag == proton_Bundle_id_tag) {
       if (pb_decode_varint32(&stream, id)) {
-        return PROTON_OK;
+        status = PROTON_OK;
       }
     }
     else if (tag == proton_Bundle_signals_tag) {
       // No id tag but signals tag exists means ID is 0
       *id = 0;
-      return PROTON_OK;
+      status = PROTON_OK;
     }
   }
 
-  printf("DecodeId error: %s\r\n", stream.errmsg);
-  return PROTON_SERIALIZATION_ERROR;
+  // Unlock atomic buffer
+  if (!peer->atomic_buffer.unlock())
+  {
+    return PROTON_MUTEX_ERROR;
+  }
+
+  if (status != PROTON_OK)
+  {
+    printf("DecodeId error: %s\r\n", stream.errmsg);
+  }
+
+  return status;
 }
 
-proton_status_e PROTON_Decode(proton_bundle_handle_t *handle,
-                              const uint8_t *buffer, size_t buffer_length) {
-  if (handle == NULL || handle->arg.data == NULL || buffer == NULL) {
+proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_peer_t * peer) {
+  if (handle == NULL || handle->arg.data == NULL || peer == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
+  if (peer->state == PROTON_NODE_UNCONFIGURED)
+  {
+    return PROTON_INVALID_STATE_ERROR;
+  }
+
+  // Lock atomic buffer
+  if (!peer->atomic_buffer.lock())
+  {
+    return PROTON_MUTEX_ERROR;
+  }
+
   pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)buffer, buffer_length);
+      pb_istream_from_buffer((const pb_byte_t *)peer->atomic_buffer.buffer.data, peer->atomic_buffer.buffer.len);
 
   bool status = pb_decode(&stream, proton_Bundle_fields, &handle->bundle);
+
+  // Unlock atomic buffer
+  if (!peer->atomic_buffer.unlock())
+  {
+    return PROTON_MUTEX_ERROR;
+  }
 
   if (status) {
     proton_signal_handle_t *signal_handle;
@@ -247,10 +345,10 @@ proton_status_e PROTON_Decode(proton_bundle_handle_t *handle,
   }
 }
 
-proton_status_e PROTON_Spin(proton_node_t *node) {
+proton_status_e PROTON_Spin(proton_node_t *node, const uint8_t peer) {
   proton_status_e status;
   while (1) {
-    status = PROTON_SpinOnce(node);
+    status = PROTON_SpinOnce(node, peer);
 
     if (status == PROTON_ERROR) {
       return status;
@@ -260,8 +358,8 @@ proton_status_e PROTON_Spin(proton_node_t *node) {
   return PROTON_ERROR;
 }
 
-proton_status_e PROTON_SpinOnce(proton_node_t *node) {
-  if (!node) {
+proton_status_e PROTON_SpinOnce(proton_node_t *node, const uint8_t peer) {
+  if (node == NULL || node->peers == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
 
@@ -270,19 +368,31 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node) {
     return PROTON_INVALID_STATE_ERROR;
   }
 
+  if (peer >= node->peer_count)
+  {
+    return PROTON_ERROR;
+  }
+
+  proton_peer_t * peer_handle = &node->peers[peer];
+
+  if (peer_handle == NULL)
+  {
+    return PROTON_ERROR;
+  }
+
   size_t bytes_read = 0;
 
-  switch(node->transport.state)
+  switch(peer_handle->transport.state)
   {
     case PROTON_TRANSPORT_DISCONNECTED:
     {
-      if (node->transport.connect())
+      if (peer_handle->transport.connect())
       {
-        node->transport.state = PROTON_TRANSPORT_CONNECTED;
+        peer_handle->transport.state = PROTON_TRANSPORT_CONNECTED;
       }
       else
       {
-        node->transport.state = PROTON_TRANSPORT_ERROR;
+        peer_handle->transport.state = PROTON_TRANSPORT_ERROR;
         return PROTON_CONNECTION_ERROR;
       }
       break;
@@ -290,21 +400,43 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node) {
 
     case PROTON_TRANSPORT_CONNECTED:
     {
-      size_t bytes_read =
-          node->transport.read(node->read_buf.data, node->read_buf.len);
+      // Lock atomic buffer
+      if (!peer_handle->atomic_buffer.lock())
+      {
+        return PROTON_MUTEX_ERROR;
+      }
+
+      // Read from peer transport
+      size_t bytes_read = peer_handle->transport.read(
+                            peer_handle->atomic_buffer.buffer.data,
+                            peer_handle->atomic_buffer.buffer.len);
+
       if (bytes_read > 0) {
-        if (!node->receive(node->read_buf.data, bytes_read)) {
+        // Receive bundle from read data
+        if (!peer_handle->receive(peer_handle->atomic_buffer.buffer.data, bytes_read)) {
+          // Unlock atomic buffer
+          if (!peer_handle->atomic_buffer.unlock())
+          {
+            return PROTON_MUTEX_ERROR;
+          }
+
           return PROTON_READ_ERROR;
         }
+      }
+
+      // Unlock atomic buffer
+      if (!peer_handle->atomic_buffer.unlock())
+      {
+        return PROTON_MUTEX_ERROR;
       }
       break;
     }
 
     case PROTON_TRANSPORT_ERROR:
     {
-      if (node->transport.disconnect())
+      if (peer_handle->transport.disconnect())
       {
-        node->transport.state = PROTON_TRANSPORT_DISCONNECTED;
+        peer_handle->transport.state = PROTON_TRANSPORT_DISCONNECTED;
       }
       else
       {
