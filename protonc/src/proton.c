@@ -111,15 +111,10 @@ proton_status_e PROTON_Activate(proton_node_t *node)
   return PROTON_OK;
 }
 
-proton_status_e PROTON_Encode(proton_node_t * node, proton_bundle_handle_t *handle, size_t *bytes_encoded) {
-  if (node == NULL || handle == NULL || handle->arg.data == NULL || bytes_encoded == NULL)
+proton_status_e PROTON_Encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded) {
+  if (handle == NULL || handle->arg.data == NULL || buffer.data == NULL || bytes_encoded == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
-  }
-
-  if (node->state == PROTON_NODE_UNCONFIGURED)
-  {
-    return PROTON_INVALID_STATE_ERROR;
   }
 
   proton_signal_handle_t *signal_handle;
@@ -177,23 +172,11 @@ proton_status_e PROTON_Encode(proton_node_t * node, proton_bundle_handle_t *hand
     }
   }
 
-  // Lock atomic buffer
-  if (!node->atomic_buffer.lock())
-  {
-    return PROTON_MUTEX_ERROR;
-  }
-
   // Create stream from atomic buffer
   pb_ostream_t stream =
-      pb_ostream_from_buffer((pb_byte_t *)node->atomic_buffer.buffer.data, node->atomic_buffer.buffer.len);
+      pb_ostream_from_buffer((pb_byte_t *)buffer.data, buffer.len);
   // Encode bundle into stream
   bool status = pb_encode(&stream, proton_Bundle_fields, &handle->bundle);
-
-  // Unlock atomic buffer
-  if (!node->atomic_buffer.unlock())
-  {
-    return PROTON_MUTEX_ERROR;
-  }
 
   if (status) {
     *bytes_encoded = stream.bytes_written;
@@ -204,14 +187,9 @@ proton_status_e PROTON_Encode(proton_node_t * node, proton_bundle_handle_t *hand
   }
 }
 
-proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer) {
-  if (id == NULL || peer == NULL) {
+proton_status_e PROTON_DecodeId(uint32_t *id, proton_buffer_t buffer) {
+  if (id == NULL || buffer.data == NULL) {
     return PROTON_NULL_PTR_ERROR;
-  }
-
-  if (peer->state == PROTON_NODE_UNCONFIGURED)
-  {
-    return PROTON_INVALID_STATE_ERROR;
   }
 
   pb_wire_type_t wire_type;
@@ -219,14 +197,8 @@ proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer) {
   bool eof;
   proton_status_e status = PROTON_SERIALIZATION_ERROR;
 
-  // Lock atomic buffer
-  // if (!peer->atomic_buffer.lock())
-  // {
-  //   return PROTON_MUTEX_ERROR;
-  // }
-
   pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)peer->atomic_buffer.buffer.data, peer->atomic_buffer.buffer.len);
+      pb_istream_from_buffer((const pb_byte_t *)buffer.data, buffer.len);
 
   if (pb_decode_tag(&stream, &wire_type, &tag, &eof)) {
     if (tag == proton_Bundle_id_tag) {
@@ -241,12 +213,6 @@ proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer) {
     }
   }
 
-  // // Unlock atomic buffer
-  // if (!peer->atomic_buffer.unlock())
-  // {
-  //   return PROTON_MUTEX_ERROR;
-  // }
-
   if (status != PROTON_OK)
   {
     printf("DecodeId error: %s\r\n", stream.errmsg);
@@ -255,33 +221,16 @@ proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer) {
   return status;
 }
 
-proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_peer_t * peer, size_t length) {
-  if (handle == NULL || handle->arg.data == NULL || peer == NULL)
+proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length) {
+  if (handle == NULL || handle->arg.data == NULL || buffer.data == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  if (peer->state == PROTON_NODE_UNCONFIGURED)
-  {
-    return PROTON_INVALID_STATE_ERROR;
-  }
-
-  // Lock atomic buffer
-  // if (!peer->atomic_buffer.lock())
-  // {
-  //   return PROTON_MUTEX_ERROR;
-  // }
-
   pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)peer->atomic_buffer.buffer.data, length);
+      pb_istream_from_buffer((const pb_byte_t *)buffer.data, length);
 
   bool status = pb_decode(&stream, proton_Bundle_fields, &handle->bundle);
-
-  // Unlock atomic buffer
-  // if (!peer->atomic_buffer.unlock())
-  // {
-  //   return PROTON_MUTEX_ERROR;
-  // }
 
   if (status) {
     proton_signal_handle_t *signal_handle;

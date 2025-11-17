@@ -584,7 +584,16 @@ class ProtonCGenerator:
 
             # Attempt to decode bundle ID
             self.src_writer.write_comment("Decode bundle ID")
-            self.src_writer.write("status = PROTON_DecodeId(&id, peer);", indent_level=1)
+
+            self.src_writer.write_if_statement_start('peer->atomic_buffer.lock()')
+            self.src_writer.write("status = PROTON_DecodeId(&id, peer->atomic_buffer.buffer);", indent_level=2)
+            self.src_writer.write_if_statement_start('!peer->atomic_buffer.unlock()', indent_level=2)
+            self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
+            self.src_writer.write_if_statement_end(indent_level=2)
+            self.src_writer.write_if_statement_end(indent_level=1)
+            self.src_writer.write_else_statement_start(indent_level=1)
+            self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=2)
+            self.src_writer.write_else_statement_end(indent_level=1)
             self.src_writer.write_newline()
             self.src_writer.write_if_statement_start("status != PROTON_OK", indent_level=1)
             self.src_writer.write("return status;", indent_level=2)
@@ -616,7 +625,18 @@ class ProtonCGenerator:
 
             # Decode the bundle
             self.src_writer.write_comment("Decode bundle")
-            self.src_writer.write("status = PROTON_Decode(handle, peer, length);", indent_level=1)
+
+            self.src_writer.write_if_statement_start('peer->atomic_buffer.lock()')
+            self.src_writer.write("status = PROTON_Decode(handle, peer->atomic_buffer.buffer, length);", indent_level=2)
+            self.src_writer.write_if_statement_start('!peer->atomic_buffer.unlock()', indent_level=2)
+            self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
+            self.src_writer.write_if_statement_end(indent_level=2)
+            self.src_writer.write_if_statement_end(indent_level=1)
+            self.src_writer.write_else_statement_start(indent_level=1)
+            self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=2)
+            self.src_writer.write_else_statement_end(indent_level=1)
+            self.src_writer.write_newline()
+
             self.src_writer.write_newline()
             self.src_writer.write_if_statement_start("status != PROTON_OK")
             self.src_writer.write("return status;", indent_level=2)
@@ -677,10 +697,19 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
 
         self.src_writer.write_comment("Encode bundle", indent_level=1)
+
+        self.src_writer.write_if_statement_start(f'{self.config.target_node.node_variable_name}.atomic_buffer.lock()')
         self.src_writer.write(
-            f"status = PROTON_Encode(&{self.config.target_node.node_variable_name}, handle, &bytes_encoded);",
-            indent_level=1,
+            f"status = PROTON_Encode(handle, {self.config.target_node.node_variable_name}.atomic_buffer.buffer,  &bytes_encoded);",
+            indent_level=2,
         )
+        self.src_writer.write_if_statement_start(f'!{self.config.target_node.node_variable_name}.atomic_buffer.unlock()', indent_level=2)
+        self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
+        self.src_writer.write_if_statement_end(indent_level=2)
+        self.src_writer.write_if_statement_end(indent_level=1)
+        self.src_writer.write_else_statement_start(indent_level=1)
+        self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=2)
+        self.src_writer.write_else_statement_end(indent_level=1)
         self.src_writer.write_newline()
 
         self.src_writer.write_if_statement_start(

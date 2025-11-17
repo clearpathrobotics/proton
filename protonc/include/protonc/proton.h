@@ -164,9 +164,9 @@ proton_status_e PROTON_Configure(proton_node_t * node,
 
 proton_status_e PROTON_Activate(proton_node_t * node);
 
-proton_status_e PROTON_Encode(proton_node_t * node, proton_bundle_handle_t *handle, size_t *bytes_encoded);
-proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_peer_t * peer, size_t length);
-proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer);
+proton_status_e PROTON_Encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded);
+proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length);
+proton_status_e PROTON_DecodeId(uint32_t *id, proton_buffer_t buffer);
 
 proton_status_e PROTON_Spin(proton_node_t *node, const uint8_t peer);
 proton_status_e PROTON_SpinOnce(proton_node_t *node, const uint8_t peer);
