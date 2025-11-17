@@ -161,7 +161,7 @@ class ProtonCGenerator:
     def generate_peers(self):
         peers = Variable(self.config.target_node.peer_variable_name,
                          "static proton_peer_t",
-                         capacity=len(self.config.target_node.peers),
+                         capacity='PROTON_PEER__COUNT',
                          init=self.config.target_node.peers_value_define)
 
         self.src_writer.write_comment("Peers", indent_level=0)
@@ -188,13 +188,11 @@ class ProtonCGenerator:
                 self.header_writer.write_define(f'{n.default_value_define} proton_node_default({n.name_define})')
                 peer_defaults = '{'
                 count = 1
-                for n in self.config.nodes:
-                    if n.name == self.target:
-                        continue
-                    if count == len(self.config.nodes) - 1:
-                        peer_defaults += f'{n.default_value_define}'
+                for p in self.config.peers:
+                    if count == len(self.config.peers):
+                        peer_defaults += f'{p.default_value_define}'
                     else:
-                        peer_defaults += f'{n.default_value_define}, '
+                        peer_defaults += f'{p.default_value_define}, '
                     count += 1
                 peer_defaults += '}'
                 self.header_writer.write_define(f'{n.peers_value_define} {peer_defaults}')
@@ -217,33 +215,50 @@ class ProtonCGenerator:
                   default_value += f"{s.value_define}"
             default_value += "}"
             self.header_writer.write_define(f"{b.default_value_define} {default_value}")
-            self.header_writer.write_define(f"{b.producers_define} {ProtonConfig.Node.NODE_PREFIX}{b.producer.upper()}")
-            self.header_writer.write_define(f"{b.consumers_define} {ProtonConfig.Node.NODE_PREFIX}{b.consumer.upper()}")
+            self.header_writer.write_define(f"{b.producers_define} {ProtonConfig.Node.NODE_ID_PREFIX}{b.producer.upper()}")
+            self.header_writer.write_define(f"{b.consumers_define} {ProtonConfig.Node.NODE_ID_PREFIX}{b.consumer.upper()}")
             self.header_writer.write_newline()
 
     def generate_node_ids(self):
-        self.header_writer.write_comment("Peers", indent_level=0)
+        self.header_writer.write_comment("Nodes", indent_level=0)
         self.header_writer.write_newline()
 
-        nodes = []
-        ids = []
-        i = 0
-        for n in self.config.nodes:
-            if n.name == self.target:
-                continue
+        nodes = [self.config.target_node.name.upper()]
+        ids = [1]
+        i = 1
+        for n in self.config.peers:
             nodes.append(n.name.upper())
-            n.id = i
+            n.id = 1 << i
             i += 1
             ids.append(n.id)
 
-        nodes.append("COUNT")
-        ids.append(i)
-
         self.header_writer.write_enum(
-            "PROTON_PEER",
+            "PROTON_NODE_ID",
             nodes,
             ids,
         )
+        self.header_writer.write_newline()
+
+    def generate_peer_ids(self):
+        self.header_writer.write_comment("Peers", indent_level=0)
+        self.header_writer.write_newline()
+
+        peers = []
+        ids = []
+        for i, p in enumerate(self.config.peers):
+            peers.append(p.name.upper())
+            ids.append(i)
+
+        peers.append("COUNT")
+        ids.append(len(self.config.peers))
+
+        self.header_writer.write_enum(
+            "PROTON_PEER",
+            peers,
+            ids,
+        )
+
+
         self.header_writer.write_newline()
 
     def generate_bundle_ids(self):
@@ -433,7 +448,8 @@ class ProtonCGenerator:
 
         for n in self.config.peers:
             self.src_writer.write_function_start(Function(n.peer_init_func, [], "proton_status_e"))
-            self.src_writer.write(f"return PROTON_InitPeer(&{self.config.target_node.node_variable_name}.peers[PROTON_PEER__{n.name.upper()}], "
+            self.src_writer.write(f"return PROTON_InitPeer(&{self.config.target_node.peer_variable_name}[{n.peer_define}], "
+                                  f"{n.node_id_define}, "
                                   f"(proton_heartbeat_t){n.heartbeat_value_define}, (proton_transport_t){n.transport_value_define}, {n.receive_func}, {n.mutex_lock_func}, {n.mutex_unlock_func}, "
                                   f"{n.buffer_variable_name});")
             self.src_writer.write_function_end()
@@ -600,7 +616,7 @@ class ProtonCGenerator:
 
             # Decode the bundle
             self.src_writer.write_comment("Decode bundle")
-            self.src_writer.write("status = PROTON_Decode(handle, peer);", indent_level=1)
+            self.src_writer.write("status = PROTON_Decode(handle, peer, length);", indent_level=1)
             self.src_writer.write_newline()
             self.src_writer.write_if_statement_start("status != PROTON_OK")
             self.src_writer.write("return status;", indent_level=2)
@@ -633,7 +649,7 @@ class ProtonCGenerator:
         # Check that write function is not NULL
         self.src_writer.write_comment("Check that handle and mutex functions are not NULL")
         self.src_writer.write_if_statement_start(
-            f"handle == NULL || {self.config.target_node.node_variable_name}.lock == NULL || {self.config.target_node.node_variable_name}.unlock == NULL",
+            "handle == NULL",
             indent_level=1,
         )
         self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
@@ -654,51 +670,47 @@ class ProtonCGenerator:
         self.src_writer.write("proton_status_e status = PROTON_WRITE_ERROR;")
         self.src_writer.write_newline()
 
-        self.src_writer.write_if_statement_start(
-            f"{self.config.target_node.node_variable_name}.lock()"
-        )
         self.src_writer.write_variable(
             Variable("bytes_encoded", "size_t"),
-            indent_level=2
+            indent_level=1
         )
-        self.src_writer.write_comment("Encode bundle", indent_level=2)
+        self.src_writer.write_newline()
+
+        self.src_writer.write_comment("Encode bundle", indent_level=1)
         self.src_writer.write(
-            f"status = PROTON_Encode(handle, {self.config.target_node.node_variable_name}.write_buf.data, {self.config.target_node.node_variable_name}.write_buf.len, &bytes_encoded);",
-            indent_level=2,
+            f"status = PROTON_Encode(&{self.config.target_node.node_variable_name}, handle, &bytes_encoded);",
+            indent_level=1,
         )
         self.src_writer.write_newline()
 
         self.src_writer.write_if_statement_start(
             "status == PROTON_OK && bytes_encoded > 0",
-            indent_level=2,
+            indent_level=1,
         )
-        self.src_writer.write_comment("Send bundle", indent_level=3)
-        self.src_writer.write_for_loop_start(f"{self.config.target_node.node_variable_name}.peer_count", indent_level=3)
-        self.src_writer.write_comment("Send to all bundle consumers", indent_level=4)
+        self.src_writer.write_comment("Send bundle", indent_level=2)
+        self.src_writer.write_for_loop_start(f"{self.config.target_node.node_variable_name}.peer_count", indent_level=2)
+        self.src_writer.write_comment("Send to all bundle consumers", indent_level=3)
         self.src_writer.write_if_statement_start(
-            "(handle->consumers & (1 << i))",
+            f"handle->consumers & {self.config.target_node.node_variable_name}.peers[i].id",
+            indent_level=3,
+        )
+        self.src_writer.write(f"{self.config.target_node.node_variable_name}.atomic_buffer.lock();", indent_level=4)
+        self.src_writer.write_if_statement_start(
+            f"{self.config.target_node.node_variable_name}.peers[i].transport.write({self.config.target_node.node_variable_name}.atomic_buffer.buffer.data, bytes_encoded) == 0",
             indent_level=4,
         )
-        self.src_writer.write_if_statement_start(
-            f"{self.config.target_node.node_variable_name}.peers[i].transport.write({self.config.target_node.node_variable_name}.write_buf.data, bytes_encoded) == 0",
-            indent_level=5,
-        )
-        self.src_writer.write_comment("Write failed", indent_level=6)
+        self.src_writer.write_comment("Write failed", indent_level=5)
         self.src_writer.write(
             "status = PROTON_WRITE_ERROR;",
-            indent_level=6,
+            indent_level=5,
         )
-        self.src_writer.write_if_statement_end(indent_level=5)
         self.src_writer.write_if_statement_end(indent_level=4)
-        self.src_writer.write_for_loop_end(indent_level=3)
-        self.src_writer.write_if_statement_end(indent_level=2)
 
-        self.src_writer.write_newline()
-        self.src_writer.write(
-            f"{self.config.target_node.node_variable_name}.unlock();", indent_level=2
-        )
-
+        self.src_writer.write(f"{self.config.target_node.node_variable_name}.atomic_buffer.unlock();", indent_level=4)
+        self.src_writer.write_if_statement_end(indent_level=3)
+        self.src_writer.write_for_loop_end(indent_level=2)
         self.src_writer.write_if_statement_end(indent_level=1)
+
         self.src_writer.write_newline()
 
         self.src_writer.write("return status;")
@@ -869,32 +881,26 @@ class ProtonCGenerator:
     def generate_node_info(self):
         self.header_writer.write_comment("Node Info", indent_level=0)
         self.header_writer.write_newline()
-        for node in self.config.nodes:
-            if node.name != self.target:
-                continue
+        node = self.config.target_node
+        self.header_writer.write_define(f'{node.name_define} "{node.name}"')
+        self.header_writer.write_define(f'{node.heartbeat_enabled_define} {str(node.heartbeat_enabled).lower()}')
+        self.header_writer.write_define(f'{node.heartbeat_period_define} {node.heartbeat_period}')
 
-            self.header_writer.write_define(f'{node.name_define} "{node.name}"')
-            self.header_writer.write_define(f'{node.heartbeat_enabled_define} {str(node.heartbeat_enabled).lower()}')
-            self.header_writer.write_define(f'{node.heartbeat_period_define} {node.heartbeat_period}')
-
-            if node.type == ProtonConfig.Node.UDP4:
-                ip_hex = 0
-                ip_split = node.ip.split(".")
-                for i in range(0, 4):
-                    ip_hex |= int(ip_split[i]) << 8 * (3 - i)
-                self.header_writer.write_define(f"{node.ip_define} {hex(ip_hex)}")
-                self.header_writer.write_define(f"{node.port_define} {node.port}")
-            elif node.type == ProtonConfig.Node.SERIAL:
-                self.header_writer.write_define(f'{node.device_define} \"{node.device}\"')
+        if node.type == ProtonConfig.Node.UDP4:
+            ip_hex = 0
+            ip_split = node.ip.split(".")
+            for i in range(0, 4):
+                ip_hex |= int(ip_split[i]) << 8 * (3 - i)
+            self.header_writer.write_define(f"{node.ip_define} {hex(ip_hex)}")
+            self.header_writer.write_define(f"{node.port_define} {node.port}")
+        elif node.type == ProtonConfig.Node.SERIAL:
+            self.header_writer.write_define(f'{node.device_define} \"{node.device}\"')
         self.header_writer.write_newline()
 
     def generate_peer_info(self):
         self.header_writer.write_comment("Peer Info", indent_level=0)
         self.header_writer.write_newline()
-        for node in self.config.nodes:
-            if node.name == self.target:
-                continue
-
+        for node in self.config.peers:
             self.header_writer.write_define(f'{node.name_define} "{node.name}"')
             self.header_writer.write_define(f'{node.heartbeat_enabled_define} {str(node.heartbeat_enabled).lower()}')
             self.header_writer.write_define(f'{node.heartbeat_period_define} {node.heartbeat_period}')
@@ -941,8 +947,8 @@ class ProtonCGenerator:
 
         self.src_writer.write(
             f"status = PROTON_Configure(&{self.config.target_node.node_variable_name}, "
-            f"(proton_heartbeat_t){self.config.target_node.heartbeat_value_define}, {self.config.target_node.mutex_lock_func},"
-            f"{self.config.target_node.mutex_unlock_func}, {self.config.target_node.buffer_variable_name},"
+            f"(proton_heartbeat_t){self.config.target_node.heartbeat_value_define}, {self.config.target_node.mutex_lock_func}, "
+            f"{self.config.target_node.mutex_unlock_func}, {self.config.target_node.buffer_variable_name}, "
             f"{self.config.target_node.peer_variable_name}, PROTON_PEER__COUNT);"
         )
         self.src_writer.write_if_statement_start("status != PROTON_OK")
@@ -1012,6 +1018,7 @@ class ProtonCGenerator:
         self.generate_node_info()
         self.generate_peer_info()
         self.generate_node_ids()
+        self.generate_peer_ids()
         self.generate_bundle_ids()
         self.generate_signal_enums()
         self.generate_defines()

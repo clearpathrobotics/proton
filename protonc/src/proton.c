@@ -33,6 +33,7 @@ proton_status_e PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
 }
 
 proton_status_e PROTON_InitPeer(proton_peer_t * peer,
+                                proton_peer_id_t id,
                                 proton_heartbeat_t heartbeat,
                                 proton_transport_t transport,
                                 proton_receive_t receive_func,
@@ -47,6 +48,7 @@ proton_status_e PROTON_InitPeer(proton_peer_t * peer,
       return PROTON_ERROR;
     }
 
+    peer->id = id;
     peer->heartbeat = heartbeat;
     peer->transport = transport;
     peer->receive = receive_func;
@@ -218,10 +220,10 @@ proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer) {
   proton_status_e status = PROTON_SERIALIZATION_ERROR;
 
   // Lock atomic buffer
-  if (!peer->atomic_buffer.lock())
-  {
-    return PROTON_MUTEX_ERROR;
-  }
+  // if (!peer->atomic_buffer.lock())
+  // {
+  //   return PROTON_MUTEX_ERROR;
+  // }
 
   pb_istream_t stream =
       pb_istream_from_buffer((const pb_byte_t *)peer->atomic_buffer.buffer.data, peer->atomic_buffer.buffer.len);
@@ -239,11 +241,11 @@ proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer) {
     }
   }
 
-  // Unlock atomic buffer
-  if (!peer->atomic_buffer.unlock())
-  {
-    return PROTON_MUTEX_ERROR;
-  }
+  // // Unlock atomic buffer
+  // if (!peer->atomic_buffer.unlock())
+  // {
+  //   return PROTON_MUTEX_ERROR;
+  // }
 
   if (status != PROTON_OK)
   {
@@ -253,7 +255,7 @@ proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer) {
   return status;
 }
 
-proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_peer_t * peer) {
+proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_peer_t * peer, size_t length) {
   if (handle == NULL || handle->arg.data == NULL || peer == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
@@ -265,21 +267,21 @@ proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_peer_t * pe
   }
 
   // Lock atomic buffer
-  if (!peer->atomic_buffer.lock())
-  {
-    return PROTON_MUTEX_ERROR;
-  }
+  // if (!peer->atomic_buffer.lock())
+  // {
+  //   return PROTON_MUTEX_ERROR;
+  // }
 
   pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)peer->atomic_buffer.buffer.data, peer->atomic_buffer.buffer.len);
+      pb_istream_from_buffer((const pb_byte_t *)peer->atomic_buffer.buffer.data, length);
 
   bool status = pb_decode(&stream, proton_Bundle_fields, &handle->bundle);
 
   // Unlock atomic buffer
-  if (!peer->atomic_buffer.unlock())
-  {
-    return PROTON_MUTEX_ERROR;
-  }
+  // if (!peer->atomic_buffer.unlock())
+  // {
+  //   return PROTON_MUTEX_ERROR;
+  // }
 
   if (status) {
     proton_signal_handle_t *signal_handle;
@@ -350,8 +352,8 @@ proton_status_e PROTON_Spin(proton_node_t *node, const uint8_t peer) {
   while (1) {
     status = PROTON_SpinOnce(node, peer);
 
-    if (status == PROTON_ERROR) {
-      return status;
+    if (status != PROTON_OK) {
+      printf("Spin error %u\r\n", status);
     }
   }
 
@@ -411,9 +413,16 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node, const uint8_t peer) {
                             peer_handle->atomic_buffer.buffer.data,
                             peer_handle->atomic_buffer.buffer.len);
 
+      // Unlock atomic buffer
+      if (!peer_handle->atomic_buffer.unlock())
+      {
+        return PROTON_MUTEX_ERROR;
+      }
+      // printf("Read %u\r\n", bytes_read);
       if (bytes_read > 0) {
         // Receive bundle from read data
-        if (!peer_handle->receive(peer_handle->atomic_buffer.buffer.data, bytes_read)) {
+        if (peer_handle->receive(peer_handle->atomic_buffer.buffer.data, bytes_read) != PROTON_OK) {
+          printf("Receive error\r\n");
           // Unlock atomic buffer
           if (!peer_handle->atomic_buffer.unlock())
           {
@@ -423,12 +432,11 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node, const uint8_t peer) {
           return PROTON_READ_ERROR;
         }
       }
-
-      // Unlock atomic buffer
       if (!peer_handle->atomic_buffer.unlock())
       {
         return PROTON_MUTEX_ERROR;
       }
+
       break;
     }
 

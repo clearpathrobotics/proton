@@ -280,6 +280,7 @@ class ProtonConfig:
         SERIAL = "serial"
 
         NODE_PREFIX = "PROTON_NODE__"
+        NODE_ID_PREFIX = "PROTON_NODE_ID__"
         NAME_SUFFIX = "__NAME"
         IP_SUFFIX = "__IP"
         PORT_SUFFIX = "__PORT"
@@ -311,6 +312,8 @@ class ProtonConfig:
             transport = node[self.TRANSPORT]
             self.type = transport[self.TYPE]
             self.name_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.NAME_SUFFIX}'
+            self.peer_define = f'{self.PEER_PREFIX}{self.name.upper()}'
+            self.node_id_define = f'{self.NODE_ID_PREFIX}{self.name.upper()}'
             self.default_value_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.DEFAULT_VALUE_SUFFIX}'
             self.peers_value_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.PEERS_SUFFIX}{self.DEFAULT_VALUE_SUFFIX}'
             self.heartbeat_value_define = f'{self.HEARTBEAT_PREFIX}{self.name.upper()}{self.DEFAULT_VALUE_SUFFIX}'

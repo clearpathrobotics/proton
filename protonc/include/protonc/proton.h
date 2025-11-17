@@ -63,6 +63,7 @@ typedef bool (*proton_mutex_unlock_t)();
 
 typedef uint64_t proton_producer_t;
 typedef uint64_t proton_consumer_t;
+typedef uint64_t proton_peer_id_t;
 
 typedef struct {
   size_t length; // Length of list
@@ -109,6 +110,7 @@ typedef struct {
 
 typedef struct {
   proton_node_state_e state;
+  proton_peer_id_t id;
   proton_heartbeat_t heartbeat;
   proton_transport_t transport;
   proton_receive_t receive;
@@ -131,7 +133,7 @@ typedef struct {
 #define proton_heartbeat_default {false, 0}
 #define proton_atomic_buffer_default {proton_buffer_default, NULL, NULL}
 
-#define proton_peer_default(name) {PROTON_NODE_UNCONFIGURED, proton_heartbeat_default, proton_transport_default, NULL, proton_atomic_buffer_default, name}
+#define proton_peer_default(name) {PROTON_NODE_UNCONFIGURED, 0, proton_heartbeat_default, proton_transport_default, NULL, proton_atomic_buffer_default, name}
 #define proton_node_default(name) {PROTON_NODE_UNCONFIGURED, proton_heartbeat_default, proton_atomic_buffer_default, 0, NULL, name}
 
 #define TRANSPORT_VALID(transport) (transport.connect != NULL && transport.disconnect != NULL && transport.read != NULL && transport.write != NULL)
@@ -144,6 +146,7 @@ proton_status_e PROTON_InitBundle(proton_bundle_handle_t *handle,
                                   proton_consumer_t consumers);
 
 proton_status_e PROTON_InitPeer(proton_peer_t * peer,
+                                proton_peer_id_t id,
                                 proton_heartbeat_t heartbeat,
                                 proton_transport_t transport,
                                 proton_receive_t receive_func,
@@ -162,7 +165,7 @@ proton_status_e PROTON_Configure(proton_node_t * node,
 proton_status_e PROTON_Activate(proton_node_t * node);
 
 proton_status_e PROTON_Encode(proton_node_t * node, proton_bundle_handle_t *handle, size_t *bytes_encoded);
-proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_peer_t * peer);
+proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_peer_t * peer, size_t length);
 proton_status_e PROTON_DecodeId(uint32_t *id, proton_peer_t * peer);
 
 proton_status_e PROTON_Spin(proton_node_t *node, const uint8_t peer);
