@@ -67,10 +67,6 @@ TEST(PROTONC_Proton, InitNode) {
 
 
 TEST(PROTONC_Proton, Encode) {
-  // Buffer to encode with
-  uint8_t buffer_[256];
-  proton_buffer_t buffer = {buffer_, 256};
-
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handles[PROTON_SIGNALS__VALUE_TEST_COUNT];
@@ -212,7 +208,7 @@ TEST(PROTONC_Proton, Encode) {
 
   // Encode bundle
   size_t bytes_encoded;
-  status = PROTON_Encode(&test_bundle_handle, buffer, &bytes_encoded);
+  status = PROTON_Encode(&test_bundle_handle, proton_producer_buffer, &bytes_encoded);
   EXPECT_EQ(status, PROTON_OK);
 
   // More than 0 bytes written if encoding is successful
@@ -220,10 +216,6 @@ TEST(PROTONC_Proton, Encode) {
 }
 
 TEST(PROTONC_Proton, DecodeId) {
-  // Buffer to decode with
-  uint8_t buffer_[256];
-  proton_buffer_t buffer = {buffer_, 256};
-
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handle;
@@ -235,7 +227,7 @@ TEST(PROTONC_Proton, DecodeId) {
 
   // Encode bundle
   size_t bytes_encoded;
-  status = PROTON_Encode(&test_bundle_handle, buffer, &bytes_encoded);
+  status = PROTON_Encode(&test_bundle_handle, proton_producer_buffer, &bytes_encoded);
   EXPECT_EQ(status, PROTON_OK);
 
   // More than 0 bytes written if encoding is successful
@@ -244,17 +236,13 @@ TEST(PROTONC_Proton, DecodeId) {
   uint32_t id = 0;
 
   // Decoding should succeed
-  EXPECT_EQ(PROTON_DecodeId(&id, buffer), PROTON_OK);
+  EXPECT_EQ(PROTON_DecodeId(&id, proton_producer_buffer), PROTON_OK);
 
   // ID should match
   ASSERT_EQ(id, 0x123);
 }
 
 TEST(PROTONC_Proton, Decode) {
-  // Buffer to encode/decode with
-  uint8_t buffer_[256];
-  proton_buffer_t buffer = {buffer_, 256};
-
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handles[PROTON_SIGNALS__VALUE_TEST_COUNT];
@@ -396,7 +384,7 @@ TEST(PROTONC_Proton, Decode) {
 
   // Encode bundle
   size_t bytes_encoded;
-  status = PROTON_Encode(&test_bundle_handle, buffer, &bytes_encoded);
+  status = PROTON_Encode(&test_bundle_handle, proton_producer_buffer, &bytes_encoded);
   EXPECT_EQ(status, PROTON_OK);
 
   // More than 0 bytes written if encoding is successful
@@ -405,13 +393,13 @@ TEST(PROTONC_Proton, Decode) {
   uint32_t id = 0;
 
   // Decode ID
-  EXPECT_EQ(PROTON_DecodeId(&id, buffer), PROTON_OK);
+  EXPECT_EQ(PROTON_DecodeId(&id, proton_producer_buffer), PROTON_OK);
 
   // ID should be the same
   EXPECT_EQ(id, PROTON_BUNDLE__VALUE_TEST);
 
   // Decode bundle in place
-  status = PROTON_Decode(&test_bundle_handle, buffer, bytes_encoded);
+  status = PROTON_Decode(&test_bundle_handle, proton_producer_buffer, bytes_encoded);
 
   // Check that all bytes were successfully decoded
   EXPECT_EQ(status, PROTON_OK);

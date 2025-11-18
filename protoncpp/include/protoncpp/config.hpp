@@ -136,7 +136,7 @@ public:
   Config();
   Config(std::string file);
 
-  std::vector<BundleConfig>& getBundles() { return bundles_; }
+  std::vector<BundleConfig> getBundles() { return bundles_; }
   std::map<std::string, NodeConfig>& getNodes() {
     std::shared_lock lock(mutex_);
     return nodes_;
