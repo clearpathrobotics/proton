@@ -87,6 +87,7 @@ public:
 
   std::string getName() const { return name_; }
   NodeConfig getNodeConfig() const { return node_config_; }
+  Config& getConfig() { return config_; }
 
   void startStatsThread();
   void printStats();

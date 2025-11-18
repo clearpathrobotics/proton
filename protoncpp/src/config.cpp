@@ -207,6 +207,7 @@ struct convert<proton::NodeConfig> {
     else
     {
       rhs.heartbeat.enabled = false;
+      rhs.heartbeat.period = 0;
     }
 
     return true;
@@ -224,6 +225,8 @@ Config::Config(std::string file) {
   name_ = yaml_file_name.substr(0, yaml_file_name.find(".yaml"));
 
   yaml_node_ = YAML::LoadFile(file);
+
+  std::unique_lock lock(mutex_);
 
   // Get node configs
   for (auto node : yaml_node_[keys::NODES]) {

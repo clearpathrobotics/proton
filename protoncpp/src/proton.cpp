@@ -97,8 +97,6 @@ Status Node::configure()
     }
   }
 
-  std::cout << "Configured" << std::endl;
-
   state_ = NodeState::INACTIVE;
   return Status::OK;
 }
@@ -121,7 +119,6 @@ Status Node::activate()
     heartbeat_thread_ = std::thread(&Node::runHeartbeatThread, this);
   }
 
-  std::cout << "Activated" << std::endl;
   state_ = NodeState::ACTIVE;
   return Status::OK;
 }

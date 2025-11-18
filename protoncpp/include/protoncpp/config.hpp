@@ -15,6 +15,7 @@
 
 #include "stdint.h"
 #include <map>
+#include <shared_mutex>
 #include <string>
 #include <vector>
 
@@ -135,8 +136,11 @@ public:
   Config();
   Config(std::string file);
 
-  std::vector<BundleConfig> getBundles() { return bundles_; }
-  std::map<std::string, NodeConfig>& getNodes() { return nodes_; }
+  std::vector<BundleConfig>& getBundles() { return bundles_; }
+  std::map<std::string, NodeConfig>& getNodes() {
+    std::shared_lock lock(mutex_);
+    return nodes_;
+  }
   std::string getName() { return name_; }
   ::YAML::Node getYamlNode() { return yaml_node_; }
 
@@ -145,6 +149,7 @@ private:
   std::map<std::string, NodeConfig> nodes_;
   std::string name_;
   ::YAML::Node yaml_node_;
+  mutable std::shared_mutex mutex_;
 };
 
 } // namespace proton
