@@ -17,8 +17,8 @@ using namespace proton;
 BundleHandle::BundleHandle(BundleConfig config) {
   name_ = config.name;
   id_ = config.id;
-  producer_ = config.producer;
-  consumer_ = config.consumer;
+  producers_ = config.producers;
+  consumers_ = config.consumers;
   bundle_ = std::make_shared<Bundle>();
   bundle_->set_id(id_);
   callback_ = nullptr;
@@ -35,8 +35,6 @@ BundleHandle::BundleHandle()
 {
   name_ = "UNKNOWN";
   id_ = 0;
-  producer_ = "UNKNOWN";
-  consumer_ = "UNKNOWN";
   bundle_ = std::make_shared<Bundle>();
   bundle_->set_id(id_);
   callback_ = nullptr;

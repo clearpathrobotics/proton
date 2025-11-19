@@ -23,7 +23,7 @@ namespace proton {
 class BundleManager {
 public:
   void addBundle(BundleConfig config);
-  void addHeartbeat(std::string producer, std::string consumer);
+  void addHeartbeat(std::string producer, std::vector<std::string> consumers);
   BundleHandle &getBundle(const std::string &bundle_name);
   BundleHandle &getHeartbeat(const std::string &producer);
   std::map<std::string, BundleHandle> &getBundleMap();

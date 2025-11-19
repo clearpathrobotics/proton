@@ -42,7 +42,6 @@ void run_stats_thread()
 
     logs.clear();
 
-
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }

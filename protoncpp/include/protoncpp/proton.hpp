@@ -106,6 +106,7 @@ private:
   std::string name_;
   NodeState state_;
   std::map<std::string, Connection> connections_;
+  std::vector<std::string> peers_;
   SafeQueue<ReceivedBundle> read_queue_;
 
   // Stats

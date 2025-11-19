@@ -82,6 +82,8 @@ Status Node::configure()
       continue;
     }
 
+    peers_.push_back(peer);
+
     connections_.emplace(
       peer,
       Connection(
@@ -96,10 +98,7 @@ Status Node::configure()
   if (node_config_.heartbeat.enabled)
   {
     // Add a heartbeat bundle to send to each peer
-    for (auto& [peer_name, peer] : connections_)
-    {
-      addHeartbeat(name_, peer_name);
-    }
+    addHeartbeat(name_, peers_);
   }
 
   for (auto& [peer_name, peer] : connections_)
@@ -107,7 +106,7 @@ Status Node::configure()
     // Add a heartbeat bundle to receive from each peer
     if (peer.getConfig().heartbeat.enabled)
     {
-      addHeartbeat(peer_name, name_);
+      addHeartbeat(peer_name, {name_});
     }
   }
 
@@ -147,30 +146,33 @@ Status Node::sendBundle(const std::string &bundle_name) {
 }
 
 Status Node::sendBundle(BundleHandle &bundle_handle) {
-  auto& peer = connections_.at(bundle_handle.getConsumer());
-
-  if (!peer.connected()) {
-    return Status::INVALID_STATE;
-  }
-
+  Status status = Status::OK;
   auto bundle = bundle_handle.getBundlePtr().get();
-
   auto buf = std::vector<uint8_t>(bundle->ByteSizeLong());
 
   if (bundle->SerializeToArray(buf.data(), bundle->ByteSizeLong()))
   {
     size_t bytes_written = 0;
 
-    Status status = peer.write(buf.data(), bundle->ByteSizeLong(), bytes_written);
-
-    if (status == Status::OK)
+    // Send bundle to each consumer
+    for (const auto& consumer: bundle_handle.getConsumers())
     {
-      tx_ += bytes_written;
+      auto& connection = connections_.at(consumer);
 
-      bundle_handle.incrementTxCount();
+      // Make sure consumer connection is active
+      if (!connection.connected()) {
+        continue;
+      }
+
+      status = connection.write(buf.data(), bundle->ByteSizeLong(), bytes_written);
+
+      if (status == Status::OK)
+      {
+        tx_ += bytes_written;
+
+        bundle_handle.incrementTxCount();
+      }
     }
-
-    return status;
   }
 
   return Status::SERIALIZATION_ERROR;
@@ -194,10 +196,16 @@ Status Node::registerCallback(const std::string &bundle_name, BundleHandle::Bund
 {
   auto& bundle = getBundle(bundle_name);
 
-  if (callback && bundle.getConsumer() == name_)
+  if (callback != nullptr)
   {
-    bundle.registerCallback(callback);
-    return Status::OK;
+    for (const auto& consumer: bundle.getConsumers())
+    {
+      if (consumer == name_)
+      {
+        bundle.registerCallback(callback);
+        return Status::OK;
+      }
+    }
   }
 
   return Status::ERROR;
@@ -207,10 +215,16 @@ Status Node::registerHeartbeatCallback(const std::string &producer, BundleHandle
 {
   auto& bundle = getHeartbeat(producer);
 
-  if (callback && bundle.getConsumer() == name_)
+  if (callback != nullptr)
   {
-    bundle.registerCallback(callback);
-    return Status::OK;
+    for (const auto& consumer: bundle.getConsumers())
+    {
+      if (consumer == name_)
+      {
+        bundle.registerCallback(callback);
+        return Status::OK;
+      }
+    }
   }
 
   return Status::ERROR;
@@ -330,25 +344,34 @@ void Node::printStats()
   std::cout << "----- Produced Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
   {
-    if (handle.getProducer() == name_)
+    for (auto& producer: handle.getProducers())
     {
-      std::cout << name << ": " << handle.getTxps() << std::endl;
+      if (producer == name_)
+      {
+        std::cout << name << ": " << handle.getTxps() << std::endl;
+      }
     }
   }
   std::cout << "----- Consumed Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
   {
-    if (handle.getConsumer() == name_)
+    for (auto& consumer: handle.getConsumers())
     {
-      std::cout << name << ": " << handle.getRxps() << std::endl;
+      if (consumer == name_)
+      {
+        std::cout << name << ": " << handle.getRxps() << std::endl;
+      }
     }
   }
   std::cout << "----- Heartbeats (hz) -----" << std::endl;
   for (auto& [name, handle] : heartbeat_bundles_)
   {
-    if (handle.getConsumer() == name_)
+    for (auto& consumer: handle.getConsumers())
     {
-      std::cout << name << ": " << handle.getRxps() << std::endl;
+      if (consumer == name_)
+      {
+        std::cout << name << ": " << handle.getRxps() << std::endl;
+      }
     }
   }
 

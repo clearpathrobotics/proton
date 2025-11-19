@@ -46,8 +46,8 @@ namespace keys {
   static const char *const CAPACITY = "capacity";
   static const char *const VALUE = "value";
   static const char *const ID = "id";
-  static const char *const PRODUCER = "producer";
-  static const char *const CONSUMER = "consumer";
+  static const char *const PRODUCERS = "producers";
+  static const char *const CONSUMERS = "consumers";
   static const char *const SIGNALS = "signals";
 } // namespace keys
 
@@ -112,8 +112,8 @@ struct SignalConfig {
 struct BundleConfig {
   std::string name;
   uint32_t id;
-  std::string producer;
-  std::string consumer;
+  std::vector<std::string> producers;
+  std::vector<std::string> consumers;
   std::vector<SignalConfig> signals;
 };
 

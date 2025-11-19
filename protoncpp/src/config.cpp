@@ -109,8 +109,31 @@ struct convert<proton::BundleConfig> {
     }
 
     rhs.name = node[proton::keys::NAME].as<std::string>();
-    rhs.producer = node[proton::keys::PRODUCER].as<std::string>();
-    rhs.consumer = node[proton::keys::CONSUMER].as<std::string>();
+
+    if (node[proton::keys::PRODUCERS].IsSequence())
+    {
+      for (const auto& p: node[proton::keys::PRODUCERS])
+      {
+        rhs.producers.push_back(p.as<std::string>());
+      }
+    }
+    else if (node[proton::keys::PRODUCERS].IsScalar())
+    {
+      rhs.producers.push_back(node[proton::keys::PRODUCERS].as<std::string>());
+    }
+
+    if (node[proton::keys::CONSUMERS].IsSequence())
+    {
+      for (const auto& p: node[proton::keys::CONSUMERS])
+      {
+        rhs.consumers.push_back(p.as<std::string>());
+      }
+    }
+    else if (node[proton::keys::CONSUMERS].IsScalar())
+    {
+      rhs.consumers.push_back(node[proton::keys::CONSUMERS].as<std::string>());
+    }
+
     rhs.id = node[proton::keys::ID].as<uint32_t>();
     if (rhs.id == 0U)
     {

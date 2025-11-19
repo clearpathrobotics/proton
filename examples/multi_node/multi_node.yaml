@@ -38,8 +38,8 @@ connections:
 bundles:
   - name: log
     id: 0x100
-    producer: mcu
-    consumer: ros2
+    producers: mcu
+    consumers: [ros2, ros2_control]
     signals:
       - {name: level, type: uint32}
       - {name: name, type: string, capacity: 64}
