@@ -10,7 +10,7 @@ nodes:
         port: 11417
       - id: 1
         type: serial
-        device: /dev/clearpath/j100
+        device: /tmp/ttyMCU
   - name: ros2
     heartbeat:
       enabled: true
@@ -27,10 +27,23 @@ nodes:
     endpoints:
       - id: 0
         type: serial
-        device: /dev/clearpath/j100
+        device: /tmp/ttyPC
 
 connections:
   - first: {node: mcu, id: 0}
     second: {node: ros2, id: 0}
   - first: {node: mcu, id: 1}
     second: {node: ros2_control, id: 0}
+
+bundles:
+  - name: log
+    id: 0x100
+    producer: mcu
+    consumer: ros2
+    signals:
+      - {name: level, type: uint32}
+      - {name: name, type: string, capacity: 64}
+      - {name: msg, type: string, capacity: 64}
+      - {name: file, type: string, capacity: 64}
+      - {name: function, type: string, capacity: 64}
+      - {name: line, type: uint32}

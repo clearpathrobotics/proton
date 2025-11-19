@@ -30,17 +30,21 @@ namespace proton {
 static constexpr size_t PROTON_MAX_MESSAGE_SIZE = UINT16_MAX;
 
 
-class Peer : public TransportManager {
+class Connection : public TransportManager {
 public:
   using ReadCompleteCallback = std::function<Status(Bundle&, const std::string& producer)>;
 
-  Peer();
-  Peer(const NodeConfig& node_config, const NodeConfig& peer_config, ReadCompleteCallback callback);
+  Connection();
+  Connection(const NodeConfig& node_config,
+             const NodeConfig& peer_config,
+             const ConnectionConfig& connection_config,
+             ReadCompleteCallback callback);
 
   void run();
   void heartbeat();
   NodeConfig getConfig() { return config_; }
   NodeState getNodeState() { return state_; }
+  std::string getTransportType() { return transport_type_; }
 
 private:
   void spin();
@@ -48,6 +52,7 @@ private:
   Status pollForBundle();
 
   NodeConfig config_;
+  std::string transport_type_;
   ReadCompleteCallback callback_;
   std::thread run_thread_, heartbeat_thread_;
   NodeState state_;
@@ -100,7 +105,7 @@ private:
   NodeConfig node_config_;
   std::string name_;
   NodeState state_;
-  std::map<std::string, Peer> peers_;
+  std::map<std::string, Connection> connections_;
   SafeQueue<ReceivedBundle> read_queue_;
 
   // Stats
