@@ -184,21 +184,45 @@ class ProtonCGenerator:
         self.header_writer.write_newline()
 
         for b in self.config.bundles + self.config.heartbeats:
-            default_value = "{"
             for i, s in enumerate(b.signals):
                 if s.length > 0:
-                    self.header_writer.write_define(f"{s.length_define} {s.length}")
+                    self.header_writer.write_define(f"{s.length_define} {s.length_define.value}")
                 if s.capacity > 0:
-                    self.header_writer.write_define(f"{s.capacity_define} {s.capacity}")
-                self.header_writer.write_define(f"{s.value_define} {s.c_value}")
-                if i < len(b.signals) - 1:
-                  default_value += f"{s.value_define}, "
+                    self.header_writer.write_define(f"{s.capacity_define} {s.capacity_define.value}")
+                self.header_writer.write_define(f"{s.value_define} {s.value_define.value}")
+            self.header_writer.write_define(f"{b.default_value_define} {b.default_value_define.value}")
+
+            # OR all producer node IDs
+            producers = "("
+            for i, producer in enumerate(b.producers_define.value):
+                define: str
+                if producer == self.target:
+                   define = self.node.id_define.name
                 else:
-                  default_value += f"{s.value_define}"
-            default_value += "}"
-            self.header_writer.write_define(f"{b.default_value_define} {default_value}")
-            self.header_writer.write_define(f"{b.producers_define} {ProtonConfig.Node.NODE_ID_PREFIX}{b.producer.upper()}")
-            self.header_writer.write_define(f"{b.consumers_define} {ProtonConfig.Node.NODE_ID_PREFIX}{b.consumer.upper()}")
+                    for p in self.peers:
+                        if producer == p.name:
+                            define = p.id_define.name
+                if i < len(b.producers_define.value) - 1:
+                    producers += f'{define} | '
+                else:
+                    producers += f'{define})'
+            self.header_writer.write_define(f"{b.producers_define} {producers}")
+
+            # OR all consumer node IDs
+            consumers = "("
+            for i, consumer in enumerate(b.consumers_define.value):
+                define: str
+                if consumer == self.target:
+                   define = self.node.id_define.name
+                else:
+                    for p in self.peers:
+                        if consumer == p.name:
+                            define = p.id_define.name
+                if i < len(b.consumers_define.value) - 1:
+                    consumers += f'{define} | '
+                else:
+                    consumers += f'{define})'
+            self.header_writer.write_define(f"{b.consumers_define} {consumers}")
             self.header_writer.write_newline()
 
     def generate_peer_ids(self):

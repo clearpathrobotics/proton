@@ -76,7 +76,7 @@ class ProtonConfig(BaseConfig):
         CAPACITY = "capacity"
         VALUE = "value"
 
-        SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
+        SIGNAL_PREFIX = "SIGNAL__"
         LENGTH_SUFFIX = "__LENGTH"
         CAPACITY_SUFFIX = "__CAPACITY"
         VALUE_SUFFIX = "__DEFAULT_VALUE"
@@ -123,9 +123,11 @@ class ProtonConfig(BaseConfig):
             SignalTypes.LIST_BYTES: {}
         }
 
-        def __init__(self, bundle: str, signal: dict):
+        def __init__(self, bundle: str, signal: dict, prefix=None):
             self.bundle: str = bundle
             self.name: str = signal[self.NAME]
+            super().__init__(f'{prefix}{self.SIGNAL_PREFIX}{self.name.upper()}')
+
             self.type: ProtonConfig.Signal.SignalTypes = (
                 ProtonConfig.Signal.SignalTypes(signal[self.TYPE])
             )
@@ -184,15 +186,15 @@ class ProtonConfig(BaseConfig):
                         f"{self.type} type signals must have a non-zero capacity"
                     )
 
-            self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}'
-            self.capacity_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.CAPACITY_SUFFIX}'
-            self.length_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.LENGTH_SUFFIX}'
-            self.value_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.VALUE_SUFFIX}'
-
             self.is_const = self.value is not None
 
             if not self.is_const:
                 self.value = self.DEFAULT_VALUES[self.type]
+
+            self.signal_enum_name = f'{self.SIGNAL_PREFIX}{self.bundle.upper()}__{self.name.upper()}'
+            self.capacity_define = self.create_define(self.CAPACITY_SUFFIX, self.capacity)
+            self.length_define = self.create_define(self.LENGTH_SUFFIX, self.length)
+            self.value_define = self.create_define(self.VALUE_SUFFIX, self.value, True if isinstance(self.value, str) else False)
 
             self.c_value = None
 
@@ -253,6 +255,7 @@ class ProtonConfig(BaseConfig):
         BUNDLE_SUFFIX = "_bundle"
         HANDLE_SUFFIX = "_handle"
         HEARTBEAT_STRUCT_SUFFIX = "_heartbeat"
+        BUNDLE_PREFIX = "BUNDLE__"
         BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE__"
         BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
         BUNDLE_ID_PREFIX = "PROTON_BUNDLE_ID__"
@@ -260,16 +263,32 @@ class ProtonConfig(BaseConfig):
         INIT_FUNCTION_SUFFIX = "PROTON_BUNDLE_Init"
         CALLBACK_PREFIX = "PROTON_BUNDLE_"
         CALLBACK_SUFFIX = "Callback"
-        DEFAULT_VALUE_SUFFIX = "__DEFAULT_VALUE"
-        PRODUCERS_SUFFIX = "__PRODUCERS"
-        CONSUMERS_SUFFIX = "__CONSUMERS"
+        DEFAULT_VALUE_SUFFIX = "DEFAULT_VALUE"
+        PRODUCERS_SUFFIX = "PRODUCERS"
+        CONSUMERS_SUFFIX = "CONSUMERS"
         HEARTBEAT_BUNDLE_ID = "PROTON_BUNDLE__HEARTBEAT"
 
-        def __init__(self, bundle: dict):
+        def __init__(self, bundle: dict, prefix=None):
             self.name = bundle[self.NAME]
+            super().__init__(f'{prefix}{self.BUNDLE_PREFIX}{self.name.upper()}__')
             self.id = bundle[self.ID]
-            self.producer = bundle[self.PRODUCERS]
-            self.consumer = bundle[self.CONSUMERS]
+            self.producers: List[str] = []
+            self.consumers: List[str] = []
+
+            if isinstance(bundle[self.PRODUCERS], str):
+                self.producers.append(bundle[self.PRODUCERS])
+            elif isinstance(bundle[self.PRODUCERS], List):
+                self.producers = bundle[self.PRODUCERS]
+            else:
+                raise RuntimeError(f"Invalid Producers format: {bundle[self.PRODUCERS]}")
+
+            if isinstance(bundle[self.CONSUMERS], str):
+                self.consumers.append(bundle[self.CONSUMERS])
+            elif isinstance(bundle[self.CONSUMERS], List):
+                self.consumers = bundle[self.CONSUMERS]
+            else:
+                raise RuntimeError(f"Invalid Consumers format: {bundle[self.CONSUMERS]}")
+
             self.signals: List[ProtonConfig.Signal] = []
             self.needs_init = False
 
@@ -282,19 +301,26 @@ class ProtonConfig(BaseConfig):
             self.signals_enum_count = f'{self.signals_enum_name.upper()}_COUNT'
             self.init_function_name = f'{self.INIT_FUNCTION_SUFFIX}{self.name.title().replace('_', '')}'
             self.callback_function_name = f'{self.CALLBACK_PREFIX}{self.name.title().replace('_', '')}{self.CALLBACK_SUFFIX}'
-            self.default_value_define = f'{self.bundle_enum_name}{self.DEFAULT_VALUE_SUFFIX}'
-            self.default_value = []
-            self.producers_define = f'{self.BUNDLE_STRUCT_PREFIX}{self.name.upper()}{self.PRODUCERS_SUFFIX}'
-            self.consumers_define = f'{self.BUNDLE_STRUCT_PREFIX}{self.name.upper()}{self.CONSUMERS_SUFFIX}'
 
             try:
                 for signal in bundle[self.SIGNALS]:
-                    s = ProtonConfig.Signal(self.name, signal)
+                    s = ProtonConfig.Signal(self.name, signal, prefix=self.prefix)
                     self.signals.append(s)
                     if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
                         self.needs_init = True
             except KeyError:
                 pass
+
+            self.default_value = "{"
+            for i, s in enumerate(self.signals):
+                if i < len(self.signals) - 1:
+                    self.default_value += f'{s.value_define.name}, '
+                else:
+                    self.default_value += f'{s.value_define.name}}}'
+            self.default_value_define = self.create_define(f'{self.DEFAULT_VALUE_SUFFIX}', self.default_value)
+
+            self.producers_define = self.create_define(self.PRODUCERS_SUFFIX, self.producers)
+            self.consumers_define = self.create_define(self.CONSUMERS_SUFFIX, self.consumers)
 
     class Connection(BaseConfig):
         # Connection keys
@@ -529,7 +555,7 @@ class ProtonConfig(BaseConfig):
         bundles = self.dictionary[self.BUNDLES]
         for bundle in bundles:
             self.bundles.append(
-                ProtonConfig.Bundle(bundle)
+                ProtonConfig.Bundle(bundle, prefix=self.PROTON_PREFIX)
             )
 
     def parse_heartbeats(self):
