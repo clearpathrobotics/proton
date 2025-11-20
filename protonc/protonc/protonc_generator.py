@@ -31,6 +31,7 @@
 import argparse
 import os
 import yaml
+from typing import List
 
 from protonc.config import ProtonConfig
 from protonc.source_writer import CWriter, Variable, Struct, Function
@@ -182,25 +183,6 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Constant definitions", indent_level=0)
         self.header_writer.write_newline()
 
-        for n in self.config.nodes:
-            self.header_writer.write_define(f'{n.heartbeat_value_define} {{{str(n.heartbeat_enabled).lower()}, {n.heartbeat_period}}}')
-            if n.name == self.target:
-                self.header_writer.write_define(f'{n.default_value_define} proton_node_default({n.name_define})')
-                peer_defaults = '{'
-                count = 1
-                for p in self.config.peers:
-                    if count == len(self.config.peers):
-                        peer_defaults += f'{p.default_value_define}'
-                    else:
-                        peer_defaults += f'{p.default_value_define}, '
-                    count += 1
-                peer_defaults += '}'
-                self.header_writer.write_define(f'{n.peers_value_define} {peer_defaults}')
-            else:
-                self.header_writer.write_define(f'{n.transport_value_define} {{PROTON_TRANSPORT_DISCONNECTED, {n.transport_connect_func}, {n.transport_disconnect_func}, {n.transport_read_func}, {n.transport_write_func}}}')
-                self.header_writer.write_define(f'{n.default_value_define} proton_peer_default({n.name_define})')
-            self.header_writer.write_newline()
-
         for b in self.config.bundles + self.config.heartbeats:
             default_value = "{"
             for i, s in enumerate(b.signals):
@@ -219,45 +201,24 @@ class ProtonCGenerator:
             self.header_writer.write_define(f"{b.consumers_define} {ProtonConfig.Node.NODE_ID_PREFIX}{b.consumer.upper()}")
             self.header_writer.write_newline()
 
-    def generate_node_ids(self):
-        self.header_writer.write_comment("Nodes", indent_level=0)
-        self.header_writer.write_newline()
-
-        nodes = [self.config.target_node.name.upper()]
-        ids = [1]
-        i = 1
-        for n in self.config.peers:
-            nodes.append(n.name.upper())
-            n.id = 1 << i
-            i += 1
-            ids.append(n.id)
-
-        self.header_writer.write_enum(
-            "PROTON_NODE_ID",
-            nodes,
-            ids,
-        )
-        self.header_writer.write_newline()
-
     def generate_peer_ids(self):
         self.header_writer.write_comment("Peers", indent_level=0)
         self.header_writer.write_newline()
 
         peers = []
         ids = []
-        for i, p in enumerate(self.config.peers):
+        for i, p in enumerate(self.peers):
             peers.append(p.name.upper())
             ids.append(i)
 
         peers.append("COUNT")
-        ids.append(len(self.config.peers))
+        ids.append(len(self.peers))
 
         self.header_writer.write_enum(
             "PROTON_PEER",
             peers,
             ids,
         )
-
 
         self.header_writer.write_newline()
 
@@ -907,42 +868,21 @@ class ProtonCGenerator:
 
         self.src_writer.write_function_end()
 
-    def generate_node_info(self):
-        self.header_writer.write_comment("Node Info", indent_level=0)
-        self.header_writer.write_newline()
-        node = self.config.target_node
-        self.header_writer.write_define(f'{node.name_define} "{node.name}"')
-        self.header_writer.write_define(f'{node.heartbeat_enabled_define} {str(node.heartbeat_enabled).lower()}')
-        self.header_writer.write_define(f'{node.heartbeat_period_define} {node.heartbeat_period}')
-
-        if node.type == ProtonConfig.Node.UDP4:
-            ip_hex = 0
-            ip_split = node.ip.split(".")
-            for i in range(0, 4):
-                ip_hex |= int(ip_split[i]) << 8 * (3 - i)
-            self.header_writer.write_define(f"{node.ip_define} {hex(ip_hex)}")
-            self.header_writer.write_define(f"{node.port_define} {node.port}")
-        elif node.type == ProtonConfig.Node.SERIAL:
-            self.header_writer.write_define(f'{node.device_define} \"{node.device}\"')
+    def generate_node_defines(self, node: ProtonConfig.Node):
+        self.header_writer.write_comment(f"{node.name} Node Defines", indent_level=0)
         self.header_writer.write_newline()
 
-    def generate_peer_info(self):
-        self.header_writer.write_comment("Peer Info", indent_level=0)
-        self.header_writer.write_newline()
-        for node in self.config.peers:
-            self.header_writer.write_define(f'{node.name_define} "{node.name}"')
-            self.header_writer.write_define(f'{node.heartbeat_enabled_define} {str(node.heartbeat_enabled).lower()}')
-            self.header_writer.write_define(f'{node.heartbeat_period_define} {node.heartbeat_period}')
+        self.header_writer.write_define(f'{node.name_define} {node.name_define.value}')
+        self.header_writer.write_define(f'{node.id_define} {node.id_define.value}')
+        self.header_writer.write_define(f'{node.node_default_value_define} {node.node_default_value_define.value}')
 
-            if node.type == ProtonConfig.Node.UDP4:
-                ip_hex = 0
-                ip_split = node.ip.split(".")
-                for i in range(0, 4):
-                    ip_hex |= int(ip_split[i]) << 8 * (3 - i)
-                self.header_writer.write_define(f"{node.ip_define} {hex(ip_hex)}")
-                self.header_writer.write_define(f"{node.port_define} {node.port}")
-            elif node.type == ProtonConfig.Node.SERIAL:
-                self.header_writer.write_define(f'{node.device_define} \"{node.device}\"')
+        for d in node.heartbeat.defines:
+            self.header_writer.write_define(f'{d} {d.value}')
+
+        for e in node.endpoints:
+            for d in e.defines:
+                self.header_writer.write_define(f'{d} {d.value}')
+
         self.header_writer.write_newline()
 
     def generate_init_prototype(self):
@@ -1021,8 +961,7 @@ class ProtonCGenerator:
             self.src_writer.write_function_end()
 
     def generate(self, name: str, target: str):
-        self.target = target
-        self.config.set_target(target)
+        self.configure(target)
         generated_filename = f"proton__{name}_{target}"
 
         self.src_writer = CWriter(
@@ -1044,9 +983,11 @@ class ProtonCGenerator:
         self.src_writer.write_include(generated_filename)
         self.src_writer.write_newline()
 
-        self.generate_node_info()
-        self.generate_peer_info()
-        self.generate_node_ids()
+        self.generate_node_defines(self.node)
+
+        for p in self.peers:
+            self.generate_node_defines(p)
+
         self.generate_peer_ids()
         self.generate_bundle_ids()
         self.generate_signal_enums()
@@ -1080,6 +1021,21 @@ class ProtonCGenerator:
 
         self.header_writer.close_file()
         self.src_writer.close_file()
+
+    def configure(self, target: str):
+        self.target = target
+        self.node: ProtonConfig.Node = self.config.nodes[self.target]
+        self.peers: List[ProtonConfig.Node] = []
+        self.connections: List[ProtonConfig.Connection] = []
+
+        # Add peer from any connection that has target node
+        for connection in self.config.connections:
+            if connection.first.node == self.target:
+                self.peers.append(self.config.nodes[connection.second.node])
+                self.connections.append(connection)
+            elif connection.second.node == self.target:
+                self.peers.append(self.config.nodes[connection.first.node])
+                self.connections.append(connection)
 
 
 def main():
@@ -1120,15 +1076,15 @@ def main():
     generator = ProtonCGenerator(file, dest)
 
     exists = False
-    for node in generator.config.nodes:
-        if node.name == target:
+    for name in generator.config.nodes.keys():
+        if name == target:
             exists = True
             break
 
-    if not exists:
-        raise Exception(f'Invalid target "{target}"')
-    else:
+    if exists:
         generator.generate(config_name, target)
+    else:
+        raise Exception(f'Invalid target "{target}"')
 
 if __name__ == "__main__":
     main()
