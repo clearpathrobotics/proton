@@ -21,7 +21,7 @@ using namespace proton;
 Node::Node() {}
 
 Node::Node(const std::string config_file, const std::string name, bool auto_configure, bool auto_activate)
-    : config_(config_file), name_(name), state_(NodeState::UNCONFIGURED), rx_(0), tx_(0), rx_kbps_(0.0), tx_kbps_(0.0)
+    : config_(config_file), name_(name), state_(NodeState::UNCONFIGURED)
 {
   Status status;
 
@@ -160,18 +160,17 @@ Status Node::sendBundle(BundleHandle &bundle_handle) {
       auto& connection = connections_.at(consumer);
 
       // Make sure consumer connection is active
-      if (!connection.connected()) {
+      if (!connection.connected())
+      {
         continue;
       }
 
       status = connection.write(buf.data(), bundle->ByteSizeLong(), bytes_written);
+    }
 
-      if (status == Status::OK)
-      {
-        tx_ += bytes_written;
-
-        bundle_handle.incrementTxCount();
-      }
+    if (status == Status::OK)
+    {
+      bundle_handle.incrementTxCount();
     }
   }
 
@@ -245,12 +244,6 @@ Status Node::waitForBundle()
   {
     auto& handle = getBundle(ret.value());
     handle.incrementRxCount();
-    rx_ += received_bundle.bundle.ByteSizeLong();
-
-    if (connections_.at(received_bundle.producer).getTransportType() == transport_types::SERIAL)
-    {
-      rx_ += SerialTransport::FRAME_OVERHEAD;
-    }
 
     auto callback = handle.getCallback();
 
@@ -289,11 +282,6 @@ void Node::runStatsThread()
 {
   while(1)
   {
-    rx_kbps_ = static_cast<double>(rx_) / 1000;
-    tx_kbps_ = static_cast<double>(tx_) / 1000;
-    rx_ = 0;
-    tx_ = 0;
-
     if (bundles_.size() > 0)
     {
       for (auto& [name, handle] : bundles_)
@@ -338,9 +326,10 @@ void Node::printStats()
   {
     std::cout << "  " << name << ":" << std::endl;
     std::cout << "    Heartbeat: " << peer.getNodeState() << std::endl;
-    std::cout << "    Transport: " << peer.getTransportState() << std::endl;
+    std::cout << "    Transport (" << peer.getTransportType() << "): " << peer.getTransportState() << std::endl;
+    std::cout << "    Rx: " << peer.getRxKbps() << " KB/s " << "Tx: " << peer.getTxKbps() << " KB/s" << std::endl;
   }
-  std::cout << "Rx: " << getRxKbps() << " KB/s " << "Tx: " << getTxKbps() << " KB/s" << std::endl;
+
   std::cout << "----- Produced Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
   {
@@ -379,7 +368,7 @@ void Node::printStats()
 }
 
 Connection::Connection(const NodeConfig& node_config, const NodeConfig& peer_config, const ConnectionConfig& connection_config, ReadCompleteCallback callback):
- config_(peer_config), callback_(callback), state_(NodeState::UNCONFIGURED)
+ config_(peer_config), callback_(callback), state_(NodeState::UNCONFIGURED), rx_kbps_(0.0), tx_kbps_(0.0)
 {
   ConnectionEndpointConfig node_connection_endpoint_config, peer_connection_endpoint_config;
   if (connection_config.connection.first.node == node_config.name &&
@@ -459,8 +448,19 @@ void Connection::heartbeat()
 void Connection::spin()
 {
   Status status;
+  time_t start_time = std::time(nullptr);
+
   while(1)
   {
+    if (std::time(nullptr) - start_time >= 1)
+    {
+      rx_kbps_ = static_cast<double>(getRx()) / 1000;
+      tx_kbps_ = static_cast<double>(getTx()) / 1000;
+      resetRx();
+      resetTx();
+      start_time = std::time(nullptr);
+    }
+
     switch(getTransportState())
     {
       case TransportState::DISCONNECTED:
@@ -478,7 +478,7 @@ void Connection::spin()
         status = pollForBundle();
         if (status != Status::OK)
         {
-          std::cout << "Failed to poll for bundle on peer " << config_.name << std::endl;
+          std::cout << "Failed to poll for bundle on peer " << config_.name << ": " << status << std::endl;
         }
         break;
       }
@@ -508,7 +508,8 @@ Status Connection::pollForBundle()
       return Status::NULL_PTR;
     }
 
-    if (transport_type_ == transport_types::SERIAL)
+    // Remove frame overhead to get actual bundle length
+    if (getTransportType() == proton::transport_types::SERIAL)
     {
       bytes_read -= SerialTransport::FRAME_OVERHEAD;
     }

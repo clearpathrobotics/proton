@@ -83,7 +83,9 @@ void empty_callback(proton::BundleHandle& bundle)
 
 int main()
 {
-  node = std::make_unique<proton::Node>(CONFIG_FILE, "mcu");
+  node = std::make_unique<proton::Node>(CONFIG_FILE, "node1");
+
+  node->registerCallback("node_name", empty_callback);
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);

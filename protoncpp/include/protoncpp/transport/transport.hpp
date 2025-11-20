@@ -111,6 +111,10 @@ public:
       {
         onError(status);
       }
+      else
+      {
+        rx_ += bytes_read;
+      }
 
       return status;
     }
@@ -126,6 +130,10 @@ public:
       if (status != Status::OK)
       {
         onError(status);
+      }
+      else
+      {
+        tx_ += bytes_written;
       }
 
       return status;
@@ -165,8 +173,15 @@ public:
     }
   }
 
-protected:
+  uint64_t getRx() { return rx_; }
+  uint64_t getTx() { return tx_; }
+
+  void resetRx() { rx_ = 0; }
+  void resetTx() { tx_ = 0; }
+
+private:
   std::unique_ptr<Transport> transport_;
+  uint64_t rx_, tx_;
 };
 
 } // namespace proton

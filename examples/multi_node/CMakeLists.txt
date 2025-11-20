@@ -7,45 +7,45 @@ file(MAKE_DIRECTORY "${GENERATED_FOLDER}")
 
 ## MCU
 
-add_executable(multi_node_mcu_cpp
-  multi_node_mcu.cpp
+add_executable(multi_node_1_cpp
+  multi_node_1.cpp
 )
 
-target_link_libraries(multi_node_mcu_cpp
+target_link_libraries(multi_node_1_cpp
   PRIVATE
   proton::protoncpp
 )
 
-target_compile_definitions(multi_node_mcu_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(multi_node_mcu_cpp PRIVATE -Wno-narrowing)
+target_compile_definitions(multi_node_1_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(multi_node_1_cpp PRIVATE -Wno-narrowing)
 
 ## ROS2
 
-add_executable(multi_node_ros2_cpp
-  multi_node_ros2.cpp
+add_executable(multi_node_2_cpp
+  multi_node_2.cpp
 )
 
-target_link_libraries(multi_node_ros2_cpp
+target_link_libraries(multi_node_2_cpp
   PRIVATE
   proton::protoncpp
 )
 
-target_compile_definitions(multi_node_ros2_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(multi_node_ros2_cpp PRIVATE -Wno-narrowing)
+target_compile_definitions(multi_node_2_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(multi_node_2_cpp PRIVATE -Wno-narrowing)
 
 ## ros2_contorl
 
-add_executable(multi_node_ros2_control_cpp
-  multi_node_ros2_control.cpp
+add_executable(multi_node_3_cpp
+  multi_node_3.cpp
 )
 
-target_link_libraries(multi_node_ros2_control_cpp
+target_link_libraries(multi_node_3_cpp
   PRIVATE
   proton::protoncpp
 )
 
-target_compile_definitions(multi_node_ros2_control_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(multi_node_ros2_control_cpp PRIVATE -Wno-narrowing)
+target_compile_definitions(multi_node_3_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(multi_node_3_cpp PRIVATE -Wno-narrowing)
 
 # C Nodes
 
@@ -108,8 +108,8 @@ target_compile_options(multi_node_ros2_control_cpp PRIVATE -Wno-narrowing)
 # Install
 install(TARGETS
   #multi_node_mcu_c
-  multi_node_mcu_cpp
+  multi_node_1_cpp
   #multi_node_ros2_c
-  multi_node_ros2_cpp
-  multi_node_ros2_control_cpp
+  multi_node_2_cpp
+  multi_node_3_cpp
 RUNTIME DESTINATION bin)

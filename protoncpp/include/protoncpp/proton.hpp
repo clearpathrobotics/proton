@@ -46,6 +46,9 @@ public:
   NodeState getNodeState() { return state_; }
   std::string getTransportType() { return transport_type_; }
 
+  double getRxKbps() { return rx_kbps_; }
+  double getTxKbps() { return tx_kbps_; }
+
 private:
   void spin();
   void checkHeartbeat();
@@ -57,6 +60,7 @@ private:
   std::thread run_thread_, heartbeat_thread_;
   NodeState state_;
   int64_t last_heartbeat_ms_;
+  double rx_kbps_, tx_kbps_;
 };
 
 class Node : public BundleManager {
@@ -82,8 +86,7 @@ public:
   Status sendBundle(BundleHandle &bundle_handle);
   Status sendHeartbeat();
 
-  double getRxKbps() { return rx_kbps_; }
-  double getTxKbps() { return tx_kbps_; }
+
 
   Status registerCallback(const std::string &bundle_name,
                           BundleHandle::BundleCallback callback);
@@ -110,8 +113,7 @@ private:
   SafeQueue<ReceivedBundle> read_queue_;
 
   // Stats
-  uint64_t rx_, tx_;
-  double rx_kbps_, tx_kbps_;
+
   std::thread stats_thread_, heartbeat_thread_;
 };
 
