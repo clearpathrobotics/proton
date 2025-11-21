@@ -46,7 +46,7 @@ public:
   std::map<std::string, SignalHandle> getSignalMap() { return signals_; }
   BundleCallback getCallback() { return callback_; }
 
-  void setBundle(const Bundle &bundle) { *bundle_ = bundle; }
+  void updateBundle(const Bundle &bundle) { *bundle_ = bundle; }
 
   void incrementRxCount() { rx_count_++; };
   void resetRxCount() { rx_count_ = 0; };

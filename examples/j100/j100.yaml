@@ -1,12 +1,18 @@
 nodes:
   - name: pc
+    heartbeat:
+      enabled: true
+      period: 1000
     transport:
       type: serial
-      device: /dev/clearpath/j100
+      device: /tmp/ttyPC
   - name: mcu
+    heartbeat:
+      enabled: true
+      period: 100
     transport:
       type: serial
-      device: /dev/clearpath/j100
+      device: /tmp/ttyMCU
 bundles:
   - name: log
     id: 0x100

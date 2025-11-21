@@ -6,7 +6,7 @@
 #include <thread>
 #include <chrono>
 
-proton::Node node;
+std::unique_ptr<proton::Node> node;
 
 void send_log(const char *file, const char* func, int line, uint8_t level, std::string msg, ...);
 
@@ -22,7 +22,7 @@ void send_log(const char *file, const char* func, int line, uint8_t level, std::
   send_log(__FILE_NAME__, __func__, __LINE__, 50U, message, ##__VA_ARGS__)
 
 void send_log(const char *file, const char* func, int line, uint8_t level, std::string msg, ...) {
-  auto& log_bundle = node.getBundle("log");
+  auto& log_bundle = node->getBundle("log");
   log_bundle.getSignal("name").setValue<std::string>("a300_mcu_cpp");
   log_bundle.getSignal("file").setValue<std::string>(file);
   log_bundle.getSignal("line").setValue<uint32_t>(line);
@@ -43,12 +43,12 @@ void send_log(const char *file, const char* func, int line, uint8_t level, std::
 
   log_bundle.getSignal("msg").setValue<std::string>(message);
 
-  node.sendBundle("log");
+  node->sendBundle("log");
 }
 
 void update_status()
 {
-  auto& status_bundle = node.getBundle("status");
+  auto& status_bundle = node->getBundle("status");
   status_bundle.getSignal("hardware_id").setValue<std::string>("A300_MCU");
   status_bundle.getSignal("firmware_version").setValue<std::string>("3.0.0");
   status_bundle.getSignal("mcu_uptime_sec").setValue<int32_t>(rand());
@@ -56,12 +56,12 @@ void update_status()
   status_bundle.getSignal("connection_uptime_sec").setValue<int32_t>(rand());
   status_bundle.getSignal("connection_uptime_nanosec").setValue<uint32_t>(rand());
 
-  node.sendBundle(status_bundle);
+  node->sendBundle(status_bundle);
 }
 
 void update_power()
 {
-  auto& power_bundle = node.getBundle("power");
+  auto& power_bundle = node->getBundle("power");
 
   auto& measured_voltages = power_bundle.getSignal("measured_voltages");
   for (auto i = 0; i < measured_voltages.getLength(); i++)
@@ -75,12 +75,12 @@ void update_power()
     measured_currents.setValue<float>(i, static_cast<float>(rand()));
   }
 
-  node.sendBundle(power_bundle);
+  node->sendBundle(power_bundle);
 }
 
 void update_temperature()
 {
-  auto& temperature_bundle = node.getBundle("temperature");
+  auto& temperature_bundle = node->getBundle("temperature");
 
   auto& temperatures_signal = temperature_bundle.getSignal("temperatures");
 
@@ -89,39 +89,39 @@ void update_temperature()
     temperatures_signal.setValue<float>(i, static_cast<float>(rand()));
   }
 
-  node.sendBundle(temperature_bundle);
+  node->sendBundle(temperature_bundle);
 }
 
 void update_emergency_stop()
 {
-  node.getBundle("emergency_stop").getSignal("data").setValue<bool>(!node.getBundle("emergency_stop").getSignal("data").getValue<bool>());
-  node.sendBundle("emergency_stop");
+  node->getBundle("emergency_stop").getSignal("data").setValue<bool>(!node->getBundle("emergency_stop").getSignal("data").getValue<bool>());
+  node->sendBundle("emergency_stop");
 }
 
 bool needs_reset = true;
 
 void update_stop_status()
 {
-  node.getBundle("stop_status").getSignal("needs_reset").setValue<bool>(needs_reset);
-  node.sendBundle("stop_status");
+  node->getBundle("stop_status").getSignal("needs_reset").setValue<bool>(needs_reset);
+  node->sendBundle("stop_status");
 }
 
 void update_alerts()
 {
-  node.getBundle("alerts").getSignal("data").setValue<std::string>("E810");
-  node.sendBundle("alerts");
+  node->getBundle("alerts").getSignal("data").setValue<std::string>("E810");
+  node->sendBundle("alerts");
 }
 
 void update_pinout_state()
 {
-  auto& pinout_state_bundle = node.getBundle("pinout_state");
+  auto& pinout_state_bundle = node->getBundle("pinout_state");
 
   pinout_state_bundle.getSignal("rails").setValue<proton::list_bool>({rand() % 2});
   pinout_state_bundle.getSignal("inputs").setValue<proton::list_bool>({rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2});
   pinout_state_bundle.getSignal("outputs").setValue<proton::list_bool>({rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2, rand() % 2});
   pinout_state_bundle.getSignal("output_periods").setValue<proton::list_uint32>({rand(), rand(), rand(), rand(), rand(), rand(), rand()});
 
-  node.sendBundle(pinout_state_bundle);
+  node->sendBundle(pinout_state_bundle);
 }
 
 void run_1hz_thread()
@@ -155,7 +155,7 @@ void run_stats_thread()
 {
   while(1)
   {
-    node.printStats();
+    node->printStats();
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
@@ -165,21 +165,21 @@ void clear_needs_reset_callback(proton::BundleHandle& bundle)
 {
   needs_reset = false;
 
-  auto& response = node.getBundle("clear_needs_reset_response");
+  auto& response = node->getBundle("clear_needs_reset_response");
   response.getSignal("success").setValue<bool>(true);
   response.getSignal("message").setValue<std::string>("Needs Reset Cleared ");
 
-  node.sendBundle(response);
+  node->sendBundle(response);
 }
 
 
 void cmd_shutdown_callback(proton::BundleHandle& bundle)
 {
-  auto& response = node.getBundle("cmd_shutdown_response");
+  auto& response = node->getBundle("cmd_shutdown_response");
   response.getSignal("success").setValue<bool>(true);
   response.getSignal("message").setValue<std::string>("Shutting Down");
 
-  node.sendBundle(response);
+  node->sendBundle(response);
 
   exit(0);
 }
@@ -191,17 +191,17 @@ void empty_callback(proton::BundleHandle& bundle)
 
 int main()
 {
-  node = proton::Node(CONFIG_FILE, "mcu");
+  node = std::make_unique<proton::Node>(CONFIG_FILE, "mcu");
 
-  node.registerCallback("clear_needs_reset", clear_needs_reset_callback);
-  node.registerCallback("cmd_shutdown", cmd_shutdown_callback);
+  node->registerCallback("clear_needs_reset", clear_needs_reset_callback);
+  node->registerCallback("cmd_shutdown", cmd_shutdown_callback);
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);
   std::thread send_10hz_thread(run_10hz_thread);
 
-  node.startStatsThread();
-  node.spin();
+  node->startStatsThread();
+  node->spin();
 
   stats_thread.join();
   send_1hz_thread.join();

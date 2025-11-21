@@ -91,19 +91,19 @@ void BundleHandle::printBundleVerbose() {
 }
 
 void BundleHandle::addSignal(SignalConfig config) {
-  Signal* sig;
+  Signal* signal;
   // Non-constant signals are added to the bundle
   if (!config.is_const)
   {
-    sig = bundle_->add_signals();
+    signal = bundle_->add_signals();
   }
   // Constant signals exist just to store their value
   else
   {
-    sig = new Signal();
+    signal = new Signal();
   }
 
-  signals_.emplace(config.name, SignalHandle(config, name_, sig));
+  signals_.emplace(config.name, SignalHandle(config, name_, signal));
 }
 
 SignalHandle &BundleHandle::getSignal(const std::string &signal_name) {

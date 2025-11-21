@@ -18,41 +18,55 @@ TEST(PROTONC_Proton, InitBundle) {
   proton_signal_handle_t test_signal_handles[PROTON_SIGNALS__VALUE_TEST_COUNT];
   PROTON_BUNDLE__value_test_t test_bundle;
 
-  PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT);
+  PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT, PROTON_BUNDLE__VALUE_TEST__PRODUCERS, PROTON_BUNDLE__VALUE_TEST__CONSUMERS);
 
   ASSERT_EQ(test_bundle_handle.bundle.id, PROTON_BUNDLE__VALUE_TEST);
   ASSERT_EQ(test_bundle_handle.bundle.signals, &test_bundle_handle.arg);
   ASSERT_EQ(test_bundle_handle.arg.data, test_signal_handles);
   ASSERT_EQ(test_bundle_handle.arg.length, PROTON_SIGNALS__VALUE_TEST_COUNT);
   ASSERT_EQ(test_bundle_handle.arg.size, 0);
+  ASSERT_EQ(test_bundle_handle.producers, PROTON_BUNDLE__VALUE_TEST__PRODUCERS);
+  ASSERT_EQ(test_bundle_handle.consumers, PROTON_BUNDLE__VALUE_TEST__CONSUMERS);
 }
 
 TEST(PROTONC_Proton, InitNode) {
-  proton_transport_t producer_transport;
-  producer_transport.connect = PROTON_TRANSPORT__ProducerConnect;
-  producer_transport.disconnect = PROTON_TRANSPORT__ProducerDisconnect;
-  producer_transport.read = PROTON_TRANSPORT__ProducerRead;
-  producer_transport.write = PROTON_TRANSPORT__ProducerWrite;
+  proton_peer_t producer_peers[PROTON_PEER__COUNT] = PROTON_NODE__PRODUCER__PEERS__DEFAULT_VALUE;
 
-  PROTON_InitNode(&producer_node, producer_transport, PROTON_BUNDLE_Receive, proton_producer_read_buffer, proton_producer_write_buffer);
+  ASSERT_EQ(PROTON_InitPeer(
+    &producer_peers[PROTON_PEER__CONSUMER],
+    PROTON_NODE_ID__CONSUMER,
+    (proton_heartbeat_t)PROTON_HEARTBEAT__CONSUMER__DEFAULT_VALUE,
+    (proton_transport_t)PROTON_TRANSPORT__CONSUMER__DEFAULT_VALUE,
+    PROTON_PEER__ReceiveConsumer,
+    PROTON_MUTEX__ConsumerLock,
+    PROTON_MUTEX__ConsumerUnlock,
+    proton_consumer_buffer),
+  PROTON_OK);
 
-  ASSERT_EQ(producer_node.transport.connect, PROTON_TRANSPORT__ProducerConnect);
-  ASSERT_EQ(producer_node.transport.disconnect, PROTON_TRANSPORT__ProducerDisconnect);
-  ASSERT_EQ(producer_node.transport.read, PROTON_TRANSPORT__ProducerRead);
-  ASSERT_EQ(producer_node.transport.write, PROTON_TRANSPORT__ProducerWrite);
-  ASSERT_EQ(producer_node.receive, PROTON_BUNDLE_Receive);
-  ASSERT_EQ(producer_node.read_buf.data, proton_producer_read_buffer.data);
-  ASSERT_EQ(producer_node.read_buf.len, proton_producer_read_buffer.len);
-  ASSERT_EQ(producer_node.write_buf.data, proton_producer_write_buffer.data);
-  ASSERT_EQ(producer_node.write_buf.len, proton_producer_write_buffer.len);
-  EXPECT_FALSE(producer_node.connected);
+  ASSERT_EQ(PROTON_Configure(
+    &producer_node,
+    (proton_heartbeat_t)PROTON_HEARTBEAT__PRODUCER__DEFAULT_VALUE,
+    PROTON_MUTEX__ProducerLock,
+    PROTON_MUTEX__ProducerUnlock,
+    proton_producer_buffer,
+    producer_peers,
+    PROTON_PEER__COUNT),
+  PROTON_OK);
+
+  PROTON_Activate(&producer_node);
+
+  ASSERT_EQ(producer_node.peers[PROTON_PEER__CONSUMER].transport.connect, PROTON_TRANSPORT__ConsumerConnect);
+  ASSERT_EQ(producer_node.peers[PROTON_PEER__CONSUMER].transport.disconnect, PROTON_TRANSPORT__ConsumerDisconnect);
+  ASSERT_EQ(producer_node.peers[PROTON_PEER__CONSUMER].transport.read, PROTON_TRANSPORT__ConsumerRead);
+  ASSERT_EQ(producer_node.peers[PROTON_PEER__CONSUMER].transport.write, PROTON_TRANSPORT__ConsumerWrite);
+  ASSERT_EQ(producer_node.peers[PROTON_PEER__CONSUMER].receive, PROTON_PEER__ReceiveConsumer);
+  ASSERT_EQ(producer_node.atomic_buffer.buffer.data, proton_producer_buffer.data);
+  ASSERT_EQ(producer_node.atomic_buffer.buffer.len, proton_producer_buffer.len);
+  ASSERT_EQ(producer_node.state, PROTON_NODE_ACTIVE);
 }
 
 
 TEST(PROTONC_Proton, Encode) {
-  // Buffer to encode with
-  uint8_t buffer[256];
-
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handles[PROTON_SIGNALS__VALUE_TEST_COUNT];
@@ -189,46 +203,46 @@ TEST(PROTONC_Proton, Encode) {
   test_signal_handles[PROTON_SIGNALS__VALUE_TEST__LIST_BYTES_VALUE].arg.size = 0;
 
   // Initialise bundle
-  PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT);
+  proton_status_e status = PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT, 0, 0);
+  EXPECT_EQ(status, PROTON_OK);
 
   // Encode bundle
-  int bytes_written = PROTON_Encode(&test_bundle_handle, buffer, 256);
+  size_t bytes_encoded;
+  status = PROTON_Encode(&test_bundle_handle, proton_producer_buffer, &bytes_encoded);
+  EXPECT_EQ(status, PROTON_OK);
 
   // More than 0 bytes written if encoding is successful
-  EXPECT_GT(bytes_written, 0);
+  EXPECT_GT(bytes_encoded, 0);
 }
 
 TEST(PROTONC_Proton, DecodeId) {
-  // Buffer to decode with
-  uint8_t buffer[256];
-
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handle;
   PROTON_BUNDLE__value_test_t test_bundle;
 
   // Initialise bundle with ID 0x123
-  PROTON_InitBundle(&test_bundle_handle, 0x123, &test_signal_handle, 0);
+  proton_status_e status = PROTON_InitBundle(&test_bundle_handle, 0x123, &test_signal_handle, 0, 0, 0);
+  EXPECT_EQ(status, PROTON_OK);
 
   // Encode bundle
-  int bytes_written = PROTON_Encode(&test_bundle_handle, buffer, 256);
+  size_t bytes_encoded;
+  status = PROTON_Encode(&test_bundle_handle, proton_producer_buffer, &bytes_encoded);
+  EXPECT_EQ(status, PROTON_OK);
 
   // More than 0 bytes written if encoding is successful
-  EXPECT_GT(bytes_written, 0);
+  EXPECT_GT(bytes_encoded, 0);
 
   uint32_t id = 0;
 
   // Decoding should succeed
-  EXPECT_TRUE(PROTON_DecodeId(&id, buffer, 256));
+  EXPECT_EQ(PROTON_DecodeId(&id, proton_producer_buffer), PROTON_OK);
 
   // ID should match
   ASSERT_EQ(id, 0x123);
 }
 
 TEST(PROTONC_Proton, Decode) {
-  // Buffer to encode/decode with
-  uint8_t buffer[256];
-
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handles[PROTON_SIGNALS__VALUE_TEST_COUNT];
@@ -365,27 +379,30 @@ TEST(PROTONC_Proton, Decode) {
   test_signal_handles[PROTON_SIGNALS__VALUE_TEST__LIST_BYTES_VALUE].arg.size = 0;
 
   // Initialise bundle
-  PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT);
+  proton_status_e status = PROTON_InitBundle(&test_bundle_handle, PROTON_BUNDLE__VALUE_TEST, test_signal_handles, PROTON_SIGNALS__VALUE_TEST_COUNT, 0, 0);
+  EXPECT_EQ(status, PROTON_OK);
 
   // Encode bundle
-  int bytes_written = PROTON_Encode(&test_bundle_handle, buffer, 256);
+  size_t bytes_encoded;
+  status = PROTON_Encode(&test_bundle_handle, proton_producer_buffer, &bytes_encoded);
+  EXPECT_EQ(status, PROTON_OK);
 
   // More than 0 bytes written if encoding is successful
-  EXPECT_GT(bytes_written, 0);
+  EXPECT_GT(bytes_encoded, 0);
 
   uint32_t id = 0;
 
   // Decode ID
-  EXPECT_TRUE(PROTON_DecodeId(&id, buffer, 256));
+  EXPECT_EQ(PROTON_DecodeId(&id, proton_producer_buffer), PROTON_OK);
 
   // ID should be the same
   EXPECT_EQ(id, PROTON_BUNDLE__VALUE_TEST);
 
   // Decode bundle in place
-  int bytes_left = PROTON_Decode(&test_bundle_handle, buffer, bytes_written);
+  status = PROTON_Decode(&test_bundle_handle, proton_producer_buffer, bytes_encoded);
 
   // Check that all bytes were successfully decoded
-  EXPECT_EQ(bytes_left, 0);
+  EXPECT_EQ(status, PROTON_OK);
 
   // Data in test struct should be decoded correctly
   EXPECT_EQ(test_bundle.double_value, double_value);
@@ -411,12 +428,12 @@ TEST(PROTONC_Proton, Decode) {
 // TEST(PROTONC_Proton, SpinOnce)
 // {
 //   // Null node should return error
-//   ASSERT_EQ(PROTON_SpinOnce(NULL), PROTON_ERR);
+//   ASSERT_EQ(PROTON_SpinOnce(NULL), PROTON_ERROR);
 
 //   proton_node_t node = proton_node_default;
 
 //   // Uninitialised node should report an error
-//   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_ERR);
+//   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_ERROR);
 
 //   // Set node to connected state
 //   node.connected = true;
@@ -426,17 +443,17 @@ TEST(PROTONC_Proton, Decode) {
 //   node.transport.read = read_func;
 
 //   // Initialise node without defined buffers
-//   PROTON_InitNode(&node, node.transport, receive_func, proton_buffer_default, proton_buffer_default);
+//   PROTON_Configure(&node, node.transport, receive_func, proton_buffer_default, proton_buffer_default);
 
-//   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_ERR);
+//   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_ERROR);
 
 //   uint8_t buffer[256];
 //   proton_buffer_t read_buffer = {buffer, sizeof(buffer)};
 
 //   // Initialise node with a read buffer
-//   PROTON_InitNode(&node, node.transport, receive_func, read_buffer, proton_buffer_default);
+//   PROTON_Configure(&node, node.transport, receive_func, read_buffer, proton_buffer_default);
 
-//   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_READ_ERR);
+//   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_READ_ERROR);
 // }
 
 

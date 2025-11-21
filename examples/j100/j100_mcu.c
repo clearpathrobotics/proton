@@ -9,8 +9,10 @@ uint8_t read_buf_[PROTON_MAX_MESSAGE_SIZE];
 
 double rx, tx;
 
-proton_buffer_t proton_mcu_read_buffer = {read_buf_, PROTON_MAX_MESSAGE_SIZE};
-proton_buffer_t proton_mcu_write_buffer = {write_buf_, PROTON_MAX_MESSAGE_SIZE};
+uint32_t last_pc_heartbeat = 0;
+
+proton_buffer_t proton_mcu_buffer = {write_buf_, PROTON_MAX_MESSAGE_SIZE};
+proton_buffer_t proton_pc_buffer = {read_buf_, PROTON_MAX_MESSAGE_SIZE};
 
 int serial_port;
 
@@ -37,6 +39,13 @@ void PROTON_BUNDLE_MotorCommandCallback() {
   motor_feedback_bundle.commanded_mode = motor_command_bundle.mode;
   motor_feedback_bundle.drivers_measured_velocity[0] = motor_command_bundle.drivers[0];
   motor_feedback_bundle.drivers_measured_velocity[1] = motor_command_bundle.drivers[1];
+}
+
+void PROTON_BUNDLE_PcHeartbeatCallback()
+{
+  printf("Heartbeat received %u\r\n", pc_heartbeat_bundle.heartbeat);
+  mcu_node.peers[PROTON_PEER__PC].state = PROTON_NODE_ACTIVE;
+  last_pc_heartbeat = time(NULL);
 }
 
 void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
@@ -146,14 +155,14 @@ void update_motor_feedback() {
   PROTON_BUNDLE_Send(PROTON_BUNDLE__MOTOR_FEEDBACK);
 }
 
-bool PROTON_TRANSPORT__McuConnect() {
-  serial_port = serial_init(PROTON_NODE__MCU__DEVICE);
+bool PROTON_TRANSPORT__PcConnect() {
+  serial_port = serial_init(PROTON_NODE__PC__DEVICE);
   return serial_port >= 0;
 }
 
-bool PROTON_TRANSPORT__McuDisconnect() { return true; }
+bool PROTON_TRANSPORT__PcDisconnect() { return true; }
 
-size_t PROTON_TRANSPORT__McuRead(uint8_t *buf, size_t len) {
+size_t PROTON_TRANSPORT__PcRead(uint8_t *buf, size_t len) {
   size_t bytes_read = serial_read(serial_port, buf, len);
 
   if (bytes_read > 0)
@@ -164,7 +173,7 @@ size_t PROTON_TRANSPORT__McuRead(uint8_t *buf, size_t len) {
   return bytes_read;
 }
 
-size_t PROTON_TRANSPORT__McuWrite(const uint8_t *buf, size_t len) {
+size_t PROTON_TRANSPORT__PcWrite(const uint8_t *buf, size_t len) {
   size_t bytes_written = serial_write(serial_port, buf, len);
 
   if (bytes_written > 0)
@@ -175,11 +184,12 @@ size_t PROTON_TRANSPORT__McuWrite(const uint8_t *buf, size_t len) {
   return bytes_written;
 }
 
-pthread_mutex_t lock;
+pthread_mutex_t mcu_lock, pc_lock;
 
-bool PROTON_MUTEX__McuLock() { return pthread_mutex_lock(&lock) == 0; }
-
-bool PROTON_MUTEX__McuUnlock() { return pthread_mutex_unlock(&lock) == 0; }
+bool PROTON_MUTEX__McuLock() { return pthread_mutex_lock(&mcu_lock) == 0; }
+bool PROTON_MUTEX__McuUnlock() { return pthread_mutex_unlock(&mcu_lock) == 0; }
+bool PROTON_MUTEX__PcLock() { return pthread_mutex_lock(&pc_lock) == 0; }
+bool PROTON_MUTEX__PcUnlock() { return pthread_mutex_unlock(&pc_lock) == 0; }
 
 void *timer_1hz(void *arg) {
   uint32_t i = 0;
@@ -189,6 +199,11 @@ void *timer_1hz(void *arg) {
     update_emergency_stop();
     update_stop_status();
     msleep(1000);
+
+    if (time(NULL) - last_pc_heartbeat > PROTON_NODE__PC__HEARTBEAT_PERIOD / 1000)
+    {
+      mcu_node.peers[PROTON_PEER__PC].state = PROTON_NODE_INACTIVE;
+    }
   }
 }
 
@@ -198,6 +213,7 @@ void *timer_10hz(void *arg) {
     LOG_INFO("10hz timer %ld", i++);
     update_power();
     update_temperature();
+    PROTON_BUNDLE_SendHeartbeat();
     msleep(100);
   }
 }
@@ -218,6 +234,9 @@ void *stats(void *arg) {
   while (1) {
     printf("\033[2J\033[1;1H");
     printf("--------- J100 MCU C --------\r\n");
+    printf("Node: %u\r\n", mcu_node.state);
+    printf("Peer: %s\r\n", PROTON_NODE__PC__NAME);
+    printf("  State: %u, Transport: %u\r\n", mcu_node.peers[PROTON_PEER__PC].state, mcu_node.peers[PROTON_PEER__PC].transport.state);
     printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", rx / 1000, tx / 1000);
     printf("--- Received Bundles (hz) ---\r\n");
     printf("wifi_connected: %d\r\n", cb_counts[CALLBACK_WIFI_CONNECTED]);
@@ -240,7 +259,8 @@ void *stats(void *arg) {
 int main() {
   printf("~~~~~~~ J100 node ~~~~~~~\r\n");
 
-  pthread_mutex_init(&lock, NULL);
+  pthread_mutex_init(&mcu_lock, NULL);
+  pthread_mutex_init(&pc_lock, NULL);
 
   PROTON_Init();
 
@@ -256,7 +276,7 @@ int main() {
   pthread_create(&thread_1hz, NULL, &timer_1hz, NULL);
   pthread_create(&thread_stats, NULL, &stats, NULL);
 
-  PROTON_Spin(&mcu_node);
+  PROTON_Spin(&mcu_node, PROTON_PEER__PC);
 
   pthread_join(thread_50hz, NULL);
   pthread_join(thread_10hz, NULL);

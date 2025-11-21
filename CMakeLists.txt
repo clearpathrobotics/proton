@@ -9,6 +9,7 @@ option(PROTON_BUILD_PROTONC "Build protonc library" ON)
 option(PROTON_BUILD_PROTONCPP "Build protoncpp library" ON)
 option(PROTON_BUILD_EXAMPLES "Build proton examples" ON)
 option(PROTON_BUILD_TESTS "Build proton tests" ON)
+option(PROTON_INSTALL "Install proton" ON)
 
 if (PROTON_BUILD_PROTONC)
   add_subdirectory(protonc)
@@ -41,17 +42,18 @@ write_basic_package_version_file(
     COMPATIBILITY AnyNewerVersion
 )
 
-# install(
-#     EXPORT ProtonTargets
-#     NAMESPACE proton::
-#     DESTINATION lib/cmake/proton
-# )
+if (PROTON_INSTALL)
+  install(
+      EXPORT ProtonTargets
+      NAMESPACE proton::
+      DESTINATION lib/cmake/proton
+  )
 
-# install(
-#     FILES
-#         ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
-#         ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
-#         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
-#     DESTINATION lib/cmake/proton
-# )
-
+  install(
+      FILES
+          ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
+          ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
+          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
+      DESTINATION lib/cmake/proton
+  )
+endif()

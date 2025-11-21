@@ -194,6 +194,13 @@ class CWriter:
     def write_if_statement_end(self, indent_level=1):
         self.write('}', indent_level)
 
+    def write_else_statement_start(self, indent_level=1):
+        self.write('else', indent_level)
+        self.write('{', indent_level)
+
+    def write_else_statement_end(self, indent_level=1):
+        self.write('}', indent_level)
+
     def write_define(self, content, indent_level=0):
         self.write(f'#define {content}', indent_level)
 
