@@ -1,14 +1,21 @@
 nodes:
   - name: producer
-    transport:
-      type: udp4
-      ip: 127.0.0.1
-      port: 11416
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11416
   - name: consumer
-    transport:
-      type: udp4
-      ip: 127.0.0.1
-      port: 11417
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11417
+
+connections:
+  - first: {node: producer, id: 0}
+    second: {node: consumer, id: 0}
+
 bundles:
   - name: value_test
     id: 0x100

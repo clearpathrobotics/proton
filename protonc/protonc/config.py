@@ -594,7 +594,7 @@ class ProtonConfig(BaseConfig):
             self.transport_disconnect_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_DISCONNECT}')
             self.transport_read_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_READ}')
             self.transport_write_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_WRITE}')
-            self.transport_define = self.create_define(f'{self.TRANSPORT_PREFIX}__{self.DEFAULT_VALUE_SUFFIX}', f'{{PROTON_NODE_UNCONFIGURED, {self.transport_connect_func}, {self.transport_disconnect_func}, {self.transport_read_func}, {self.transport_write_func}}}')
+            self.transport_define = self.create_define(f'{self.TRANSPORT_PREFIX}__{self.DEFAULT_VALUE_SUFFIX}', f'{{PROTON_TRANSPORT_DISCONNECTED, {self.transport_connect_func}, {self.transport_disconnect_func}, {self.transport_read_func}, {self.transport_write_func}}}')
 
             self.node_variable_name = f'{self.name}_node'
             self.peer_variable_name = f'{self.name}_peers'
