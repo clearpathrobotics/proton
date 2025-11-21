@@ -138,14 +138,14 @@ typedef struct {
 
 #define TRANSPORT_VALID(transport) (transport.connect != NULL && transport.disconnect != NULL && transport.read != NULL && transport.write != NULL)
 
-proton_status_e PROTON_InitBundle(proton_bundle_handle_t *handle,
+proton_status_e proton_init_bundle(proton_bundle_handle_t *handle,
                                   uint32_t id,
                                   proton_signal_handle_t *signal_handles,
                                   uint32_t signal_count,
                                   proton_producer_t producers,
                                   proton_consumer_t consumers);
 
-proton_status_e PROTON_InitPeer(proton_peer_t * peer,
+proton_status_e proton_init_peer(proton_peer_t * peer,
                                 proton_peer_id_t id,
                                 proton_heartbeat_t heartbeat,
                                 proton_transport_t transport,
@@ -154,7 +154,7 @@ proton_status_e PROTON_InitPeer(proton_peer_t * peer,
                                 proton_mutex_unlock_t unlock_func,
                                 proton_buffer_t read_buf);
 
-proton_status_e PROTON_Configure(proton_node_t * node,
+proton_status_e proton_configure(proton_node_t * node,
                                  proton_heartbeat_t heartbeat,
                                  proton_mutex_lock_t lock_func,
                                  proton_mutex_unlock_t unlock_func,
@@ -162,22 +162,22 @@ proton_status_e PROTON_Configure(proton_node_t * node,
                                  proton_peer_t * peers,
                                  uint16_t peer_count);
 
-proton_status_e PROTON_Activate(proton_node_t * node);
+proton_status_e proton_activate(proton_node_t * node);
 
-proton_status_e PROTON_Encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded);
-proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length);
-proton_status_e PROTON_DecodeId(uint32_t *id, proton_buffer_t buffer);
+proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded);
+proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length);
+proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id);
 
-proton_status_e PROTON_Spin(proton_node_t *node, const uint8_t peer);
-proton_status_e PROTON_SpinOnce(proton_node_t *node, const uint8_t peer);
+proton_status_e proton_spin(proton_node_t *node, const uint8_t peer);
+proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer);
 
-proton_status_e PROTON_CRC16(const uint8_t *data, uint16_t len, uint16_t *crc16);
-proton_status_e PROTON_FillFrameHeader(uint8_t * header, uint16_t payload_len);
-proton_status_e PROTON_FillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
-proton_status_e PROTON_CheckFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
-proton_status_e PROTON_GetFramedPayloadLength(const uint8_t * framed_buf, uint16_t *length);
+proton_status_e proton_crc16(const uint8_t *data, uint16_t len, uint16_t *crc16);
+proton_status_e proton_fill_frame_header(uint8_t * header, uint16_t payload_len);
+proton_status_e proton_fill_crc16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
+proton_status_e proton_check_framed_payload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
+proton_status_e proton_get_framed_payload_length(const uint8_t * framed_buf, uint16_t *length);
 
-void PROTON_PrintBundle(proton_Bundle bundle);
-void PROTON_PrintSignal(proton_Signal signal);
+void proton_print_bundle(proton_Bundle bundle);
+void proton_print_signal(proton_Signal signal);
 
 #endif // INC_PROTONC_PROTON_H_

@@ -13,7 +13,7 @@
 #include "protonc/proton.h"
 #include <stdio.h>
 
-proton_status_e PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
+proton_status_e proton_init_bundle(proton_bundle_handle_t *handle, uint32_t id,
                                   proton_signal_handle_t *signal_handles,
                                   uint32_t signal_count,
                                   proton_producer_t producers,
@@ -32,7 +32,7 @@ proton_status_e PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
   return PROTON_NULL_PTR_ERROR;
 }
 
-proton_status_e PROTON_InitPeer(proton_peer_t * peer,
+proton_status_e proton_init_peer(proton_peer_t * peer,
                                 proton_peer_id_t id,
                                 proton_heartbeat_t heartbeat,
                                 proton_transport_t transport,
@@ -63,7 +63,7 @@ proton_status_e PROTON_InitPeer(proton_peer_t * peer,
   return PROTON_NULL_PTR_ERROR;
 }
 
-proton_status_e PROTON_Configure(proton_node_t * node,
+proton_status_e proton_configure(proton_node_t * node,
                                  proton_heartbeat_t heartbeat,
                                  proton_mutex_lock_t lock_func,
                                  proton_mutex_unlock_t unlock_func,
@@ -95,7 +95,7 @@ proton_status_e PROTON_Configure(proton_node_t * node,
   return PROTON_NULL_PTR_ERROR;
 }
 
-proton_status_e PROTON_Activate(proton_node_t *node)
+proton_status_e proton_activate(proton_node_t *node)
 {
   if (node == NULL)
   {
@@ -111,7 +111,7 @@ proton_status_e PROTON_Activate(proton_node_t *node)
   return PROTON_OK;
 }
 
-proton_status_e PROTON_Encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded) {
+proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded) {
   if (handle == NULL || handle->arg.data == NULL || buffer.data == NULL || bytes_encoded == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
@@ -187,7 +187,7 @@ proton_status_e PROTON_Encode(proton_bundle_handle_t * handle, proton_buffer_t b
   }
 }
 
-proton_status_e PROTON_DecodeId(uint32_t *id, proton_buffer_t buffer) {
+proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id) {
   if (id == NULL || buffer.data == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
@@ -221,7 +221,7 @@ proton_status_e PROTON_DecodeId(uint32_t *id, proton_buffer_t buffer) {
   return status;
 }
 
-proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length) {
+proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length) {
   if (handle == NULL || handle->arg.data == NULL || buffer.data == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
@@ -296,10 +296,10 @@ proton_status_e PROTON_Decode(proton_bundle_handle_t *handle, proton_buffer_t bu
   }
 }
 
-proton_status_e PROTON_Spin(proton_node_t *node, const uint8_t peer) {
+proton_status_e proton_spin(proton_node_t *node, const uint8_t peer) {
   proton_status_e status;
   while (1) {
-    status = PROTON_SpinOnce(node, peer);
+    status = proton_spin_once(node, peer);
 
     if (status != PROTON_OK) {
       printf("Spin error %u\r\n", status);
@@ -309,7 +309,7 @@ proton_status_e PROTON_Spin(proton_node_t *node, const uint8_t peer) {
   return PROTON_ERROR;
 }
 
-proton_status_e PROTON_SpinOnce(proton_node_t *node, const uint8_t peer) {
+proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
   if (node == NULL || node->peers == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
@@ -411,18 +411,102 @@ proton_status_e PROTON_SpinOnce(proton_node_t *node, const uint8_t peer) {
   return PROTON_OK;
 }
 
-void PROTON_PrintBundle(proton_Bundle bundle) {
+proton_status_e proton_crc16(const uint8_t *data, uint16_t len, uint16_t *crc16) {
+  if (data == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  uint16_t crc = 0xFFFF;
+  for (uint16_t i = 0; i < len; i++) {
+    crc ^= (uint16_t)data[i] << 8;
+    for (int j = 0; j < 8; j++) {
+      if (crc & 0x8000)
+        crc = (crc << 1) ^ 0x1021;
+      else
+        crc <<= 1;
+    }
+  }
+  *crc16 = crc;
+  return PROTON_OK;
+}
+
+proton_status_e proton_fill_frame_header(uint8_t *header, uint16_t payload_len) {
+  if (header == NULL) {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  header[0] = PROTON_FRAME_HEADER_MAGIC_BYTE_0;
+  header[1] = PROTON_FRAME_HEADER_MAGIC_BYTE_1;
+  header[2] = (uint8_t)(payload_len & 0xFF);
+  header[3] = (uint8_t)(payload_len >> 8);
+
+  return PROTON_OK;
+}
+
+proton_status_e proton_fill_crc16(const uint8_t *payload, const uint16_t payload_len,
+                      uint8_t *crc) {
+  if (payload == NULL || crc == NULL) {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  uint16_t crc16;
+  proton_status_e status = proton_crc16(payload, payload_len, &crc16);
+
+  if (status == PROTON_OK)
+  {
+    crc[0] = (uint8_t)(crc16 & 0xFF);
+    crc[1] = (uint8_t)(crc16 >> 8);
+  }
+
+  return status;
+}
+
+proton_status_e proton_check_framed_payload(const uint8_t *payload, const size_t payload_len,
+                               const uint16_t frame_crc) {
+  if (payload == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  uint16_t crc;
+  proton_status_e status = proton_crc16(payload, payload_len, &crc);
+  if (status == PROTON_OK && crc != frame_crc)
+  {
+    return PROTON_CRC16_ERROR;
+  }
+
+  return status;
+}
+
+proton_status_e proton_get_framed_payload_length(const uint8_t *framed_buf, uint16_t *length) {
+  if (framed_buf == NULL || length == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  if (framed_buf[0] != PROTON_FRAME_HEADER_MAGIC_BYTE_0 ||
+      framed_buf[1] != PROTON_FRAME_HEADER_MAGIC_BYTE_1) {
+    return PROTON_ERROR;
+  }
+
+  *length = framed_buf[2] | (framed_buf[3] << 8);
+
+  return PROTON_OK;
+}
+
+void proton_print_bundle(proton_Bundle bundle) {
   proton_list_t *args = (proton_list_t *)bundle.signals;
   printf("Proton Bundle { \r\n");
   printf("\tID: 0x%x\r\n", bundle.id);
   printf("\tSignals { \r\n");
   for (int i = 0; i < args->length; i++) {
-    PROTON_PrintSignal(((proton_signal_handle_t *)args->data)[i].signal);
+    proton_print_signal(((proton_signal_handle_t *)args->data)[i].signal);
   }
   printf("\t}\r\n}\r\n");
 }
 
-void PROTON_PrintSignal(proton_Signal signal) {
+void proton_print_signal(proton_Signal signal) {
   pb_size_t which = signal.which_signal;
 
   proton_list_t *arg;
@@ -628,88 +712,4 @@ void PROTON_PrintSignal(proton_Signal signal) {
     break;
   }
   }
-}
-
-proton_status_e PROTON_CRC16(const uint8_t *data, uint16_t len, uint16_t *crc16) {
-  if (data == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  uint16_t crc = 0xFFFF;
-  for (uint16_t i = 0; i < len; i++) {
-    crc ^= (uint16_t)data[i] << 8;
-    for (int j = 0; j < 8; j++) {
-      if (crc & 0x8000)
-        crc = (crc << 1) ^ 0x1021;
-      else
-        crc <<= 1;
-    }
-  }
-  *crc16 = crc;
-  return PROTON_OK;
-}
-
-proton_status_e PROTON_FillFrameHeader(uint8_t *header, uint16_t payload_len) {
-  if (header == NULL) {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  header[0] = PROTON_FRAME_HEADER_MAGIC_BYTE_0;
-  header[1] = PROTON_FRAME_HEADER_MAGIC_BYTE_1;
-  header[2] = (uint8_t)(payload_len & 0xFF);
-  header[3] = (uint8_t)(payload_len >> 8);
-
-  return PROTON_OK;
-}
-
-proton_status_e PROTON_FillCRC16(const uint8_t *payload, const uint16_t payload_len,
-                      uint8_t *crc) {
-  if (payload == NULL || crc == NULL) {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  uint16_t crc16;
-  proton_status_e status = PROTON_CRC16(payload, payload_len, &crc16);
-
-  if (status == PROTON_OK)
-  {
-    crc[0] = (uint8_t)(crc16 & 0xFF);
-    crc[1] = (uint8_t)(crc16 >> 8);
-  }
-
-  return status;
-}
-
-proton_status_e PROTON_CheckFramedPayload(const uint8_t *payload, const size_t payload_len,
-                               const uint16_t frame_crc) {
-  if (payload == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  uint16_t crc;
-  proton_status_e status = PROTON_CRC16(payload, payload_len, &crc);
-  if (status == PROTON_OK && crc != frame_crc)
-  {
-    return PROTON_CRC16_ERROR;
-  }
-
-  return status;
-}
-
-proton_status_e PROTON_GetFramedPayloadLength(const uint8_t *framed_buf, uint16_t *length) {
-  if (framed_buf == NULL || length == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  if (framed_buf[0] != PROTON_FRAME_HEADER_MAGIC_BYTE_0 ||
-      framed_buf[1] != PROTON_FRAME_HEADER_MAGIC_BYTE_1) {
-    return PROTON_ERROR;
-  }
-
-  *length = framed_buf[2] | (framed_buf[3] << 8);
-
-  return PROTON_OK;
 }

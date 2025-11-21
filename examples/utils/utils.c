@@ -103,7 +103,7 @@ size_t serial_read(int serial_port, uint8_t *buf, size_t len) {
 
   // Get payload length from header
   uint16_t payload_len;
-  if (PROTON_GetFramedPayloadLength(buf, &payload_len) != PROTON_OK)
+  if (proton_get_framed_payload_length(buf, &payload_len) != PROTON_OK)
   {
     return 0;
   }
@@ -127,7 +127,7 @@ size_t serial_read(int serial_port, uint8_t *buf, size_t len) {
   ret = read(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
 
   // Check for valid CRC16
-  if (ret != PROTON_FRAME_CRC_OVERHEAD || PROTON_CheckFramedPayload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))) != PROTON_OK)
+  if (ret != PROTON_FRAME_CRC_OVERHEAD || proton_check_framed_payload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))) != PROTON_OK)
   {
     return 0;
   }
@@ -139,12 +139,12 @@ size_t serial_write(int serial_port, const uint8_t *buf, size_t len) {
   uint8_t header[4];
   uint8_t crc[2];
 
-  if (PROTON_FillFrameHeader(header, len) != PROTON_OK)
+  if (proton_fill_frame_header(header, len) != PROTON_OK)
   {
     return 0;
   }
 
-  if (PROTON_FillCRC16(buf, len, crc) != PROTON_OK)
+  if (proton_fill_crc16(buf, len, crc) != PROTON_OK)
   {
     return 0;
   }
