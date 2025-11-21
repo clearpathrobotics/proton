@@ -613,7 +613,7 @@ class ProtonCGenerator:
             self.src_writer.write_switch_start("id")
 
             for b in self.config.bundles + self.config.heartbeats:
-                if n.name in b.producers:
+                if n.name in b.producers and self.node.name in b.consumers:
                     # Assign bundle and callback to appropriate values for this case
                     self.src_writer.write_case_start(b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name)
                     self.src_writer.write(

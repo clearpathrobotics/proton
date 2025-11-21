@@ -5,7 +5,7 @@ file(MAKE_DIRECTORY "${GENERATED_FOLDER}")
 
 # C++ Nodes
 
-## MCU
+## Node 1
 
 add_executable(multi_node_1_cpp
   multi_node_1.cpp
@@ -19,7 +19,7 @@ target_link_libraries(multi_node_1_cpp
 target_compile_definitions(multi_node_1_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
 target_compile_options(multi_node_1_cpp PRIVATE -Wno-narrowing)
 
-## ROS2
+## Node 2
 
 add_executable(multi_node_2_cpp
   multi_node_2.cpp
@@ -33,7 +33,7 @@ target_link_libraries(multi_node_2_cpp
 target_compile_definitions(multi_node_2_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
 target_compile_options(multi_node_2_cpp PRIVATE -Wno-narrowing)
 
-## ros2_contorl
+## Node 3
 
 add_executable(multi_node_3_cpp
   multi_node_3.cpp
@@ -49,67 +49,96 @@ target_compile_options(multi_node_3_cpp PRIVATE -Wno-narrowing)
 
 # C Nodes
 
-## MCU
+## Node 1
 
-# set(GENERATED_C_FILES
-#   "${GENERATED_FOLDER}/proton__multi_node_mcu.c"
-#   "${GENERATED_FOLDER}/proton__multi_node_mcu.h"
-# )
+set(GENERATED_C_FILES
+  "${GENERATED_FOLDER}/proton__multi_node_node1.c"
+  "${GENERATED_FOLDER}/proton__multi_node_node1.h"
+)
 
-# protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "mcu")
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node1")
 
-# add_executable(multi_node_mcu_c
-#   multi_node_mcu.c
-#   ${GENERATED_FOLDER}/proton__multi_node_mcu.c
-#   ${UTILS_FOLDER}/utils.c
-# )
+add_executable(multi_node_1_c
+  multi_node_1.c
+  ${GENERATED_FOLDER}/proton__multi_node_node1.c
+  ${UTILS_FOLDER}/utils.c
+)
 
-# target_link_libraries(multi_node_mcu_c
-#   PRIVATE
-#   proton::protonc
-# )
+target_link_libraries(multi_node_1_c
+  PRIVATE
+  proton::protonc
+)
 
-# target_include_directories(multi_node_mcu_c
-#     PRIVATE
-#         ${CMAKE_SOURCE_DIR}/include
-#         ${CMAKE_SOURCE_DIR}/nanopb
-#         ${GENERATED_FOLDER}
-#         ${UTILS_FOLDER}
-# )
+target_include_directories(multi_node_1_c
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/nanopb
+        ${GENERATED_FOLDER}
+        ${UTILS_FOLDER}
+)
 
-# ## ROS2
+## Node 2
 
-# set(GENERATED_C_FILES
-#   "${GENERATED_FOLDER}/proton__multi_node_ros2.c"
-#   "${GENERATED_FOLDER}/proton__multi_node_ros2.h"
-# )
+set(GENERATED_C_FILES
+  "${GENERATED_FOLDER}/proton__multi_node_node2.c"
+  "${GENERATED_FOLDER}/proton__multi_node_node2.h"
+)
 
-# protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "ros2")
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node2")
 
-# add_executable(multi_node_ros2_c
-#   multi_node_ros2.c
-#   ${GENERATED_FOLDER}/proton__multi_node_ros2.c
-#   ${UTILS_FOLDER}/utils.c
-# )
+add_executable(multi_node_2_c
+  multi_node_2.c
+  ${GENERATED_FOLDER}/proton__multi_node_node2.c
+  ${UTILS_FOLDER}/utils.c
+)
 
-# target_link_libraries(multi_node_ros2_c
-#   PRIVATE
-#   proton::protonc
-# )
+target_link_libraries(multi_node_2_c
+  PRIVATE
+  proton::protonc
+)
 
-# target_include_directories(multi_node_ros2_c
-#     PRIVATE
-#         ${CMAKE_SOURCE_DIR}/include
-#         ${CMAKE_SOURCE_DIR}/nanopb
-#         ${GENERATED_FOLDER}
-#         ${UTILS_FOLDER}
-# )
+target_include_directories(multi_node_2_c
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/nanopb
+        ${GENERATED_FOLDER}
+        ${UTILS_FOLDER}
+)
+
+## Node 3
+
+set(GENERATED_C_FILES
+  "${GENERATED_FOLDER}/proton__multi_node_node3.c"
+  "${GENERATED_FOLDER}/proton__multi_node_node3.h"
+)
+
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node3")
+
+add_executable(multi_node_3_c
+  multi_node_3.c
+  ${GENERATED_FOLDER}/proton__multi_node_node3.c
+  ${UTILS_FOLDER}/utils.c
+)
+
+target_link_libraries(multi_node_3_c
+  PRIVATE
+  proton::protonc
+)
+
+target_include_directories(multi_node_3_c
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/nanopb
+        ${GENERATED_FOLDER}
+        ${UTILS_FOLDER}
+)
 
 # Install
 install(TARGETS
-  #multi_node_mcu_c
+  multi_node_1_c
+  multi_node_2_c
+  multi_node_3_c
   multi_node_1_cpp
-  #multi_node_ros2_c
   multi_node_2_cpp
   multi_node_3_cpp
 RUNTIME DESTINATION bin)
