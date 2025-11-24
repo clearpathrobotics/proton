@@ -65,7 +65,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.cc
   COMMAND cp ${GENERATED_DIR}/signal.pb.cc ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.cc ${GENERATED_SRC_DIR}
-  DEPENDS ${PROTO_FILES}
+  DEPENDS ${PROTO_FILES} ${GENERATED_FILES}
 )
 
 add_custom_command(
@@ -73,7 +73,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${PROTO_FILES}
+  DEPENDS ${PROTO_FILES} ${GENERATED_FILES}
 )
 
 add_custom_target(generate_protocpp ALL
