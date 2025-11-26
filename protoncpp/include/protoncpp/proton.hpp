@@ -86,8 +86,6 @@ public:
   Status sendBundle(BundleHandle &bundle_handle);
   Status sendHeartbeat();
 
-
-
   Status registerCallback(const std::string &bundle_name,
                           BundleHandle::BundleCallback callback);
   Status registerHeartbeatCallback(const std::string &producer,
@@ -96,6 +94,7 @@ public:
   std::string getName() const { return name_; }
   NodeConfig getNodeConfig() const { return node_config_; }
   Config& getConfig() { return config_; }
+  std::map<std::string, Connection> getConnections() { return connections_; }
 
   void startStatsThread();
   void printStats();
@@ -113,7 +112,6 @@ private:
   SafeQueue<ReceivedBundle> read_queue_;
 
   // Stats
-
   std::thread stats_thread_, heartbeat_thread_;
 };
 
