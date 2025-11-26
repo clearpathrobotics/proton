@@ -94,7 +94,7 @@ public:
   std::string getName() const { return name_; }
   NodeConfig getNodeConfig() const { return node_config_; }
   Config& getConfig() { return config_; }
-  std::map<std::string, Connection> getConnections() { return connections_; }
+  std::map<std::string, Connection>& getConnections() { return connections_; }
 
   void startStatsThread();
   void printStats();
