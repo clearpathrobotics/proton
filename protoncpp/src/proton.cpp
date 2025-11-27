@@ -21,7 +21,7 @@ using namespace proton;
 Node::Node() {}
 
 Node::Node(const std::string config_file, const std::string name, bool auto_configure, bool auto_activate)
-    : config_(config_file), name_(name), state_(NodeState::UNCONFIGURED), rx_(0), tx_(0), rx_kbps_(0.0), tx_kbps_(0.0)
+    : config_(config_file), name_(name), state_(NodeState::UNCONFIGURED)
 {
   Status status;
 
@@ -66,34 +66,47 @@ Status Node::configure()
   node_config_ = config_.getNodes().at(name_);
 
   // Find all peers
-  for (auto& [name, peer_config]: config_.getNodes()) {
-    if (name != name_) {
-      peers_.emplace(
-        name,
-        Peer(
-          node_config_,
-          peer_config,
-          std::bind(&Node::readCompleteCallback, this, std::placeholders::_1, std::placeholders::_2)
-        )
-      );
+  for (auto& connection_config: config_.getConnections()) {
+    std::string peer;
+    // Only look at connections involving this node
+    if (connection_config.connection.first.node == name_ )
+    {
+      peer = connection_config.connection.second.node;
     }
+    else if (connection_config.connection.second.node == name_ )
+    {
+      peer = connection_config.connection.first.node;
+    }
+    else
+    {
+      continue;
+    }
+
+    peers_.push_back(peer);
+
+    connections_.emplace(
+      peer,
+      Connection(
+        node_config_,
+        config_.getNodes().at(peer),
+        connection_config,
+        std::bind(&Node::readCompleteCallback, this, std::placeholders::_1, std::placeholders::_2)
+        )
+    );
   }
 
   if (node_config_.heartbeat.enabled)
   {
     // Add a heartbeat bundle to send to each peer
-    for (auto& [peer_name, peer] : peers_)
-    {
-      addHeartbeat(name_, peer_name);
-    }
+    addHeartbeat(name_, peers_);
   }
 
-  for (auto& [peer_name, peer] : peers_)
+  for (auto& [peer_name, peer] : connections_)
   {
     // Add a heartbeat bundle to receive from each peer
     if (peer.getConfig().heartbeat.enabled)
     {
-      addHeartbeat(peer_name, name_);
+      addHeartbeat(peer_name, {name_});
     }
   }
 
@@ -108,7 +121,7 @@ Status Node::activate()
     return Status::INVALID_STATE_TRANSITION;
   }
 
-  for (auto& [name, peer]: peers_)
+  for (auto& [name, peer]: connections_)
   {
     peer.run();
   }
@@ -133,30 +146,32 @@ Status Node::sendBundle(const std::string &bundle_name) {
 }
 
 Status Node::sendBundle(BundleHandle &bundle_handle) {
-  auto& peer = peers_.at(bundle_handle.getConsumer());
-
-  if (!peer.connected()) {
-    return Status::INVALID_STATE;
-  }
-
+  Status status = Status::OK;
   auto bundle = bundle_handle.getBundlePtr().get();
-
   auto buf = std::vector<uint8_t>(bundle->ByteSizeLong());
 
   if (bundle->SerializeToArray(buf.data(), bundle->ByteSizeLong()))
   {
     size_t bytes_written = 0;
 
-    Status status = peer.write(buf.data(), bundle->ByteSizeLong(), bytes_written);
+    // Send bundle to each consumer
+    for (const auto& consumer: bundle_handle.getConsumers())
+    {
+      auto& connection = connections_.at(consumer);
+
+      // Make sure consumer connection is active
+      if (!connection.connected())
+      {
+        continue;
+      }
+
+      status = connection.write(buf.data(), bundle->ByteSizeLong(), bytes_written);
+    }
 
     if (status == Status::OK)
     {
-      tx_ += bytes_written;
-
       bundle_handle.incrementTxCount();
     }
-
-    return status;
   }
 
   return Status::SERIALIZATION_ERROR;
@@ -180,10 +195,16 @@ Status Node::registerCallback(const std::string &bundle_name, BundleHandle::Bund
 {
   auto& bundle = getBundle(bundle_name);
 
-  if (callback && bundle.getConsumer() == name_)
+  if (callback != nullptr)
   {
-    bundle.registerCallback(callback);
-    return Status::OK;
+    for (const auto& consumer: bundle.getConsumers())
+    {
+      if (consumer == name_)
+      {
+        bundle.registerCallback(callback);
+        return Status::OK;
+      }
+    }
   }
 
   return Status::ERROR;
@@ -193,10 +214,16 @@ Status Node::registerHeartbeatCallback(const std::string &producer, BundleHandle
 {
   auto& bundle = getHeartbeat(producer);
 
-  if (callback && bundle.getConsumer() == name_)
+  if (callback != nullptr)
   {
-    bundle.registerCallback(callback);
-    return Status::OK;
+    for (const auto& consumer: bundle.getConsumers())
+    {
+      if (consumer == name_)
+      {
+        bundle.registerCallback(callback);
+        return Status::OK;
+      }
+    }
   }
 
   return Status::ERROR;
@@ -217,12 +244,6 @@ Status Node::waitForBundle()
   {
     auto& handle = getBundle(ret.value());
     handle.incrementRxCount();
-    rx_ += received_bundle.bundle.ByteSizeLong();
-
-    if (node_config_.transport.type == transport_types::SERIAL)
-    {
-      rx_ += SerialTransport::FRAME_OVERHEAD;
-    }
 
     auto callback = handle.getCallback();
 
@@ -261,11 +282,6 @@ void Node::runStatsThread()
 {
   while(1)
   {
-    rx_kbps_ = static_cast<double>(rx_) / 1000;
-    tx_kbps_ = static_cast<double>(tx_) / 1000;
-    rx_ = 0;
-    tx_ = 0;
-
     if (bundles_.size() > 0)
     {
       for (auto& [name, handle] : bundles_)
@@ -305,75 +321,112 @@ void Node::printStats()
   std::cout << "Config: " << config_.getName() << std::endl;
   std::cout << "Node: " << name_ << std::endl;
   std::cout << "  State: " << state_ << std::endl;
-  std::cout << "Peers: " << std::endl;
-  for (auto& [name, peer]: peers_)
+  std::cout << "Connections: " << std::endl;
+  for (auto& [name, peer]: connections_)
   {
     std::cout << "  " << name << ":" << std::endl;
     std::cout << "    Heartbeat: " << peer.getNodeState() << std::endl;
-    std::cout << "    Transport: " << peer.getTransportState() << std::endl;
+    std::cout << "    Transport (" << peer.getTransportType() << "): " << peer.getTransportState() << std::endl;
+    std::cout << "    Rx: " << peer.getRxKbps() << " KB/s " << "Tx: " << peer.getTxKbps() << " KB/s" << std::endl;
   }
-  std::cout << "Rx: " << getRxKbps() << " KB/s " << "Tx: " << getTxKbps() << " KB/s" << std::endl;
+
   std::cout << "----- Produced Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
   {
-    if (handle.getProducer() == name_)
+    for (auto& producer: handle.getProducers())
     {
-      std::cout << name << ": " << handle.getTxps() << std::endl;
+      if (producer == name_)
+      {
+        std::cout << name << ": " << handle.getTxps() << std::endl;
+      }
     }
   }
   std::cout << "----- Consumed Bundles (hz) -----" << std::endl;
   for (auto& [name, handle] : bundles_)
   {
-    if (handle.getConsumer() == name_)
+    for (auto& consumer: handle.getConsumers())
     {
-      std::cout << name << ": " << handle.getRxps() << std::endl;
+      if (consumer == name_)
+      {
+        std::cout << name << ": " << handle.getRxps() << std::endl;
+      }
     }
   }
   std::cout << "----- Heartbeats (hz) -----" << std::endl;
   for (auto& [name, handle] : heartbeat_bundles_)
   {
-    if (handle.getConsumer() == name_)
+    for (auto& consumer: handle.getConsumers())
     {
-      std::cout << name << ": " << handle.getRxps() << std::endl;
+      if (consumer == name_)
+      {
+        std::cout << name << ": " << handle.getRxps() << std::endl;
+      }
     }
   }
 
   std::cout << "---------------------------------" << std::endl;
 }
 
-Peer::Peer(const NodeConfig& node_config, const NodeConfig& peer_config, ReadCompleteCallback callback):
- config_(peer_config), callback_(callback), state_(NodeState::UNCONFIGURED)
+Connection::Connection(const NodeConfig& node_config, const NodeConfig& peer_config, const ConnectionConfig& connection_config, ReadCompleteCallback callback):
+ config_(peer_config), callback_(callback), state_(NodeState::UNCONFIGURED), rx_kbps_(0.0), tx_kbps_(0.0)
 {
-  auto transport_type = peer_config.transport.type;
-  if (transport_type == transport_types::UDP4) {
+  ConnectionEndpointConfig node_connection_endpoint_config, peer_connection_endpoint_config;
+  if (connection_config.connection.first.node == node_config.name &&
+      connection_config.connection.second.node == peer_config.name)
+  {
+    node_connection_endpoint_config = connection_config.connection.first;
+    peer_connection_endpoint_config = connection_config.connection.second;
+  }
+  else if (connection_config.connection.second.node == node_config.name &&
+           connection_config.connection.first.node == peer_config.name)
+  {
+    peer_connection_endpoint_config = connection_config.connection.first;
+    node_connection_endpoint_config = connection_config.connection.second;
+  }
+  else
+  {
+    throw std::runtime_error("Invalid connection");
+  }
+
+  EndpointConfig node_endpoint_config = node_config.endpoints.at(node_connection_endpoint_config.id);
+  EndpointConfig peer_endpoint_config = peer_config.endpoints.at(peer_connection_endpoint_config.id);
+
+  if (node_endpoint_config.type != peer_endpoint_config.type)
+  {
+    throw std::runtime_error("Endpoint type mismatch");
+  }
+
+  transport_type_ = node_endpoint_config.type;
+
+  if (transport_type_ == transport_types::UDP4) {
     auto node_endpoint =
-        proton::socket_endpoint(node_config.transport.ip,
-                                node_config.transport.port);
+        proton::socket_endpoint(node_endpoint_config.ip,
+                                node_endpoint_config.port);
     auto peer_endpoint =
-        proton::socket_endpoint(peer_config.transport.ip,
-                                peer_config.transport.port);
+        proton::socket_endpoint(peer_endpoint_config.ip,
+                                peer_endpoint_config.port);
     setTransport(
         std::make_unique<Udp4Transport>(node_endpoint, peer_endpoint));
   }
-  else if (transport_type == transport_types::SERIAL) {
-    auto peer_device = proton::serial_device(peer_config.transport.device, 0);
+  else if (transport_type_ == transport_types::SERIAL) {
+    auto peer_device = proton::serial_device(peer_endpoint_config.device, 0);
     setTransport(std::make_unique<SerialTransport>(peer_device));
   }
 
   state_ = NodeState::INACTIVE;
 }
 
-void Peer::run()
+void Connection::run()
 {
-  run_thread_ = std::thread(&Peer::spin, this);
+  run_thread_ = std::thread(&Connection::spin, this);
 
   if (config_.heartbeat.enabled)
   {
-    heartbeat_thread_ = std::thread(&Peer::checkHeartbeat, this);
+    heartbeat_thread_ = std::thread(&Connection::checkHeartbeat, this);
   }
 }
 
-void Peer::checkHeartbeat()
+void Connection::checkHeartbeat()
 {
   while(1)
   {
@@ -386,17 +439,28 @@ void Peer::checkHeartbeat()
   }
 }
 
-void Peer::heartbeat()
+void Connection::heartbeat()
 {
   state_ = NodeState::ACTIVE;
   last_heartbeat_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
-void Peer::spin()
+void Connection::spin()
 {
   Status status;
+  time_t start_time = std::time(nullptr);
+
   while(1)
   {
+    if (std::time(nullptr) - start_time >= 1)
+    {
+      rx_kbps_ = static_cast<double>(getRx()) / 1000;
+      tx_kbps_ = static_cast<double>(getTx()) / 1000;
+      resetRx();
+      resetTx();
+      start_time = std::time(nullptr);
+    }
+
     switch(getTransportState())
     {
       case TransportState::DISCONNECTED:
@@ -414,7 +478,7 @@ void Peer::spin()
         status = pollForBundle();
         if (status != Status::OK)
         {
-          std::cout << "Failed to poll for bundle on peer " << config_.name << std::endl;
+          std::cout << "Failed to poll for bundle on peer " << config_.name << ": " << status << std::endl;
         }
         break;
       }
@@ -432,7 +496,7 @@ void Peer::spin()
   }
 }
 
-Status Peer::pollForBundle()
+Status Connection::pollForBundle()
 {
   uint8_t read_buf[PROTON_MAX_MESSAGE_SIZE];
   size_t bytes_read = 0;
@@ -444,7 +508,8 @@ Status Peer::pollForBundle()
       return Status::NULL_PTR;
     }
 
-    if (config_.transport.type == transport_types::SERIAL)
+    // Remove frame overhead to get actual bundle length
+    if (getTransportType() == proton::transport_types::SERIAL)
     {
       bytes_read -= SerialTransport::FRAME_OVERHEAD;
     }

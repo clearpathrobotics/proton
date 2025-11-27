@@ -109,8 +109,31 @@ struct convert<proton::BundleConfig> {
     }
 
     rhs.name = node[proton::keys::NAME].as<std::string>();
-    rhs.producer = node[proton::keys::PRODUCER].as<std::string>();
-    rhs.consumer = node[proton::keys::CONSUMER].as<std::string>();
+
+    if (node[proton::keys::PRODUCERS].IsSequence())
+    {
+      for (const auto& p: node[proton::keys::PRODUCERS])
+      {
+        rhs.producers.push_back(p.as<std::string>());
+      }
+    }
+    else if (node[proton::keys::PRODUCERS].IsScalar())
+    {
+      rhs.producers.push_back(node[proton::keys::PRODUCERS].as<std::string>());
+    }
+
+    if (node[proton::keys::CONSUMERS].IsSequence())
+    {
+      for (const auto& p: node[proton::keys::CONSUMERS])
+      {
+        rhs.consumers.push_back(p.as<std::string>());
+      }
+    }
+    else if (node[proton::keys::CONSUMERS].IsScalar())
+    {
+      rhs.consumers.push_back(node[proton::keys::CONSUMERS].as<std::string>());
+    }
+
     rhs.id = node[proton::keys::ID].as<uint32_t>();
     if (rhs.id == 0U)
     {
@@ -132,8 +155,8 @@ struct convert<proton::BundleConfig> {
 };
 
 template<>
-struct convert<proton::TransportConfig> {
-  static bool decode(const Node& node, proton::TransportConfig& rhs) {
+struct convert<proton::EndpointConfig> {
+  static bool decode(const Node& node, proton::EndpointConfig& rhs) {
     if(!node.IsDefined() || node.IsNull()) {
       return false;
     }
@@ -161,6 +184,7 @@ struct convert<proton::TransportConfig> {
     return true;
   }
 };
+
 
 template<>
 struct convert<proton::HeartbeatConfig> {
@@ -199,7 +223,21 @@ struct convert<proton::NodeConfig> {
     }
 
     rhs.name = node[proton::keys::NAME].as<std::string>();
-    rhs.transport = node[proton::keys::TRANSPORT].as<proton::TransportConfig>();
+    auto endpoints = node[proton::keys::ENDPOINTS];
+    if (endpoints && endpoints.IsSequence())
+    {
+      for (const auto& endpoint: endpoints)
+      {
+        uint32_t id = 0;
+        if (endpoint[proton::keys::ID])
+        {
+          id = endpoint[proton::keys::ID].as<uint32_t>();
+        }
+
+        rhs.endpoints.emplace(id, endpoint.as<proton::EndpointConfig>());
+      }
+    }
+
     if (node[proton::keys::HEARTBEAT])
     {
       rhs.heartbeat = node[proton::keys::HEARTBEAT].as<proton::HeartbeatConfig>();
@@ -209,6 +247,42 @@ struct convert<proton::NodeConfig> {
       rhs.heartbeat.enabled = false;
       rhs.heartbeat.period = 0;
     }
+
+    return true;
+  }
+};
+
+template<>
+struct convert<proton::ConnectionEndpointConfig> {
+  static bool decode(const Node& node, proton::ConnectionEndpointConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    if (node[proton::keys::ID])
+    {
+      rhs.id = node[proton::keys::ID].as<uint32_t>();
+    }
+    else
+    {
+      rhs.id = 0;
+    }
+
+    rhs.node = node[proton::keys::NODE].as<std::string>();
+
+    return true;
+  }
+};
+
+template<>
+struct convert<proton::ConnectionConfig> {
+  static bool decode(const Node& node, proton::ConnectionConfig& rhs) {
+    if(!node.IsDefined() || node.IsNull()) {
+      return false;
+    }
+
+    rhs.connection.first = node[proton::keys::FIRST].as<proton::ConnectionEndpointConfig>();
+    rhs.connection.second = node[proton::keys::SECOND].as<proton::ConnectionEndpointConfig>();
 
     return true;
   }
@@ -232,6 +306,12 @@ Config::Config(std::string file) {
   for (auto node : yaml_node_[keys::NODES]) {
     NodeConfig config = node.as<NodeConfig>();
     nodes_.emplace(config.name, config);
+  }
+
+  // Get connection configs
+  for (auto node : yaml_node_[keys::CONNECTIONS]) {
+    ConnectionConfig config = node.as<ConnectionConfig>();
+    connections_.push_back(config);
   }
 
   // Get bundle configs

@@ -30,17 +30,24 @@ namespace proton {
 static constexpr size_t PROTON_MAX_MESSAGE_SIZE = UINT16_MAX;
 
 
-class Peer : public TransportManager {
+class Connection : public TransportManager {
 public:
   using ReadCompleteCallback = std::function<Status(Bundle&, const std::string& producer)>;
 
-  Peer();
-  Peer(const NodeConfig& node_config, const NodeConfig& peer_config, ReadCompleteCallback callback);
+  Connection();
+  Connection(const NodeConfig& node_config,
+             const NodeConfig& peer_config,
+             const ConnectionConfig& connection_config,
+             ReadCompleteCallback callback);
 
   void run();
   void heartbeat();
   NodeConfig getConfig() { return config_; }
   NodeState getNodeState() { return state_; }
+  std::string getTransportType() { return transport_type_; }
+
+  double getRxKbps() { return rx_kbps_; }
+  double getTxKbps() { return tx_kbps_; }
 
 private:
   void spin();
@@ -48,10 +55,12 @@ private:
   Status pollForBundle();
 
   NodeConfig config_;
+  std::string transport_type_;
   ReadCompleteCallback callback_;
   std::thread run_thread_, heartbeat_thread_;
   NodeState state_;
   int64_t last_heartbeat_ms_;
+  double rx_kbps_, tx_kbps_;
 };
 
 class Node : public BundleManager {
@@ -77,9 +86,6 @@ public:
   Status sendBundle(BundleHandle &bundle_handle);
   Status sendHeartbeat();
 
-  double getRxKbps() { return rx_kbps_; }
-  double getTxKbps() { return tx_kbps_; }
-
   Status registerCallback(const std::string &bundle_name,
                           BundleHandle::BundleCallback callback);
   Status registerHeartbeatCallback(const std::string &producer,
@@ -88,6 +94,7 @@ public:
   std::string getName() const { return name_; }
   NodeConfig getNodeConfig() const { return node_config_; }
   Config& getConfig() { return config_; }
+  std::map<std::string, Connection>& getConnections() { return connections_; }
 
   void startStatsThread();
   void printStats();
@@ -100,12 +107,11 @@ private:
   NodeConfig node_config_;
   std::string name_;
   NodeState state_;
-  std::map<std::string, Peer> peers_;
+  std::map<std::string, Connection> connections_;
+  std::vector<std::string> peers_;
   SafeQueue<ReceivedBundle> read_queue_;
 
   // Stats
-  uint64_t rx_, tx_;
-  double rx_kbps_, tx_kbps_;
   std::thread stats_thread_, heartbeat_thread_;
 };
 

@@ -19,7 +19,7 @@ void BundleManager::addBundle(BundleConfig config) {
   bundles_.emplace(config.name, BundleHandle(config));
 }
 
-void BundleManager::addHeartbeat(std::string producer, std::string consumer) {
+void BundleManager::addHeartbeat(std::string producer, std::vector<std::string> consumers) {
   SignalConfig signal_config = {
     .name = "heartbeat",
     .type_string = std::string(value_types::UINT32.begin(), value_types::UINT32.end()),
@@ -29,8 +29,8 @@ void BundleManager::addHeartbeat(std::string producer, std::string consumer) {
   BundleConfig config = {
     .name = producer,
     .id = 0,
-    .producer = producer,
-    .consumer = consumer,
+    .producers = {producer},
+    .consumers = consumers,
     .signals = std::vector<SignalConfig>({signal_config})
   };
 

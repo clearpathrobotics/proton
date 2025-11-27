@@ -25,15 +25,15 @@ typedef enum {
 
 uint32_t cb_counts[CALLBACK_COUNT];
 
-void PROTON_BUNDLE_WifiConnectedCallback() {
+void proton_bundle_wifi_connected_callback() {
   cb_counts[CALLBACK_WIFI_CONNECTED]++;
 }
 
-void PROTON_BUNDLE_HmiCallback() {
+void proton_bundle_hmi_callback() {
   cb_counts[CALLBACK_HMI]++;
 }
 
-void PROTON_BUNDLE_MotorCommandCallback() {
+void proton_bundle_motor_command_callback() {
   cb_counts[CALLBACK_MOTOR_COMMAND]++;
   motor_feedback_bundle.actual_mode = motor_command_bundle.mode;
   motor_feedback_bundle.commanded_mode = motor_command_bundle.mode;
@@ -41,10 +41,10 @@ void PROTON_BUNDLE_MotorCommandCallback() {
   motor_feedback_bundle.drivers_measured_velocity[1] = motor_command_bundle.drivers[1];
 }
 
-void PROTON_BUNDLE_PcHeartbeatCallback()
+void proton_bundle_pc_heartbeat_callback()
 {
   printf("Heartbeat received %u\r\n", pc_heartbeat_bundle.heartbeat);
-  mcu_node.peers[PROTON_PEER__PC].state = PROTON_NODE_ACTIVE;
+  mcu_node.peers[PROTON__PEER__PC].state = PROTON_NODE_ACTIVE;
   last_pc_heartbeat = time(NULL);
 }
 
@@ -60,26 +60,26 @@ void send_log(const char *file, const char* func, int line, uint8_t level, char 
   vsprintf(log_bundle.msg, msg, args);
   va_end(args);
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__LOG);
+  proton_bundle_send(PROTON__BUNDLE__LOG);
 }
 
 void update_power() {
-  for (uint8_t i = 0; i < PROTON_SIGNALS__POWER__MEASURED_VOLTAGES__LENGTH;
+  for (uint8_t i = 0; i < PROTON__BUNDLE__POWER__SIGNAL__MEASURED_VOLTAGES__LENGTH;
        i++) {
     power_bundle.measured_currents[i] = rand_float();
     power_bundle.measured_voltages[i] = rand_float();
   }
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__POWER);
+  proton_bundle_send(PROTON__BUNDLE__POWER);
 }
 
 void update_temperature() {
-  for (uint8_t i = 0; i < PROTON_SIGNALS__TEMPERATURE__TEMPERATURES__LENGTH;
+  for (uint8_t i = 0; i < PROTON__BUNDLE__TEMPERATURE__SIGNAL__TEMPERATURES__LENGTH;
        i++) {
     temperature_bundle.temperatures[i] = rand_float();
   }
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__TEMPERATURE);
+  proton_bundle_send(PROTON__BUNDLE__TEMPERATURE);
 }
 
 void update_status(uint32_t s) {
@@ -89,19 +89,19 @@ void update_status(uint32_t s) {
   status_bundle.mcu_uptime_sec = s;
   status_bundle.mcu_uptime_nanosec = rand_uint32();
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__STATUS);
+  proton_bundle_send(PROTON__BUNDLE__STATUS);
 }
 
 void update_emergency_stop() {
   emergency_stop_bundle.data = !emergency_stop_bundle.data;
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__EMERGENCY_STOP);
+  proton_bundle_send(PROTON__BUNDLE__EMERGENCY_STOP);
 }
 
 void update_stop_status() {
   stop_status_bundle.external_stop_present = !stop_status_bundle.external_stop_present;
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__STOP_STATUS);
+  proton_bundle_send(PROTON__BUNDLE__STOP_STATUS);
 }
 
 void update_imu() {
@@ -113,7 +113,7 @@ void update_imu() {
   imu_bundle.angular_velocity_y = rand_double();
   imu_bundle.angular_velocity_z = rand_double();
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__IMU);
+  proton_bundle_send(PROTON__BUNDLE__IMU);
 }
 
 void update_mag() {
@@ -121,15 +121,15 @@ void update_mag() {
   magnetometer_bundle.magnetic_field_y = rand_double();
   magnetometer_bundle.magnetic_field_z = rand_double();
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__MAGNETOMETER);
+  proton_bundle_send(PROTON__BUNDLE__MAGNETOMETER);
 }
 
 void update_nmea() {
-  char tmp[PROTON_SIGNALS__NMEA__SENTENCE__CAPACITY] = {0};
+  char tmp[PROTON__BUNDLE__NMEA__SIGNAL__SENTENCE__CAPACITY] = {0};
 
   uint16_t i;
 
-  for (i = 0; i < (rand() % (PROTON_SIGNALS__NMEA__SENTENCE__CAPACITY - 1)); i++)
+  for (i = 0; i < (rand() % (PROTON__BUNDLE__NMEA__SIGNAL__SENTENCE__CAPACITY - 1)); i++)
   {
     tmp[i] = rand_char();
   }
@@ -137,7 +137,7 @@ void update_nmea() {
   tmp[i+1] = '\0';
   strcpy(nmea_bundle.sentence, tmp);
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__NMEA);
+  proton_bundle_send(PROTON__BUNDLE__NMEA);
 }
 
 void update_motor_feedback() {
@@ -152,17 +152,17 @@ void update_motor_feedback() {
     motor_feedback_bundle.drivers_measured_travel[i] = rand_float();
   }
 
-  PROTON_BUNDLE_Send(PROTON_BUNDLE__MOTOR_FEEDBACK);
+  proton_bundle_send(PROTON__BUNDLE__MOTOR_FEEDBACK);
 }
 
-bool PROTON_TRANSPORT__PcConnect() {
-  serial_port = serial_init(PROTON_NODE__PC__DEVICE);
+bool proton_node_pc_transport_connect() {
+  serial_port = serial_init(PROTON__NODE__PC__ENDPOINT__0__DEVICE);
   return serial_port >= 0;
 }
 
-bool PROTON_TRANSPORT__PcDisconnect() { return true; }
+bool proton_node_pc_transport_disconnect() { return true; }
 
-size_t PROTON_TRANSPORT__PcRead(uint8_t *buf, size_t len) {
+size_t proton_node_pc_transport_read(uint8_t *buf, size_t len) {
   size_t bytes_read = serial_read(serial_port, buf, len);
 
   if (bytes_read > 0)
@@ -173,7 +173,7 @@ size_t PROTON_TRANSPORT__PcRead(uint8_t *buf, size_t len) {
   return bytes_read;
 }
 
-size_t PROTON_TRANSPORT__PcWrite(const uint8_t *buf, size_t len) {
+size_t proton_node_pc_transport_write(const uint8_t *buf, size_t len) {
   size_t bytes_written = serial_write(serial_port, buf, len);
 
   if (bytes_written > 0)
@@ -200,9 +200,9 @@ void *timer_1hz(void *arg) {
     update_stop_status();
     msleep(1000);
 
-    if (time(NULL) - last_pc_heartbeat > PROTON_NODE__PC__HEARTBEAT_PERIOD / 1000)
+    if (time(NULL) - last_pc_heartbeat > PROTON__NODE__PC__HEARTBEAT__PERIOD / 1000)
     {
-      mcu_node.peers[PROTON_PEER__PC].state = PROTON_NODE_INACTIVE;
+      mcu_node.peers[PROTON__PEER__PC].state = PROTON_NODE_INACTIVE;
     }
   }
 }
@@ -213,7 +213,7 @@ void *timer_10hz(void *arg) {
     LOG_INFO("10hz timer %ld", i++);
     update_power();
     update_temperature();
-    PROTON_BUNDLE_SendHeartbeat();
+    proton_bundle_send_heartbeat();
     msleep(100);
   }
 }
@@ -235,8 +235,8 @@ void *stats(void *arg) {
     printf("\033[2J\033[1;1H");
     printf("--------- J100 MCU C --------\r\n");
     printf("Node: %u\r\n", mcu_node.state);
-    printf("Peer: %s\r\n", PROTON_NODE__PC__NAME);
-    printf("  State: %u, Transport: %u\r\n", mcu_node.peers[PROTON_PEER__PC].state, mcu_node.peers[PROTON_PEER__PC].transport.state);
+    printf("Peer: %s\r\n", PROTON__NODE__PC__NAME);
+    printf("  State: %u, Transport: %u\r\n", mcu_node.peers[PROTON__PEER__PC].state, mcu_node.peers[PROTON__PEER__PC].transport.state);
     printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", rx / 1000, tx / 1000);
     printf("--- Received Bundles (hz) ---\r\n");
     printf("wifi_connected: %d\r\n", cb_counts[CALLBACK_WIFI_CONNECTED]);
@@ -262,7 +262,7 @@ int main() {
   pthread_mutex_init(&mcu_lock, NULL);
   pthread_mutex_init(&pc_lock, NULL);
 
-  PROTON_Init();
+  proton_init();
 
   printf("INIT\r\n");
 
@@ -276,7 +276,7 @@ int main() {
   pthread_create(&thread_1hz, NULL, &timer_1hz, NULL);
   pthread_create(&thread_stats, NULL, &stats, NULL);
 
-  PROTON_Spin(&mcu_node, PROTON_PEER__PC);
+  proton_spin(&mcu_node, PROTON__PEER__PC);
 
   pthread_join(thread_50hz, NULL);
   pthread_join(thread_10hz, NULL);

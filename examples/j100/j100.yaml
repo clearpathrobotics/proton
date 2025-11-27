@@ -3,21 +3,28 @@ nodes:
     heartbeat:
       enabled: true
       period: 1000
-    transport:
-      type: serial
-      device: /tmp/ttyPC
+    endpoints:
+      - id: 0
+        type: serial
+        device: /tmp/ttyPC
   - name: mcu
     heartbeat:
       enabled: true
       period: 100
-    transport:
-      type: serial
-      device: /tmp/ttyMCU
+    endpoints:
+      - id: 0
+        type: serial
+        device: /tmp/ttyMCU
+
+connections:
+  - first: {node: mcu, id: 0}
+    second: {node: pc, id: 0}
+
 bundles:
   - name: log
     id: 0x100
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: level, type: uint32}
       - {name: name, type: string, capacity: 64}
@@ -27,8 +34,8 @@ bundles:
       - {name: line, type: uint32}
   - name: status
     id: 0x101
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: hardware_id, type: string, capacity: 16}
@@ -39,8 +46,8 @@ bundles:
       - {name: connection_uptime_nanosec, type: uint32}
   - name: power
     id: 0x102
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: shore_power_connected, type: int32, value: -1}
@@ -62,14 +69,14 @@ bundles:
 
   - name: emergency_stop
     id: 0x103
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: data, type: bool}
   - name: temperature
     id: 0x104
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: temperatures, type: list_float, length: 2}
@@ -77,8 +84,8 @@ bundles:
       - {name: J100_PCB, type: uint32, value: 1}
   - name: stop_status
     id: 0x105
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: stop_power_status, type: bool, value: True}
@@ -86,8 +93,8 @@ bundles:
       - {name: needs_reset, type: bool, value: False}
   - name: imu
     id: 0x106
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: imu_0_link}
       - {name: linear_acceleration_x, type: double}
@@ -100,8 +107,8 @@ bundles:
       - {name: angular_velocity_covariance, type: list_double, value: [0.0000010966, 0, 0, 0, 0.0000010966, 0, 0, 0, 0.0000010966]}
   - name: magnetometer
     id: 0x107
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: imu_0_link}
       - {name: magnetic_field_x, type: double}
@@ -110,15 +117,15 @@ bundles:
       - {name: magnetic_field_covariance, type: list_double, value: [-1.0, 0, 0, 0, -1.0, 0, 0, 0, -1.0]}
   - name: nmea
     id: 0x108
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: gps_0_link}
       - {name: sentence, type: string, capacity: 324}
   - name: motor_feedback
     id: 0x109
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: drivers_current, type: list_float, length: 2}
@@ -133,20 +140,20 @@ bundles:
 
   - name: wifi_connected
     id: 0x200
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: data, type: bool}
   - name: hmi
     id: 0x201
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: data, type: uint32}
   - name: motor_command
     id: 0x202
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: mode, type: int32}
       - {name: drivers, type: list_float, length: 2}
