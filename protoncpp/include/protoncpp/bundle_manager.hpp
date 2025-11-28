@@ -36,8 +36,8 @@ protected:
   std::vector<std::string> nodes_;
   std::map<std::string, BundleHandle> bundles_;
   std::map<std::string, BundleHandle> heartbeat_bundles_;
-  mutable std::shared_mutex bundle_mutex_;
-  mutable std::shared_mutex heartbeat_mutex_;
+  std::shared_mutex bundle_mutex_;
+  std::shared_mutex heartbeat_mutex_;
 };
 
 } // namespace proton
