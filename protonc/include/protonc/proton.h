@@ -180,4 +180,12 @@ proton_status_e proton_get_framed_payload_length(const uint8_t * framed_buf, uin
 void proton_print_bundle(proton_Bundle bundle);
 void proton_print_signal(proton_Signal signal);
 
+#ifdef PROTON_DEBUG
+int proton_print(const char * format, ...);
+#define PROTON_PRINT(...) proton_print(__VA_ARGS__);
+#else
+#define PROTON_PRINT(...)
+#endif
+
+
 #endif // INC_PROTONC_PROTON_H_

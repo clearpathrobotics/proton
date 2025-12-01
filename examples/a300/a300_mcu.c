@@ -29,7 +29,6 @@ typedef enum {
 
 uint32_t cb_counts[CALLBACK_COUNT];
 
-
 void proton_bundle_cmd_fans_callback() {
   cb_counts[CALLBACK_CMD_FANS]++;
 }

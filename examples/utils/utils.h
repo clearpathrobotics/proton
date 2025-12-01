@@ -30,7 +30,6 @@
 #include <unistd.h>
 #include <pthread.h>
 
-
 void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...);
 int msleep(long msec);
 int socket_init(uint32_t ip, uint32_t port, bool server);

@@ -131,6 +131,8 @@ add_custom_target(generate_protoc ALL
 # -------------------------------
 # protonc library
 # -------------------------------
+option(PROTON_DEBUG "Enable PROTON_DEBUG preprocessor macro" OFF)
+
 add_library(protonc
     src/proton.c
     src/proton_field_callbacks.c
@@ -140,6 +142,10 @@ add_library(protonc
     ${GENERATED_SRCS}
     ${GENERATED_HEADERS}
 )
+
+if (PROTON_DEBUG)
+  target_compile_definitions(protonc PRIVATE PROTON_DEBUG)
+endif()
 
 add_library(proton::protonc ALIAS protonc)
 
