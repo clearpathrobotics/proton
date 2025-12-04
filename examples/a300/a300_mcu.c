@@ -2,7 +2,7 @@
 #include "proton__a300_mcu.h"
 #include <stdlib.h>
 
-#define PROTON_MAX_MESSAGE_SIZE 1024
+
 
 uint8_t write_buf_[PROTON_MAX_MESSAGE_SIZE];
 uint8_t read_buf_[PROTON_MAX_MESSAGE_SIZE];

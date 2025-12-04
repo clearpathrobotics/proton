@@ -17,29 +17,29 @@
 #include <stdio.h>
 #include <memory>
 
-#include "protoncpp/common.hpp"
+#include "proton/common.h"
 
 namespace proton {
 
 class Transport {
 public:
-  Transport() : state_(TransportState::DISCONNECTED) {}
+  Transport() : state_(PROTON_TRANSPORT_DISCONNECTED) {}
 
   virtual ~Transport()
   {}
 
-  virtual Status connect() = 0;
-  virtual Status disconnect() = 0;
+  virtual proton_status_e connect() = 0;
+  virtual proton_status_e disconnect() = 0;
 
-  virtual Status read(uint8_t *buf, const size_t& len, size_t& bytes_read) = 0;
-  virtual Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written) = 0;
+  virtual proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read) = 0;
+  virtual proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written) = 0;
 
-  void setState(TransportState state) { state_ = state; }
-  TransportState getState() { return state_; }
-  bool connected() { return state_ == TransportState::CONNECTED; }
+  void setState(proton_transport_state_e state) { state_ = state; }
+  proton_transport_state_e getState() { return state_; }
+  bool connected() { return state_ == PROTON_TRANSPORT_CONNECTED; }
 
 protected:
-  TransportState state_;
+  proton_transport_state_e state_;
 };
 
 class TransportManager {
@@ -56,58 +56,58 @@ public:
     return false;
   }
 
-  TransportState getTransportState() {
+  proton_transport_state_e getTransportState() {
     if (transport_)
     {
       return transport_->getState();
     }
 
-    return TransportState::ERROR;
+    return PROTON_TRANSPORT_ERROR;
   }
 
-  Status connect() {
+  proton_status_e connect() {
     if (transport_)
     {
-      Status status = transport_->connect();
-      if (status != Status::OK)
+      proton_status_e status = transport_->connect();
+      if (status != PROTON_OK)
       {
         onError(status);
       }
       else
       {
-        transport_->setState(TransportState::CONNECTED);
+        transport_->setState(PROTON_TRANSPORT_CONNECTED);
       }
 
       return status;
     }
-    return Status::NULL_PTR;
+    return PROTON_NULL_PTR_ERROR;
   }
 
-  Status disconnect() {
+  proton_status_e disconnect() {
     if (transport_)
     {
-      Status status = transport_->disconnect();
+      proton_status_e status = transport_->disconnect();
 
-      if (status != Status::OK)
+      if (status != PROTON_OK)
       {
         onError(status);
       }
       else
       {
-        transport_->setState(TransportState::DISCONNECTED);
+        transport_->setState(PROTON_TRANSPORT_DISCONNECTED);
       }
 
       return status;
     }
-    return Status::NULL_PTR;
+    return PROTON_NULL_PTR_ERROR;
   }
 
-  Status read(uint8_t *buf, const size_t& len, size_t& bytes_read)
+  proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read)
   {
     if (transport_)
     {
-      Status status = transport_->read(buf, len, bytes_read);
-      if (status != Status::OK)
+      proton_status_e status = transport_->read(buf, len, bytes_read);
+      if (status != PROTON_OK)
       {
         onError(status);
       }
@@ -119,15 +119,15 @@ public:
       return status;
     }
 
-    return Status::NULL_PTR;
+    return PROTON_NULL_PTR_ERROR;
   }
 
-  Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
+  proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
   {
     if (transport_)
     {
-      Status status = transport_->write(buf, len, bytes_written);
-      if (status != Status::OK)
+      proton_status_e status = transport_->write(buf, len, bytes_written);
+      if (status != PROTON_OK)
       {
         onError(status);
       }
@@ -139,29 +139,30 @@ public:
       return status;
     }
 
-    return Status::NULL_PTR;
+    return PROTON_NULL_PTR_ERROR;
   }
 
-  void onError(Status error)
+  void onError(proton_status_e error)
   {
     switch(error)
     {
-      case Status::OK:
+      case PROTON_OK:
       {
         return;
       }
 
-      case Status::ERROR:
-      case Status::READ_ERROR:
-      case Status::WRITE_ERROR:
-      case Status::CONNECTION_ERROR:
+      case PROTON_ERROR:
+      case PROTON_READ_ERROR:
+      case PROTON_WRITE_ERROR:
+      case PROTON_CONNECT_ERROR:
+      case PROTON_DISCONNECT_ERROR:
       {
         std::cout << "Transport Error " << error << std::endl;
-        transport_->setState(TransportState::ERROR);
+        transport_->setState(PROTON_TRANSPORT_ERROR);
         break;
       }
 
-      case Status::NULL_PTR:
+      case PROTON_NULL_PTR_ERROR:
       {
         throw std::runtime_error("NULL POINTER ERROR");
       }

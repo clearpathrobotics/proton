@@ -133,6 +133,8 @@ add_custom_target(generate_protoc ALL
 # -------------------------------
 option(PROTON_DEBUG "Enable PROTON_DEBUG preprocessor macro" OFF)
 
+set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+
 add_library(protonc
     src/proton.c
     src/proton_field_callbacks.c
@@ -154,6 +156,7 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${nanopb_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${PROTON_COMMON_INCLUDE_DIR}>
 )
 
 # Install

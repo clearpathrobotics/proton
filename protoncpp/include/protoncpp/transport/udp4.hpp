@@ -41,10 +41,10 @@ public:
 
   Udp4Transport(socket_endpoint node, socket_endpoint peer);
 
-  Status connect() override;
-  Status disconnect() override;
-  Status read(uint8_t *buf, const size_t& len, size_t& bytes_read) override;
-  Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written) override;
+  proton_status_e connect() override;
+  proton_status_e disconnect() override;
+  proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read) override;
+  proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written) override;
 
   in_addr_t ipToInaddr(const std::string& ip);
   int initSocket(socket_endpoint s, bool server, bool blocking);
