@@ -344,7 +344,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
       else
       {
         peer_handle->transport.state = PROTON_TRANSPORT_ERROR;
-        return PROTON_CONNECTION_ERROR;
+        return PROTON_CONNECT_ERROR;
       }
       break;
     }
@@ -396,7 +396,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
       }
       else
       {
-        return PROTON_CONNECTION_ERROR;
+        return PROTON_CONNECT_ERROR;
       }
       break;
     }
@@ -406,90 +406,6 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
       return PROTON_ERROR;
     }
   }
-
-  return PROTON_OK;
-}
-
-proton_status_e proton_crc16(const uint8_t *data, uint16_t len, uint16_t *crc16) {
-  if (data == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  uint16_t crc = 0xFFFF;
-  for (uint16_t i = 0; i < len; i++) {
-    crc ^= (uint16_t)data[i] << 8;
-    for (int j = 0; j < 8; j++) {
-      if (crc & 0x8000)
-        crc = (crc << 1) ^ 0x1021;
-      else
-        crc <<= 1;
-    }
-  }
-  *crc16 = crc;
-  return PROTON_OK;
-}
-
-proton_status_e proton_fill_frame_header(uint8_t *header, uint16_t payload_len) {
-  if (header == NULL) {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  header[0] = PROTON_FRAME_HEADER_MAGIC_BYTE_0;
-  header[1] = PROTON_FRAME_HEADER_MAGIC_BYTE_1;
-  header[2] = (uint8_t)(payload_len & 0xFF);
-  header[3] = (uint8_t)(payload_len >> 8);
-
-  return PROTON_OK;
-}
-
-proton_status_e proton_fill_crc16(const uint8_t *payload, const uint16_t payload_len,
-                      uint8_t *crc) {
-  if (payload == NULL || crc == NULL) {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  uint16_t crc16;
-  proton_status_e status = proton_crc16(payload, payload_len, &crc16);
-
-  if (status == PROTON_OK)
-  {
-    crc[0] = (uint8_t)(crc16 & 0xFF);
-    crc[1] = (uint8_t)(crc16 >> 8);
-  }
-
-  return status;
-}
-
-proton_status_e proton_check_framed_payload(const uint8_t *payload, const size_t payload_len,
-                               const uint16_t frame_crc) {
-  if (payload == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  uint16_t crc;
-  proton_status_e status = proton_crc16(payload, payload_len, &crc);
-  if (status == PROTON_OK && crc != frame_crc)
-  {
-    return PROTON_CRC16_ERROR;
-  }
-
-  return status;
-}
-
-proton_status_e proton_get_framed_payload_length(const uint8_t *framed_buf, uint16_t *length) {
-  if (framed_buf == NULL || length == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  if (framed_buf[0] != PROTON_FRAME_HEADER_MAGIC_BYTE_0 ||
-      framed_buf[1] != PROTON_FRAME_HEADER_MAGIC_BYTE_1) {
-    return PROTON_ERROR;
-  }
-
-  *length = framed_buf[2] | (framed_buf[3] << 8);
 
   return PROTON_OK;
 }

@@ -13,44 +13,11 @@
 #ifndef INC_PROTONC_PROTON_H_
 #define INC_PROTONC_PROTON_H_
 
+#include "proton/common.h"
 #include "protonc/bundle.pb.h"
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
-
-#define PROTON_BUNDLE__HEARTBEAT 0 // Heartbeat bundle ID
-#define PROTON_FRAME_HEADER_MAGIC_BYTE_0 (uint8_t)0x50
-#define PROTON_FRAME_HEADER_MAGIC_BYTE_1 (uint8_t)0x52
-#define PROTON_FRAME_HEADER_LENGTH_OVERHEAD sizeof(uint16_t)
-#define PROTON_FRAME_CRC_OVERHEAD sizeof(uint16_t)
-#define PROTON_FRAME_HEADER_OVERHEAD sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_0) + sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_1) + PROTON_FRAME_HEADER_LENGTH_OVERHEAD
-#define PROTON_FRAME_OVERHEAD PROTON_FRAME_HEADER_OVERHEAD + PROTON_FRAME_CRC_OVERHEAD
-
-typedef enum {
-  PROTON_OK,
-  PROTON_ERROR,
-  PROTON_NULL_PTR_ERROR,
-  PROTON_INVALID_STATE_ERROR,
-  PROTON_INVALID_STATE_TRANSITION_ERROR,
-  PROTON_CONNECTION_ERROR,
-  PROTON_SERIALIZATION_ERROR,
-  PROTON_READ_ERROR,
-  PROTON_WRITE_ERROR,
-  PROTON_CRC16_ERROR,
-  PROTON_MUTEX_ERROR,
-} proton_status_e;
-
-typedef enum {
-  PROTON_NODE_UNCONFIGURED,
-  PROTON_NODE_INACTIVE,
-  PROTON_NODE_ACTIVE
-} proton_node_state_e;
-
-typedef enum {
-  PROTON_TRANSPORT_DISCONNECTED,
-  PROTON_TRANSPORT_CONNECTED,
-  PROTON_TRANSPORT_ERROR
-} proton_transport_state_e;
 
 typedef void (*proton_callback_t)(void);
 typedef bool (*proton_transport_connect_t)(void);
@@ -170,12 +137,6 @@ proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id);
 
 proton_status_e proton_spin(proton_node_t *node, const uint8_t peer);
 proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer);
-
-proton_status_e proton_crc16(const uint8_t *data, uint16_t len, uint16_t *crc16);
-proton_status_e proton_fill_frame_header(uint8_t * header, uint16_t payload_len);
-proton_status_e proton_fill_crc16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
-proton_status_e proton_check_framed_payload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
-proton_status_e proton_get_framed_payload_length(const uint8_t * framed_buf, uint16_t *length);
 
 void proton_print_bundle(proton_Bundle bundle);
 void proton_print_signal(proton_Signal signal);

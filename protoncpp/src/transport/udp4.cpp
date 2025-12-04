@@ -75,11 +75,11 @@ int Udp4Transport::initSocket(socket_endpoint s, bool server, bool blocking)
   return sock;
 }
 
-Status Udp4Transport::connect()
+proton_status_e Udp4Transport::connect()
 {
-  if (state_ != TransportState::DISCONNECTED)
+  if (state_ != PROTON_TRANSPORT_DISCONNECTED)
   {
-    return Status::INVALID_STATE_TRANSITION;
+    return PROTON_INVALID_STATE_TRANSITION_ERROR;
   }
 
   if (socket_[SOCKET_NODE] == -1)
@@ -95,45 +95,45 @@ Status Udp4Transport::connect()
 
   if (socket_[SOCKET_NODE] == -1 || socket_[SOCKET_PEER] == -1)
   {
-    return Status::CONNECTION_ERROR;
+    return PROTON_CONNECT_ERROR;
   }
 
-  return Status::OK;
+  return PROTON_OK;
 }
 
-Status Udp4Transport::disconnect()
+proton_status_e Udp4Transport::disconnect()
 {
-  return Status::OK;
+  return PROTON_OK;
 }
 
-Status Udp4Transport::read(uint8_t *buf, const size_t& len, size_t& bytes_read)
+proton_status_e Udp4Transport::read(uint8_t *buf, const size_t& len, size_t& bytes_read)
 {
   if (!connected())
   {
-    return Status::INVALID_STATE;
+    return PROTON_INVALID_STATE_ERROR;
   }
 
   if (buf == nullptr)
   {
-    return Status::NULL_PTR;
+    return PROTON_NULL_PTR_ERROR;
   }
 
   ssize_t ret = ::recv(socket_[SOCKET_NODE], buf, len, 0);
 
   if (ret < 0)
   {
-    return Status::READ_ERROR;
+    return PROTON_READ_ERROR;
   }
 
   bytes_read = ret;
-  return Status::OK;
+  return PROTON_OK;
 }
 
-Status Udp4Transport::write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
+proton_status_e Udp4Transport::write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
 {
   if (!connected())
   {
-    return Status::INVALID_STATE;
+    return PROTON_INVALID_STATE_ERROR;
   }
 
   ssize_t ret = ::send(socket_[SOCKET_PEER], buf, len, 0);
@@ -141,9 +141,9 @@ Status Udp4Transport::write(const uint8_t *buf, const size_t& len, size_t& bytes
   if (ret != len)
   {
     std::cout << "Write error" << std::endl;
-    return Status::WRITE_ERROR;
+    return PROTON_WRITE_ERROR;
   }
 
   bytes_written = ret;
-  return Status::OK;
+  return PROTON_OK;
 }

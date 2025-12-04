@@ -2,7 +2,7 @@
 #include "proton__multi_node_node3.h"
 #include <stdlib.h>
 
-#define PROTON_MAX_MESSAGE_SIZE 1024
+
 
 uint8_t node1_buf[PROTON_MAX_MESSAGE_SIZE];
 uint8_t node2_buf[PROTON_MAX_MESSAGE_SIZE];

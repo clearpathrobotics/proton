@@ -83,6 +83,9 @@ add_custom_target(generate_protocpp ALL
   ${GENERATED_HEADERS}
 )
 
+# Build protoncpp library
+set(PROTON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+
 add_library(protoncpp
   src/proton.cpp
   src/config.cpp
@@ -101,6 +104,7 @@ target_include_directories(protoncpp
   PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${PROTON_INCLUDE_DIR}>
       $<INSTALL_INTERFACE:include>
 )
 
@@ -118,3 +122,4 @@ install(TARGETS protoncpp
 
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)
+install(DIRECTORY ${PROTON_INCLUDE_DIR}/ DESTINATION include)

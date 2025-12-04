@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "proton__j100_pc.h"
 
-#define PROTON_MAX_MESSAGE_SIZE 1024
+
 
 uint8_t write_buf_[PROTON_MAX_MESSAGE_SIZE];
 uint8_t read_buf_[PROTON_MAX_MESSAGE_SIZE];

@@ -21,9 +21,9 @@ using namespace proton;
 Node::Node() {}
 
 Node::Node(const std::string config_file, const std::string name, bool auto_configure, bool auto_activate)
-    : config_(config_file), name_(name), state_(NodeState::UNCONFIGURED)
+    : config_(config_file), name_(name), state_(PROTON_NODE_UNCONFIGURED)
 {
-  Status status;
+  proton_status_e status;
 
   if (!auto_configure && auto_activate)
   {
@@ -34,7 +34,7 @@ Node::Node(const std::string config_file, const std::string name, bool auto_conf
   {
     status = configure();
 
-    if (status != Status::OK)
+    if (status != PROTON_OK)
     {
       throw std::runtime_error("Configuration error: " + std::to_string(status));
     }
@@ -43,7 +43,7 @@ Node::Node(const std::string config_file, const std::string name, bool auto_conf
     {
       status = activate();
 
-      if (status != Status::OK)
+      if (status != PROTON_OK)
       {
         throw std::runtime_error("Activation error: " + std::to_string(status));
       }
@@ -51,11 +51,11 @@ Node::Node(const std::string config_file, const std::string name, bool auto_conf
   }
 }
 
-Status Node::configure()
+proton_status_e Node::configure()
 {
-  if (state_ != NodeState::UNCONFIGURED)
+  if (state_ != PROTON_NODE_UNCONFIGURED)
   {
-    return Status::INVALID_STATE_TRANSITION;
+    return PROTON_INVALID_STATE_TRANSITION_ERROR;
   }
 
   for (auto b : config_.getBundles()) {
@@ -110,15 +110,15 @@ Status Node::configure()
     }
   }
 
-  state_ = NodeState::INACTIVE;
-  return Status::OK;
+  state_ = PROTON_NODE_INACTIVE;
+  return PROTON_OK;
 }
 
-Status Node::activate()
+proton_status_e Node::activate()
 {
-  if (state_ != NodeState::INACTIVE)
+  if (state_ != PROTON_NODE_INACTIVE)
   {
-    return Status::INVALID_STATE_TRANSITION;
+    return PROTON_INVALID_STATE_TRANSITION_ERROR;
   }
 
   for (auto& [name, peer]: connections_)
@@ -132,8 +132,8 @@ Status Node::activate()
     heartbeat_thread_ = std::thread(&Node::runHeartbeatThread, this);
   }
 
-  state_ = NodeState::ACTIVE;
-  return Status::OK;
+  state_ = PROTON_NODE_ACTIVE;
+  return PROTON_OK;
 }
 
 void Node::startStatsThread()
@@ -141,12 +141,12 @@ void Node::startStatsThread()
   stats_thread_ = std::thread(&Node::runStatsThread, this);
 }
 
-Status Node::sendBundle(const std::string &bundle_name) {
+proton_status_e Node::sendBundle(const std::string &bundle_name) {
   return sendBundle(getBundle(bundle_name));
 }
 
-Status Node::sendBundle(BundleHandle &bundle_handle) {
-  Status status = Status::OK;
+proton_status_e Node::sendBundle(BundleHandle &bundle_handle) {
+  proton_status_e status = PROTON_OK;
   auto bundle = bundle_handle.getBundlePtr().get();
   auto buf = std::vector<uint8_t>(bundle->ByteSizeLong());
 
@@ -168,20 +168,20 @@ Status Node::sendBundle(BundleHandle &bundle_handle) {
       status = connection.write(buf.data(), bundle->ByteSizeLong(), bytes_written);
     }
 
-    if (status == Status::OK)
+    if (status == PROTON_OK)
     {
       bundle_handle.incrementTxCount();
     }
   }
 
-  return Status::SERIALIZATION_ERROR;
+  return PROTON_SERIALIZATION_ERROR;
 }
 
-Status Node::sendHeartbeat()
+proton_status_e Node::sendHeartbeat()
 {
   if (!node_config_.heartbeat.enabled)
   {
-    return Status::ERROR;
+    return PROTON_ERROR;
   }
 
   auto& heartbeat = getHeartbeat(name_);
@@ -191,7 +191,7 @@ Status Node::sendHeartbeat()
   return sendBundle(heartbeat);
 }
 
-Status Node::registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback)
+proton_status_e Node::registerCallback(const std::string &bundle_name, BundleHandle::BundleCallback callback)
 {
   auto& bundle = getBundle(bundle_name);
 
@@ -202,15 +202,15 @@ Status Node::registerCallback(const std::string &bundle_name, BundleHandle::Bund
       if (consumer == name_)
       {
         bundle.registerCallback(callback);
-        return Status::OK;
+        return PROTON_OK;
       }
     }
   }
 
-  return Status::ERROR;
+  return PROTON_ERROR;
 }
 
-Status Node::registerHeartbeatCallback(const std::string &producer, BundleHandle::BundleCallback callback)
+proton_status_e Node::registerHeartbeatCallback(const std::string &producer, BundleHandle::BundleCallback callback)
 {
   auto& bundle = getHeartbeat(producer);
 
@@ -221,21 +221,21 @@ Status Node::registerHeartbeatCallback(const std::string &producer, BundleHandle
       if (consumer == name_)
       {
         bundle.registerCallback(callback);
-        return Status::OK;
+        return PROTON_OK;
       }
     }
   }
 
-  return Status::ERROR;
+  return PROTON_ERROR;
 }
 
-Status Node::readCompleteCallback(Bundle& bundle, const std::string& producer)
+proton_status_e Node::readCompleteCallback(Bundle& bundle, const std::string& producer)
 {
   read_queue_.push({bundle, producer});
-  return Status::OK;
+  return PROTON_OK;
 }
 
-Status Node::waitForBundle()
+proton_status_e Node::waitForBundle()
 {
   auto received_bundle = read_queue_.pop();
 
@@ -252,26 +252,26 @@ Status Node::waitForBundle()
       callback(handle);
     }
 
-    return Status::OK;
+    return PROTON_OK;
   }
 
-  return Status::ERROR;
+  return PROTON_ERROR;
 }
 
-Status Node::spinOnce() {
-  if (state_ != NodeState::ACTIVE) {
-    return Status::INVALID_STATE;
+proton_status_e Node::spinOnce() {
+  if (state_ != PROTON_NODE_ACTIVE) {
+    return PROTON_INVALID_STATE_ERROR;
   }
 
   return waitForBundle();
 }
 
-Status Node::spin() {
-  Status status;
+proton_status_e Node::spin() {
+  proton_status_e status;
   while (1) {
     status = spinOnce();
 
-    if (status != Status::OK)
+    if (status != PROTON_OK)
     {
       return status;
     }
@@ -368,7 +368,7 @@ void Node::printStats()
 }
 
 Connection::Connection(const NodeConfig& node_config, const NodeConfig& peer_config, const ConnectionConfig& connection_config, ReadCompleteCallback callback):
- config_(peer_config), callback_(callback), state_(NodeState::UNCONFIGURED), rx_kbps_(0.0), tx_kbps_(0.0)
+ config_(peer_config), callback_(callback), state_(PROTON_NODE_UNCONFIGURED), rx_kbps_(0.0), tx_kbps_(0.0)
 {
   ConnectionEndpointConfig node_connection_endpoint_config, peer_connection_endpoint_config;
   if (connection_config.connection.first.node == node_config.name &&
@@ -413,7 +413,7 @@ Connection::Connection(const NodeConfig& node_config, const NodeConfig& peer_con
     setTransport(std::make_unique<SerialTransport>(peer_device));
   }
 
-  state_ = NodeState::INACTIVE;
+  state_ = PROTON_NODE_INACTIVE;
 }
 
 void Connection::run()
@@ -434,20 +434,20 @@ void Connection::checkHeartbeat()
 
     if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - last_heartbeat_ms_ > config_.heartbeat.period)
     {
-      state_ = NodeState::INACTIVE;
+      state_ = PROTON_NODE_INACTIVE;
     }
   }
 }
 
 void Connection::heartbeat()
 {
-  state_ = NodeState::ACTIVE;
+  state_ = PROTON_NODE_ACTIVE;
   last_heartbeat_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 void Connection::spin()
 {
-  Status status;
+  proton_status_e status;
   time_t start_time = std::time(nullptr);
 
   while(1)
@@ -463,30 +463,30 @@ void Connection::spin()
 
     switch(getTransportState())
     {
-      case TransportState::DISCONNECTED:
+      case PROTON_TRANSPORT_DISCONNECTED:
       {
         status = connect();
-        if (status != Status::OK)
+        if (status != PROTON_OK)
         {
           std::cout << "Failed to connect to peer " << config_.name << std::endl;
         }
         break;
       }
 
-      case TransportState::CONNECTED:
+      case PROTON_TRANSPORT_CONNECTED:
       {
         status = pollForBundle();
-        if (status != Status::OK)
+        if (status != PROTON_OK)
         {
           std::cout << "Failed to poll for bundle on peer " << config_.name << ": " << status << std::endl;
         }
         break;
       }
 
-      case TransportState::ERROR:
+      case PROTON_TRANSPORT_ERROR:
       {
         status = disconnect();
-        if (status != Status::OK)
+        if (status != PROTON_OK)
         {
           std::cout << "Failed to disconnect from peer " << config_.name << ": " << status << std::endl;
         }
@@ -496,16 +496,16 @@ void Connection::spin()
   }
 }
 
-Status Connection::pollForBundle()
+proton_status_e Connection::pollForBundle()
 {
   uint8_t read_buf[PROTON_MAX_MESSAGE_SIZE];
   size_t bytes_read = 0;
-  Status status = read(read_buf, PROTON_MAX_MESSAGE_SIZE, bytes_read);
+  proton_status_e status = read(read_buf, PROTON_MAX_MESSAGE_SIZE, bytes_read);
 
-  if (status == Status::OK) {
+  if (status == PROTON_OK) {
     if (callback_ == nullptr)
     {
-      return Status::NULL_PTR;
+      return PROTON_NULL_PTR_ERROR;
     }
 
     // Remove frame overhead to get actual bundle length
@@ -518,7 +518,7 @@ Status Connection::pollForBundle()
     auto bundle = Bundle();
     if (!bundle.ParseFromArray(read_buf, bytes_read))
     {
-      return Status::SERIALIZATION_ERROR;
+      return PROTON_SERIALIZATION_ERROR;
     }
 
     if (bundle.id() == 0)

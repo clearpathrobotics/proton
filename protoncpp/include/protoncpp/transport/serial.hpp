@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <asio.hpp>
+#include <optional>
 #include <thread>
 #include <vector>
 
@@ -42,19 +43,12 @@ public:
 
   SerialTransport(serial_device device);
 
-  Status connect() override;
-  Status disconnect() override;
-  Status read(uint8_t *buf, const size_t& len, size_t& bytes_read) override;
-  Status write(const uint8_t *buf, const size_t& len, size_t& bytes_written) override;
+  proton_status_e connect() override;
+  proton_status_e disconnect() override;
+  proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read) override;
+  proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written) override;
 
   int initDevice(serial_device s, bool server, bool blocking);
-
-  static uint16_t getCRC16(const uint8_t *data, size_t len);
-  static Status fillFrameHeader(uint8_t * header, const uint16_t payload_len);
-  static Status fillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
-  static Status getPayloadLength(const uint8_t * header_buf, size_t& length);
-  static Status checkFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
-
 private:
   ssize_t poll(uint8_t * buf, size_t len);
   bool wait();
