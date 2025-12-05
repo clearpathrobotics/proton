@@ -328,14 +328,14 @@ proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id) {
   return status;
 }
 
-proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length) {
+proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer) {
   if (handle == NULL || handle->signals.data == NULL || buffer.data == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
 
   pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)buffer.data, length);
+      pb_istream_from_buffer((const pb_byte_t *)buffer.data, buffer.len);
 
   bool status = pb_decode(&stream, proton_Bundle_fields, &handle->bundle);
 

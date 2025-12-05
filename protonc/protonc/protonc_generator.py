@@ -30,6 +30,7 @@
 
 import argparse
 import os
+from jwt import encode
 import yaml
 from typing import List
 
@@ -93,6 +94,8 @@ class ProtonCGenerator:
     }
 
     BUNDLE_INIT_FUNCTION = 'proton_bundle_init'
+    BUNDLE_ENCODE_FUNCTION = 'proton_bundle_encode'
+    BUNDLE_DECODE_FUNCTION = 'proton_bundle_decode'
     BUNDLE_SEND_FUNCTION = 'proton_bundle_send'
     BUNDLE_SEND_HANDLE_FUNCTION = 'proton_bundle_send_handle'
     BUNDLE_SEND_HEARTBEAT_FUNCTION = 'proton_bundle_send_heartbeat'
@@ -642,6 +645,186 @@ class ProtonCGenerator:
             self.src_writer.write("return PROTON_OK;")
             self.src_writer.write_function_end()
 
+    def generate_bundle_decode_function(self):
+        # Generate prototype in header file for users to use
+        self.header_writer.write_comment("Bundle Decode Prototype", indent_level=0)
+        self.header_writer.write_newline()
+
+        # Generate function source
+        self.src_writer.write_comment("Bundle Decode Function", indent_level=0)
+        self.src_writer.write_newline()
+
+        # Name, parameters, and return type of the decode function
+        decode_function = Function(
+            self.BUNDLE_DECODE_FUNCTION,
+            [
+              Variable("buffer", "proton_buffer_t"),
+              Variable("producer", "proton_producer_t"),
+              Variable("id", f"{ProtonConfig.PROTON_BUNDLE_ENUM} *")
+            ],
+            "proton_status_e",
+        )
+
+        self.header_writer.write_function_prototype(decode_function)
+        self.header_writer.write_newline()
+
+        self.src_writer.write_function_start(decode_function)
+
+        # Check for valid buffer
+        self.src_writer.write_comment("Check that buffer is not NULL")
+        self.src_writer.write_if_statement_start(
+            "buffer.data == NULL || id == NULL"
+        )
+        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+
+        # Initialise variables
+        self.src_writer.write("proton_status_e status;")
+        self.src_writer.write("proton_bundle_handle_t * handle;")
+        self.src_writer.write_newline()
+
+
+        # Attempt to decode bundle ID
+        self.src_writer.write_comment("Decode bundle ID")
+        self.src_writer.write(f"status = {self.PROTON_DECODE_ID_FUNCTION}(buffer, id);", indent_level=1)
+        self.src_writer.write_if_statement_start("status != PROTON_OK", indent_level=1)
+        self.src_writer.write("return status;", indent_level=2)
+        self.src_writer.write_if_statement_end(indent_level=1)
+        self.src_writer.write_newline()
+
+        # Check which bundle we received
+        self.src_writer.write_switch_start("*id")
+
+        for b in self.config.bundles:
+            # Assign bundle and callback to appropriate values for this case
+            self.src_writer.write_case_start(b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name)
+            self.src_writer.write(
+                f"handle = &{b.internal_handle_variable_name};", indent_level=3
+            )
+            self.src_writer.write("break;", indent_level=3)
+            self.src_writer.write_case_end()
+            self.src_writer.write_newline()
+
+        self.src_writer.write_case_start(ProtonConfig.Bundle.HEARTBEAT_BUNDLE_ID)
+        self.src_writer.write_switch_start("producer", indent_level=3)
+        for n in self.nodes:
+            self.src_writer.write_case_start(n.id_define, indent_level=4)
+            for h in self.config.heartbeats:
+                if n.name in h.producers:
+                    self.src_writer.write(
+                      f"handle = &{h.internal_handle_variable_name};", indent_level=5
+                    )
+            self.src_writer.write("break;", indent_level=5)
+            self.src_writer.write_case_end(indent_level=4)
+            self.src_writer.write_newline()
+        # Default case is invalid, return error
+        self.src_writer.write_case_default_start(indent_level=4)
+        self.src_writer.write("return PROTON_ERROR;", indent_level=5)
+        self.src_writer.write_case_end(indent_level=4)
+        self.src_writer.write_switch_end(indent_level=3)
+        self.src_writer.write("break;", indent_level=3)
+        self.src_writer.write_case_end(indent_level=2)
+        self.src_writer.write_newline()
+
+        # Default case is invalid, return error
+        self.src_writer.write_case_default_start()
+        self.src_writer.write("return PROTON_ERROR;", indent_level=3)
+        self.src_writer.write_case_end()
+        self.src_writer.write_switch_end()
+
+        # Check that the bundle is produced by the producer
+        self.src_writer.write_comment("Check that the producer produces this bundle")
+        self.src_writer.write_if_statement_start("!(handle->producers & producer)")
+        self.src_writer.write("return PROTON_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+
+        # Decode the bundle
+        self.src_writer.write_comment("Decode bundle")
+        self.src_writer.write(f"status = {self.PROTON_DECODE_FUNCTION}(handle, buffer);", indent_level=1)
+        self.src_writer.write_if_statement_start("status != PROTON_OK")
+        self.src_writer.write("return status;", indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+
+        self.src_writer.write("return PROTON_OK;")
+        self.src_writer.write_function_end()
+
+    def generate_bundle_encode_function(self):
+        # Name, parameters, and return type of the encode function
+        encode_function = Function(
+            self.BUNDLE_ENCODE_FUNCTION,
+            [Variable("buffer", "proton_buffer_t"),
+             Variable("id", "uint32_t"),
+             Variable("bytes_encoded", "size_t *")],
+            "proton_status_e",
+        )
+
+        # Generate Prototype
+        self.header_writer.write_comment("Bundle Encode Function", indent_level=0)
+        self.header_writer.write_newline()
+        self.header_writer.write_function_prototype(encode_function)
+        self.header_writer.write_newline()
+
+        # Generate function source
+        self.src_writer.write_comment("Bundle Encode Function", indent_level=0)
+        self.src_writer.write_newline()
+        self.src_writer.write_function_start(encode_function)
+
+        # Check that bytes encoded is not NULL
+        self.src_writer.write_comment("Check that bytes_encoded is not NULL")
+        self.src_writer.write_if_statement_start(
+            "bytes_encoded == NULL",
+            indent_level=1,
+        )
+        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end(indent_level=1)
+        self.src_writer.write_newline()
+
+        # Initialise variables
+        self.src_writer.write("proton_bundle_handle_t * handle;")
+        self.src_writer.write_newline()
+
+        # Check which bundle we received
+        self.src_writer.write_comment("Find correct bundle handle")
+        self.src_writer.write_switch_start("id")
+
+        for b in self.config.bundles:
+            if self.target in b.producers:
+                # Assign bundle and callback to appropriate values for this case
+                self.src_writer.write_case_start(b.bundle_enum_name)
+                self.src_writer.write(
+                    f"handle = &{b.internal_handle_variable_name};", indent_level=3
+                )
+                self.src_writer.write("break;", indent_level=3)
+                self.src_writer.write_case_end()
+                self.src_writer.write_newline()
+
+        # Add heartbeat handle for target node
+        self.src_writer.write_case_start(ProtonConfig.Bundle.HEARTBEAT_BUNDLE_ID)
+        for h in self.config.heartbeats:
+            if self.node.name in h.producers:
+                self.src_writer.write(
+                    f"handle = &{h.internal_handle_variable_name};", indent_level=3
+                )
+        self.src_writer.write("break;", indent_level=3)
+        self.src_writer.write_case_end()
+        self.src_writer.write_newline()
+
+        # Default case is invalid, return error
+        self.src_writer.write_case_default_start()
+        self.src_writer.write("return PROTON_ERROR;", indent_level=3)
+        self.src_writer.write_case_end()
+        self.src_writer.write_switch_end()
+
+        self.src_writer.write(
+            f"return {self.PROTON_ENCODE_FUNCTION}(handle, buffer, bytes_encoded);",
+            indent_level=1,
+        )
+
+        self.src_writer.write_function_end()
+
     def generate_send_handle_function(self):
         # Name, parameters, and return type of the encode function
         send_function = Function(
@@ -1028,6 +1211,8 @@ class ProtonCGenerator:
         self.generate_bundle_init_functions()
         self.generate_peer_init_functions()
         self.generate_receive_function()
+        self.generate_bundle_decode_function()
+        self.generate_bundle_encode_function()
         self.generate_send_handle_function()
         self.generate_send_function()
         self.generate_send_heartbeat_function()
