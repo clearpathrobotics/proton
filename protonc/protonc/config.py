@@ -341,7 +341,7 @@ class ProtonConfig(BaseConfig):
         CONSUMERS = "consumers"
         SIGNALS = "signals"
         BUNDLE_SUFFIX = "_bundle"
-        HANDLE_SUFFIX = "_handle"
+        BUNDLE_HANDLE_SUFFIX = "_bundle_handle"
         HEARTBEAT_STRUCT_SUFFIX = "_heartbeat"
         BUNDLE_PREFIX = "BUNDLE"
         BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE"
@@ -357,6 +357,9 @@ class ProtonConfig(BaseConfig):
         HEARTBEAT_BUNDLE_ID = "PROTON_HEARTBEAT_ID"
         SIGNAL_SUFFIX = "SIGNAL"
         STRUCT_SUFFIX = "STRUCT"
+
+        HEARTBEAT_STRUCT = "proton_bundle_heartbeat_t"
+        HEARTBEAT_DEFAULT_VALUE = "PROTON_HEARTBEAT_BUNDLE_DEFAULT_VALUE"
 
         def __init__(self, bundle: dict, prefix: List[str]=None):
             self.name = bundle[self.NAME]
@@ -383,7 +386,7 @@ class ProtonConfig(BaseConfig):
             self.needs_init = False
 
             self.bundle_enum_name = self.create_enum_entry()
-            self.internal_handle_variable_name = f'_{self.name}{self.HANDLE_SUFFIX}'
+            self.internal_handle_variable_name = f'_{self.name}{self.BUNDLE_HANDLE_SUFFIX}'
             self.signal_handles_variable_name = f'_{self.name}{self.SIGNAL_HANDLES_SUFFIX}'
             self.struct = self.create_struct()
             self.bundle_variable_name = f'{self.name}{self.BUNDLE_SUFFIX}'
@@ -587,8 +590,8 @@ class ProtonConfig(BaseConfig):
             self.name_define = self.create_define(self.NAME_SUFFIX, self.name, add_quotes=True)
             self.id_define = self.create_define(self.ID_SUFFIX, self.id)
             self.peer_define = self.create_define(self.name.upper(), prefix=f'{ProtonConfig.PROTON_PREFIX}__{self.PEER_PREFIX}')
-            self.node_default_value_define = self.create_define(self.DEFAULT_VALUE_SUFFIX, f'proton_node_default({self.name_define})')
-            self.peer_default_value_define = self.create_define(f'{self.PEER_SUFFIX}__{self.DEFAULT_VALUE_SUFFIX}', f'proton_peer_default({self.name_define})')
+            self.node_default_value_define = self.create_define(self.DEFAULT_VALUE_SUFFIX, f'PROTON_NODE_DEFAULT({self.name_define})')
+            self.peer_default_value_define = self.create_define(f'{self.PEER_SUFFIX}__{self.DEFAULT_VALUE_SUFFIX}', f'PROTON_PEER_DEFAULT({self.name_define})')
 
             self.transport_connect_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_CONNECT}')
             self.transport_disconnect_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_DISCONNECT}')
