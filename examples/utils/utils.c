@@ -30,7 +30,7 @@ int proton_print(const char * format, ...)
   return ret;
 }
 
-__attribute__((weak)) void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...)
+__attribute__((weak)) void send_log(void * context, const char *file, const char* func, int line, uint8_t level, char *msg, ...)
 {}
 
 int msleep(long msec) {

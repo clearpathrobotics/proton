@@ -30,7 +30,6 @@ typedef struct {
 void proton_bundle_cmd_fans_callback(void * context) {
   context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_CMD_FANS]++;
-  printf("Received cmd_fans\r\n");
 }
 
 void proton_bundle_display_status_callback(void * context) {
@@ -83,19 +82,21 @@ void proton_bundle_clear_needs_reset_callback(void * context) {
   proton_bundle_send(c->node, PROTON__BUNDLE__CLEAR_NEEDS_RESET_RESPONSE);
 }
 
-void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
-  // strcpy(log_bundle.name, "A300_proton");
-  // strcpy(log_bundle.file, file);
-  // strcpy(log_bundle.function, func);
-  // log_bundle.line = line;
-  // log_bundle.level = level;
+void send_log(void * context, const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
+  context_t * c = (context_t *)context;
+  proton_bundle_log_t * log_bundle = &c->bundles.log_bundle;
+  strcpy(log_bundle->name, "A300_proton");
+  strcpy(log_bundle->file, file);
+  strcpy(log_bundle->function, func);
+  log_bundle->line = line;
+  log_bundle->level = level;
 
-  // va_list args;
-  // va_start(args, msg);
-  // vsprintf(log_bundle.msg, msg, args);
-  // va_end(args);
+  va_list args;
+  va_start(args, msg);
+  vsprintf(log_bundle->msg, msg, args);
+  va_end(args);
 
-  //proton_bundle_send(&mcu_node, PROTON__BUNDLE__LOG);
+  proton_bundle_send(c->node, PROTON__BUNDLE__LOG);
 }
 
 void update_power(proton_node_t * node, proton_bundle_power_t * power_bundle) {
@@ -277,7 +278,7 @@ void *timer_1hz(void *arg) {
   context_t * context = (context_t *)arg;
 
   while (1) {
-    LOG_INFO("1hz timer %ld", i++);
+    LOG_INFO(context, "1hz timer %ld", i++);
     update_status(context->node, &context->bundles.status_bundle, i);
     update_emergency_stop(context->node, &context->bundles.emergency_stop_bundle);
     update_stop_status(context->node, &context->bundles.stop_status_bundle);
@@ -303,7 +304,7 @@ void *timer_10hz(void *arg) {
   context_t * context = (context_t *)arg;
 
   while (1) {
-    LOG_INFO("10hz timer %ld", i++);
+    LOG_INFO(context, "10hz timer %ld", i++);
     update_power(context->node, &context->bundles.power_bundle);
     update_temperature(context->node, &context->bundles.temperature_bundle);
     update_pinout_state(context->node, &context->bundles.pinout_state_bundle);
