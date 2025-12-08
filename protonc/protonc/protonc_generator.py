@@ -462,11 +462,12 @@ class ProtonCGenerator:
         for b in self.config.bundles + self.config.heartbeats:
             if self.target in b.consumers:
                 self.header_writer.write_function_prototype(
-                    Function(b.callback_function_name.name, [Variable("node", "proton_node_t *")], "void")
+                    Function(b.callback_function_name.name, [Variable("context", "void *")], "void")
                 )
                 self.src_writer.write_function_start(
-                    Function(b.callback_function_name.name, [Variable("node", "proton_node_t *")], "__attribute__((weak)) void")
+                    Function(b.callback_function_name.name, [Variable("context", "void *")], "__attribute__((weak)) void")
                 )
+                self.src_writer.write('(void)context;')
                 self.src_writer.write_function_end()
         self.header_writer.write_newline()
 
@@ -527,6 +528,7 @@ class ProtonCGenerator:
                 n.receive_func.name,
                 [
                   Variable("node", "proton_node_t *"),
+                  Variable("length", "size_t")
                 ],
                 "proton_status_e",
             )
@@ -565,16 +567,9 @@ class ProtonCGenerator:
             # Attempt to decode bundle ID
             self.src_writer.write_comment("Decode bundle")
 
-            self.src_writer.write_if_statement_start('peer.atomic_buffer.lock(node)')
-            self.src_writer.write(f"status = {self.BUNDLE_DECODE_FUNCTION}(peer.atomic_buffer.buffer, peer.id, &id);", indent_level=2)
-            self.src_writer.write_if_statement_start('!peer.atomic_buffer.unlock(node)', indent_level=2)
-            self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
-            self.src_writer.write_if_statement_end(indent_level=2)
-            self.src_writer.write_if_statement_end(indent_level=1)
-            self.src_writer.write_else_statement_start(indent_level=1)
-            self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=2)
-            self.src_writer.write_else_statement_end(indent_level=1)
+            self.src_writer.write(f"status = {self.BUNDLE_DECODE_FUNCTION}(peer.atomic_buffer.buffer, peer.id, &id, length);", indent_level=1)
             self.src_writer.write_newline()
+
             self.src_writer.write_if_statement_start("status != PROTON_OK", indent_level=1)
             self.src_writer.write("return status;", indent_level=2)
             self.src_writer.write_if_statement_end(indent_level=1)
@@ -603,7 +598,7 @@ class ProtonCGenerator:
             # Execute the callback for this bundle
             self.src_writer.write_comment("Execute callback")
             self.src_writer.write_if_statement_start("callback")
-            self.src_writer.write("callback(node);", indent_level=2)
+            self.src_writer.write("callback(node->context);", indent_level=2)
             self.src_writer.write_if_statement_end()
             self.src_writer.write_newline()
 
@@ -625,7 +620,8 @@ class ProtonCGenerator:
             [
               Variable("buffer", "proton_buffer_t"),
               Variable("producer", "proton_producer_t"),
-              Variable("id", f"{ProtonConfig.PROTON_BUNDLE_ENUM} *")
+              Variable("id", f"{ProtonConfig.PROTON_BUNDLE_ENUM} *"),
+              Variable("length", "size_t")
             ],
             "proton_status_e",
         )
@@ -707,7 +703,7 @@ class ProtonCGenerator:
 
         # Decode the bundle
         self.src_writer.write_comment("Decode bundle")
-        self.src_writer.write(f"status = {self.PROTON_DECODE_FUNCTION}(handle, buffer);", indent_level=1)
+        self.src_writer.write(f"status = {self.PROTON_DECODE_FUNCTION}(handle, buffer, length);", indent_level=1)
         self.src_writer.write_if_statement_start("status != PROTON_OK")
         self.src_writer.write("return status;", indent_level=2)
         self.src_writer.write_if_statement_end()
@@ -875,7 +871,7 @@ class ProtonCGenerator:
         self.src_writer.write_switch_end()
 
         # Lock buffer
-        self.src_writer.write_if_statement_start('node->atomic_buffer.lock(node)')
+        self.src_writer.write_if_statement_start('node->atomic_buffer.lock(node->context)')
 
         # Encode bundle
         self.src_writer.write(
@@ -908,7 +904,7 @@ class ProtonCGenerator:
         self.src_writer.write_if_statement_end(indent_level=2)
         self.src_writer.write_newline()
 
-        self.src_writer.write_if_statement_start('!node->atomic_buffer.unlock(node)', indent_level=2)
+        self.src_writer.write_if_statement_start('!node->atomic_buffer.unlock(node->context)', indent_level=2)
         self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
         self.src_writer.write_if_statement_end(indent_level=2)
         self.src_writer.write_if_statement_end(indent_level=1)
@@ -1045,8 +1041,8 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
 
         for n in self.nodes:
-            lock_func = Function(n.mutex_lock_func.name, [Variable("node", "proton_node_t *")], "bool")
-            unlock_func = Function(n.mutex_unlock_func, [Variable("node", "proton_node_t *")], "bool")
+            lock_func = Function(n.mutex_lock_func.name, [Variable("context", "void *")], "bool")
+            unlock_func = Function(n.mutex_unlock_func, [Variable("context", "void *")], "bool")
             self.header_writer.write_function_prototype(lock_func)
             self.header_writer.write_function_prototype(unlock_func)
             self.header_writer.write_newline()
@@ -1055,12 +1051,12 @@ class ProtonCGenerator:
             unlock_func.ret = "__attribute__((weak)) bool"
 
             self.src_writer.write_function_start(lock_func)
-            self.src_writer.write('(void)node;')
+            self.src_writer.write('(void)context;')
             self.src_writer.write('return true;')
             self.src_writer.write_function_end()
 
             self.src_writer.write_function_start(unlock_func)
-            self.src_writer.write('(void)node;')
+            self.src_writer.write('(void)context;')
             self.src_writer.write('return true;')
             self.src_writer.write_function_end()
 

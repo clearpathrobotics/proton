@@ -27,60 +27,60 @@ typedef struct {
 } context_t;
 
 
-void proton_bundle_cmd_fans_callback(proton_node_t * node) {
-  context_t * context = (context_t *)node->context;
-  context->cb_counts[CALLBACK_CMD_FANS]++;
+void proton_bundle_cmd_fans_callback(void * context) {
+  context_t * c = (context_t *)context;
+  c->cb_counts[CALLBACK_CMD_FANS]++;
   printf("Received cmd_fans\r\n");
 }
 
-void proton_bundle_display_status_callback(proton_node_t * node) {
-  context_t * context = (context_t *)node->context;
-  context->cb_counts[CALLBACK_DISPLAY_STATUS]++;
+void proton_bundle_display_status_callback(void * context) {
+  context_t * c = (context_t *)context;
+  c->cb_counts[CALLBACK_DISPLAY_STATUS]++;
 }
 
-void proton_bundle_cmd_lights_callback(proton_node_t * node) {
-  context_t * context = (context_t *)node->context;
-  context->cb_counts[CALLBACK_CMD_LIGHTS]++;
+void proton_bundle_cmd_lights_callback(void * context) {
+  context_t * c = (context_t *)context;
+  c->cb_counts[CALLBACK_CMD_LIGHTS]++;
 }
 
-void proton_bundle_battery_callback(proton_node_t * node) {
-  context_t * context = (context_t *)node->context;
-  context->cb_counts[CALLBACK_BATTERY]++;
+void proton_bundle_battery_callback(void * context) {
+  context_t * c = (context_t *)context;
+  c->cb_counts[CALLBACK_BATTERY]++;
 }
 
-void proton_bundle_pinout_command_callback(proton_node_t * node) {
-  context_t * context = (context_t *)node->context;
-  context->cb_counts[CALLBACK_PINOUT_COMMAND]++;
+void proton_bundle_pinout_command_callback(void * context) {
+  context_t * c = (context_t *)context;
+  c->cb_counts[CALLBACK_PINOUT_COMMAND]++;
 }
 
-void proton_bundle_pc_heartbeat_callback(proton_node_t * node)
+void proton_bundle_pc_heartbeat_callback(void * context)
 {
-  context_t * context = (context_t *)node->context;
-  printf("Heartbeat received %u\r\n", context->bundles.pc_heartbeat_bundle.heartbeat);
-  node->peers[PROTON__PEER__PC].state = PROTON_NODE_ACTIVE;
-  context->last_pc_heartbeat = time(NULL);
+  context_t * c = (context_t *)context;
+  printf("Heartbeat received %u\r\n", c->bundles.pc_heartbeat_bundle.heartbeat);
+  c->node->peers[PROTON__PEER__PC].state = PROTON_NODE_ACTIVE;
+  c->last_pc_heartbeat = time(NULL);
 }
 
-void proton_bundle_cmd_shutdown_callback(proton_node_t * node) {
-  context_t * context = (context_t *)node->context;
-  context->cb_counts[CALLBACK_CMD_SHUTDOWN]++;
-  strcpy(context->bundles.cmd_shutdown_response_bundle.message, "SHUTTING DOWN");
-  context->bundles.cmd_shutdown_response_bundle.success = true;
+void proton_bundle_cmd_shutdown_callback(void * context) {
+  context_t * c = (context_t *)context;
+  c->cb_counts[CALLBACK_CMD_SHUTDOWN]++;
+  strcpy(c->bundles.cmd_shutdown_response_bundle.message, "SHUTTING DOWN");
+  c->bundles.cmd_shutdown_response_bundle.success = true;
 
-  proton_bundle_send(context->node, PROTON__BUNDLE__CMD_SHUTDOWN_RESPONSE);
+  proton_bundle_send(c->node, PROTON__BUNDLE__CMD_SHUTDOWN_RESPONSE);
 
   exit(0);
 }
 
-void proton_bundle_clear_needs_reset_callback(proton_node_t * node) {
-  context_t * context = (context_t *)node->context;
-  context->cb_counts[CALLBACK_CLEAR_NEEDS_RESET]++;
-  context->bundles.stop_status_bundle.needs_reset = false;
+void proton_bundle_clear_needs_reset_callback(void * context) {
+  context_t * c = (context_t *)context;
+  c->cb_counts[CALLBACK_CLEAR_NEEDS_RESET]++;
+  c->bundles.stop_status_bundle.needs_reset = false;
 
-  strcpy(context->bundles.clear_needs_reset_response_bundle.message, "Needs Reset Cleared");
-  context->bundles.clear_needs_reset_response_bundle.success = true;
+  strcpy(c->bundles.clear_needs_reset_response_bundle.message, "Needs Reset Cleared");
+  c->bundles.clear_needs_reset_response_bundle.success = true;
 
-  proton_bundle_send(node, PROTON__BUNDLE__CLEAR_NEEDS_RESET_RESPONSE);
+  proton_bundle_send(c->node, PROTON__BUNDLE__CLEAR_NEEDS_RESET_RESPONSE);
 }
 
 void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
@@ -227,49 +227,53 @@ size_t proton_node_pc_transport_write(const uint8_t *buf, size_t len) {
 }
 
 
-bool proton_node_mcu_lock(proton_node_t * node) {
-  if (node == NULL || node->context == NULL)
+bool proton_node_mcu_lock(void * context) {
+  if (context == NULL)
   {
     return false;
   }
 
-  context_t * context = (context_t *)node->context;
-  return pthread_mutex_lock(&context->mcu_lock) == 0;
+  context_t * c = (context_t *)context;
+  return pthread_mutex_lock(&c->mcu_lock) == 0;
 }
 
-bool proton_node_mcu_unlock(proton_node_t * node) {
-  if (node == NULL || node->context == NULL)
+bool proton_node_mcu_unlock(void * context) {
+  if (context == NULL)
   {
     return false;
   }
 
-  context_t * context = (context_t *)node->context;
-  return pthread_mutex_unlock(&context->mcu_lock) == 0;
+  context_t * c = (context_t *)context;
+  return pthread_mutex_unlock(&c->mcu_lock) == 0;
 }
 
-bool proton_node_pc_lock(proton_node_t * node) {
-  if (node == NULL || node->context == NULL)
+bool proton_node_pc_lock(void * context) {
+  if (context == NULL)
   {
     return false;
   }
 
-  context_t * context = (context_t *)node->context;
-  return pthread_mutex_lock(&context->pc_lock) == 0;
+  context_t * c = (context_t *)context;
+  return pthread_mutex_lock(&c->pc_lock) == 0;
 }
 
-bool proton_node_pc_unlock(proton_node_t * node) {
-  if (node == NULL || node->context == NULL)
+bool proton_node_pc_unlock(void * context) {
+  if (context == NULL)
   {
     return false;
   }
 
-  context_t * context = (context_t *)node->context;
-  return pthread_mutex_unlock(&context->pc_lock) == 0;
+  context_t * c = (context_t *)context;
+  return pthread_mutex_unlock(&c->pc_lock) == 0;
 }
 
 void *timer_1hz(void *arg) {
-  uint32_t i = 0;
+  if (arg == NULL)
+  {
+    return NULL;
+  }
 
+  uint32_t i = 0;
   context_t * context = (context_t *)arg;
 
   while (1) {
@@ -290,8 +294,12 @@ void *timer_1hz(void *arg) {
 }
 
 void *timer_10hz(void *arg) {
-  uint32_t i = 0;
+  if (arg == NULL)
+  {
+    return NULL;
+  }
 
+  uint32_t i = 0;
   context_t * context = (context_t *)arg;
 
   while (1) {
@@ -307,6 +315,11 @@ void *timer_10hz(void *arg) {
 }
 
 void * stats(void *arg) {
+  if (arg == NULL)
+  {
+    return NULL;
+  }
+
   uint32_t i = 0;
   context_t * context = (context_t *)arg;
 
@@ -352,10 +365,10 @@ int main() {
   proton_peer_t mcu_peers[PROTON__PEER__COUNT];
 
   // Buffers
-  uint8_t write_buf_[PROTON_MAX_MESSAGE_SIZE];
-  uint8_t read_buf_[PROTON_MAX_MESSAGE_SIZE];
-  proton_buffer_t proton_mcu_buffer = {write_buf_, PROTON_MAX_MESSAGE_SIZE};
-  proton_buffer_t proton_pc_buffer = {read_buf_, PROTON_MAX_MESSAGE_SIZE};
+  uint8_t mcu_buffer[PROTON_MAX_MESSAGE_SIZE];
+  uint8_t pc_buffer[PROTON_MAX_MESSAGE_SIZE];
+  proton_buffer_t proton_mcu_buffer = {mcu_buffer, sizeof(mcu_buffer)};
+  proton_buffer_t proton_pc_buffer = {pc_buffer, sizeof(pc_buffer)};
 
   // Context
   context_t context = {

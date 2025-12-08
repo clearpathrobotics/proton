@@ -22,14 +22,14 @@
 typedef struct proton_peer proton_peer_t;
 typedef struct proton_node proton_node_t;
 
-typedef void (*proton_callback_t)(proton_node_t *);
+typedef void (*proton_callback_t)(void *);
 typedef bool (*proton_transport_connect_t)(void);
 typedef bool (*proton_transport_disconnect_t)(void);
 typedef size_t (*proton_transport_read_t)(uint8_t *buf, size_t len);
 typedef size_t (*proton_transport_write_t)(const uint8_t *buf, size_t len);
-typedef proton_status_e (*proton_receive_t)(proton_node_t *);
-typedef bool (*proton_mutex_lock_t)(proton_node_t *);
-typedef bool (*proton_mutex_unlock_t)(proton_node_t *);
+typedef proton_status_e (*proton_receive_t)(proton_node_t * node, size_t bytes_read);
+typedef bool (*proton_mutex_lock_t)(void *);
+typedef bool (*proton_mutex_unlock_t)(void *);
 
 typedef uint64_t proton_producer_t;
 typedef uint64_t proton_consumer_t;
@@ -149,7 +149,7 @@ proton_status_e proton_configure(proton_node_t * node,
 proton_status_e proton_activate(proton_node_t * node);
 
 proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded);
-proton_status_e proton_decode(proton_bundle_handle_t * handle, proton_buffer_t buffer);
+proton_status_e proton_decode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t length);
 proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id);
 
 proton_status_e proton_spin(proton_node_t *node, const uint8_t peer);

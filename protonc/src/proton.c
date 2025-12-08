@@ -330,14 +330,19 @@ proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id) {
   return status;
 }
 
-proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer) {
+proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length) {
   if (handle == NULL || handle->signals.data == NULL || buffer.data == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
 
+  if (length > buffer.len)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+
   pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)buffer.data, buffer.len);
+      pb_istream_from_buffer((const pb_byte_t *)buffer.data, length);
 
   bool status = pb_decode(&stream, proton_Bundle_fields, &handle->bundle);
 
@@ -471,15 +476,9 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
                             peer_handle->atomic_buffer.buffer.data,
                             peer_handle->atomic_buffer.buffer.len);
 
-      // Unlock atomic buffer
-      if (!peer_handle->atomic_buffer.unlock(node))
-      {
-        return PROTON_MUTEX_ERROR;
-      }
-
       if (bytes_read > 0) {
         // Receive bundle from read data
-        if (peer_handle->receive(node) != PROTON_OK) {
+        if (peer_handle->receive(node, bytes_read) != PROTON_OK) {
           // Unlock atomic buffer
           if (!peer_handle->atomic_buffer.unlock(node))
           {
@@ -489,6 +488,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
           return PROTON_READ_ERROR;
         }
       }
+      // Unlock atomic buffer
       if (!peer_handle->atomic_buffer.unlock(node))
       {
         return PROTON_MUTEX_ERROR;
