@@ -19,14 +19,17 @@
 #include "pb_decode.h"
 #include "pb_encode.h"
 
-typedef void (*proton_callback_t)(void);
+typedef struct proton_peer proton_peer_t;
+typedef struct proton_node proton_node_t;
+
+typedef void (*proton_callback_t)(proton_node_t *);
 typedef bool (*proton_transport_connect_t)(void);
 typedef bool (*proton_transport_disconnect_t)(void);
 typedef size_t (*proton_transport_read_t)(uint8_t *buf, size_t len);
 typedef size_t (*proton_transport_write_t)(const uint8_t *buf, size_t len);
-typedef proton_status_e (*proton_receive_t)(const uint8_t * buf, size_t len);
-typedef bool (*proton_mutex_lock_t)();
-typedef bool (*proton_mutex_unlock_t)();
+typedef proton_status_e (*proton_receive_t)(proton_node_t *);
+typedef bool (*proton_mutex_lock_t)(proton_node_t *);
+typedef bool (*proton_mutex_unlock_t)(proton_node_t *);
 
 typedef uint64_t proton_producer_t;
 typedef uint64_t proton_consumer_t;
@@ -79,7 +82,7 @@ typedef struct proton_bundle_heartbeat {
   uint32_t heartbeat;
 } proton_bundle_heartbeat_t;
 
-typedef struct {
+typedef struct proton_peer {
   proton_node_state_e state;
   proton_peer_id_t id;
   proton_heartbeat_t heartbeat;
@@ -89,13 +92,14 @@ typedef struct {
   const char * name;
 } proton_peer_t;
 
-typedef struct {
+typedef struct proton_node {
   proton_node_state_e state;
   proton_heartbeat_t heartbeat;
   proton_atomic_buffer_t atomic_buffer;
   uint16_t peer_count;
   proton_peer_t * peers;
   const char * name;
+  void * context;
 } proton_node_t;
 
 #define PROTON_LIST_ARG_DEFAULT_VALUE {NULL, 0, 0, 0}
@@ -106,7 +110,7 @@ typedef struct {
 #define PROTON_ATOMIC_BUFFER_DEFAULT_VALUE {PROTON_BUFFER_DEFAULT_VALUE, NULL, NULL}
 
 #define PROTON_PEER_DEFAULT(name) {PROTON_NODE_UNCONFIGURED, 0, PROTON_HEARTBEAT_DEFAULT_VALUE, PROTON_TRANSPORT_DEFAULT_VALUE, NULL, PROTON_ATOMIC_BUFFER_DEFAULT_VALUE, name}
-#define PROTON_NODE_DEFAULT(name) {PROTON_NODE_UNCONFIGURED, PROTON_HEARTBEAT_DEFAULT_VALUE, PROTON_ATOMIC_BUFFER_DEFAULT_VALUE, 0, NULL, name}
+#define PROTON_NODE_DEFAULT(name) {PROTON_NODE_UNCONFIGURED, PROTON_HEARTBEAT_DEFAULT_VALUE, PROTON_ATOMIC_BUFFER_DEFAULT_VALUE, 0, NULL, name, NULL}
 
 #define TRANSPORT_VALID(transport) (transport.connect != NULL && transport.disconnect != NULL && transport.read != NULL && transport.write != NULL)
 
@@ -139,7 +143,8 @@ proton_status_e proton_configure(proton_node_t * node,
                                  proton_mutex_unlock_t unlock_func,
                                  proton_buffer_t write_buf,
                                  proton_peer_t * peers,
-                                 uint16_t peer_count);
+                                 uint16_t peer_count,
+                                 void * context);
 
 proton_status_e proton_activate(proton_node_t * node);
 

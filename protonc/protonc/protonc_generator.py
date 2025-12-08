@@ -97,11 +97,9 @@ class ProtonCGenerator:
     BUNDLE_ENCODE_FUNCTION = 'proton_bundle_encode'
     BUNDLE_DECODE_FUNCTION = 'proton_bundle_decode'
     BUNDLE_SEND_FUNCTION = 'proton_bundle_send'
-    BUNDLE_SEND_HANDLE_FUNCTION = 'proton_bundle_send_handle'
-    BUNDLE_SEND_HEARTBEAT_FUNCTION = 'proton_bundle_send_heartbeat'
     BUNDLE_PRINT_FUNCTION = 'proton_bundle_print'
     PEER_INIT_FUNCTION = 'proton_peer_init'
-    INIT_FUNCTION = 'proton_init'
+    NODE_INIT_FUNCTION = 'proton_node_init'
     PROTON_ENCODE_FUNCTION = 'proton_encode'
     PROTON_DECODE_FUNCTION = 'proton_decode'
     PROTON_DECODE_ID_FUNCTION = 'proton_decode_id'
@@ -337,28 +335,16 @@ class ProtonCGenerator:
         self.header_writer.write_newline()
 
     def generate_peer_init_prototypes(self):
-        self.src_writer.write_comment("Peer Init Prototype", indent_level=0)
-        self.src_writer.write_newline()
-        for n in self.peers:
-            self.src_writer.write_function_prototype(
-                Function(n.peer_init_func.name, [], "proton_status_e")
-            )
-        self.src_writer.write_newline()
-
         self.header_writer.write_comment("Peer Init Prototype", indent_level=0)
         self.header_writer.write_newline()
-        self.header_writer.write_function_prototype(
-            Function(self.PEER_INIT_FUNCTION, [], "proton_status_e")
-        )
+        for n in self.peers:
+            self.header_writer.write_function_prototype(
+                Function(n.peer_init_func.name,
+                         [Variable("peer", "proton_peer_t *"),
+                          Variable("buffer", "proton_buffer_t")],
+                         "proton_status_e")
+            )
         self.header_writer.write_newline()
-
-    def generate_bundle_send_handle_prototype(self):
-        self.src_writer.write_comment("Bundle Send Handle Prototype", indent_level=0)
-        self.src_writer.write_newline()
-        self.src_writer.write_function_prototype(
-            Function(self.BUNDLE_SEND_HANDLE_FUNCTION, [Variable("handle","proton_bundle_handle_t *")], "proton_status_e")
-        )
-        self.src_writer.write_newline()
 
     def generate_bundle_init_functions(self):
         self.src_writer.write_comment("Bundle Init Functions", indent_level=0)
@@ -441,26 +427,30 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
 
         for n in self.peers:
-            self.src_writer.write_function_start(Function(n.peer_init_func.name, [], "proton_status_e"))
-            self.src_writer.write(f"return {self.PROTON_INIT_PEER}(&{self.node.peer_variable_name}[{n.peer_define}], "
+            self.src_writer.write_function_start(Function(
+                n.peer_init_func.name,
+                [Variable("peer", "proton_peer_t *"),
+                 Variable("buffer", "proton_buffer_t")],
+                "proton_status_e"))
+            self.src_writer.write(f"return {self.PROTON_INIT_PEER}(peer, "
                                   f"{n.id_define.name}, "
                                   f"(proton_heartbeat_t){n.heartbeat.default_value_define.name}, "
                                   f"(proton_transport_t){n.transport_define.name}, {n.receive_func.name}, {n.mutex_lock_func.name}, {n.mutex_unlock_func.name}, "
-                                  f"{n.buffer_variable_name});")
+                                  f"buffer);")
             self.src_writer.write_function_end()
 
-        self.src_writer.write_function_start(Function(self.PEER_INIT_FUNCTION, [], "proton_status_e"))
-        self.src_writer.write("proton_status_e status;")
-        self.src_writer.write_newline()
+        # self.src_writer.write_function_start(Function(self.PEER_INIT_FUNCTION, [], "proton_status_e"))
+        # self.src_writer.write("proton_status_e status;")
+        # self.src_writer.write_newline()
 
-        for n in self.peers:
-            self.src_writer.write(f"status = {n.peer_init_func.name}();")
-            self.src_writer.write_if_statement_start("status != PROTON_OK")
-            self.src_writer.write("return status;", indent_level=2)
-            self.src_writer.write_if_statement_end()
-            self.src_writer.write_newline()
-        self.src_writer.write("return PROTON_OK;")
-        self.src_writer.write_function_end()
+        # for n in self.peers:
+        #     self.src_writer.write(f"status = {n.peer_init_func.name}();")
+        #     self.src_writer.write_if_statement_start("status != PROTON_OK")
+        #     self.src_writer.write("return status;", indent_level=2)
+        #     self.src_writer.write_if_statement_end()
+        #     self.src_writer.write_newline()
+        # self.src_writer.write("return PROTON_OK;")
+        # self.src_writer.write_function_end()
 
     def generate_consumer_callbacks(self):
         self.header_writer.write_comment("Consumer callbacks", indent_level=0)
@@ -472,10 +462,10 @@ class ProtonCGenerator:
         for b in self.config.bundles + self.config.heartbeats:
             if self.target in b.consumers:
                 self.header_writer.write_function_prototype(
-                    Function(b.callback_function_name.name, [], "void")
+                    Function(b.callback_function_name.name, [Variable("node", "proton_node_t *")], "void")
                 )
                 self.src_writer.write_function_start(
-                    Function(b.callback_function_name.name, [], "__attribute__((weak)) void")
+                    Function(b.callback_function_name.name, [Variable("node", "proton_node_t *")], "__attribute__((weak)) void")
                 )
                 self.src_writer.write_function_end()
         self.header_writer.write_newline()
@@ -536,8 +526,7 @@ class ProtonCGenerator:
             receive_function = Function(
                 n.receive_func.name,
                 [
-                    Variable("buffer", "const uint8_t*"),
-                    Variable("length", "size_t"),
+                  Variable("node", "proton_node_t *"),
                 ],
                 "proton_status_e",
             )
@@ -547,10 +536,10 @@ class ProtonCGenerator:
 
             self.src_writer.write_function_start(receive_function)
 
-            # Check for valid buffer
-            self.src_writer.write_comment("Check that buffer is not NULL")
+            # Check for valid pointers
+            self.src_writer.write_comment("Check that the node is not NULL")
             self.src_writer.write_if_statement_start(
-                "buffer == NULL"
+                f"node == NULL || node->peers == NULL || node->peer_count <= {n.peer_define}"
             )
             self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
             self.src_writer.write_if_statement_end()
@@ -558,28 +547,27 @@ class ProtonCGenerator:
 
 
             # Initialise variables
-            self.src_writer.write("proton_bundle_handle_t * handle;")
             self.src_writer.write(f"{ProtonConfig.PROTON_BUNDLE_ENUM} id;")
             self.src_writer.write("proton_callback_t callback;")
             self.src_writer.write("proton_status_e status;")
-            self.src_writer.write(f"proton_peer_t * peer = &{self.node.node_variable_name}.peers[{n.peer_define}];")
+            self.src_writer.write(f"proton_peer_t peer = node->peers[{n.peer_define}];")
             self.src_writer.write_newline()
 
             # Check for peer lock and unlock functions
             self.src_writer.write_comment("Check that peer mutex functions are not NULL")
             self.src_writer.write_if_statement_start(
-                "peer->state == PROTON_NODE_UNCONFIGURED"
+                "peer.state == PROTON_NODE_UNCONFIGURED"
             )
             self.src_writer.write("return PROTON_INVALID_STATE_ERROR;", indent_level=2)
             self.src_writer.write_if_statement_end()
             self.src_writer.write_newline()
 
             # Attempt to decode bundle ID
-            self.src_writer.write_comment("Decode bundle ID")
+            self.src_writer.write_comment("Decode bundle")
 
-            self.src_writer.write_if_statement_start('peer->atomic_buffer.lock()')
-            self.src_writer.write(f"status = {self.PROTON_DECODE_ID_FUNCTION}(peer->atomic_buffer.buffer, &id);", indent_level=2)
-            self.src_writer.write_if_statement_start('!peer->atomic_buffer.unlock()', indent_level=2)
+            self.src_writer.write_if_statement_start('peer.atomic_buffer.lock(node)')
+            self.src_writer.write(f"status = {self.BUNDLE_DECODE_FUNCTION}(peer.atomic_buffer.buffer, peer.id, &id);", indent_level=2)
+            self.src_writer.write_if_statement_start('!peer.atomic_buffer.unlock(node)', indent_level=2)
             self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
             self.src_writer.write_if_statement_end(indent_level=2)
             self.src_writer.write_if_statement_end(indent_level=1)
@@ -600,9 +588,6 @@ class ProtonCGenerator:
                     # Assign bundle and callback to appropriate values for this case
                     self.src_writer.write_case_start(b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name)
                     self.src_writer.write(
-                        f"handle = &{b.internal_handle_variable_name};", indent_level=3
-                    )
-                    self.src_writer.write(
                         f"callback = {b.callback_function_name.name};", indent_level=3
                     )
                     self.src_writer.write("break;", indent_level=3)
@@ -615,30 +600,10 @@ class ProtonCGenerator:
             self.src_writer.write_case_end()
             self.src_writer.write_switch_end()
 
-            # Decode the bundle
-            self.src_writer.write_comment("Decode bundle")
-
-            self.src_writer.write_if_statement_start('peer->atomic_buffer.lock()')
-            self.src_writer.write(f"status = {self.PROTON_DECODE_FUNCTION}(handle, peer->atomic_buffer.buffer, length);", indent_level=2)
-            self.src_writer.write_if_statement_start('!peer->atomic_buffer.unlock()', indent_level=2)
-            self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
-            self.src_writer.write_if_statement_end(indent_level=2)
-            self.src_writer.write_if_statement_end(indent_level=1)
-            self.src_writer.write_else_statement_start(indent_level=1)
-            self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=2)
-            self.src_writer.write_else_statement_end(indent_level=1)
-            self.src_writer.write_newline()
-
-            self.src_writer.write_newline()
-            self.src_writer.write_if_statement_start("status != PROTON_OK")
-            self.src_writer.write("return status;", indent_level=2)
-            self.src_writer.write_if_statement_end()
-            self.src_writer.write_newline()
-
             # Execute the callback for this bundle
             self.src_writer.write_comment("Execute callback")
             self.src_writer.write_if_statement_start("callback")
-            self.src_writer.write("callback();", indent_level=2)
+            self.src_writer.write("callback(node);", indent_level=2)
             self.src_writer.write_if_statement_end()
             self.src_writer.write_newline()
 
@@ -825,103 +790,12 @@ class ProtonCGenerator:
 
         self.src_writer.write_function_end()
 
-    def generate_send_handle_function(self):
-        # Name, parameters, and return type of the encode function
-        send_function = Function(
-            self.BUNDLE_SEND_HANDLE_FUNCTION,
-            [Variable("handle", "proton_bundle_handle_t *")],
-            "proton_status_e",
-        )
-
-        # Generate function source
-        self.src_writer.write_comment("Bundle Send Handle Function", indent_level=0)
-        self.src_writer.write_newline()
-        self.src_writer.write_function_start(send_function)
-
-        # Check that write function is not NULL
-        self.src_writer.write_comment("Check that handle and mutex functions are not NULL")
-        self.src_writer.write_if_statement_start(
-            "handle == NULL",
-            indent_level=1,
-        )
-        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
-        self.src_writer.write_if_statement_end(indent_level=1)
-        self.src_writer.write_newline()
-
-        # Check that the node is connected
-        self.src_writer.write_comment("Check that node is connected")
-        self.src_writer.write_if_statement_start(
-            f"{self.node.node_variable_name}.state != PROTON_NODE_ACTIVE",
-            indent_level=1,
-        )
-        self.src_writer.write("return PROTON_INVALID_STATE_ERROR;", indent_level=2)
-        self.src_writer.write_if_statement_end(indent_level=1)
-        self.src_writer.write_newline()
-
-        # Encode the bundle
-        self.src_writer.write("proton_status_e status = PROTON_WRITE_ERROR;")
-        self.src_writer.write_newline()
-
-        self.src_writer.write_variable(
-            Variable("bytes_encoded", "size_t"),
-            indent_level=1
-        )
-        self.src_writer.write_newline()
-
-        self.src_writer.write_comment("Encode bundle", indent_level=1)
-
-        self.src_writer.write_if_statement_start(f'{self.node.node_variable_name}.atomic_buffer.lock()')
-        self.src_writer.write(
-            f"status = {self.PROTON_ENCODE_FUNCTION}(handle, {self.node.node_variable_name}.atomic_buffer.buffer,  &bytes_encoded);",
-            indent_level=2,
-        )
-        self.src_writer.write_if_statement_start(f'!{self.node.node_variable_name}.atomic_buffer.unlock()', indent_level=2)
-        self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
-        self.src_writer.write_if_statement_end(indent_level=2)
-        self.src_writer.write_if_statement_end(indent_level=1)
-        self.src_writer.write_else_statement_start(indent_level=1)
-        self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=2)
-        self.src_writer.write_else_statement_end(indent_level=1)
-        self.src_writer.write_newline()
-
-        self.src_writer.write_if_statement_start(
-            "status == PROTON_OK && bytes_encoded > 0",
-            indent_level=1,
-        )
-        self.src_writer.write_comment("Send bundle", indent_level=2)
-        self.src_writer.write_for_loop_start(f"{self.node.node_variable_name}.peer_count", indent_level=2)
-        self.src_writer.write_comment("Send to all bundle consumers", indent_level=3)
-        self.src_writer.write_if_statement_start(
-            f"handle->consumers & {self.node.node_variable_name}.peers[i].id",
-            indent_level=3,
-        )
-        self.src_writer.write(f"{self.node.node_variable_name}.atomic_buffer.lock();", indent_level=4)
-        self.src_writer.write_if_statement_start(
-            f"{self.node.node_variable_name}.peers[i].transport.write({self.node.node_variable_name}.atomic_buffer.buffer.data, bytes_encoded) == 0",
-            indent_level=4,
-        )
-        self.src_writer.write_comment("Write failed", indent_level=5)
-        self.src_writer.write(
-            "status = PROTON_WRITE_ERROR;",
-            indent_level=5,
-        )
-        self.src_writer.write_if_statement_end(indent_level=4)
-
-        self.src_writer.write(f"{self.node.node_variable_name}.atomic_buffer.unlock();", indent_level=4)
-        self.src_writer.write_if_statement_end(indent_level=3)
-        self.src_writer.write_for_loop_end(indent_level=2)
-        self.src_writer.write_if_statement_end(indent_level=1)
-
-        self.src_writer.write_newline()
-
-        self.src_writer.write("return status;")
-        self.src_writer.write_function_end()
-
     def generate_send_function(self):
         # Name, parameters, and return type of the encode function
         send_function = Function(
             self.BUNDLE_SEND_FUNCTION,
-            [Variable("bundle", ProtonConfig.PROTON_BUNDLE_ENUM)],
+            [Variable("node", "proton_node_t *"),
+             Variable("id", "uint32_t")],
             "proton_status_e",
         )
 
@@ -939,7 +813,7 @@ class ProtonCGenerator:
         # Check that peers are not NULL
         self.src_writer.write_comment("Check that peers are not NULL")
         self.src_writer.write_if_statement_start(
-            f"{self.node.node_variable_name}.peers == NULL",
+            "node == NULL || node->peers == NULL",
             indent_level=1,
         )
         self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
@@ -948,9 +822,9 @@ class ProtonCGenerator:
 
         # Check that write function is not NULL
         self.src_writer.write_comment("Check that write functions are not NULL")
-        self.src_writer.write_for_loop_start(f"{self.node.node_variable_name}.peer_count", indent_level=1)
+        self.src_writer.write_for_loop_start("node->peer_count", indent_level=1)
         self.src_writer.write_if_statement_start(
-            f"{self.node.node_variable_name}.peers[i].transport.write == NULL",
+            "node->peers[i].transport.write == NULL",
             indent_level=2,
         )
         self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=3)
@@ -961,7 +835,7 @@ class ProtonCGenerator:
         # Check that the node is connected
         self.src_writer.write_comment("Check that node is connected")
         self.src_writer.write_if_statement_start(
-            f"{self.node.node_variable_name}.state != PROTON_NODE_ACTIVE",
+            "node->state != PROTON_NODE_ACTIVE",
             indent_level=1,
         )
         self.src_writer.write("return PROTON_INVALID_STATE_ERROR;", indent_level=2)
@@ -970,16 +844,18 @@ class ProtonCGenerator:
 
         # Initialise variables
         self.src_writer.write("proton_bundle_handle_t * handle;")
+        self.src_writer.write("proton_status_e status;")
+        self.src_writer.write("size_t bytes_encoded;")
         self.src_writer.write_newline()
 
         # Check which bundle we received
         self.src_writer.write_comment("Find correct bundle handle")
-        self.src_writer.write_switch_start("bundle")
+        self.src_writer.write_switch_start("id")
 
         for b in self.config.bundles:
             if self.target in b.producers:
                 # Assign bundle and callback to appropriate values for this case
-                self.src_writer.write_case_start(b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name)
+                self.src_writer.write_case_start(b.bundle_enum_name)
                 self.src_writer.write(
                     f"handle = &{b.internal_handle_variable_name};", indent_level=3
                 )
@@ -987,45 +863,62 @@ class ProtonCGenerator:
                 self.src_writer.write_case_end()
                 self.src_writer.write_newline()
 
-        # Default case is invalid, return error
-        self.src_writer.write_case_default_start()
-        self.src_writer.write("return PROTON_ERROR;", indent_level=3)
+        # Add heartbeat handle for target node
+        self.src_writer.write_case_start(ProtonConfig.Bundle.HEARTBEAT_BUNDLE_ID)
+        for h in self.config.heartbeats:
+            if self.node.name in h.producers:
+                self.src_writer.write(
+                    f"handle = &{h.internal_handle_variable_name};", indent_level=3
+                )
+        self.src_writer.write("break;", indent_level=3)
         self.src_writer.write_case_end()
         self.src_writer.write_switch_end()
 
-        # Send the handle
-        self.src_writer.write(f"return {self.BUNDLE_SEND_HANDLE_FUNCTION}(handle);")
-        self.src_writer.write_function_end()
+        # Lock buffer
+        self.src_writer.write_if_statement_start('node->atomic_buffer.lock(node)')
 
-    def generate_send_heartbeat_function(self):
-        if not self.node.heartbeat.enabled:
-            return
-
-        # Name, parameters, and return type of the encode function
-        send_function = Function(
-            self.BUNDLE_SEND_HEARTBEAT_FUNCTION,
-            [],
-            "proton_status_e",
+        # Encode bundle
+        self.src_writer.write(
+            f"status = {self.BUNDLE_ENCODE_FUNCTION}(node->atomic_buffer.buffer, id, &bytes_encoded);",
+            indent_level=2,
         )
-
-        # Generate prototype in header file for users to use
-        self.header_writer.write_comment("Bundle Send Heartbeat Prototype", indent_level=0)
-        self.header_writer.write_newline()
-        self.header_writer.write_function_prototype(send_function)
-        self.header_writer.write_newline()
-
-        # Generate function source
-        self.src_writer.write_comment("Bundle Send Heartbeat Function", indent_level=0)
         self.src_writer.write_newline()
-        self.src_writer.write_function_start(send_function)
 
-        handle: str
-        for b in self.config.heartbeats:
-            if self.target in b.producers:
-                handle = b.internal_handle_variable_name
-                break
+        # Send bundle to all consumers
+        self.src_writer.write_if_statement_start("status == PROTON_OK", indent_level=2)
+        self.src_writer.write_comment("Send bundle", indent_level=3)
+        self.src_writer.write_for_loop_start("node->peer_count", indent_level=3)
+        self.src_writer.write_comment("Send to all bundle consumers", indent_level=4)
+        self.src_writer.write_if_statement_start(
+            "handle->consumers & node->peers[i].id",
+            indent_level=4,
+        )
+        self.src_writer.write_if_statement_start(
+            "node->peers[i].transport.write(node->atomic_buffer.buffer.data, bytes_encoded) == 0",
+            indent_level=5,
+        )
+        self.src_writer.write_comment("Write failed", indent_level=6)
+        self.src_writer.write(
+            "status = PROTON_WRITE_ERROR;",
+            indent_level=6,
+        )
+        self.src_writer.write_if_statement_end(indent_level=5)
+        self.src_writer.write_if_statement_end(indent_level=4)
+        self.src_writer.write_for_loop_end(indent_level=3)
+        self.src_writer.write_if_statement_end(indent_level=2)
+        self.src_writer.write_newline()
 
-        self.src_writer.write(f"return {self.BUNDLE_SEND_HANDLE_FUNCTION}(&{handle});")
+        self.src_writer.write_if_statement_start('!node->atomic_buffer.unlock(node)', indent_level=2)
+        self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
+        self.src_writer.write_if_statement_end(indent_level=2)
+        self.src_writer.write_if_statement_end(indent_level=1)
+        self.src_writer.write_else_statement_start(indent_level=1)
+        self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=2)
+        self.src_writer.write_else_statement_end(indent_level=1)
+        self.src_writer.write_newline()
+
+        # Send the handle
+        self.src_writer.write("return status;")
         self.src_writer.write_function_end()
 
     def generate_print_function(self):
@@ -1098,34 +991,40 @@ class ProtonCGenerator:
 
         self.header_writer.write_newline()
 
-    def generate_init_prototype(self):
-        self.header_writer.write_comment("Proton Init Prototype", indent_level=0)
+    def generate_node_init_function(self):
+        init_function = Function(self.node_init_func,
+                                 [Variable("node", "proton_node_t *"),
+                                  Variable("peers", "proton_peer_t *"),
+                                  Variable("buffer", "proton_buffer_t"),
+                                  Variable("context", "void *")],
+                                 "proton_status_e")
+
+        self.header_writer.write_comment("Proton Node Init Prototype", indent_level=0)
         self.header_writer.write_newline()
-        self.header_writer.write_function_prototype(Function(self.INIT_FUNCTION, [], "proton_status_e"))
+        self.header_writer.write_function_prototype(init_function)
         self.header_writer.write_newline()
 
-    def generate_init_function(self):
-        self.src_writer.write_comment("Proton Init", indent_level=0)
+        self.src_writer.write_comment("Proton Node Init", indent_level=0)
         self.src_writer.write_newline()
-        self.src_writer.write_function_start(Function(self.INIT_FUNCTION, [], "proton_status_e"))
+        self.src_writer.write_function_start(init_function)
 
+        self.src_writer.write_comment("Check that the node is not NULL")
+        self.src_writer.write_if_statement_start("node == NULL || peers == NULL")
+        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end()
+
+        self.src_writer.write_newline()
         self.src_writer.write_variable(
             Variable("status", "proton_status_e"),
             indent_level=1
         )
         self.src_writer.write_newline()
 
-        self.src_writer.write(f"status = {self.PEER_INIT_FUNCTION}();")
-        self.src_writer.write_if_statement_start("status != PROTON_OK")
-        self.src_writer.write("return status;", indent_level=2)
-        self.src_writer.write_if_statement_end()
-        self.src_writer.write_newline()
-
         self.src_writer.write(
-            f"status = {self.PROTON_CONFIGURE_FUNCTION}(&{self.node.node_variable_name}, "
+            f"status = {self.PROTON_CONFIGURE_FUNCTION}(node, "
             f"(proton_heartbeat_t){self.node.heartbeat.default_value_define.name}, {self.node.mutex_lock_func.name}, "
-            f"{self.node.mutex_unlock_func.name}, {self.node.buffer_variable_name}, "
-            f"{self.node.peer_variable_name}, PROTON__PEER__COUNT);"
+            f"{self.node.mutex_unlock_func.name}, buffer, "
+            f"peers, PROTON__PEER__COUNT, context);"
         )
         self.src_writer.write_if_statement_start("status != PROTON_OK")
         self.src_writer.write("return status;", indent_level=2)
@@ -1133,7 +1032,7 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
 
         self.src_writer.write(
-            f"return {self.PROTON_ACTIVATE_FUNCTION}(&{self.node.node_variable_name});"
+            f"return {self.PROTON_ACTIVATE_FUNCTION}(node);"
         )
 
         self.src_writer.write_function_end()
@@ -1142,28 +1041,26 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Mutex prototypes", indent_level=0)
         self.header_writer.write_newline()
 
-        for n in self.nodes:
-            self.header_writer.write_function_prototype(
-                Function(n.mutex_lock_func.name, [], "bool")
-            )
-            self.header_writer.write_function_prototype(
-                Function(n.mutex_unlock_func, [], "bool")
-            )
-            self.header_writer.write_newline()
-
         self.src_writer.write_comment("Weak Mutex functions", indent_level=0)
         self.src_writer.write_newline()
 
         for n in self.nodes:
-            self.src_writer.write_function_start(
-                Function(n.mutex_lock_func.name, [], "__attribute__((weak)) bool")
-            )
+            lock_func = Function(n.mutex_lock_func.name, [Variable("node", "proton_node_t *")], "bool")
+            unlock_func = Function(n.mutex_unlock_func, [Variable("node", "proton_node_t *")], "bool")
+            self.header_writer.write_function_prototype(lock_func)
+            self.header_writer.write_function_prototype(unlock_func)
+            self.header_writer.write_newline()
+
+            lock_func.ret = "__attribute__((weak)) bool"
+            unlock_func.ret = "__attribute__((weak)) bool"
+
+            self.src_writer.write_function_start(lock_func)
+            self.src_writer.write('(void)node;')
             self.src_writer.write('return true;')
             self.src_writer.write_function_end()
 
-            self.src_writer.write_function_start(
-                Function(n.mutex_unlock_func, [], "__attribute__((weak)) bool")
-            )
+            self.src_writer.write_function_start(unlock_func)
+            self.src_writer.write('(void)node;')
             self.src_writer.write('return true;')
             self.src_writer.write_function_end()
 
@@ -1200,29 +1097,25 @@ class ProtonCGenerator:
         self.generate_signal_enums()
         self.generate_defines()
         self.generate_bundle_struct_typedefs()
-        self.generate_node()
-        self.generate_peers()
+        # self.generate_node()
+        # self.generate_peers()
         self.generate_signal_variables()
         self.generate_bundle_variable()
 
         self.generate_bundle_init_prototypes()
         self.generate_peer_init_prototypes()
-        self.generate_bundle_send_handle_prototype()
         self.generate_bundle_init_functions()
         self.generate_peer_init_functions()
-        self.generate_receive_function()
         self.generate_bundle_decode_function()
         self.generate_bundle_encode_function()
-        self.generate_send_handle_function()
+        self.generate_receive_function()
         self.generate_send_function()
-        self.generate_send_heartbeat_function()
         self.generate_print_function()
         self.generate_consumer_callbacks()
         self.generate_transport_prototypes()
         self.generate_mutex_prototypes()
 
-        self.generate_init_prototype()
-        self.generate_init_function()
+        self.generate_node_init_function()
 
         self.header_writer.write_header_guard_close()
 
@@ -1249,6 +1142,8 @@ class ProtonCGenerator:
         self.bundles_struct_name = f"proton_bundles_{self.target}"
         self.bundles_init_func_name = f"proton_bundles_{self.target}_init"
         self.bundles_define = f"PROTON__BUNDLES__{self.target.upper()}__DEFAULT_VALUE"
+
+        self.node_init_func = f"proton_node_{self.target.lower()}_init"
 
 def main():
     parser = argparse.ArgumentParser()

@@ -132,7 +132,9 @@ class BaseConfig:
     def create_function(self, name: str, prefix: List[str]=None) -> Function:
         n = ''
         if prefix:
-            n = f'{prefix}_{name}'
+            for p in prefix:
+                n += f'{p}_'
+            n += name
         else:
             for p in self.prefix:
                 n += f'{p}_'
@@ -604,7 +606,7 @@ class ProtonConfig(BaseConfig):
 
             self.mutex_lock_func = self.create_function(self.MUTEX_LOCK)
             self.mutex_unlock_func = self.create_function(self.MUTEX_UNLOCK)
-            self.peer_init_func = self.create_function(self.INIT_SUFFIX)
+            self.peer_init_func = self.create_function(self.INIT_SUFFIX, prefix=[ProtonConfig.PROTON_PREFIX, ProtonConfig.Node.PEER_PREFIX, self.name])
             self.receive_func = self.create_function(self.RECEIVE_SUFFIX)
             self.buffer_variable_name = f'proton_{self.name.lower()}_buffer'
 

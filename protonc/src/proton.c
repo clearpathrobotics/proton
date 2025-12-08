@@ -176,7 +176,8 @@ proton_status_e proton_configure(proton_node_t * node,
                                  proton_mutex_unlock_t unlock_func,
                                  proton_buffer_t write_buf,
                                  proton_peer_t * peers,
-                                 uint16_t peer_count) {
+                                 uint16_t peer_count,
+                                 void * context) {
   if (node && lock_func && unlock_func && write_buf.data && peers && peer_count > 0) {
     node->peer_count = peer_count;
     node->peers = peers;
@@ -185,6 +186,7 @@ proton_status_e proton_configure(proton_node_t * node,
     node->atomic_buffer.lock = lock_func;
     node->atomic_buffer.unlock = unlock_func;
     node->state = PROTON_NODE_INACTIVE;
+    node->context = context;
 
     for (uint16_t p = 0; p < peer_count; p++)
     {
@@ -459,7 +461,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
     case PROTON_TRANSPORT_CONNECTED:
     {
       // Lock atomic buffer
-      if (!peer_handle->atomic_buffer.lock())
+      if (!peer_handle->atomic_buffer.lock(node))
       {
         return PROTON_MUTEX_ERROR;
       }
@@ -470,16 +472,16 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
                             peer_handle->atomic_buffer.buffer.len);
 
       // Unlock atomic buffer
-      if (!peer_handle->atomic_buffer.unlock())
+      if (!peer_handle->atomic_buffer.unlock(node))
       {
         return PROTON_MUTEX_ERROR;
       }
 
       if (bytes_read > 0) {
         // Receive bundle from read data
-        if (peer_handle->receive(peer_handle->atomic_buffer.buffer.data, bytes_read) != PROTON_OK) {
+        if (peer_handle->receive(node) != PROTON_OK) {
           // Unlock atomic buffer
-          if (!peer_handle->atomic_buffer.unlock())
+          if (!peer_handle->atomic_buffer.unlock(node))
           {
             return PROTON_MUTEX_ERROR;
           }
@@ -487,7 +489,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
           return PROTON_READ_ERROR;
         }
       }
-      if (!peer_handle->atomic_buffer.unlock())
+      if (!peer_handle->atomic_buffer.unlock(node))
       {
         return PROTON_MUTEX_ERROR;
       }
