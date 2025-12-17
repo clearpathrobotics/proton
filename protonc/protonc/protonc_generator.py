@@ -30,7 +30,6 @@
 
 import argparse
 import os
-from jwt import encode
 import yaml
 from typing import List
 
@@ -163,37 +162,6 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Bundles Structure Definitions", indent_level=0)
         self.header_writer.write_typedef_struct(Struct(self.bundles_struct_name, bundle_structs), indent_level=0)
         self.header_writer.write_newline()
-
-    def generate_node(self):
-        node = Variable(self.node.node_variable_name, "proton_node_t", init=self.node.node_default_value_define.name)
-
-        self.header_writer.write_comment("External Node", indent_level=0)
-        self.header_writer.write_newline()
-        self.header_writer.write_extern_variable(node)
-        self.header_writer.write_newline()
-
-        self.src_writer.write_comment("Node", indent_level=0)
-        self.src_writer.write_newline()
-        self.src_writer.write_variable(node)
-        self.src_writer.write_newline()
-
-    def generate_peers(self):
-        default_value = "{"
-        for i, p in enumerate(self.peers):
-            if i < len(self.peers) - 1:
-                default_value += f"{p.peer_default_value_define.name}, "
-            else:
-                default_value += f"{p.peer_default_value_define.name}}}"
-
-        peers = Variable(self.node.peer_variable_name,
-                         "static proton_peer_t",
-                         capacity='PROTON__PEER__COUNT',
-                         init=default_value)
-
-        self.src_writer.write_comment("Peers", indent_level=0)
-        self.src_writer.write_newline()
-        self.src_writer.write_variable(peers)
-        self.src_writer.write_newline()
 
     def generate_signal_enums(self):
         self.header_writer.write_comment("Signal Enums", indent_level=0)
@@ -438,19 +406,6 @@ class ProtonCGenerator:
                                   f"(proton_transport_t){n.transport_define.name}, {n.receive_func.name}, {n.mutex_lock_func.name}, {n.mutex_unlock_func.name}, "
                                   f"buffer);")
             self.src_writer.write_function_end()
-
-        # self.src_writer.write_function_start(Function(self.PEER_INIT_FUNCTION, [], "proton_status_e"))
-        # self.src_writer.write("proton_status_e status;")
-        # self.src_writer.write_newline()
-
-        # for n in self.peers:
-        #     self.src_writer.write(f"status = {n.peer_init_func.name}();")
-        #     self.src_writer.write_if_statement_start("status != PROTON_OK")
-        #     self.src_writer.write("return status;", indent_level=2)
-        #     self.src_writer.write_if_statement_end()
-        #     self.src_writer.write_newline()
-        # self.src_writer.write("return PROTON_OK;")
-        # self.src_writer.write_function_end()
 
     def generate_consumer_callbacks(self):
         self.header_writer.write_comment("Consumer callbacks", indent_level=0)
@@ -1093,8 +1048,6 @@ class ProtonCGenerator:
         self.generate_signal_enums()
         self.generate_defines()
         self.generate_bundle_struct_typedefs()
-        # self.generate_node()
-        # self.generate_peers()
         self.generate_signal_variables()
         self.generate_bundle_variable()
 

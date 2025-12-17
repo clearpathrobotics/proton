@@ -466,8 +466,9 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
     case PROTON_TRANSPORT_CONNECTED:
     {
       // Lock atomic buffer
-      if (!peer_handle->atomic_buffer.lock(node))
+      if (!peer_handle->atomic_buffer.lock(node->context))
       {
+        PROTON_PRINT("Mutex lock error\r\n");
         return PROTON_MUTEX_ERROR;
       }
 
@@ -480,8 +481,9 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
         // Receive bundle from read data
         if (peer_handle->receive(node, bytes_read) != PROTON_OK) {
           // Unlock atomic buffer
-          if (!peer_handle->atomic_buffer.unlock(node))
+          if (!peer_handle->atomic_buffer.unlock(node->context))
           {
+            PROTON_PRINT("Mutex unlock error\r\n");
             return PROTON_MUTEX_ERROR;
           }
 
@@ -489,8 +491,9 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
         }
       }
       // Unlock atomic buffer
-      if (!peer_handle->atomic_buffer.unlock(node))
+      if (!peer_handle->atomic_buffer.unlock(node->context))
       {
+        PROTON_PRINT("Mutex unlock error\r\n");
         return PROTON_MUTEX_ERROR;
       }
 
