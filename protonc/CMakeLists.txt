@@ -136,6 +136,7 @@ option(PROTON_DEBUG "Enable PROTON_DEBUG preprocessor macro" OFF)
 set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
 add_library(protonc
+    src/node.c
     src/proton.c
     src/proton_field_callbacks.c
     ${nanopb_SOURCE_DIR}/pb_common.c
