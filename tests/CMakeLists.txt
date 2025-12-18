@@ -13,7 +13,7 @@ set(GENERATED_C_FILES
   "${GENERATED_FOLDER}/proton__test_producer.h"
 )
 
-protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "producer")
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "producer" True)
 
 ### Signals
 add_executable(signal_test_c

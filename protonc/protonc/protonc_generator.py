@@ -1015,7 +1015,7 @@ class ProtonCGenerator:
             self.src_writer.write('return true;')
             self.src_writer.write_function_end()
 
-    def generate(self, name: str, target: str):
+    def generate(self, name: str, target: str, generate_node: bool = False):
         self.configure(target)
         generated_filename = f"proton__{name}_{target}"
 
@@ -1032,7 +1032,10 @@ class ProtonCGenerator:
         self.header_writer.write_header_guard_open()
         self.header_writer.write_include("stdint.h")
         self.header_writer.write_include("stdbool.h")
-        self.header_writer.write_include("protonc/node.h")
+        if generate_node:
+            self.header_writer.write_include("protonc/node.h")
+        else:
+            self.header_writer.write_include("protonc/proton.h")
         self.header_writer.write_newline()
 
         self.src_writer.write_include(generated_filename)
@@ -1043,28 +1046,28 @@ class ProtonCGenerator:
         for p in self.peers:
             self.generate_node_defines(p)
 
-        self.generate_peer_ids()
         self.generate_bundle_ids()
         self.generate_signal_enums()
         self.generate_defines()
         self.generate_bundle_struct_typedefs()
         self.generate_signal_variables()
         self.generate_bundle_variable()
-
         self.generate_bundle_init_prototypes()
-        self.generate_peer_init_prototypes()
         self.generate_bundle_init_functions()
-        self.generate_peer_init_functions()
         self.generate_bundle_decode_function()
         self.generate_bundle_encode_function()
-        self.generate_receive_function()
-        self.generate_send_function()
         self.generate_print_function()
-        self.generate_consumer_callbacks()
-        self.generate_transport_prototypes()
-        self.generate_mutex_prototypes()
 
-        self.generate_node_init_function()
+        if generate_node:
+            self.generate_peer_ids()
+            self.generate_receive_function()
+            self.generate_send_function()
+            self.generate_consumer_callbacks()
+            self.generate_transport_prototypes()
+            self.generate_mutex_prototypes()
+            self.generate_peer_init_prototypes()
+            self.generate_peer_init_functions()
+            self.generate_node_init_function()
 
         self.header_writer.write_header_guard_close()
 
@@ -1123,6 +1126,15 @@ def main():
         help="Target node for generation.",
     )
 
+    parser.add_argument(
+      "-n",
+      "--node",
+      type=bool,
+      action="store",
+      default=False,
+      help="Generate code for node and transport implementation",
+    )
+
     args = parser.parse_args()
 
     file = args.config
@@ -1138,7 +1150,7 @@ def main():
             break
 
     if exists:
-        generator.generate(config_name, target)
+        generator.generate(config_name, target, generate_node=args.node)
     else:
         raise Exception(f'Invalid target "{target}"')
 
