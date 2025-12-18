@@ -19,14 +19,17 @@
 #include "pb_decode.h"
 #include "pb_encode.h"
 
-typedef void (*proton_callback_t)(void);
+typedef struct proton_peer proton_peer_t;
+typedef struct proton_node proton_node_t;
+
+typedef void (*proton_callback_t)(void *);
 typedef bool (*proton_transport_connect_t)(void);
 typedef bool (*proton_transport_disconnect_t)(void);
 typedef size_t (*proton_transport_read_t)(uint8_t *buf, size_t len);
 typedef size_t (*proton_transport_write_t)(const uint8_t *buf, size_t len);
-typedef proton_status_e (*proton_receive_t)(const uint8_t * buf, size_t len);
-typedef bool (*proton_mutex_lock_t)();
-typedef bool (*proton_mutex_unlock_t)();
+typedef proton_status_e (*proton_receive_t)(proton_node_t * node, size_t bytes_read);
+typedef bool (*proton_mutex_lock_t)(void *);
+typedef bool (*proton_mutex_unlock_t)(void *);
 
 typedef uint64_t proton_producer_t;
 typedef uint64_t proton_consumer_t;
@@ -41,12 +44,12 @@ typedef struct {
 
 typedef struct {
   proton_Signal signal;
-  proton_list_t arg;
+  proton_list_t value;
 } proton_signal_handle_t;
 
 typedef struct {
   proton_Bundle bundle;
-  proton_list_t arg;
+  proton_list_t signals;
   proton_producer_t producers;
   proton_consumer_t consumers;
 } proton_bundle_handle_t;
@@ -75,7 +78,11 @@ typedef struct {
   uint32_t period;
 } proton_heartbeat_t;
 
-typedef struct {
+typedef struct proton_bundle_heartbeat {
+  uint32_t heartbeat;
+} proton_bundle_heartbeat_t;
+
+typedef struct proton_peer {
   proton_node_state_e state;
   proton_peer_id_t id;
   proton_heartbeat_t heartbeat;
@@ -85,25 +92,34 @@ typedef struct {
   const char * name;
 } proton_peer_t;
 
-typedef struct {
+typedef struct proton_node {
   proton_node_state_e state;
   proton_heartbeat_t heartbeat;
   proton_atomic_buffer_t atomic_buffer;
   uint16_t peer_count;
   proton_peer_t * peers;
   const char * name;
+  void * context;
 } proton_node_t;
 
-#define proton_list_arg_init_default {NULL, 0, 0, 0}
-#define proton_buffer_default {NULL, 0}
-#define proton_transport_default {PROTON_TRANSPORT_DISCONNECTED, NULL, NULL, NULL, NULL}
-#define proton_heartbeat_default {false, 0}
-#define proton_atomic_buffer_default {proton_buffer_default, NULL, NULL}
+#define PROTON_LIST_ARG_DEFAULT_VALUE {NULL, 0, 0, 0}
+#define PROTON_BUFFER_DEFAULT_VALUE {NULL, 0}
+#define PROTON_TRANSPORT_DEFAULT_VALUE {PROTON_TRANSPORT_DISCONNECTED, NULL, NULL, NULL, NULL}
+#define PROTON_HEARTBEAT_DEFAULT_VALUE {false, 0}
+#define PROTON_HEARTBEAT_BUNDLE_DEFAULT_VALUE {0}
+#define PROTON_ATOMIC_BUFFER_DEFAULT_VALUE {PROTON_BUFFER_DEFAULT_VALUE, NULL, NULL}
 
-#define proton_peer_default(name) {PROTON_NODE_UNCONFIGURED, 0, proton_heartbeat_default, proton_transport_default, NULL, proton_atomic_buffer_default, name}
-#define proton_node_default(name) {PROTON_NODE_UNCONFIGURED, proton_heartbeat_default, proton_atomic_buffer_default, 0, NULL, name}
+#define PROTON_PEER_DEFAULT(name) {PROTON_NODE_UNCONFIGURED, 0, PROTON_HEARTBEAT_DEFAULT_VALUE, PROTON_TRANSPORT_DEFAULT_VALUE, NULL, PROTON_ATOMIC_BUFFER_DEFAULT_VALUE, name}
+#define PROTON_NODE_DEFAULT(name) {PROTON_NODE_UNCONFIGURED, PROTON_HEARTBEAT_DEFAULT_VALUE, PROTON_ATOMIC_BUFFER_DEFAULT_VALUE, 0, NULL, name, NULL}
 
 #define TRANSPORT_VALID(transport) (transport.connect != NULL && transport.disconnect != NULL && transport.read != NULL && transport.write != NULL)
+
+
+proton_status_e proton_init_signal(proton_signal_handle_t * handle,
+                                   pb_size_t which_signal,
+                                   void * data,
+                                   size_t length,
+                                   size_t capacity);
 
 proton_status_e proton_init_bundle(proton_bundle_handle_t *handle,
                                   uint32_t id,
@@ -127,12 +143,13 @@ proton_status_e proton_configure(proton_node_t * node,
                                  proton_mutex_unlock_t unlock_func,
                                  proton_buffer_t write_buf,
                                  proton_peer_t * peers,
-                                 uint16_t peer_count);
+                                 uint16_t peer_count,
+                                 void * context);
 
 proton_status_e proton_activate(proton_node_t * node);
 
 proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded);
-proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length);
+proton_status_e proton_decode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t length);
 proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id);
 
 proton_status_e proton_spin(proton_node_t *node, const uint8_t peer);

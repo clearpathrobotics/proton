@@ -13,23 +13,130 @@
 #include "protonc/proton.h"
 #include <stdio.h>
 
-proton_status_e proton_init_bundle(proton_bundle_handle_t *handle, uint32_t id,
-                                  proton_signal_handle_t *signal_handles,
-                                  uint32_t signal_count,
-                                  proton_producer_t producers,
-                                  proton_consumer_t consumers) {
+proton_status_e proton_init_bundle(proton_bundle_handle_t *handle,
+                                   uint32_t id,
+                                   proton_signal_handle_t *signal_handles,
+                                   uint32_t signal_count,
+                                   proton_producer_t producers,
+                                   proton_consumer_t consumers) {
   if (signal_handles && handle) {
-    handle->arg.data = signal_handles;
-    handle->arg.length = signal_count;
-    handle->arg.size = 0;
+    handle->signals.data = signal_handles;
+    handle->signals.length = signal_count;
+    handle->signals.size = 0;
     handle->bundle.id = id;
-    handle->bundle.signals = &handle->arg;
+    handle->bundle.signals = &handle->signals;
     handle->producers = producers;
     handle->consumers = consumers;
     return PROTON_OK;
   }
 
   return PROTON_NULL_PTR_ERROR;
+}
+
+proton_status_e proton_init_signal(proton_signal_handle_t * handle,
+                                   pb_size_t which_signal,
+                                   void * data,
+                                   size_t length,
+                                   size_t capacity)
+{
+  if (!handle || !data)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  switch(which_signal)
+  {
+    case proton_Signal_double_value_tag:
+    case proton_Signal_float_value_tag:
+    case proton_Signal_int32_value_tag:
+    case proton_Signal_int64_value_tag:
+    case proton_Signal_uint32_value_tag:
+    case proton_Signal_uint64_value_tag:
+    case proton_Signal_bool_value_tag:
+    {
+      break;
+    }
+
+    case proton_Signal_string_value_tag:
+    {
+      handle->signal.signal.string_value = &handle->value;
+      break;
+    }
+
+    case proton_Signal_bytes_value_tag:
+    {
+      handle->signal.signal.bytes_value = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_double_value_tag:
+    {
+      handle->signal.signal.list_double_value.doubles = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_float_value_tag:
+    {
+      handle->signal.signal.list_float_value.floats = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_int32_value_tag:
+    {
+      handle->signal.signal.list_int32_value.int32s = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_int64_value_tag:
+    {
+      handle->signal.signal.list_int64_value.int64s = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_uint32_value_tag:
+    {
+      handle->signal.signal.list_uint32_value.uint32s = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_uint64_value_tag:
+    {
+      handle->signal.signal.list_uint64_value.uint64s = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_bool_value_tag:
+    {
+      handle->signal.signal.list_bool_value.bools = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_string_value_tag:
+    {
+      handle->signal.signal.list_string_value.strings = &handle->value;
+      break;
+    }
+
+    case proton_Signal_list_bytes_value_tag:
+    {
+      handle->signal.signal.list_bytes_value.bytes = &handle->value;
+      break;
+    }
+
+    default:
+    {
+      PROTON_PRINT("Invalid signal type %d", which_signal);
+      return PROTON_ERROR;
+    }
+  }
+
+  handle->signal.which_signal = which_signal;
+  handle->value.data = data;
+  handle->value.length = length;
+  handle->value.capacity = capacity;
+  handle->value.size = 0;
+
+  return PROTON_OK;
 }
 
 proton_status_e proton_init_peer(proton_peer_t * peer,
@@ -69,7 +176,8 @@ proton_status_e proton_configure(proton_node_t * node,
                                  proton_mutex_unlock_t unlock_func,
                                  proton_buffer_t write_buf,
                                  proton_peer_t * peers,
-                                 uint16_t peer_count) {
+                                 uint16_t peer_count,
+                                 void * context) {
   if (node && lock_func && unlock_func && write_buf.data && peers && peer_count > 0) {
     node->peer_count = peer_count;
     node->peers = peers;
@@ -78,6 +186,7 @@ proton_status_e proton_configure(proton_node_t * node,
     node->atomic_buffer.lock = lock_func;
     node->atomic_buffer.unlock = unlock_func;
     node->state = PROTON_NODE_INACTIVE;
+    node->context = context;
 
     for (uint16_t p = 0; p < peer_count; p++)
     {
@@ -112,7 +221,7 @@ proton_status_e proton_activate(proton_node_t *node)
 }
 
 proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded) {
-  if (handle == NULL || handle->arg.data == NULL || buffer.data == NULL || bytes_encoded == NULL)
+  if (handle == NULL || handle->signals.data == NULL || buffer.data == NULL || bytes_encoded == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
@@ -120,50 +229,50 @@ proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t b
   proton_signal_handle_t *signal_handle;
 
   // Copy non-list field values from struct to signal
-  for (uint8_t i = 0; i < handle->arg.length; i++) {
-    signal_handle = &((proton_signal_handle_t *)handle->arg.data)[i];
+  for (uint8_t i = 0; i < handle->signals.length; i++) {
+    signal_handle = &((proton_signal_handle_t *)handle->signals.data)[i];
 
     switch (signal_handle->signal.which_signal) {
 
     case proton_Signal_double_value_tag: {
       signal_handle->signal.signal.double_value =
-          *((double *)signal_handle->arg.data);
+          *((double *)signal_handle->value.data);
       break;
     }
 
     case proton_Signal_float_value_tag: {
       signal_handle->signal.signal.float_value =
-          *((float *)signal_handle->arg.data);
+          *((float *)signal_handle->value.data);
       break;
     }
 
     case proton_Signal_int32_value_tag: {
       signal_handle->signal.signal.int32_value =
-          *((int32_t *)signal_handle->arg.data);
+          *((int32_t *)signal_handle->value.data);
       break;
     }
 
     case proton_Signal_int64_value_tag: {
       signal_handle->signal.signal.int64_value =
-          *((int64_t *)signal_handle->arg.data);
+          *((int64_t *)signal_handle->value.data);
       break;
     }
 
     case proton_Signal_uint32_value_tag: {
       signal_handle->signal.signal.uint32_value =
-          *((uint32_t *)signal_handle->arg.data);
+          *((uint32_t *)signal_handle->value.data);
       break;
     }
 
     case proton_Signal_uint64_value_tag: {
       signal_handle->signal.signal.uint64_value =
-          *((uint64_t *)signal_handle->arg.data);
+          *((uint64_t *)signal_handle->value.data);
       break;
     }
 
     case proton_Signal_bool_value_tag: {
       signal_handle->signal.signal.bool_value =
-          *((bool *)signal_handle->arg.data);
+          *((bool *)signal_handle->value.data);
       break;
     }
 
@@ -222,9 +331,14 @@ proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id) {
 }
 
 proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length) {
-  if (handle == NULL || handle->arg.data == NULL || buffer.data == NULL)
+  if (handle == NULL || handle->signals.data == NULL || buffer.data == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
+  }
+
+  if (length > buffer.len)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
 
   pb_istream_t stream =
@@ -235,47 +349,47 @@ proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t bu
   if (status) {
     proton_signal_handle_t *signal_handle;
 
-    for (uint8_t i = 0; i < handle->arg.length; i++) {
-      signal_handle = &((proton_signal_handle_t *)handle->arg.data)[i];
+    for (uint8_t i = 0; i < handle->signals.length; i++) {
+      signal_handle = &((proton_signal_handle_t *)handle->signals.data)[i];
       switch (signal_handle->signal.which_signal) {
       case proton_Signal_double_value_tag: {
-        *((double *)signal_handle->arg.data) =
+        *((double *)signal_handle->value.data) =
             signal_handle->signal.signal.double_value;
         break;
       }
 
       case proton_Signal_float_value_tag: {
-        *((float *)signal_handle->arg.data) =
+        *((float *)signal_handle->value.data) =
             signal_handle->signal.signal.float_value;
         break;
       }
 
       case proton_Signal_int32_value_tag: {
-        *((int32_t *)signal_handle->arg.data) =
+        *((int32_t *)signal_handle->value.data) =
             signal_handle->signal.signal.int32_value;
         break;
       }
 
       case proton_Signal_int64_value_tag: {
-        *((int64_t *)signal_handle->arg.data) =
+        *((int64_t *)signal_handle->value.data) =
             signal_handle->signal.signal.int64_value;
         break;
       }
 
       case proton_Signal_uint32_value_tag: {
-        *((uint32_t *)signal_handle->arg.data) =
+        *((uint32_t *)signal_handle->value.data) =
             signal_handle->signal.signal.uint32_value;
         break;
       }
 
       case proton_Signal_uint64_value_tag: {
-        *((uint64_t *)signal_handle->arg.data) =
+        *((uint64_t *)signal_handle->value.data) =
             signal_handle->signal.signal.uint64_value;
         break;
       }
 
       case proton_Signal_bool_value_tag: {
-        *((bool *)signal_handle->arg.data) =
+        *((bool *)signal_handle->value.data) =
             signal_handle->signal.signal.bool_value;
         break;
       }
@@ -352,8 +466,9 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
     case PROTON_TRANSPORT_CONNECTED:
     {
       // Lock atomic buffer
-      if (!peer_handle->atomic_buffer.lock())
+      if (!peer_handle->atomic_buffer.lock(node->context))
       {
+        PROTON_PRINT("Mutex lock error\r\n");
         return PROTON_MUTEX_ERROR;
       }
 
@@ -362,26 +477,23 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
                             peer_handle->atomic_buffer.buffer.data,
                             peer_handle->atomic_buffer.buffer.len);
 
-      // Unlock atomic buffer
-      if (!peer_handle->atomic_buffer.unlock())
-      {
-        return PROTON_MUTEX_ERROR;
-      }
-
       if (bytes_read > 0) {
         // Receive bundle from read data
-        if (peer_handle->receive(peer_handle->atomic_buffer.buffer.data, bytes_read) != PROTON_OK) {
+        if (peer_handle->receive(node, bytes_read) != PROTON_OK) {
           // Unlock atomic buffer
-          if (!peer_handle->atomic_buffer.unlock())
+          if (!peer_handle->atomic_buffer.unlock(node->context))
           {
+            PROTON_PRINT("Mutex unlock error\r\n");
             return PROTON_MUTEX_ERROR;
           }
 
           return PROTON_READ_ERROR;
         }
       }
-      if (!peer_handle->atomic_buffer.unlock())
+      // Unlock atomic buffer
+      if (!peer_handle->atomic_buffer.unlock(node->context))
       {
+        PROTON_PRINT("Mutex unlock error\r\n");
         return PROTON_MUTEX_ERROR;
       }
 
