@@ -297,55 +297,61 @@ void update_pinout_state(proton_node_t * node, proton_bundle_pinout_state_t * pi
 
 /**
  * @brief Establishes PC transport connection.
- * @return True if connection successful, false otherwise.
+ * @return PROTON_OK if connection successful, error code otherwise.
  */
-bool proton_node_pc_transport_connect() {
+proton_status_e proton_node_pc_transport_connect() {
   sock_recv = socket_init(PROTON__NODE__MCU__ENDPOINT__0__IPHL, PROTON__NODE__MCU__ENDPOINT__0__PORT, true);
   sock_send = socket_init(PROTON__NODE__PC__ENDPOINT__0__IPHL, PROTON__NODE__PC__ENDPOINT__0__PORT, false);
 
-  return (sock_recv >= 0 && sock_send >=0);
+  return (sock_recv >= 0 && sock_send >=0) ? PROTON_OK : PROTON_CONNECT_ERROR;
 }
 
 /**
  * @brief Closes PC transport connection.
- * @return True if disconnection successful, false otherwise.
+ * @return PROTON_OK if disconnection successful, error code otherwise.
  */
-bool proton_node_pc_transport_disconnect() { return true; }
+proton_status_e proton_node_pc_transport_disconnect() {
+  return PROTON_OK;
+}
 
 /**
  * @brief Reads data from PC transport.
  * @param buf Buffer to read data into.
  * @param len Maximum number of bytes to read.
- * @return Number of bytes read.
+ * @param bytes_read Pointer to store number of bytes actually read.
+ * @return PROTON_OK if read successful, error code otherwise.
  */
-size_t proton_node_pc_transport_read(uint8_t *buf, size_t len) {
+proton_status_e proton_node_pc_transport_read(uint8_t *buf, size_t len, size_t * bytes_read) {
   int ret = recv(sock_recv, buf, len, 0);
 
   if (ret < 0) {
-    return 0;
+    return PROTON_READ_ERROR;
   }
 
   rx += ret;
+  *bytes_read = ret;
 
-  return ret;
+  return PROTON_OK;
 }
 
 /**
  * @brief Writes data to PC transport.
  * @param buf Buffer containing data to write.
  * @param len Number of bytes to write.
- * @return Number of bytes written.
+ * @param bytes_written Pointer to store number of bytes actually written.
+ * @return PROTON_OK if write successful, error code otherwise.
  */
-size_t proton_node_pc_transport_write(const uint8_t *buf, size_t len) {
+proton_status_e proton_node_pc_transport_write(const uint8_t *buf, size_t len, size_t * bytes_written) {
   int ret = send(sock_send, buf, len, 0);
 
   if (ret < 0) {
-    return 0;
+    return PROTON_WRITE_ERROR;
   }
 
   tx += ret;
+  *bytes_written = ret;
 
-  return ret;
+  return PROTON_OK;
 }
 
 /**
@@ -353,14 +359,14 @@ size_t proton_node_pc_transport_write(const uint8_t *buf, size_t len) {
  * @param context Pointer to context_t structure.
  * @return True if lock successful, false otherwise.
  */
-bool proton_node_mcu_lock(void * context) {
+proton_status_e proton_node_mcu_lock(void * context) {
   if (context == NULL)
   {
-    return false;
+    return PROTON_NULL_PTR_ERROR;
   }
 
   context_t * c = (context_t *)context;
-  return pthread_mutex_lock(&c->mcu_lock) == 0;
+  return pthread_mutex_lock(&c->mcu_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
 /**
@@ -368,14 +374,14 @@ bool proton_node_mcu_lock(void * context) {
  * @param context Pointer to context_t structure.
  * @return True if unlock successful, false otherwise.
  */
-bool proton_node_mcu_unlock(void * context) {
+proton_status_e proton_node_mcu_unlock(void * context) {
   if (context == NULL)
   {
-    return false;
+    return PROTON_NULL_PTR_ERROR;
   }
 
   context_t * c = (context_t *)context;
-  return pthread_mutex_unlock(&c->mcu_lock) == 0;
+  return pthread_mutex_unlock(&c->mcu_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
 /**
@@ -383,14 +389,14 @@ bool proton_node_mcu_unlock(void * context) {
  * @param context Pointer to context_t structure.
  * @return True if lock successful, false otherwise.
  */
-bool proton_node_pc_lock(void * context) {
+proton_status_e proton_node_pc_lock(void * context) {
   if (context == NULL)
   {
-    return false;
+    return PROTON_NULL_PTR_ERROR;
   }
 
   context_t * c = (context_t *)context;
-  return pthread_mutex_lock(&c->pc_lock) == 0;
+  return pthread_mutex_lock(&c->pc_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
 /**
@@ -398,14 +404,14 @@ bool proton_node_pc_lock(void * context) {
  * @param context Pointer to context_t structure.
  * @return True if unlock successful, false otherwise.
  */
-bool proton_node_pc_unlock(void * context) {
+proton_status_e proton_node_pc_unlock(void * context) {
   if (context == NULL)
   {
-    return false;
+    return PROTON_NULL_PTR_ERROR;
   }
 
   context_t * c = (context_t *)context;
-  return pthread_mutex_unlock(&c->pc_lock) == 0;
+  return pthread_mutex_unlock(&c->pc_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
 /**
@@ -458,6 +464,8 @@ void *timer_10hz(void *arg) {
     update_power(context->node, &context->bundles.power_bundle);
     update_temperature(context->node, &context->bundles.temperature_bundle);
     update_pinout_state(context->node, &context->bundles.pinout_state_bundle);
+
+    context->bundles.mcu_heartbeat_bundle.heartbeat++;
     proton_bundle_send(context->node, PROTON_HEARTBEAT_ID);
     msleep(100);
   }

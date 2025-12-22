@@ -427,42 +427,31 @@ class ProtonCGenerator:
         self.header_writer.write_newline()
 
     def generate_transport_prototypes(self):
-        self.header_writer.write_comment("Transport Buffers", indent_level=0)
-        self.header_writer.write_newline()
-
-        for n in self.peers + [self.node]:
-            self.header_writer.write_extern_variable(
-                Variable(
-                    f"{n.buffer_variable_name}", "proton_buffer_t"
-                )
-            )
-
-        self.header_writer.write_newline()
         self.header_writer.write_comment("Transport Prototypes", indent_level=0)
         self.header_writer.write_newline()
 
         for p in self.peers:
             self.header_writer.write_function_prototype(
-                Function(p.transport_connect_func.name, [], "bool")
+                Function(p.transport_connect_func.name, [], "proton_status_e")
             )
 
             self.header_writer.write_function_prototype(
-                Function(p.transport_disconnect_func.name, [], "bool")
+                Function(p.transport_disconnect_func.name, [], "proton_status_e")
             )
 
             self.header_writer.write_function_prototype(
                 Function(
                     p.transport_read_func.name,
-                    [Variable("buf", "uint8_t *"), Variable("len", "size_t")],
-                    "size_t",
+                    [Variable("buf", "uint8_t *"), Variable("len", "size_t"), Variable("bytes_read", "size_t *")],
+                    "proton_status_e",
                 )
             )
 
             self.header_writer.write_function_prototype(
                 Function(
                     p.transport_write_func.name,
-                    [Variable("buf", "const uint8_t *"), Variable("len", "size_t")],
-                    "size_t",
+                    [Variable("buf", "const uint8_t *"), Variable("len", "size_t"), Variable("bytes_written", "size_t *")],
+                    "proton_status_e",
                 )
             )
 
@@ -797,6 +786,7 @@ class ProtonCGenerator:
         self.src_writer.write("proton_bundle_handle_t * handle;")
         self.src_writer.write("proton_status_e status;")
         self.src_writer.write("size_t bytes_encoded;")
+        self.src_writer.write("size_t bytes_written;")
         self.src_writer.write_newline()
 
         # Check which bundle we received
@@ -826,7 +816,9 @@ class ProtonCGenerator:
         self.src_writer.write_switch_end()
 
         # Lock buffer
-        self.src_writer.write_if_statement_start('node->atomic_buffer.lock(node->context)')
+        self.src_writer.write('status = node->atomic_buffer.lock(node->context);')
+        self.src_writer.write_newline()
+        self.src_writer.write_if_statement_start('status == PROTON_OK')
 
         # Encode bundle
         self.src_writer.write(
@@ -844,13 +836,16 @@ class ProtonCGenerator:
             "handle->consumers & node->peers[i].id",
             indent_level=4,
         )
-        self.src_writer.write_if_statement_start(
-            "node->peers[i].transport.write(node->atomic_buffer.buffer.data, bytes_encoded) == 0",
+        self.src_writer.write(
+            "proton_status_e write_status = node->peers[i].transport.write(node->atomic_buffer.buffer.data, bytes_encoded, &bytes_written);",
             indent_level=5,
         )
-        self.src_writer.write_comment("Write failed", indent_level=6)
+        self.src_writer.write_if_statement_start(
+            "write_status != PROTON_OK",
+            indent_level=5,
+        )
         self.src_writer.write(
-            "status = PROTON_WRITE_ERROR;",
+            "status = write_status;",
             indent_level=6,
         )
         self.src_writer.write_if_statement_end(indent_level=5)
@@ -859,13 +854,8 @@ class ProtonCGenerator:
         self.src_writer.write_if_statement_end(indent_level=2)
         self.src_writer.write_newline()
 
-        self.src_writer.write_if_statement_start('!node->atomic_buffer.unlock(node->context)', indent_level=2)
-        self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=3)
-        self.src_writer.write_if_statement_end(indent_level=2)
+        self.src_writer.write('status = node->atomic_buffer.unlock(node->context);', indent_level=2)
         self.src_writer.write_if_statement_end(indent_level=1)
-        self.src_writer.write_else_statement_start(indent_level=1)
-        self.src_writer.write('return PROTON_MUTEX_ERROR;', indent_level=2)
-        self.src_writer.write_else_statement_end(indent_level=1)
         self.src_writer.write_newline()
 
         # Send the handle
@@ -996,23 +986,23 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
 
         for n in self.nodes:
-            lock_func = Function(n.mutex_lock_func.name, [Variable("context", "void *")], "bool")
-            unlock_func = Function(n.mutex_unlock_func, [Variable("context", "void *")], "bool")
+            lock_func = Function(n.mutex_lock_func.name, [Variable("context", "void *")], "proton_status_e")
+            unlock_func = Function(n.mutex_unlock_func, [Variable("context", "void *")], "proton_status_e")
             self.header_writer.write_function_prototype(lock_func)
             self.header_writer.write_function_prototype(unlock_func)
             self.header_writer.write_newline()
 
-            lock_func.ret = "__attribute__((weak)) bool"
-            unlock_func.ret = "__attribute__((weak)) bool"
+            lock_func.ret = "__attribute__((weak)) proton_status_e"
+            unlock_func.ret = "__attribute__((weak)) proton_status_e"
 
             self.src_writer.write_function_start(lock_func)
             self.src_writer.write('(void)context;')
-            self.src_writer.write('return true;')
+            self.src_writer.write('return PROTON_OK;')
             self.src_writer.write_function_end()
 
             self.src_writer.write_function_start(unlock_func)
             self.src_writer.write('(void)context;')
-            self.src_writer.write('return true;')
+            self.src_writer.write('return PROTON_OK;')
             self.src_writer.write_function_end()
 
     def generate(self, name: str, target: str, generate_node: bool = False):

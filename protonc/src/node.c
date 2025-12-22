@@ -176,19 +176,20 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
   }
 
   size_t bytes_read = 0;
+  proton_status_e status = PROTON_OK;
 
   switch(peer_handle->transport.state)
   {
     case PROTON_TRANSPORT_DISCONNECTED:
     {
-      if (peer_handle->transport.connect())
+      status = peer_handle->transport.connect();
+      if (status == PROTON_OK)
       {
         peer_handle->transport.state = PROTON_TRANSPORT_CONNECTED;
       }
       else
       {
         peer_handle->transport.state = PROTON_TRANSPORT_ERROR;
-        return PROTON_CONNECT_ERROR;
       }
       break;
     }
@@ -196,18 +197,20 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
     case PROTON_TRANSPORT_CONNECTED:
     {
       // Lock atomic buffer
-      if (!peer_handle->atomic_buffer.lock(node->context))
+      status = peer_handle->atomic_buffer.lock(node->context);
+      if (status != PROTON_OK)
       {
         PROTON_PRINT("Mutex lock error\r\n");
-        return PROTON_MUTEX_ERROR;
+        return status;
       }
 
       // Read from peer transport
-      size_t bytes_read = peer_handle->transport.read(
+      status = peer_handle->transport.read(
                             peer_handle->atomic_buffer.buffer.data,
-                            peer_handle->atomic_buffer.buffer.len);
+                            peer_handle->atomic_buffer.buffer.len,
+                            &bytes_read);
 
-      if (bytes_read > 0) {
+      if (status == PROTON_OK && bytes_read > 0) {
         // Receive bundle from read data
         if (peer_handle->receive(node, bytes_read) != PROTON_OK) {
           // Unlock atomic buffer
@@ -221,10 +224,11 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
         }
       }
       // Unlock atomic buffer
-      if (!peer_handle->atomic_buffer.unlock(node->context))
+      status = peer_handle->atomic_buffer.unlock(node->context);
+      if (status != PROTON_OK)
       {
         PROTON_PRINT("Mutex unlock error\r\n");
-        return PROTON_MUTEX_ERROR;
+        return status;
       }
 
       break;
@@ -232,13 +236,10 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
 
     case PROTON_TRANSPORT_ERROR:
     {
-      if (peer_handle->transport.disconnect())
+      status = peer_handle->transport.disconnect();
+      if (status == PROTON_OK)
       {
         peer_handle->transport.state = PROTON_TRANSPORT_DISCONNECTED;
-      }
-      else
-      {
-        return PROTON_CONNECT_ERROR;
       }
       break;
     }
@@ -249,5 +250,5 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
     }
   }
 
-  return PROTON_OK;
+  return status;
 }
