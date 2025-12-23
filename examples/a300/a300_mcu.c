@@ -2,7 +2,7 @@
  * @file a300_mcu.c
  * @brief A300 MCU application implementing Proton node communication.
  *
- * This module implements an MCU node for the A300 system that communicates with a PC
+ * This module simulates an MCU node for the A300 that communicates with a PC
  * via the Proton protocol. It handles multiple bundle callbacks for commands and status
  * updates, manages threading for periodic tasks (1Hz and 10Hz timers), and maintains
  * transport communication with PC peer.
@@ -165,7 +165,7 @@ void send_log(void * context, const char *file, const char* func, int line, uint
 
   va_list args;
   va_start(args, msg);
-  vsprintf(log_bundle->msg, msg, args);
+  vsnprintf(log_bundle->msg, PROTON__BUNDLE__LOG__SIGNAL__MSG__CAPACITY, msg, args);
   va_end(args);
 
   proton_bundle_send(c->node, PROTON__BUNDLE__LOG);
@@ -578,8 +578,8 @@ int main() {
   proton_peer_pc_init(&mcu_peers[PROTON__PEER__PC], proton_pc_buffer);
   proton_node_mcu_init(&mcu_node, mcu_peers, proton_mcu_buffer, &context);
 
-  strcpy(context.bundles.status_bundle.firmware_version, "3.0.0");
-  strcpy(context.bundles.status_bundle.hardware_id, "A300");
+  strncpy(context.bundles.status_bundle.firmware_version, "3.0.0", PROTON__BUNDLE__STATUS__SIGNAL__FIRMWARE_VERSION__CAPACITY);
+  strncpy(context.bundles.status_bundle.hardware_id, "A300", PROTON__BUNDLE__STATUS__SIGNAL__HARDWARE_ID__CAPACITY);
   context.bundles.stop_status_bundle.needs_reset = true;
 
   // Start threads
