@@ -13,26 +13,16 @@
 #include "protonc/proton.h"
 #include <stdio.h>
 
-proton_status_e proton_init_bundle(proton_bundle_handle_t *handle,
-                                   uint32_t id,
-                                   proton_signal_handle_t *signal_handles,
-                                   uint32_t signal_count,
-                                   proton_producer_t producers,
-                                   proton_consumer_t consumers) {
-  if (signal_handles && handle) {
-    handle->signals.data = signal_handles;
-    handle->signals.length = signal_count;
-    handle->signals.size = 0;
-    handle->bundle.id = id;
-    handle->bundle.signals = &handle->signals;
-    handle->producers = producers;
-    handle->consumers = consumers;
-    return PROTON_OK;
-  }
-
-  return PROTON_NULL_PTR_ERROR;
-}
-
+/**
+ * @brief Initialize a signal handle.
+ *
+ * @param handle Handle to initialize
+ * @param which_signal Signal type
+ * @param data Pointer to data buffer
+ * @param length Length of list (for list types)
+ * @param capacity Capacity of data buffer (for strings and bytes types)
+ * @return proton_status_e Status of the initialization
+ */
 proton_status_e proton_init_signal(proton_signal_handle_t * handle,
                                    pb_size_t which_signal,
                                    void * data,
@@ -139,87 +129,45 @@ proton_status_e proton_init_signal(proton_signal_handle_t * handle,
   return PROTON_OK;
 }
 
-proton_status_e proton_init_peer(proton_peer_t * peer,
-                                proton_peer_id_t id,
-                                proton_heartbeat_t heartbeat,
-                                proton_transport_t transport,
-                                proton_receive_t receive_func,
-                                proton_mutex_lock_t lock_func,
-                                proton_mutex_unlock_t unlock_func,
-                                proton_buffer_t read_buf)
-{
-  if (peer && TRANSPORT_VALID(transport) && receive_func && lock_func && unlock_func && read_buf.data)
-  {
-    if (heartbeat.enabled && heartbeat.period == 0)
-    {
-      return PROTON_ERROR;
-    }
-
-    peer->id = id;
-    peer->heartbeat = heartbeat;
-    peer->transport = transport;
-    peer->receive = receive_func;
-    peer->atomic_buffer.lock = lock_func;
-    peer->atomic_buffer.unlock = unlock_func;
-    peer->atomic_buffer.buffer = read_buf;
-    peer->state = PROTON_NODE_INACTIVE;
-
+/**
+ * @brief Initialize a bundle handle.
+ *
+ * @param handle Handle to initialize
+ * @param id Bundle ID
+ * @param signal_handles Array of signal handles
+ * @param signal_count Number of signal handles
+ * @param producers Producers bitmask
+ * @param consumers Consumers bitmask
+ * @return proton_status_e Status of the initialization
+ */
+proton_status_e proton_init_bundle(proton_bundle_handle_t *handle,
+                                   uint32_t id,
+                                   proton_signal_handle_t *signal_handles,
+                                   uint32_t signal_count,
+                                   proton_producer_t producers,
+                                   proton_consumer_t consumers) {
+  if (signal_handles && handle) {
+    handle->signals.data = signal_handles;
+    handle->signals.length = signal_count;
+    handle->signals.size = 0;
+    handle->bundle.id = id;
+    handle->bundle.signals = &handle->signals;
+    handle->producers = producers;
+    handle->consumers = consumers;
     return PROTON_OK;
   }
 
   return PROTON_NULL_PTR_ERROR;
 }
 
-proton_status_e proton_configure(proton_node_t * node,
-                                 proton_heartbeat_t heartbeat,
-                                 proton_mutex_lock_t lock_func,
-                                 proton_mutex_unlock_t unlock_func,
-                                 proton_buffer_t write_buf,
-                                 proton_peer_t * peers,
-                                 uint16_t peer_count,
-                                 void * context) {
-  if (node && lock_func && unlock_func && write_buf.data && peers && peer_count > 0) {
-    node->peer_count = peer_count;
-    node->peers = peers;
-    node->heartbeat = heartbeat;
-    node->atomic_buffer.buffer = write_buf;
-    node->atomic_buffer.lock = lock_func;
-    node->atomic_buffer.unlock = unlock_func;
-    node->state = PROTON_NODE_INACTIVE;
-    node->context = context;
-
-    for (uint16_t p = 0; p < peer_count; p++)
-    {
-      if (peers[p].state == PROTON_NODE_UNCONFIGURED)
-      {
-        return PROTON_INVALID_STATE_ERROR;
-      }
-
-      peers[p].transport.state = PROTON_TRANSPORT_DISCONNECTED;
-    }
-
-    return PROTON_OK;
-  }
-
-  return PROTON_NULL_PTR_ERROR;
-}
-
-proton_status_e proton_activate(proton_node_t *node)
-{
-  if (node == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  if (node->state == PROTON_NODE_UNCONFIGURED)
-  {
-    return PROTON_INVALID_STATE_ERROR;
-  }
-
-  node->state = PROTON_NODE_ACTIVE;
-  return PROTON_OK;
-}
-
+/**
+ * @brief Encode a bundle into a buffer.
+ *
+ * @param handle Bundle handle to encode
+ * @param buffer Buffer to encode into
+ * @param bytes_encoded Pointer to store the number of bytes encoded
+ * @return proton_status_e Status of the encoding
+ */
 proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded) {
   if (handle == NULL || handle->signals.data == NULL || buffer.data == NULL || bytes_encoded == NULL)
   {
@@ -282,8 +230,7 @@ proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t b
   }
 
   // Create stream from atomic buffer
-  pb_ostream_t stream =
-      pb_ostream_from_buffer((pb_byte_t *)buffer.data, buffer.len);
+  pb_ostream_t stream = pb_ostream_from_buffer((pb_byte_t *)buffer.data, buffer.len);
   // Encode bundle into stream
   bool status = pb_encode(&stream, proton_Bundle_fields, &handle->bundle);
 
@@ -296,6 +243,13 @@ proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t b
   }
 }
 
+/**
+ * @brief Decode the Bundle ID from a buffer.
+ *
+ * @param buffer Buffer to decode from
+ * @param id Pointer to store the decoded Bundle ID
+ * @return proton_status_e Status of the decoding
+ */
 proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id) {
   if (id == NULL || buffer.data == NULL) {
     return PROTON_NULL_PTR_ERROR;
@@ -306,8 +260,7 @@ proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id) {
   bool eof;
   proton_status_e status = PROTON_SERIALIZATION_ERROR;
 
-  pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)buffer.data, buffer.len);
+  pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer.data, buffer.len);
 
   if (pb_decode_tag(&stream, &wire_type, &tag, &eof)) {
     if (tag == proton_Bundle_id_tag) {
@@ -330,6 +283,14 @@ proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id) {
   return status;
 }
 
+/**
+ * @brief Decode a bundle from a buffer.
+ *
+ * @param handle Bundle handle to decode into
+ * @param buffer Buffer to decode from
+ * @param length Length of the buffer to decode
+ * @return proton_status_e Status of the decoding
+ */
 proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length) {
   if (handle == NULL || handle->signals.data == NULL || buffer.data == NULL)
   {
@@ -341,8 +302,7 @@ proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t bu
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
 
-  pb_istream_t stream =
-      pb_istream_from_buffer((const pb_byte_t *)buffer.data, length);
+  pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer.data, length);
 
   bool status = pb_decode(&stream, proton_Bundle_fields, &handle->bundle);
 
@@ -410,118 +370,6 @@ proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t bu
   }
 }
 
-proton_status_e proton_spin(proton_node_t *node, const uint8_t peer) {
-  proton_status_e status;
-  while (1) {
-    status = proton_spin_once(node, peer);
-
-    if (status != PROTON_OK) {
-      PROTON_PRINT("Spin error %u\r\n", status);
-    }
-  }
-
-  return PROTON_ERROR;
-}
-
-proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
-  if (node == NULL || node->peers == NULL) {
-    return PROTON_NULL_PTR_ERROR;
-  }
-
-  if (node->state != PROTON_NODE_ACTIVE)
-  {
-    return PROTON_INVALID_STATE_ERROR;
-  }
-
-  if (peer >= node->peer_count)
-  {
-    return PROTON_ERROR;
-  }
-
-  proton_peer_t * peer_handle = &node->peers[peer];
-
-  if (peer_handle == NULL)
-  {
-    return PROTON_ERROR;
-  }
-
-  size_t bytes_read = 0;
-
-  switch(peer_handle->transport.state)
-  {
-    case PROTON_TRANSPORT_DISCONNECTED:
-    {
-      if (peer_handle->transport.connect())
-      {
-        peer_handle->transport.state = PROTON_TRANSPORT_CONNECTED;
-      }
-      else
-      {
-        peer_handle->transport.state = PROTON_TRANSPORT_ERROR;
-        return PROTON_CONNECT_ERROR;
-      }
-      break;
-    }
-
-    case PROTON_TRANSPORT_CONNECTED:
-    {
-      // Lock atomic buffer
-      if (!peer_handle->atomic_buffer.lock(node->context))
-      {
-        PROTON_PRINT("Mutex lock error\r\n");
-        return PROTON_MUTEX_ERROR;
-      }
-
-      // Read from peer transport
-      size_t bytes_read = peer_handle->transport.read(
-                            peer_handle->atomic_buffer.buffer.data,
-                            peer_handle->atomic_buffer.buffer.len);
-
-      if (bytes_read > 0) {
-        // Receive bundle from read data
-        if (peer_handle->receive(node, bytes_read) != PROTON_OK) {
-          // Unlock atomic buffer
-          if (!peer_handle->atomic_buffer.unlock(node->context))
-          {
-            PROTON_PRINT("Mutex unlock error\r\n");
-            return PROTON_MUTEX_ERROR;
-          }
-
-          return PROTON_READ_ERROR;
-        }
-      }
-      // Unlock atomic buffer
-      if (!peer_handle->atomic_buffer.unlock(node->context))
-      {
-        PROTON_PRINT("Mutex unlock error\r\n");
-        return PROTON_MUTEX_ERROR;
-      }
-
-      break;
-    }
-
-    case PROTON_TRANSPORT_ERROR:
-    {
-      if (peer_handle->transport.disconnect())
-      {
-        peer_handle->transport.state = PROTON_TRANSPORT_DISCONNECTED;
-      }
-      else
-      {
-        return PROTON_CONNECT_ERROR;
-      }
-      break;
-    }
-
-    default:
-    {
-      return PROTON_ERROR;
-    }
-  }
-
-  return PROTON_OK;
-}
-
 #ifdef PROTON_DEBUG
 /**
  * @brief Weak implementation of print function. To be implemented by user if debug prints are needed.
@@ -533,6 +381,11 @@ __attribute__((weak)) int proton_print(const char * format, ...)
 }
 #endif
 
+/**
+ * @brief Print a bundle to the debug output.
+ *
+ * @param bundle Bundle to print
+ */
 void proton_print_bundle(proton_Bundle bundle) {
   proton_list_t *args = (proton_list_t *)bundle.signals;
   PROTON_PRINT("Proton Bundle { \r\n");
@@ -544,6 +397,11 @@ void proton_print_bundle(proton_Bundle bundle) {
   PROTON_PRINT("\t}\r\n}\r\n");
 }
 
+/**
+ * @brief Print a signal to the debug output.
+ *
+ * @param signal Signal to print
+ */
 void proton_print_signal(proton_Signal signal) {
   pb_size_t which = signal.which_signal;
 

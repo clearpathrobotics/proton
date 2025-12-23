@@ -56,7 +56,7 @@ set(GENERATED_C_FILES
   "${GENERATED_FOLDER}/proton__multi_node_node1.h"
 )
 
-protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node1")
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node1" True)
 
 add_executable(multi_node_1_c
   multi_node_1.c
@@ -84,7 +84,7 @@ set(GENERATED_C_FILES
   "${GENERATED_FOLDER}/proton__multi_node_node2.h"
 )
 
-protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node2")
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node2" True)
 
 add_executable(multi_node_2_c
   multi_node_2.c
@@ -112,7 +112,7 @@ set(GENERATED_C_FILES
   "${GENERATED_FOLDER}/proton__multi_node_node3.h"
 )
 
-protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node3")
+protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "node3" True)
 
 add_executable(multi_node_3_c
   multi_node_3.c
