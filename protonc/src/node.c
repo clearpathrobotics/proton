@@ -182,7 +182,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
   {
     case PROTON_TRANSPORT_DISCONNECTED:
     {
-      status = peer_handle->transport.connect();
+      status = peer_handle->transport.connect(node->context);
       if (status == PROTON_OK)
       {
         peer_handle->transport.state = PROTON_TRANSPORT_CONNECTED;
@@ -206,6 +206,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
 
       // Read from peer transport
       status = peer_handle->transport.read(
+                            node->context,
                             peer_handle->atomic_buffer.buffer.data,
                             peer_handle->atomic_buffer.buffer.len,
                             &bytes_read);
@@ -236,7 +237,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
 
     case PROTON_TRANSPORT_ERROR:
     {
-      status = peer_handle->transport.disconnect();
+      status = peer_handle->transport.disconnect(node->context);
       if (status == PROTON_OK)
       {
         peer_handle->transport.state = PROTON_TRANSPORT_DISCONNECTED;

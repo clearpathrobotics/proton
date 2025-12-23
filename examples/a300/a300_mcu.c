@@ -21,15 +21,14 @@
  * - Stats thread: Displays real-time statistics including throughput and callback counts
  *
  */
-
 #include "utils.h"
 #include "proton__a300_mcu.h"
 #include <stdlib.h>
 
-double rx, tx;
-
-int sock_send, sock_recv;
-
+/**
+ * @brief Enumeration of callback types for bundle reception.
+ *
+ */
 typedef enum {
   CALLBACK_CMD_FANS,
   CALLBACK_DISPLAY_STATUS,
@@ -41,6 +40,10 @@ typedef enum {
   CALLBACK_COUNT
 } callback_e;
 
+/**
+ * @brief Context structure for MCU node operations.
+ *
+ */
 typedef struct {
   proton_node_t * node;
   proton_bundles_mcu_t bundles;
@@ -48,6 +51,10 @@ typedef struct {
   pthread_mutex_t pc_lock;
   uint32_t last_pc_heartbeat;
   uint32_t cb_counts[CALLBACK_COUNT];
+  int sock_send;
+  int sock_recv;
+  double rx;
+  double tx;
 } context_t;
 
 /**
@@ -299,18 +306,25 @@ void update_pinout_state(proton_node_t * node, proton_bundle_pinout_state_t * pi
  * @brief Establishes PC transport connection.
  * @return PROTON_OK if connection successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_connect() {
-  sock_recv = socket_init(PROTON__NODE__MCU__ENDPOINT__0__IPHL, PROTON__NODE__MCU__ENDPOINT__0__PORT, true);
-  sock_send = socket_init(PROTON__NODE__PC__ENDPOINT__0__IPHL, PROTON__NODE__PC__ENDPOINT__0__PORT, false);
+proton_status_e proton_node_pc_transport_connect(void * context) {
+  if (context == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
 
-  return (sock_recv >= 0 && sock_send >=0) ? PROTON_OK : PROTON_CONNECT_ERROR;
+  context_t * c = (context_t *)context;
+  c->sock_recv = socket_init(PROTON__NODE__MCU__ENDPOINT__0__IPHL, PROTON__NODE__MCU__ENDPOINT__0__PORT, true);
+  c->sock_send = socket_init(PROTON__NODE__PC__ENDPOINT__0__IPHL, PROTON__NODE__PC__ENDPOINT__0__PORT, false);
+
+  return (c->sock_recv >= 0 && c->sock_send >=0) ? PROTON_OK : PROTON_CONNECT_ERROR;
 }
 
 /**
  * @brief Closes PC transport connection.
  * @return PROTON_OK if disconnection successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_disconnect() {
+proton_status_e proton_node_pc_transport_disconnect(void * context) {
+  (void)context;
   return PROTON_OK;
 }
 
@@ -321,14 +335,20 @@ proton_status_e proton_node_pc_transport_disconnect() {
  * @param bytes_read Pointer to store number of bytes actually read.
  * @return PROTON_OK if read successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_read(uint8_t *buf, size_t len, size_t * bytes_read) {
-  int ret = recv(sock_recv, buf, len, 0);
+proton_status_e proton_node_pc_transport_read(void * context,uint8_t *buf, size_t len, size_t * bytes_read) {
+  if (context == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  context_t * c = (context_t *)context;
+  int ret = recv(c->sock_recv, buf, len, 0);
 
   if (ret < 0) {
     return PROTON_READ_ERROR;
   }
 
-  rx += ret;
+  c->rx += ret;
   *bytes_read = ret;
 
   return PROTON_OK;
@@ -341,14 +361,19 @@ proton_status_e proton_node_pc_transport_read(uint8_t *buf, size_t len, size_t *
  * @param bytes_written Pointer to store number of bytes actually written.
  * @return PROTON_OK if write successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_write(const uint8_t *buf, size_t len, size_t * bytes_written) {
-  int ret = send(sock_send, buf, len, 0);
+proton_status_e proton_node_pc_transport_write(void * context, const uint8_t *buf, size_t len, size_t * bytes_written) {
+  if (context == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+  context_t * c = (context_t *)context;
+  int ret = send(c->sock_send, buf, len, 0);
 
   if (ret < 0) {
     return PROTON_WRITE_ERROR;
   }
 
-  tx += ret;
+  c->tx += ret;
   *bytes_written = ret;
 
   return PROTON_OK;
@@ -493,7 +518,7 @@ void * stats(void *arg) {
     printf("Node: %u\r\n", context->node->state);
     printf("Peer: %s\r\n", PROTON__NODE__PC__NAME);
     printf("  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__PC].state, context->node->peers[PROTON__PEER__PC].transport.state);
-    printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", rx / 1000, tx / 1000);
+    printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", context->rx / 1000, context->tx / 1000);
     printf("--- Received Bundles (hz) ---\r\n");
     printf("cmd_fans: %d\r\n", context->cb_counts[CALLBACK_CMD_FANS]);
     printf("display_status: %d\r\n", context->cb_counts[CALLBACK_DISPLAY_STATUS]);
@@ -504,8 +529,8 @@ void * stats(void *arg) {
     printf("clear_needs_reset: %d\r\n", context->cb_counts[CALLBACK_CLEAR_NEEDS_RESET]);
     printf("-----------------------------\r\n");
 
-    rx = 0.0;
-    tx = 0.0;
+    context->rx = 0.0;
+    context->tx = 0.0;
 
     for (uint8_t i = 0; i < CALLBACK_COUNT; i++)
     {
