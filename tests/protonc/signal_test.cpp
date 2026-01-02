@@ -12,7 +12,6 @@
 
 #include "protonc/utils.hpp"
 
-
 TEST(PROTONC_Signal, Values) {
   // Buffer to encode/decode with
   #define BUFFER_SIZE 1024
@@ -65,94 +64,24 @@ TEST(PROTONC_Signal, Values) {
   memcpy(test_bundle.list_bytes_value, list_bytes_value, sizeof(list_bytes_value));
 
   // Initialize signals
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE].signal.which_signal = proton_Signal_double_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE].arg.data = &value_test_bundle.double_value;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE].signal.which_signal = proton_Signal_float_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE].arg.data = &value_test_bundle.float_value;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE].signal.which_signal = proton_Signal_int32_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE].arg.data = &value_test_bundle.int32_value;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE].signal.which_signal = proton_Signal_int64_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE].arg.data = &value_test_bundle.int64_value;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE].signal.which_signal = proton_Signal_uint32_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE].arg.data = &value_test_bundle.uint32_value;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE].signal.which_signal = proton_Signal_uint64_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE].arg.data = &value_test_bundle.uint64_value;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE].signal.which_signal = proton_Signal_bool_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE].arg.data = &value_test_bundle.bool_value;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE].signal.which_signal = proton_Signal_string_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE].signal.signal.string_value = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE].arg.data = value_test_bundle.string_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE].arg.capacity = PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE].signal.which_signal = proton_Signal_bytes_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE].signal.signal.bytes_value = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE].arg.data = value_test_bundle.bytes_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE].arg.capacity = PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__CAPACITY;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE].signal.which_signal = proton_Signal_list_double_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE].signal.signal.list_double_value.doubles = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE].arg.data = value_test_bundle.list_double_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE].signal.which_signal = proton_Signal_list_float_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE].signal.signal.list_float_value.floats = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE].arg.data = value_test_bundle.list_float_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE].signal.which_signal = proton_Signal_list_int32_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE].signal.signal.list_int32_value.int32s = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE].arg.data = value_test_bundle.list_int32_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE].signal.which_signal = proton_Signal_list_int64_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE].signal.signal.list_int64_value.int64s = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE].arg.data = value_test_bundle.list_int64_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE].signal.which_signal = proton_Signal_list_uint32_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE].signal.signal.list_uint32_value.uint32s = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE].arg.data = value_test_bundle.list_uint32_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE].signal.which_signal = proton_Signal_list_uint64_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE].signal.signal.list_uint64_value.uint64s = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE].arg.data = value_test_bundle.list_uint64_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE].signal.which_signal = proton_Signal_list_bool_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE].signal.signal.list_bool_value.bools = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE].arg.data = value_test_bundle.list_bool_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE].signal.which_signal = proton_Signal_list_string_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE].signal.signal.list_string_value.strings = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE].arg.data = value_test_bundle.list_string_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE].arg.capacity = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE__CAPACITY;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE].arg.size = 0;
-
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE].signal.which_signal = proton_Signal_list_bytes_value_tag;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE].signal.signal.list_bytes_value.bytes = &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE].arg;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE].arg.data = value_test_bundle.list_bytes_value;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE].arg.capacity = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE__CAPACITY;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE].arg.length = PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE__LENGTH;
-  test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE].arg.size = 0;
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE], proton_Signal_double_value_tag, &test_bundle.double_value, 0, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE], proton_Signal_float_value_tag, &test_bundle.float_value, 0, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE], proton_Signal_int32_value_tag, &test_bundle.int32_value, 0, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE], proton_Signal_int64_value_tag, &test_bundle.int64_value, 0, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE], proton_Signal_uint32_value_tag, &test_bundle.uint32_value, 0, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE], proton_Signal_uint64_value_tag, &test_bundle.uint64_value, 0, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE], proton_Signal_bool_value_tag, &test_bundle.bool_value, 0, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE], proton_Signal_string_value_tag, &test_bundle.string_value, 0, PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE], proton_Signal_bytes_value_tag, &test_bundle.bytes_value, 0, PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__CAPACITY), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE], proton_Signal_list_double_value_tag, &test_bundle.list_double_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_DOUBLE_VALUE__LENGTH, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE], proton_Signal_list_float_value_tag, &test_bundle.list_float_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_FLOAT_VALUE__LENGTH, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE], proton_Signal_list_int32_value_tag, &test_bundle.list_int32_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT32_VALUE__LENGTH, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE], proton_Signal_list_int64_value_tag, &test_bundle.list_int64_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_INT64_VALUE__LENGTH, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE], proton_Signal_list_uint32_value_tag, &test_bundle.list_uint32_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT32_VALUE__LENGTH, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE], proton_Signal_list_uint64_value_tag, &test_bundle.list_uint64_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_UINT64_VALUE__LENGTH, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE], proton_Signal_list_bool_value_tag, &test_bundle.list_bool_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BOOL_VALUE__LENGTH, 0), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE], proton_Signal_list_string_value_tag, &test_bundle.list_string_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE__LENGTH, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_STRING_VALUE__CAPACITY), PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE], proton_Signal_list_bytes_value_tag, &test_bundle.list_bytes_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE__LENGTH, PROTON__BUNDLE__VALUE_TEST__SIGNAL__LIST_BYTES_VALUE__CAPACITY), PROTON_OK);
 
   // Initialise bundle
   proton_status_e status = proton_init_bundle(&test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles, PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT, 0, 0);
