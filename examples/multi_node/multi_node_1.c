@@ -1,7 +1,26 @@
+/**
+ * @file multi_node_1.c
+ * @brief Node 1 implementation for multi-node example
+ *
+ * This file implements Node 1 of a multi-node example system using Proton.
+ * Node 1 communicates with Node 2 (via UDP socket) and Node 3 (via serial port).
+ *
+ * @details
+ * - Manages bundle callbacks for node naming and heartbeat monitoring
+ * - Implements transport layer callbacks for socket and serial communication
+ * - Uses mutex-based thread synchronization for thread-safe peer access
+ * - Monitors peer connectivity through heartbeat timeouts
+ * - Provides real-time statistics on throughput and message rates
+ */
+
 #include "utils.h"
 #include "proton__multi_node_node1.h"
 #include <stdlib.h>
 
+/**
+ * @brief Enumeration of callbacks for bundle reception.
+ *
+ */
 typedef enum {
   CALLBACK_NODE_NAME,
   CALLBACK_HEARTBEAT_NODE2,
@@ -9,6 +28,10 @@ typedef enum {
   CALLBACK_COUNT
 } callback_e;
 
+/**
+ * @brief Context structure for Node 1 operations.
+ *
+ */
 typedef struct {
   proton_node_t *node;
   proton_bundles_node1_t bundles;
@@ -27,13 +50,22 @@ typedef struct {
   double tx3;
 } context_t;
 
-
+/**
+ * @brief Node name callback handler
+ *
+ * @param context Pointer to the context_t structure
+ */
 void proton_bundle_node_name_callback(void * context) {
   if (context == NULL) return;
   context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_NODE_NAME]++;
 }
 
+/**
+ * @brief Node 2 heartbeat callback handler
+ *
+ * @param context Pointer to the context_t structure
+ */
 void proton_bundle_node2_heartbeat_callback(void * context)
 {
   if (context == NULL) return;
@@ -43,6 +75,11 @@ void proton_bundle_node2_heartbeat_callback(void * context)
   c->last_node2_heartbeat = time(NULL);
 }
 
+/**
+ * @brief Node 3 heartbeat callback handler
+ *
+ * @param context Pointer to the context_t structure
+ */
 void proton_bundle_node3_heartbeat_callback(void * context)
 {
   if (context == NULL) return;
@@ -52,6 +89,17 @@ void proton_bundle_node3_heartbeat_callback(void * context)
   c->last_node3_heartbeat = time(NULL);
 }
 
+/**
+ * @brief Sends a log message from Node 1
+ *
+ * @param context Pointer to the context_t structure
+ * @param file Source file name
+ * @param func Function name
+ * @param line Line number
+ * @param level Log level
+ * @param msg Log message format string
+ * @param ... Additional arguments for the log message
+ */
 void send_log(void * context, const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
   if (context == NULL) return;
   context_t * c = (context_t *)context;
@@ -70,101 +118,205 @@ void send_log(void * context, const char *file, const char* func, int line, uint
   proton_bundle_send(c->node, PROTON__BUNDLE__LOG);
 }
 
+/**
+ * @brief Connect transport for Node 2 (UDP)
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node2_transport_connect(void * context) {
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
+
   c->sock_recv = socket_init(PROTON__NODE__NODE1__ENDPOINT__0__IPHL, PROTON__NODE__NODE1__ENDPOINT__0__PORT, true);
   c->sock_send = socket_init(PROTON__NODE__NODE2__ENDPOINT__0__IPHL, PROTON__NODE__NODE2__ENDPOINT__0__PORT, false);
+
   return (c->sock_recv >= 0 && c->sock_send >= 0) ? PROTON_OK : PROTON_CONNECT_ERROR;
 }
 
+/**
+ * @brief Disconnect transport for Node 2 (UDP)
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node2_transport_disconnect(void * context) {
   (void)context;
   return PROTON_OK;
 }
 
+/**
+ * @brief Read data from Node 2 transport (UDP)
+ *
+ * @param context Pointer to the context_t structure
+ * @param buf Buffer to read data into
+ * @param len Maximum number of bytes to read
+ * @param bytes_read Pointer to store number of bytes actually read
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node2_transport_read(void * context, uint8_t *buf, size_t len, size_t * bytes_read) {
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
+
   int ret = recv(c->sock_recv, buf, len, 0);
+
   if (ret < 0) {
     return PROTON_READ_ERROR;
   }
+
   c->rx2 += ret;
   *bytes_read = ret;
+
   return PROTON_OK;
 }
 
+/**
+ * @brief Write data to Node 2 transport (UDP)
+ *
+ * @param context Pointer to the context_t structure
+ * @param buf Buffer containing data to write
+ * @param len Number of bytes to write
+ * @param bytes_written Pointer to store number of bytes actually written
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node2_transport_write(void * context, const uint8_t *buf, size_t len, size_t * bytes_written) {
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
+
   int ret = send(c->sock_send, buf, len, 0);
+
   if (ret < 0) {
     return PROTON_WRITE_ERROR;
   }
+
   c->tx2 += ret;
   *bytes_written = ret;
   return PROTON_OK;
 }
 
+/**
+ * @brief Connect transport for Node 3 (Serial)
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node3_transport_connect(void * context) {
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
+
   c->serial_port = serial_init(PROTON__NODE__NODE3__ENDPOINT__0__DEVICE);
+
   return c->serial_port >= 0 ? PROTON_OK : PROTON_CONNECT_ERROR;
 }
 
+/**
+ * @brief Disconnect transport for Node 3 (Serial)
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node3_transport_disconnect(void * context) {
   (void)context;
   return PROTON_OK;
 }
 
+/**
+ * @brief Read data from Node 3 transport (Serial)
+ *
+ * @param context Pointer to the context_t structure
+ * @param buf Buffer to read data into
+ * @param len Maximum number of bytes to read
+ * @param bytes_read Pointer to store number of bytes actually read
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node3_transport_read(void * context, uint8_t *buf, size_t len, size_t * bytes_read) {
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
+
   size_t bytes = serial_read(c->serial_port, buf, len);
+
   if (bytes > 0) {
     c->rx3 += bytes + PROTON_FRAME_OVERHEAD;
   }
+
   *bytes_read = bytes;
   return PROTON_OK;
 }
 
+/**
+ * @brief Write data to Node 3 transport (Serial)
+ *
+ * @param context Pointer to the context_t structure
+ * @param buf Buffer containing data to write
+ * @param len Number of bytes to write
+ * @param bytes_written Pointer to store number of bytes actually written
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node3_transport_write(void * context, const uint8_t *buf, size_t len, size_t * bytes_written) {
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
+
   size_t bytes = serial_write(c->serial_port, buf, len);
+
   if (bytes > 0) {
     c->tx3 += bytes + PROTON_FRAME_OVERHEAD;
   }
+
   *bytes_written = bytes;
   return PROTON_OK;
 }
 
+/**
+ * @brief Locks Node 1 mutex
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node1_lock(void * context) {
   if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
+
   return pthread_mutex_lock(&c->node1_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
+/**
+ * @brief Unlocks Node 1 mutex
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node1_unlock(void * context) {
   if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
+
   return pthread_mutex_unlock(&c->node1_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
+/**
+ * @brief Locks Node 2 mutex
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node2_lock(void * context) {
   if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
+
   return pthread_mutex_lock(&c->node2_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
+/**
+ * @brief Unlocks Node 2 mutex
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node2_unlock(void * context) {
   if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
@@ -173,6 +325,12 @@ proton_status_e proton_node_node2_unlock(void * context) {
   return pthread_mutex_unlock(&c->node2_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
+/**
+ * @brief Locks Node 3 mutex
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node3_lock(void * context) {
   if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
@@ -181,6 +339,12 @@ proton_status_e proton_node_node3_lock(void * context) {
   return pthread_mutex_lock(&c->node3_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
+/**
+ * @brief Unlocks Node 3 mutex
+ *
+ * @param context Pointer to the context_t structure
+ * @return proton_status_e Status of the operation
+ */
 proton_status_e proton_node_node3_unlock(void * context) {
   if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
@@ -189,6 +353,12 @@ proton_status_e proton_node_node3_unlock(void * context) {
   return pthread_mutex_unlock(&c->node3_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
+/**
+ * @brief 1 Hz timer thread function
+ *
+ * @param arg Pointer to the context_t structure
+ * @return void*
+ */
 void *timer_1hz(void *arg) {
   if (arg == NULL) return NULL;
   context_t * context = (context_t *)arg;
@@ -211,6 +381,12 @@ void *timer_1hz(void *arg) {
   return NULL;
 }
 
+/**
+ * @brief 10 Hz timer thread function
+ *
+ * @param arg Pointer to the context_t structure
+ * @return void*
+ */
 void *timer_10hz(void *arg) {
   if (arg == NULL) return NULL;
   context_t * context = (context_t *)arg;
@@ -224,6 +400,12 @@ void *timer_10hz(void *arg) {
   return NULL;
 }
 
+/**
+ * @brief Statistics thread function
+ *
+ * @param arg Pointer to the context_t structure
+ * @return void*
+ */
 void * stats(void *arg) {
   if (arg == NULL) return NULL;
   context_t * context = (context_t *)arg;
@@ -260,6 +442,12 @@ void * stats(void *arg) {
   return NULL;
 }
 
+/**
+ * @brief Node 2 spin thread function
+ *
+ * @param arg Pointer to the context_t structure
+ * @return void*
+ */
 void * spin_node2(void * arg)
 {
   if (arg == NULL) return NULL;
@@ -268,6 +456,11 @@ void * spin_node2(void * arg)
   return NULL;
 }
 
+/**
+ * @brief Main function
+ *
+ * @return int Exit status
+ */
 int main() {
   pthread_t thread_10hz, thread_1hz, thread_stats, thread_node2;
 
