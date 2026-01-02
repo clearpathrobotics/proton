@@ -9,9 +9,6 @@ typedef enum {
   CALLBACK_COUNT
 } callback_e;
 
-/**
- * @brief Context structure for Node1 multi-node operations.
- */
 typedef struct {
   proton_node_t *node;
   proton_bundles_node1_t bundles;
