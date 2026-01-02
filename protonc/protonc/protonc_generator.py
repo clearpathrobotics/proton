@@ -432,17 +432,17 @@ class ProtonCGenerator:
 
         for p in self.peers:
             self.header_writer.write_function_prototype(
-                Function(p.transport_connect_func.name, [], "proton_status_e")
+                Function(p.transport_connect_func.name, [Variable("context", "void *")], "proton_status_e")
             )
 
             self.header_writer.write_function_prototype(
-                Function(p.transport_disconnect_func.name, [], "proton_status_e")
+                Function(p.transport_disconnect_func.name, [Variable("context", "void *")], "proton_status_e")
             )
 
             self.header_writer.write_function_prototype(
                 Function(
                     p.transport_read_func.name,
-                    [Variable("buf", "uint8_t *"), Variable("len", "size_t"), Variable("bytes_read", "size_t *")],
+                    [Variable("context", "void *"), Variable("buf", "uint8_t *"), Variable("len", "size_t"), Variable("bytes_read", "size_t *")],
                     "proton_status_e",
                 )
             )
@@ -450,7 +450,7 @@ class ProtonCGenerator:
             self.header_writer.write_function_prototype(
                 Function(
                     p.transport_write_func.name,
-                    [Variable("buf", "const uint8_t *"), Variable("len", "size_t"), Variable("bytes_written", "size_t *")],
+                    [Variable("context", "void *"), Variable("buf", "const uint8_t *"), Variable("len", "size_t"), Variable("bytes_written", "size_t *")],
                     "proton_status_e",
                 )
             )
@@ -837,7 +837,7 @@ class ProtonCGenerator:
             indent_level=4,
         )
         self.src_writer.write(
-            "proton_status_e write_status = node->peers[i].transport.write(node->atomic_buffer.buffer.data, bytes_encoded, &bytes_written);",
+            "proton_status_e write_status = node->peers[i].transport.write(node->context, node->atomic_buffer.buffer.data, bytes_encoded, &bytes_written);",
             indent_level=5,
         )
         self.src_writer.write_if_statement_start(

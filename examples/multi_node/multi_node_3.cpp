@@ -20,14 +20,6 @@ void run_1hz_thread()
   }
 }
 
-void run_20hz_thread()
-{
-  while(1)
-  {
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  }
-}
-
 void run_stats_thread()
 {
   while(1)
@@ -61,14 +53,12 @@ int main()
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);
-  std::thread send_20hz_thread(run_20hz_thread);
 
   node->startStatsThread();
   node->spin();
 
   stats_thread.join();
   send_1hz_thread.join();
-  send_20hz_thread.join();
 
   return 0;
 }

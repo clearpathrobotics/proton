@@ -18,14 +18,14 @@
 typedef struct proton_peer proton_peer_t;
 typedef struct proton_node proton_node_t;
 
-typedef void (*proton_callback_t)(void *);
-typedef proton_status_e (*proton_transport_connect_t)(void);
-typedef proton_status_e (*proton_transport_disconnect_t)(void);
-typedef proton_status_e (*proton_transport_read_t)(uint8_t *buf, size_t len, size_t * bytes_read);
-typedef proton_status_e (*proton_transport_write_t)(const uint8_t *buf, size_t len, size_t * bytes_written);
+typedef void (*proton_callback_t)(void * context);
+typedef proton_status_e (*proton_transport_connect_t)(void * context);
+typedef proton_status_e (*proton_transport_disconnect_t)(void * context);
+typedef proton_status_e (*proton_transport_read_t)(void * context, uint8_t *buf, size_t len, size_t * bytes_read);
+typedef proton_status_e (*proton_transport_write_t)(void * context, const uint8_t *buf, size_t len, size_t * bytes_written);
 typedef proton_status_e (*proton_receive_t)(proton_node_t * node, size_t bytes_read);
-typedef proton_status_e (*proton_mutex_lock_t)(void *);
-typedef proton_status_e (*proton_mutex_unlock_t)(void *);
+typedef proton_status_e (*proton_mutex_lock_t)(void * context);
+typedef proton_status_e (*proton_mutex_unlock_t)(void * context);
 
 typedef uint64_t proton_peer_id_t;
 

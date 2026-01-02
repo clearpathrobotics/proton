@@ -5,20 +5,6 @@ file(MAKE_DIRECTORY "${GENERATED_FOLDER}")
 
 # C++ Nodes
 
-## MCU
-
-add_executable(j100_mcu_cpp
-  j100_mcu.cpp
-)
-
-target_link_libraries(j100_mcu_cpp
-  PRIVATE
-  proton::protoncpp
-)
-
-target_compile_definitions(j100_mcu_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(j100_mcu_cpp PRIVATE -Wno-narrowing)
-
 ## PC
 
 add_executable(j100_pc_cpp
@@ -63,33 +49,5 @@ target_include_directories(j100_mcu_c
         ${UTILS_FOLDER}
 )
 
-## PC
-
-set(GENERATED_C_FILES
-  "${GENERATED_FOLDER}/proton__j100_pc.c"
-  "${GENERATED_FOLDER}/proton__j100_pc.h"
-)
-
-protonc_generator("${GENERATED_C_FILES}" ${CONFIG_FILE} ${GENERATED_FOLDER} "pc" True)
-
-add_executable(j100_pc_c
-  j100_pc.c
-  ${GENERATED_FOLDER}/proton__j100_pc.c
-  ${UTILS_FOLDER}/utils.c
-)
-
-target_link_libraries(j100_pc_c
-  PRIVATE
-  proton::protonc
-)
-
-target_include_directories(j100_pc_c
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/nanopb
-        ${GENERATED_FOLDER}
-        ${UTILS_FOLDER}
-)
-
 # Install
-install(TARGETS j100_mcu_c j100_mcu_cpp j100_pc_c j100_pc_cpp RUNTIME DESTINATION bin)
+install(TARGETS j100_mcu_c j100_pc_cpp RUNTIME DESTINATION bin)

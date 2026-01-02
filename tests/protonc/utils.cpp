@@ -12,29 +12,25 @@
 
 #include "protonc/utils.hpp"
 
-uint8_t read_buf[256];
-uint8_t write_buf[256];
-proton_buffer_t proton_producer_buffer = {write_buf, 256};
-proton_buffer_t proton_consumer_buffer = {read_buf, 256};
-
-bool proton_node_consumer_transport_connect()
+proton_status_e proton_node_consumer_transport_connect(void * context)
 {
-  return true;
+  return PROTON_OK;
 }
 
-bool proton_node_consumer_transport_disconnect()
+proton_status_e proton_node_consumer_transport_disconnect(void * context)
 {
-  return true;
+  return PROTON_OK;
 }
 
-size_t proton_node_consumer_transport_read(uint8_t * buf, size_t len)
+proton_status_e proton_node_consumer_transport_read(void * context, uint8_t * buf, size_t len, size_t * bytes_read)
 {
-  memcpy(buf, proton_consumer_buffer.data, len);
-  return len;
+  *bytes_read = len;
+  return PROTON_OK;
 }
 
-size_t proton_node_consumer_transport_write(const uint8_t * buf, size_t len)
+proton_status_e proton_node_consumer_transport_write(void * context, const uint8_t * buf, size_t len, size_t * bytes_written)
 {
-  return len;
+  *bytes_written = len;
+  return PROTON_OK;
 }
 

@@ -10,7 +10,7 @@ nodes:
         port: 11417
       - id: 1
         type: serial
-        device: /tmp/ttyMCU
+        device: /tmp/ttyNode1
   - name: node2
     heartbeat:
       enabled: true
@@ -31,7 +31,7 @@ nodes:
     endpoints:
       - id: 0
         type: serial
-        device: /tmp/ttyPC
+        device: /tmp/ttyNode3
       - id: 1
         type: udp4
         ip: 127.0.0.1
