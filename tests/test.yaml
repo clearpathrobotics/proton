@@ -1,0 +1,42 @@
+nodes:
+  - name: producer
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11416
+  - name: consumer
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11417
+
+connections:
+  - first: {node: producer, id: 0}
+    second: {node: consumer, id: 0}
+
+bundles:
+  - name: value_test
+    id: 0x100
+    producers: producer
+    consumers: consumer
+    signals:
+      - {name: double_value,        type: double}
+      - {name: float_value,         type: float}
+      - {name: int32_value,         type: int32}
+      - {name: int64_value,         type: int64}
+      - {name: uint32_value,        type: uint32}
+      - {name: uint64_value,        type: uint64}
+      - {name: bool_value,          type: bool}
+      - {name: string_value,        type: string,       capacity: 8}
+      - {name: bytes_value,         type: bytes,        capacity: 8}
+      - {name: list_double_value,   type: list_double,  length: 2}
+      - {name: list_float_value,    type: list_float,   length: 2}
+      - {name: list_int32_value,    type: list_int32,   length: 2}
+      - {name: list_int64_value,    type: list_int64,   length: 2}
+      - {name: list_uint32_value,   type: list_uint32,  length: 2}
+      - {name: list_uint64_value,   type: list_uint64,  length: 2}
+      - {name: list_bool_value,     type: list_bool,    length: 2}
+      - {name: list_string_value,   type: list_string,  length: 2, capacity: 8}
+      - {name: list_bytes_value,    type: list_bytes,   length: 2, capacity: 8}

@@ -30,7 +30,7 @@ endif()
 
 set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/protonc/protonc/protonc_generator.py)
 
-function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET)
+function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET GENERATE_NODE)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   set(PROTONC_GENERATOR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/protonc/protonc_generator.py)
   # Add a custom target to execute the script
@@ -43,9 +43,10 @@ function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET)
       -c ${CONFIG_FILE}
       -d ${GENERATED_FOLDER}
       -t ${TARGET}
+      -n ${GENERATE_NODE}
     DEPENDS ${CONFIG_FILE} # Regenerate if config changes
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Running Python script: ${Python3_EXECUTABLE} ${PROTONC_GENERATOR} -c ${CONFIG_FILE} -d ${GENERATED_FOLDER} -t ${TARGET}"
+    COMMENT "Running Python script: ${Python3_EXECUTABLE} ${PROTONC_GENERATOR} -c ${CONFIG_FILE} -d ${GENERATED_FOLDER} -t ${TARGET} -n ${GENERATE_NODE}"
   )
 endfunction()
 
@@ -110,7 +111,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.c
   COMMAND cp ${GENERATED_DIR}/signal.pb.c ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.c ${GENERATED_SRC_DIR}
-  DEPENDS ${GENERATED_FILES}
+  DEPENDS ${PROTO_DEPENDS} ${GENERATED_FILES}
 )
 
 add_custom_command(
@@ -118,7 +119,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${GENERATED_FILES}
+  DEPENDS ${PROTO_DEPENDS} ${GENERATED_FILES}
 )
 
 add_custom_target(generate_protoc ALL
@@ -131,7 +132,12 @@ add_custom_target(generate_protoc ALL
 # -------------------------------
 # protonc library
 # -------------------------------
+option(PROTON_DEBUG "Enable PROTON_DEBUG preprocessor macro" OFF)
+
+set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+
 add_library(protonc
+    src/node.c
     src/proton.c
     src/proton_field_callbacks.c
     ${nanopb_SOURCE_DIR}/pb_common.c
@@ -141,6 +147,10 @@ add_library(protonc
     ${GENERATED_HEADERS}
 )
 
+if (PROTON_DEBUG)
+  target_compile_definitions(protonc PRIVATE PROTON_DEBUG)
+endif()
+
 add_library(proton::protonc ALIAS protonc)
 
 target_include_directories(${PROJECT_NAME}
@@ -148,6 +158,7 @@ target_include_directories(${PROJECT_NAME}
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
         $<BUILD_INTERFACE:${nanopb_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${PROTON_COMMON_INCLUDE_DIR}>
 )
 
 # Install

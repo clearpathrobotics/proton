@@ -169,15 +169,21 @@ class CWriter:
     def write_case_end(self, indent_level=2):
         self.write('}', indent_level)
 
-    def write_enum(self, name: str, enum: List[str], values: List[int] | None = None, indent_level=0):
+    def write_enum(self, name: str, enum: List[str], values: List[int] | None = None, prefix_name=True, indent_level=0):
         self.write(f'typedef enum {name} {{', indent_level)
         for i in range(0, len(enum)):
             if values is not None:
-                self.write(f'{name.upper() + '__' + enum[i].upper()} = {hex(values[i])},', indent_level + 1)
+                if prefix_name:
+                    self.write(f'{name.upper() + '__' + enum[i].upper()} = {hex(values[i])},', indent_level + 1)
+                else:
+                    self.write(f'{enum[i].upper()} = {hex(values[i])},', indent_level + 1)
             else:
-                self.write(f'{name.upper() + '__' + enum[i].upper()},', indent_level + 1)
+                if prefix_name:
+                    self.write(f'{name.upper() + '__' + enum[i].upper()},', indent_level + 1)
+                else:
+                    self.write(f'{enum[i].upper()},', indent_level + 1)
         if values is None:
-            self.write(f'{name.upper()}_COUNT', indent_level + 1)
+            self.write(f'{name.upper()}__COUNT', indent_level + 1)
         self.write(f'}} {name}_e;', indent_level)
 
     def write_for_loop_start(self, count, iter_type='int', iter_name='i', start=0, incr=1, indent_level=1):
@@ -192,6 +198,13 @@ class CWriter:
         self.write('{', indent_level)
 
     def write_if_statement_end(self, indent_level=1):
+        self.write('}', indent_level)
+
+    def write_else_statement_start(self, indent_level=1):
+        self.write('else', indent_level)
+        self.write('{', indent_level)
+
+    def write_else_statement_end(self, indent_level=1):
         self.write('}', indent_level)
 
     def write_define(self, content, indent_level=0):

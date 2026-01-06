@@ -40,13 +40,13 @@ public:
 
   std::string getName() { return name_; }
   uint32_t getId() { return id_; }
-  std::string getProducer() { return producer_; }
-  std::string getConsumer() { return consumer_; }
+  std::vector<std::string> getProducers() { return producers_; }
+  std::vector<std::string> getConsumers() { return consumers_; }
   std::shared_ptr<Bundle> getBundlePtr() { return bundle_; }
   std::map<std::string, SignalHandle> getSignalMap() { return signals_; }
   BundleCallback getCallback() { return callback_; }
 
-  void setBundle(const Bundle &bundle) { *bundle_ = bundle; }
+  void updateBundle(const Bundle &bundle) { *bundle_ = bundle; }
 
   void incrementRxCount() { rx_count_++; };
   void resetRxCount() { rx_count_ = 0; };
@@ -65,8 +65,8 @@ public:
 private:
   std::string name_;
   uint32_t id_;
-  std::string producer_;
-  std::string consumer_;
+  std::vector<std::string> producers_;
+  std::vector<std::string> consumers_;
   std::shared_ptr<Bundle> bundle_;
   std::map<std::string, SignalHandle> signals_;
   BundleCallback callback_;

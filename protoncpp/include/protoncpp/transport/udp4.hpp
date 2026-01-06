@@ -34,17 +34,17 @@ class Udp4Transport : public Transport
 {
 public:
   enum {
-    SOCKET_TARGET,
+    SOCKET_NODE,
     SOCKET_PEER,
     SOCKET_COUNT
   } sockets;
 
-  Udp4Transport(socket_endpoint target, socket_endpoint peer);
+  Udp4Transport(socket_endpoint node, socket_endpoint peer);
 
-  bool connect() override;
-  bool disconnect() override;
-  size_t read(uint8_t * buf, size_t len) override;
-  size_t write(const uint8_t * buf, size_t len) override;
+  proton_status_e connect() override;
+  proton_status_e disconnect() override;
+  proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read) override;
+  proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written) override;
 
   in_addr_t ipToInaddr(const std::string& ip);
   int initSocket(socket_endpoint s, bool server, bool blocking);

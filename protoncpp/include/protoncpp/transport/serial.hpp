@@ -19,6 +19,10 @@
 #include <termios.h>
 #include <unistd.h>
 #include <iostream>
+#include <asio.hpp>
+#include <optional>
+#include <thread>
+#include <vector>
 
 #include "protoncpp/transport/transport.hpp"
 
@@ -39,23 +43,21 @@ public:
 
   SerialTransport(serial_device device);
 
-  bool connect() override;
-  bool disconnect() override;
-  size_t read(uint8_t * buf, size_t len) override;
-  size_t write(const uint8_t * buf, size_t len) override;
+  proton_status_e connect() override;
+  proton_status_e disconnect() override;
+  proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read) override;
+  proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written) override;
 
   int initDevice(serial_device s, bool server, bool blocking);
-
-  static uint16_t getCRC16(const uint8_t *data, size_t len);
-  static bool fillFrameHeader(uint8_t * header, const uint16_t payload_len);
-  static bool fillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
-  static size_t getPayloadLength(const uint8_t * header_buf);
-  static bool checkFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
-
 private:
-  size_t poll(uint8_t * buf, size_t len);
-  serial_device device_;
-  int serial_port_;
+  ssize_t poll(uint8_t * buf, size_t len);
+  bool wait();
+  std::optional<std::vector<uint8_t>> buildPacket(const uint8_t *buf, const size_t& len);
+
+  serial_device device;
+  asio::io_context io_context_;
+  asio::serial_port port_;
+  std::thread io_thread_;
 };
 
 }

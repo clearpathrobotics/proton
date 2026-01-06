@@ -31,6 +31,7 @@
 import argparse
 import os
 import yaml
+from typing import List
 
 from protonc.config import ProtonConfig
 from protonc.source_writer import CWriter, Variable, Struct, Function
@@ -91,6 +92,23 @@ class ProtonCGenerator:
         ProtonConfig.Signal.SignalTypes.LIST_BYTES: "bytes",
     }
 
+    BUNDLE_INIT_FUNCTION = 'proton_bundle_init'
+    BUNDLE_ENCODE_FUNCTION = 'proton_bundle_encode'
+    BUNDLE_DECODE_FUNCTION = 'proton_bundle_decode'
+    BUNDLE_SEND_FUNCTION = 'proton_bundle_send'
+    BUNDLE_PRINT_FUNCTION = 'proton_bundle_print'
+    PEER_INIT_FUNCTION = 'proton_peer_init'
+    NODE_INIT_FUNCTION = 'proton_node_init'
+    PROTON_ENCODE_FUNCTION = 'proton_encode'
+    PROTON_DECODE_FUNCTION = 'proton_decode'
+    PROTON_DECODE_ID_FUNCTION = 'proton_decode_id'
+    PROTON_CONFIGURE_FUNCTION = 'proton_configure'
+    PROTON_ACTIVATE_FUNCTION = 'proton_activate'
+    PROTON_PRINT_BUNDLE_FUNCTION = 'proton_print_bundle'
+    PROTON_INIT_BUNDLE = 'proton_init_bundle'
+    PROTON_INIT_PEER = 'proton_init_peer'
+
+
     def __init__(self, config_file: str, destination_path: str):
         self.config_file = config_file
         self.destination_path = destination_path
@@ -120,109 +138,135 @@ class ProtonCGenerator:
     def generate_bundle_struct_typedefs(self):
         self.header_writer.write_comment("Bundle Structure Definitions", indent_level=0)
         self.header_writer.write_newline()
+        bundle_structs = []
         for b in self.config.bundles:
+            bundle_structs.append(Variable(f"{b.name}_bundle", b.struct.typedef))
             vars = []
             for s in b.signals:
-                # if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING and not s.is_const:
-                #     string_struct = Struct(
-                #         s.name,
-                #         [
-                #             Variable("list", "char *", s.length_define),
-                #             Variable(
-                #                 "strings", "char", s.length_define, s.capacity_define, const=s.is_const
-                #             ),
-                #         ],
-                #     )
-                #     vars.append(string_struct)
-                # elif s.type == ProtonConfig.Signal.SignalTypes.LIST_BYTES and not s.is_const:
-                #     string_struct = Struct(
-                #         s.name,
-                #         [
-                #             Variable("list", "uint8_t *", s.length_define),
-                #             Variable(
-                #                 "bytes", "uint8_t", s.length_define, s.capacity_define, const=s.is_const
-                #             ),
-                #         ],
-                #     )
-                #     vars.append(string_struct)
-                # else:
                 vars.append(
                     Variable(
                         name=s.name,
                         type=self.SIGNAL_TYPE_MAP[s.type],
-                        length=0 if s.length == 0 else s.length_define,
-                        capacity=0 if s.capacity == 0 else s.capacity_define,
+                        length=0 if s.length == 0 else s.length_define.name,
+                        capacity=0 if s.capacity == 0 else s.capacity_define.name,
                         const=s.is_const
                     )
                 )
-            s = Struct(b.struct_name, vars)
+            s = Struct(b.struct.struct, vars)
             self.header_writer.write_typedef_struct(s, indent_level=0)
             self.header_writer.write_newline()
 
-    def generate_extern_bundle_structs(self):
-        self.header_writer.write_comment("External Bundle Structures", indent_level=0)
-        self.header_writer.write_newline()
-        for b in self.config.bundles:
-            self.header_writer.write_extern_variable(
-                Variable(b.bundle_variable_name, f"{b.struct_name}_t")
-            )
-        self.header_writer.write_newline()
+        for h in self.config.heartbeats:
+            bundle_structs.append(Variable(f"{h.name}_bundle", ProtonConfig.Bundle.HEARTBEAT_STRUCT))
 
-    def generate_node(self):
-        node = Variable(self.config.target_node.node_variable_name, "proton_node_t")
-
-        self.header_writer.write_comment("External Node", indent_level=0)
+        self.header_writer.write_comment("Bundles Structure Definitions", indent_level=0)
+        self.header_writer.write_typedef_struct(Struct(self.bundles_struct_name, bundle_structs), indent_level=0)
         self.header_writer.write_newline()
-        self.header_writer.write_extern_variable(node)
-        self.header_writer.write_newline()
-
-        self.src_writer.write_comment("Node", indent_level=0)
-        self.src_writer.write_newline()
-        self.src_writer.write_variable(node)
-        self.src_writer.write_newline()
 
     def generate_signal_enums(self):
         self.header_writer.write_comment("Signal Enums", indent_level=0)
         self.header_writer.write_newline()
-        for b in self.config.bundles:
-            e = [s.name for s in b.signals if not s.is_const]
-            self.header_writer.write_enum(b.signals_enum_name, e)
+        for b in self.config.bundles + self.config.heartbeats:
+            e = [s.signal_enum_name.name for s in b.signals if not s.is_const]
+            self.header_writer.write_enum(b.signals_enum_name.name, e, prefix_name=False)
             self.header_writer.write_newline()
         self.header_writer.write_newline()
 
     def generate_defines(self):
         self.header_writer.write_comment("Constant definitions", indent_level=0)
         self.header_writer.write_newline()
-        for b in self.config.bundles:
-            default_value = "{"
+
+
+
+        for b in self.config.bundles + self.config.heartbeats:
             for i, s in enumerate(b.signals):
                 if s.length > 0:
-                    self.header_writer.write_define(f"{s.length_define} {s.length}")
+                    self.header_writer.write_define(f"{s.length_define} {s.length_define.value}")
                 if s.capacity > 0:
-                    self.header_writer.write_define(f"{s.capacity_define} {s.capacity}")
-                self.header_writer.write_define(f"{s.value_define} {s.c_value}")
-                if i < len(b.signals) - 1:
-                  default_value += f"{s.value_define}, "
+                    self.header_writer.write_define(f"{s.capacity_define} {s.capacity_define.value}")
+                self.header_writer.write_define(f"{s.value_define} {s.value_define.value}")
+            self.header_writer.write_define(f"{b.default_value_define} {b.default_value_define.value}")
+
+            # OR all producer node IDs
+            producers = "("
+            for i, producer in enumerate(b.producers_define.value):
+                define: str
+                if producer == self.target:
+                   define = self.node.id_define.name
                 else:
-                  default_value += f"{s.value_define}"
-            default_value += "}"
-            self.header_writer.write_define(f"{b.default_value_define} {default_value}")
+                    for p in self.peers:
+                        if producer == p.name:
+                            define = p.id_define.name
+                if i < len(b.producers_define.value) - 1:
+                    producers += f'{define} | '
+                else:
+                    producers += f'{define})'
+            self.header_writer.write_define(f"{b.producers_define} {producers}")
+
+            # OR all consumer node IDs
+            consumers = "("
+            for i, consumer in enumerate(b.consumers_define.value):
+                define: str
+                if consumer == self.target:
+                   define = self.node.id_define.name
+                else:
+                    for p in self.peers:
+                        if consumer == p.name:
+                            define = p.id_define.name
+                if i < len(b.consumers_define.value) - 1:
+                    consumers += f'{define} | '
+                else:
+                    consumers += f'{define})'
+            self.header_writer.write_define(f"{b.consumers_define} {consumers}")
             self.header_writer.write_newline()
+
+        bundles_defaults = "{"
+        for i, b in enumerate(self.config.bundles + self.config.heartbeats):
+            if i < len(self.config.bundles + self.config.heartbeats) - 1:
+                bundles_defaults += f"{b.default_value_define}, "
+            else:
+                bundles_defaults += f"{b.default_value_define}"
+        bundles_defaults += "}"
+
+        self.header_writer.write_define(f"{self.bundles_define} {bundles_defaults}")
+
+    def generate_peer_ids(self):
+        self.header_writer.write_comment("Peers", indent_level=0)
+        self.header_writer.write_newline()
+
+        peers = []
+        ids = []
+        for i, p in enumerate(self.peers):
+            peers.append(p.peer_define.name)
+            ids.append(i)
+
+        peers.append("PROTON__PEER__COUNT")
+        ids.append(len(self.peers))
+
+        self.header_writer.write_enum(
+            "PROTON__PEER",
+            peers,
+            ids,
+            prefix_name=False
+        )
+
+        self.header_writer.write_newline()
 
     def generate_bundle_ids(self):
         self.header_writer.write_comment("Bundle IDs", indent_level=0)
         self.header_writer.write_newline()
         self.header_writer.write_enum(
-            "PROTON_BUNDLE",
-            [b.name.upper() for b in self.config.bundles],
+            "PROTON__BUNDLE",
+            [b.bundle_enum_name.name for b in self.config.bundles],
             [b.id for b in self.config.bundles],
+            prefix_name=False
         )
         self.header_writer.write_newline()
 
     def generate_signal_variables(self):
         self.src_writer.write_comment("Internal Signals", indent_level=0)
         self.src_writer.write_newline()
-        for b in self.config.bundles:
+        for b in self.config.bundles + self.config.heartbeats:
             signals = Variable(
                 b.signal_handles_variable_name,
                 "static proton_signal_handle_t",
@@ -234,49 +278,54 @@ class ProtonCGenerator:
     def generate_bundle_variable(self):
         self.src_writer.write_comment("Internal Bundles", indent_level=0)
         self.src_writer.write_newline()
-        for b in self.config.bundles:
+        for b in self.config.bundles + self.config.heartbeats:
             proton = Variable(b.internal_handle_variable_name, "static proton_bundle_handle_t")
             self.src_writer.write_variable(proton)
         self.src_writer.write_newline()
 
-    def generate_bundle_structs(self):
-        self.src_writer.write_comment("External Bundle Structures", indent_level=0)
-        self.src_writer.write_newline()
-        for b in self.config.bundles:
-            self.src_writer.write_variable(
-                Variable(b.bundle_variable_name, f"{b.struct_name}_t", init=b.default_value_define)
-            )
-        self.src_writer.write_newline()
-
     def generate_bundle_init_prototypes(self):
-        self.src_writer.write_comment("Bundle Init Prototype", indent_level=0)
-        self.src_writer.write_newline()
-        for b in self.config.bundles:
-            self.src_writer.write_function_prototype(
-                Function(b.init_function_name, [], "void")
-            )
-        self.src_writer.write_newline()
-
         self.header_writer.write_comment("Bundle Init Prototype", indent_level=0)
         self.header_writer.write_newline()
+        for b in self.config.bundles:
+            self.header_writer.write_function_prototype(
+                Function(b.init_function_name.name, [Variable('bundle', f'{b.struct.typedef} *')], "proton_status_e")
+            )
+
+        for h in self.config.heartbeats:
+            self.header_writer.write_function_prototype(
+                Function(h.init_function_name.name, [Variable('bundle', f'{ProtonConfig.Bundle.HEARTBEAT_STRUCT} *')], "proton_status_e")
+            )
+
         self.header_writer.write_function_prototype(
-            Function("PROTON_BUNDLE_Init", [], "void")
+            Function(self.bundles_init_func_name, [Variable('bundles', f'proton_bundles_{self.target}_t *')], "proton_status_e")
         )
+
+        self.header_writer.write_newline()
+
+    def generate_peer_init_prototypes(self):
+        self.header_writer.write_comment("Peer Init Prototype", indent_level=0)
+        self.header_writer.write_newline()
+        for n in self.peers:
+            self.header_writer.write_function_prototype(
+                Function(n.peer_init_func.name,
+                         [Variable("peer", "proton_peer_t *"),
+                          Variable("buffer", "proton_buffer_t")],
+                         "proton_status_e")
+            )
         self.header_writer.write_newline()
 
     def generate_bundle_init_functions(self):
         self.src_writer.write_comment("Bundle Init Functions", indent_level=0)
         self.src_writer.write_newline()
-        for b in self.config.bundles:
+        def generate_function(self, b, typedef):
             self.src_writer.write_function_start(
-                Function(b.init_function_name, [], "void")
+                Function(b.init_function_name.name, [Variable('bundle', f'{typedef} *')], "proton_status_e")
             )
+            self.src_writer.write("proton_status_e status;")
+            self.src_writer.write_newline()
             for s in b.signals:
                 if s.is_const:
                     continue
-                self.src_writer.write(
-                    f"{b.signal_handles_variable_name}[{s.signal_enum_name}].signal.which_signal = {self.SIGNAL_TAG_MAP[s.type]};"
-                )
                 match s.type:
                     case (
                         ProtonConfig.Signal.SignalTypes.DOUBLE
@@ -287,25 +336,12 @@ class ProtonCGenerator:
                         | ProtonConfig.Signal.SignalTypes.UINT64
                         | ProtonConfig.Signal.SignalTypes.BOOL
                     ):
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.data = &{b.bundle_variable_name}.{s.name};"
-                        )
+                        self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, &bundle->{s.name}, 0, 0);")
                     case (
                         ProtonConfig.Signal.SignalTypes.STRING
                         | ProtonConfig.Signal.SignalTypes.BYTES
                     ):
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value = &{b.signal_handles_variable_name}[{s.signal_enum_name}].arg;"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name};"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity_define};"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.size = 0;"
-                        )
+                        self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, 0, {s.capacity_define});")
 
                     case (
                         ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
@@ -316,74 +352,60 @@ class ProtonCGenerator:
                         | ProtonConfig.Signal.SignalTypes.LIST_UINT64
                         | ProtonConfig.Signal.SignalTypes.LIST_BOOL
                     ):
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signal_handles_variable_name}[{s.signal_enum_name}].arg;"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name};"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.length = {s.length_define};"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.size = 0;"
-                        )
+                        self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, {s.length_define}, 0);")
 
                     case (ProtonConfig.Signal.SignalTypes.LIST_STRING | ProtonConfig.Signal.SignalTypes.LIST_BYTES):
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signal_handles_variable_name}[{s.signal_enum_name}].arg;"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name};"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity_define};"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.length = {s.length_define};"
-                        )
-                        self.src_writer.write(
-                            f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.size = 0;"
-                        )
-                        # self.src_writer.write_for_loop_start(s.length, indent_level=1)
-                        # self.src_writer.write(
-                        #     f"{b.bundle_variable_name}.{s.name}.list[i] = {b.bundle_variable_name}.{s.name}.strings[i];",
-                        #     indent_level=2,
-                        # )
-                        # self.src_writer.write_for_loop_end(indent_level=1)
-
-                    # case ProtonConfig.Signal.SignalTypes.LIST_BYTES:
-                    #     self.src_writer.write(
-                    #         f"{b.signal_handles_variable_name}[{s.signal_enum_name}].signal.signal.{s.type}_value.{self.SIGNAL_VARIABLE_MAP[s.type]} = &{b.signal_handles_variable_name}[{s.signal_enum_name}].arg;"
-                    #     )
-                    #     self.src_writer.write(
-                    #         f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.data = {b.bundle_variable_name}.{s.name}.list;"
-                    #     )
-                    #     self.src_writer.write(
-                    #         f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.capacity = {s.capacity_define};"
-                    #     )
-                    #     self.src_writer.write(
-                    #         f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.length = {s.length_define};"
-                    #     )
-                    #     self.src_writer.write(
-                    #         f"{b.signal_handles_variable_name}[{s.signal_enum_name}].arg.size = 0;"
-                    #     )
-                    #     self.src_writer.write_for_loop_start(s.length, indent_level=1)
-                    #     self.src_writer.write(
-                    #         f"{b.bundle_variable_name}.{s.name}.list[i] = {b.bundle_variable_name}.{s.name}.bytes[i];",
-                    #         indent_level=2,
-                    #     )
-                    #     self.src_writer.write_for_loop_end(indent_level=1)
+                        self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, {s.length_define}, {s.capacity_define});")
+                self.src_writer.write_if_statement_start('status != PROTON_OK')
+                self.src_writer.write("return status;", indent_level=2)
+                self.src_writer.write_if_statement_end()
                 self.src_writer.write_newline()
             self.src_writer.write(
-                f"PROTON_InitBundle(&{b.internal_handle_variable_name}, {b.bundle_enum_name}, {b.signal_handles_variable_name}, {b.signals_enum_count});"
+                f"return {self.PROTON_INIT_BUNDLE}(&{b.internal_handle_variable_name}, "
+                f"{b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name}, "
+                f"{b.signal_handles_variable_name}, {b.signals_enum_count}, "
+                f"{b.producers_define}, {b.consumers_define});"
             )
             self.src_writer.write_function_end()
 
-        self.src_writer.write_function_start(Function("PROTON_BUNDLE_Init", [], "void"))
         for b in self.config.bundles:
-            self.src_writer.write(f"{b.init_function_name}();", indent_level=1)
+            generate_function(self, b, b.struct.typedef)
+
+        for h in self.config.heartbeats:
+            generate_function(self, h, ProtonConfig.Bundle.HEARTBEAT_STRUCT)
+
+        # Bundles init
+        self.src_writer.write_function_start(
+            Function(self.bundles_init_func_name, [Variable('bundles', f'{self.bundles_struct_name}_t *')], "proton_status_e")
+        )
+        self.src_writer.write("proton_status_e status;")
+        for b in self.config.bundles + self.config.heartbeats:
+            self.src_writer.write_newline()
+            self.src_writer.write(f"status = {b.init_function_name}(&bundles->{b.bundle_variable_name});")
+            self.src_writer.write_if_statement_start('status != PROTON_OK')
+            self.src_writer.write("return status;", indent_level=2)
+            self.src_writer.write_if_statement_end()
+
+        self.src_writer.write_newline()
+        self.src_writer.write("return PROTON_OK;")
         self.src_writer.write_function_end()
+
+    def generate_peer_init_functions(self):
+        self.src_writer.write_comment("Peer Init Functions", indent_level=0)
+        self.src_writer.write_newline()
+
+        for n in self.peers:
+            self.src_writer.write_function_start(Function(
+                n.peer_init_func.name,
+                [Variable("peer", "proton_peer_t *"),
+                 Variable("buffer", "proton_buffer_t")],
+                "proton_status_e"))
+            self.src_writer.write(f"return {self.PROTON_INIT_PEER}(peer, "
+                                  f"{n.id_define.name}, "
+                                  f"(proton_heartbeat_t){n.heartbeat.default_value_define.name}, "
+                                  f"(proton_transport_t){n.transport_define.name}, {n.receive_func.name}, {n.mutex_lock_func.name}, {n.mutex_unlock_func.name}, "
+                                  f"buffer);")
+            self.src_writer.write_function_end()
 
     def generate_consumer_callbacks(self):
         self.header_writer.write_comment("Consumer callbacks", indent_level=0)
@@ -392,147 +414,329 @@ class ProtonCGenerator:
         self.src_writer.write_comment("Weak Consumer callbacks", indent_level=0)
         self.src_writer.write_newline()
 
-        for b in self.config.bundles:
-            if b.consumer == self.target:
+        for b in self.config.bundles + self.config.heartbeats:
+            if self.target in b.consumers:
                 self.header_writer.write_function_prototype(
-                    Function(b.callback_function_name, [], "void")
+                    Function(b.callback_function_name.name, [Variable("context", "void *")], "void")
                 )
                 self.src_writer.write_function_start(
-                    Function(b.callback_function_name, [], "__attribute__((weak)) void")
+                    Function(b.callback_function_name.name, [Variable("context", "void *")], "__attribute__((weak)) void")
                 )
+                self.src_writer.write('(void)context;')
                 self.src_writer.write_function_end()
         self.header_writer.write_newline()
 
     def generate_transport_prototypes(self):
-        self.header_writer.write_comment("Transport Buffers", indent_level=0)
-        self.header_writer.write_newline()
-
-        self.header_writer.write_extern_variable(
-            Variable(
-                f"proton_{self.config.target_node.name}_read_buffer", "proton_buffer_t"
-            )
-        )
-        self.header_writer.write_extern_variable(
-            Variable(
-                f"proton_{self.config.target_node.name}_write_buffer", "proton_buffer_t"
-            )
-        )
-
-        self.header_writer.write_newline()
         self.header_writer.write_comment("Transport Prototypes", indent_level=0)
         self.header_writer.write_newline()
 
-        self.header_writer.write_function_prototype(
-            Function(self.config.target_node.transport_connect_func, [], "bool")
-        )
-
-        self.header_writer.write_function_prototype(
-            Function(self.config.target_node.transport_disconnect_func, [], "bool")
-        )
-
-        self.header_writer.write_function_prototype(
-            Function(
-                self.config.target_node.transport_read_func,
-                [Variable("buf", "uint8_t *"), Variable("len", "size_t")],
-                "size_t",
+        for p in self.peers:
+            self.header_writer.write_function_prototype(
+                Function(p.transport_connect_func.name, [Variable("context", "void *")], "proton_status_e")
             )
-        )
 
-        self.header_writer.write_function_prototype(
-            Function(
-                self.config.target_node.transport_write_func,
-                [Variable("buf", "const uint8_t *"), Variable("len", "size_t")],
-                "size_t",
+            self.header_writer.write_function_prototype(
+                Function(p.transport_disconnect_func.name, [Variable("context", "void *")], "proton_status_e")
             )
-        )
+
+            self.header_writer.write_function_prototype(
+                Function(
+                    p.transport_read_func.name,
+                    [Variable("context", "void *"), Variable("buf", "uint8_t *"), Variable("len", "size_t"), Variable("bytes_read", "size_t *")],
+                    "proton_status_e",
+                )
+            )
+
+            self.header_writer.write_function_prototype(
+                Function(
+                    p.transport_write_func.name,
+                    [Variable("context", "void *"), Variable("buf", "const uint8_t *"), Variable("len", "size_t"), Variable("bytes_written", "size_t *")],
+                    "proton_status_e",
+                )
+            )
 
         self.header_writer.write_newline()
 
     def generate_receive_function(self):
-        # Name, parameters, and return type of the decode function
-        receive_function = Function(
-            "PROTON_BUNDLE_Receive",
-            [
-                Variable("buffer", "const uint8_t*"),
-                Variable("length", "size_t"),
-            ],
-            "bool",
-        )
-
         # Generate prototype in header file for users to use
         self.header_writer.write_comment("Bundle Receive Prototype", indent_level=0)
-        self.header_writer.write_newline()
-        self.header_writer.write_function_prototype(receive_function)
         self.header_writer.write_newline()
 
         # Generate function source
         self.src_writer.write_comment("Bundle Receive Function", indent_level=0)
         self.src_writer.write_newline()
-        self.src_writer.write_function_start(receive_function)
 
-        # Initialise variables
-        self.src_writer.write("proton_bundle_handle_t * handle;")
-        self.src_writer.write("PROTON_BUNDLE_e id;")
-        self.src_writer.write("proton_callback_t callback;")
+        for n in self.peers:
+            # Name, parameters, and return type of the decode function
+            receive_function = Function(
+                n.receive_func.name,
+                [
+                  Variable("node", "proton_node_t *"),
+                  Variable("length", "size_t")
+                ],
+                "proton_status_e",
+            )
+
+            self.header_writer.write_function_prototype(receive_function)
+            self.header_writer.write_newline()
+
+            self.src_writer.write_function_start(receive_function)
+
+            # Check for valid pointers
+            self.src_writer.write_comment("Check that the node is not NULL")
+            self.src_writer.write_if_statement_start(
+                f"node == NULL || node->peers == NULL || node->peer_count <= {n.peer_define}"
+            )
+            self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
+            self.src_writer.write_if_statement_end()
+            self.src_writer.write_newline()
+
+
+            # Initialise variables
+            self.src_writer.write(f"{ProtonConfig.PROTON_BUNDLE_ENUM} id;")
+            self.src_writer.write("proton_callback_t callback;")
+            self.src_writer.write("proton_status_e status;")
+            self.src_writer.write(f"proton_peer_t peer = node->peers[{n.peer_define}];")
+            self.src_writer.write_newline()
+
+            # Check for peer lock and unlock functions
+            self.src_writer.write_comment("Check that peer mutex functions are not NULL")
+            self.src_writer.write_if_statement_start(
+                "peer.state == PROTON_NODE_UNCONFIGURED"
+            )
+            self.src_writer.write("return PROTON_INVALID_STATE_ERROR;", indent_level=2)
+            self.src_writer.write_if_statement_end()
+            self.src_writer.write_newline()
+
+            # Attempt to decode bundle ID
+            self.src_writer.write_comment("Decode bundle")
+
+            self.src_writer.write(f"status = {self.BUNDLE_DECODE_FUNCTION}(peer.atomic_buffer.buffer, peer.id, &id, length);", indent_level=1)
+            self.src_writer.write_newline()
+
+            self.src_writer.write_if_statement_start("status != PROTON_OK", indent_level=1)
+            self.src_writer.write("return status;", indent_level=2)
+            self.src_writer.write_if_statement_end(indent_level=1)
+            self.src_writer.write_newline()
+
+            # Check which bundle we received
+            self.src_writer.write_switch_start("id")
+
+            for b in self.config.bundles + self.config.heartbeats:
+                if n.name in b.producers and self.node.name in b.consumers:
+                    # Assign bundle and callback to appropriate values for this case
+                    self.src_writer.write_case_start(b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name)
+                    self.src_writer.write(
+                        f"callback = {b.callback_function_name.name};", indent_level=3
+                    )
+                    self.src_writer.write("break;", indent_level=3)
+                    self.src_writer.write_case_end()
+                    self.src_writer.write_newline()
+
+            # Default case is invalid, return error
+            self.src_writer.write_case_default_start()
+            self.src_writer.write("return PROTON_ERROR;", indent_level=3)
+            self.src_writer.write_case_end()
+            self.src_writer.write_switch_end()
+
+            # Execute the callback for this bundle
+            self.src_writer.write_comment("Execute callback")
+            self.src_writer.write_if_statement_start("callback")
+            self.src_writer.write("callback(node->context);", indent_level=2)
+            self.src_writer.write_if_statement_end()
+            self.src_writer.write_newline()
+
+            self.src_writer.write("return PROTON_OK;")
+            self.src_writer.write_function_end()
+
+    def generate_bundle_decode_function(self):
+        # Generate prototype in header file for users to use
+        self.header_writer.write_comment("Bundle Decode Prototype", indent_level=0)
+        self.header_writer.write_newline()
+
+        # Generate function source
+        self.src_writer.write_comment("Bundle Decode Function", indent_level=0)
         self.src_writer.write_newline()
 
-        # Attempt to decode bundle ID
-        self.src_writer.write_comment("Decode bundle ID")
-        self.src_writer.write_if_statement_start(
-            "!PROTON_DecodeId(&id, buffer, length)"
+        # Name, parameters, and return type of the decode function
+        decode_function = Function(
+            self.BUNDLE_DECODE_FUNCTION,
+            [
+              Variable("buffer", "proton_buffer_t"),
+              Variable("producer", "proton_producer_t"),
+              Variable("id", f"{ProtonConfig.PROTON_BUNDLE_ENUM} *"),
+              Variable("length", "size_t")
+            ],
+            "proton_status_e",
         )
-        self.src_writer.write("return false;", indent_level=2)
+
+        self.header_writer.write_function_prototype(decode_function)
+        self.header_writer.write_newline()
+
+        self.src_writer.write_function_start(decode_function)
+
+        # Check for valid buffer
+        self.src_writer.write_comment("Check that buffer is not NULL")
+        self.src_writer.write_if_statement_start(
+            "buffer.data == NULL || id == NULL"
+        )
+        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
         self.src_writer.write_if_statement_end()
         self.src_writer.write_newline()
 
+        # Initialise variables
+        self.src_writer.write("proton_status_e status;")
+        self.src_writer.write("proton_bundle_handle_t * handle;")
+        self.src_writer.write_newline()
+
+
+        # Attempt to decode bundle ID
+        self.src_writer.write_comment("Decode bundle ID")
+        self.src_writer.write(f"status = {self.PROTON_DECODE_ID_FUNCTION}(buffer, id);", indent_level=1)
+        self.src_writer.write_if_statement_start("status != PROTON_OK", indent_level=1)
+        self.src_writer.write("return status;", indent_level=2)
+        self.src_writer.write_if_statement_end(indent_level=1)
+        self.src_writer.write_newline()
+
         # Check which bundle we received
+        self.src_writer.write_switch_start("*id")
+
+        for b in self.config.bundles:
+            # Assign bundle and callback to appropriate values for this case
+            self.src_writer.write_case_start(b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name)
+            self.src_writer.write(
+                f"handle = &{b.internal_handle_variable_name};", indent_level=3
+            )
+            self.src_writer.write("break;", indent_level=3)
+            self.src_writer.write_case_end()
+            self.src_writer.write_newline()
+
+        self.src_writer.write_case_start(ProtonConfig.Bundle.HEARTBEAT_BUNDLE_ID)
+        self.src_writer.write_switch_start("producer", indent_level=3)
+        for n in self.nodes:
+            self.src_writer.write_case_start(n.id_define, indent_level=4)
+            for h in self.config.heartbeats:
+                if n.name in h.producers:
+                    self.src_writer.write(
+                      f"handle = &{h.internal_handle_variable_name};", indent_level=5
+                    )
+            self.src_writer.write("break;", indent_level=5)
+            self.src_writer.write_case_end(indent_level=4)
+            self.src_writer.write_newline()
+        # Default case is invalid, return error
+        self.src_writer.write_case_default_start(indent_level=4)
+        self.src_writer.write("return PROTON_ERROR;", indent_level=5)
+        self.src_writer.write_case_end(indent_level=4)
+        self.src_writer.write_switch_end(indent_level=3)
+        self.src_writer.write("break;", indent_level=3)
+        self.src_writer.write_case_end(indent_level=2)
+        self.src_writer.write_newline()
+
+        # Default case is invalid, return error
+        self.src_writer.write_case_default_start()
+        self.src_writer.write("return PROTON_ERROR;", indent_level=3)
+        self.src_writer.write_case_end()
+        self.src_writer.write_switch_end()
+
+        # Check that the bundle is produced by the producer
+        self.src_writer.write_comment("Check that the producer produces this bundle")
+        self.src_writer.write_if_statement_start("!(handle->producers & producer)")
+        self.src_writer.write("return PROTON_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+
+        # Decode the bundle
+        self.src_writer.write_comment("Decode bundle")
+        self.src_writer.write(f"status = {self.PROTON_DECODE_FUNCTION}(handle, buffer, length);", indent_level=1)
+        self.src_writer.write_if_statement_start("status != PROTON_OK")
+        self.src_writer.write("return status;", indent_level=2)
+        self.src_writer.write_if_statement_end()
+        self.src_writer.write_newline()
+
+        self.src_writer.write("return PROTON_OK;")
+        self.src_writer.write_function_end()
+
+    def generate_bundle_encode_function(self):
+        # Name, parameters, and return type of the encode function
+        encode_function = Function(
+            self.BUNDLE_ENCODE_FUNCTION,
+            [Variable("buffer", "proton_buffer_t"),
+             Variable("id", "uint32_t"),
+             Variable("bytes_encoded", "size_t *")],
+            "proton_status_e",
+        )
+
+        # Generate Prototype
+        self.header_writer.write_comment("Bundle Encode Function", indent_level=0)
+        self.header_writer.write_newline()
+        self.header_writer.write_function_prototype(encode_function)
+        self.header_writer.write_newline()
+
+        # Generate function source
+        self.src_writer.write_comment("Bundle Encode Function", indent_level=0)
+        self.src_writer.write_newline()
+        self.src_writer.write_function_start(encode_function)
+
+        # Check that bytes encoded is not NULL
+        self.src_writer.write_comment("Check that bytes_encoded is not NULL")
+        self.src_writer.write_if_statement_start(
+            "bytes_encoded == NULL",
+            indent_level=1,
+        )
+        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end(indent_level=1)
+        self.src_writer.write_newline()
+
+        # Initialise variables
+        self.src_writer.write("proton_bundle_handle_t * handle;")
+        self.src_writer.write_newline()
+
+        # Check which bundle we received
+        self.src_writer.write_comment("Find correct bundle handle")
         self.src_writer.write_switch_start("id")
 
         for b in self.config.bundles:
-            if b.consumer == self.target:
+            if self.target in b.producers:
                 # Assign bundle and callback to appropriate values for this case
                 self.src_writer.write_case_start(b.bundle_enum_name)
                 self.src_writer.write(
                     f"handle = &{b.internal_handle_variable_name};", indent_level=3
                 )
-                self.src_writer.write(
-                    f"callback = {b.callback_function_name};", indent_level=3
-                )
                 self.src_writer.write("break;", indent_level=3)
                 self.src_writer.write_case_end()
                 self.src_writer.write_newline()
 
-        # Default case is invalid, return false
+        # Add heartbeat handle for target node
+        self.src_writer.write_case_start(ProtonConfig.Bundle.HEARTBEAT_BUNDLE_ID)
+        for h in self.config.heartbeats:
+            if self.node.name in h.producers:
+                self.src_writer.write(
+                    f"handle = &{h.internal_handle_variable_name};", indent_level=3
+                )
+        self.src_writer.write("break;", indent_level=3)
+        self.src_writer.write_case_end()
+        self.src_writer.write_newline()
+
+        # Default case is invalid, return error
         self.src_writer.write_case_default_start()
-        self.src_writer.write("return false;", indent_level=3)
+        self.src_writer.write("return PROTON_ERROR;", indent_level=3)
         self.src_writer.write_case_end()
         self.src_writer.write_switch_end()
 
-        # Decode the bundle
-        self.src_writer.write_comment("Decode bundle")
-        self.src_writer.write_if_statement_start(
-            "PROTON_Decode(handle, buffer, length) != 0"
+        self.src_writer.write(
+            f"return {self.PROTON_ENCODE_FUNCTION}(handle, buffer, bytes_encoded);",
+            indent_level=1,
         )
-        self.src_writer.write("return false;", indent_level=2)
-        self.src_writer.write_if_statement_end()
-        self.src_writer.write_newline()
 
-        # Execute the callback for this bundle
-        self.src_writer.write_comment("Execute callback")
-        self.src_writer.write_if_statement_start("callback")
-        self.src_writer.write("callback();", indent_level=2)
-        self.src_writer.write_if_statement_end()
-        self.src_writer.write_newline()
-
-        self.src_writer.write("return true;")
         self.src_writer.write_function_end()
 
     def generate_send_function(self):
         # Name, parameters, and return type of the encode function
         send_function = Function(
-            "PROTON_BUNDLE_Send",
-            [Variable("bundle", "PROTON_BUNDLE_e")],
-            "bool",
+            self.BUNDLE_SEND_FUNCTION,
+            [Variable("node", "proton_node_t *"),
+             Variable("id", "uint32_t")],
+            "proton_status_e",
         )
 
         # Generate prototype in header file for users to use
@@ -546,15 +750,51 @@ class ProtonCGenerator:
         self.src_writer.write_newline()
         self.src_writer.write_function_start(send_function)
 
+        # Check that peers are not NULL
+        self.src_writer.write_comment("Check that peers are not NULL")
+        self.src_writer.write_if_statement_start(
+            "node == NULL || node->peers == NULL",
+            indent_level=1,
+        )
+        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end(indent_level=1)
+        self.src_writer.write_newline()
+
+        # Check that write function is not NULL
+        self.src_writer.write_comment("Check that write functions are not NULL")
+        self.src_writer.write_for_loop_start("node->peer_count", indent_level=1)
+        self.src_writer.write_if_statement_start(
+            "node->peers[i].transport.write == NULL",
+            indent_level=2,
+        )
+        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=3)
+        self.src_writer.write_if_statement_end(indent_level=2)
+        self.src_writer.write_for_loop_end(indent_level=1)
+        self.src_writer.write_newline()
+
+        # Check that the node is connected
+        self.src_writer.write_comment("Check that node is connected")
+        self.src_writer.write_if_statement_start(
+            "node->state != PROTON_NODE_ACTIVE",
+            indent_level=1,
+        )
+        self.src_writer.write("return PROTON_INVALID_STATE_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end(indent_level=1)
+        self.src_writer.write_newline()
+
         # Initialise variables
         self.src_writer.write("proton_bundle_handle_t * handle;")
+        self.src_writer.write("proton_status_e status;")
+        self.src_writer.write("size_t bytes_encoded;")
+        self.src_writer.write("size_t bytes_written;")
         self.src_writer.write_newline()
 
         # Check which bundle we received
-        self.src_writer.write_switch_start("bundle")
+        self.src_writer.write_comment("Find correct bundle handle")
+        self.src_writer.write_switch_start("id")
 
         for b in self.config.bundles:
-            if b.producer == self.target:
+            if self.target in b.producers:
                 # Assign bundle and callback to appropriate values for this case
                 self.src_writer.write_case_start(b.bundle_enum_name)
                 self.src_writer.write(
@@ -564,51 +804,69 @@ class ProtonCGenerator:
                 self.src_writer.write_case_end()
                 self.src_writer.write_newline()
 
-        # Default case is invalid, return false
-        self.src_writer.write_case_default_start()
-        self.src_writer.write("return false;", indent_level=3)
+        # Add heartbeat handle for target node
+        self.src_writer.write_case_start(ProtonConfig.Bundle.HEARTBEAT_BUNDLE_ID)
+        for h in self.config.heartbeats:
+            if self.node.name in h.producers:
+                self.src_writer.write(
+                    f"handle = &{h.internal_handle_variable_name};", indent_level=3
+                )
+        self.src_writer.write("break;", indent_level=3)
         self.src_writer.write_case_end()
         self.src_writer.write_switch_end()
 
-        # Decode the bundle
-        self.src_writer.write_comment("Encode bundle")
-        self.src_writer.write("bool ret = false;")
+        # Lock buffer
+        self.src_writer.write('status = node->atomic_buffer.lock(node->context);')
+        self.src_writer.write_newline()
+        self.src_writer.write_if_statement_start('status == PROTON_OK')
+
+        # Encode bundle
+        self.src_writer.write(
+            f"status = {self.BUNDLE_ENCODE_FUNCTION}(node->atomic_buffer.buffer, id, &bytes_encoded);",
+            indent_level=2,
+        )
         self.src_writer.write_newline()
 
-        self.src_writer.write_if_statement_start(
-            f"{self.config.target_node.mutex_lock_func}()"
-        )
-        self.src_writer.write(
-            f"int bytes_written = PROTON_Encode(handle, {self.config.target_node.node_variable_name}.write_buf.data, {self.config.target_node.node_variable_name}.write_buf.len);",
-            indent_level=2,
-        )
-        self.src_writer.write_if_statement_start(
-            f"bytes_written > 0 && {self.config.target_node.node_variable_name}.connected && {self.config.target_node.node_variable_name}.transport.write",
-            indent_level=2,
-        )
+        # Send bundle to all consumers
+        self.src_writer.write_if_statement_start("status == PROTON_OK", indent_level=2)
         self.src_writer.write_comment("Send bundle", indent_level=3)
-        self.src_writer.write(
-            f"ret = {self.config.target_node.node_variable_name}.transport.write({self.config.target_node.node_variable_name}.write_buf.data, bytes_written) > 0;",
-            indent_level=3,
+        self.src_writer.write_for_loop_start("node->peer_count", indent_level=3)
+        self.src_writer.write_comment("Send to all bundle consumers", indent_level=4)
+        self.src_writer.write_if_statement_start(
+            "handle->consumers & node->peers[i].id",
+            indent_level=4,
         )
+        self.src_writer.write(
+            "proton_status_e write_status = node->peers[i].transport.write(node->context, node->atomic_buffer.buffer.data, bytes_encoded, &bytes_written);",
+            indent_level=5,
+        )
+        self.src_writer.write_if_statement_start(
+            "write_status != PROTON_OK",
+            indent_level=5,
+        )
+        self.src_writer.write(
+            "status = write_status;",
+            indent_level=6,
+        )
+        self.src_writer.write_if_statement_end(indent_level=5)
+        self.src_writer.write_if_statement_end(indent_level=4)
+        self.src_writer.write_for_loop_end(indent_level=3)
         self.src_writer.write_if_statement_end(indent_level=2)
-
         self.src_writer.write_newline()
-        self.src_writer.write(
-            f"{self.config.target_node.mutex_unlock_func}();", indent_level=2
-        )
 
+        self.src_writer.write('status = node->atomic_buffer.unlock(node->context);', indent_level=2)
         self.src_writer.write_if_statement_end(indent_level=1)
         self.src_writer.write_newline()
 
-        self.src_writer.write("return ret;")
+        # Send the handle
+        self.src_writer.write("return status;")
         self.src_writer.write_function_end()
 
     def generate_print_function(self):
         # Name, parameters, and return type of the print function
         print_function = Function(
-            "PROTON_BUNDLE_Print",
-            [Variable("bundle", "PROTON_BUNDLE_e")],
+            self.BUNDLE_PRINT_FUNCTION,
+            [Variable("bundle", ProtonConfig.PROTON_BUNDLE_ENUM)],
             "void",
         )
 
@@ -648,62 +906,74 @@ class ProtonCGenerator:
 
         # Decode the bundle
         self.src_writer.write_comment("Print bundle")
-        self.src_writer.write("PROTON_PrintBundle(handle->bundle);")
+        self.src_writer.write(f"{self.PROTON_PRINT_BUNDLE_FUNCTION}(handle->bundle);")
 
         self.src_writer.write_function_end()
 
-    def generate_node_info(self):
-        self.header_writer.write_comment("Node Info", indent_level=0)
-        self.header_writer.write_newline()
-        for node in self.config.nodes:
-            self.header_writer.write_define(f'{node.name_define} "{node.name}"')
-            if node.type == ProtonConfig.Node.UDP4:
-                ip_hex = 0
-                ip_split = node.ip.split(".")
-                for i in range(0, 4):
-                    ip_hex |= int(ip_split[i]) << 8 * (3 - i)
-                self.header_writer.write_define(f"{node.ip_define} {hex(ip_hex)}")
-                self.header_writer.write_define(f"{node.port_define} {node.port}")
-            elif node.type == ProtonConfig.Node.SERIAL:
-                self.header_writer.write_define(f'{node.device_define} \"{node.device}\"')
+    def generate_node_defines(self, node: ProtonConfig.Node):
+        self.header_writer.write_comment(f"{node.name} Node Defines", indent_level=0)
         self.header_writer.write_newline()
 
-    def generate_init_prototype(self):
-        self.header_writer.write_comment("Proton Init Prototype", indent_level=0)
-        self.header_writer.write_newline()
-        self.header_writer.write_function_prototype(Function("PROTON_Init", [], "void"))
+        self.header_writer.write_define(f'{node.name_define} {node.name_define.value}')
+        self.header_writer.write_define(f'{node.id_define} {node.id_define.value}')
+
+        if node == self.node:
+            self.header_writer.write_define(f'{node.node_default_value_define} {node.node_default_value_define.value}')
+        else:
+            self.header_writer.write_define(f'{node.peer_default_value_define} {node.peer_default_value_define.value}')
+            self.header_writer.write_define(f'{node.transport_define.name} {node.transport_define.value}')
+
+        for d in node.heartbeat.defines:
+            self.header_writer.write_define(f'{d} {d.value}')
+
+        for e in node.endpoints:
+            for d in e.defines:
+                self.header_writer.write_define(f'{d} {d.value}')
+
         self.header_writer.write_newline()
 
-    def generate_init_function(self):
-        self.src_writer.write_comment("Proton Init", indent_level=0)
+    def generate_node_init_function(self):
+        init_function = Function(self.node_init_func,
+                                 [Variable("node", "proton_node_t *"),
+                                  Variable("peers", "proton_peer_t *"),
+                                  Variable("buffer", "proton_buffer_t"),
+                                  Variable("context", "void *")],
+                                 "proton_status_e")
+
+        self.header_writer.write_comment("Proton Node Init Prototype", indent_level=0)
+        self.header_writer.write_newline()
+        self.header_writer.write_function_prototype(init_function)
+        self.header_writer.write_newline()
+
+        self.src_writer.write_comment("Proton Node Init", indent_level=0)
         self.src_writer.write_newline()
-        self.src_writer.write_function_start(Function("PROTON_Init", [], "void"))
+        self.src_writer.write_function_start(init_function)
 
+        self.src_writer.write_comment("Check that the node is not NULL")
+        self.src_writer.write_if_statement_start("node == NULL || peers == NULL")
+        self.src_writer.write("return PROTON_NULL_PTR_ERROR;", indent_level=2)
+        self.src_writer.write_if_statement_end()
+
+        self.src_writer.write_newline()
         self.src_writer.write_variable(
-            Variable(f"{self.config.target_node.name}_transport", "proton_transport_t"),
-            indent_level=1,
-        )
-        self.src_writer.write(
-            f"{self.config.target_node.name}_transport.connect = {self.config.target_node.transport_connect_func};"
-        )
-        self.src_writer.write(
-            f"{self.config.target_node.name}_transport.disconnect = {self.config.target_node.transport_disconnect_func};"
-        )
-        self.src_writer.write(
-            f"{self.config.target_node.name}_transport.read = {self.config.target_node.transport_read_func};"
-        )
-        self.src_writer.write(
-            f"{self.config.target_node.name}_transport.write = {self.config.target_node.transport_write_func};"
+            Variable("status", "proton_status_e"),
+            indent_level=1
         )
         self.src_writer.write_newline()
 
-        self.src_writer.write("PROTON_BUNDLE_Init();")
+        self.src_writer.write(
+            f"status = {self.PROTON_CONFIGURE_FUNCTION}(node, "
+            f"(proton_heartbeat_t){self.node.heartbeat.default_value_define.name}, {self.node.mutex_lock_func.name}, "
+            f"{self.node.mutex_unlock_func.name}, buffer, "
+            f"peers, PROTON__PEER__COUNT, context);"
+        )
+        self.src_writer.write_if_statement_start("status != PROTON_OK")
+        self.src_writer.write("return status;", indent_level=2)
+        self.src_writer.write_if_statement_end()
         self.src_writer.write_newline()
 
         self.src_writer.write(
-            f"PROTON_InitNode(&{self.config.target_node.node_variable_name}, "
-            f"{self.config.target_node.name}_transport, PROTON_BUNDLE_Receive, "
-            f"proton_{self.config.target_node.name}_read_buffer, proton_{self.config.target_node.name}_write_buffer);"
+            f"return {self.PROTON_ACTIVATE_FUNCTION}(node);"
         )
 
         self.src_writer.write_function_end()
@@ -712,32 +982,31 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Mutex prototypes", indent_level=0)
         self.header_writer.write_newline()
 
-        self.header_writer.write_function_prototype(
-            Function(self.config.target_node.mutex_lock_func, [], "bool")
-        )
-        self.header_writer.write_function_prototype(
-            Function(self.config.target_node.mutex_unlock_func, [], "bool")
-        )
-        self.header_writer.write_newline()
-
         self.src_writer.write_comment("Weak Mutex functions", indent_level=0)
         self.src_writer.write_newline()
 
-        self.src_writer.write_function_start(
-            Function(self.config.target_node.mutex_lock_func, [], "__attribute__((weak)) bool")
-        )
-        self.src_writer.write('return true;')
-        self.src_writer.write_function_end()
+        for n in self.nodes:
+            lock_func = Function(n.mutex_lock_func.name, [Variable("context", "void *")], "proton_status_e")
+            unlock_func = Function(n.mutex_unlock_func, [Variable("context", "void *")], "proton_status_e")
+            self.header_writer.write_function_prototype(lock_func)
+            self.header_writer.write_function_prototype(unlock_func)
+            self.header_writer.write_newline()
 
-        self.src_writer.write_function_start(
-            Function(self.config.target_node.mutex_unlock_func, [], "__attribute__((weak)) bool")
-        )
-        self.src_writer.write('return true;')
-        self.src_writer.write_function_end()
+            lock_func.ret = "__attribute__((weak)) proton_status_e"
+            unlock_func.ret = "__attribute__((weak)) proton_status_e"
 
-    def generate(self, name: str, target: str):
-        self.target = target
-        self.config.set_target(target)
+            self.src_writer.write_function_start(lock_func)
+            self.src_writer.write('(void)context;')
+            self.src_writer.write('return PROTON_OK;')
+            self.src_writer.write_function_end()
+
+            self.src_writer.write_function_start(unlock_func)
+            self.src_writer.write('(void)context;')
+            self.src_writer.write('return PROTON_OK;')
+            self.src_writer.write_function_end()
+
+    def generate(self, name: str, target: str, generate_node: bool = False):
+        self.configure(target)
         generated_filename = f"proton__{name}_{target}"
 
         self.src_writer = CWriter(
@@ -753,40 +1022,70 @@ class ProtonCGenerator:
         self.header_writer.write_header_guard_open()
         self.header_writer.write_include("stdint.h")
         self.header_writer.write_include("stdbool.h")
-        self.header_writer.write_include("protonc/proton.h")
+        if generate_node:
+            self.header_writer.write_include("protonc/node.h")
+        else:
+            self.header_writer.write_include("protonc/proton.h")
         self.header_writer.write_newline()
 
         self.src_writer.write_include(generated_filename)
         self.src_writer.write_newline()
 
-        self.generate_node_info()
+        self.generate_node_defines(self.node)
+
+        for p in self.peers:
+            self.generate_node_defines(p)
+
         self.generate_bundle_ids()
         self.generate_signal_enums()
         self.generate_defines()
         self.generate_bundle_struct_typedefs()
-        self.generate_node()
-        self.generate_extern_bundle_structs()
-        self.generate_bundle_structs()
         self.generate_signal_variables()
         self.generate_bundle_variable()
-
         self.generate_bundle_init_prototypes()
         self.generate_bundle_init_functions()
-        self.generate_receive_function()
-        self.generate_send_function()
+        self.generate_bundle_decode_function()
+        self.generate_bundle_encode_function()
         self.generate_print_function()
-        self.generate_consumer_callbacks()
-        self.generate_transport_prototypes()
-        self.generate_mutex_prototypes()
 
-        self.generate_init_prototype()
-        self.generate_init_function()
+        if generate_node:
+            self.generate_peer_ids()
+            self.generate_receive_function()
+            self.generate_send_function()
+            self.generate_consumer_callbacks()
+            self.generate_transport_prototypes()
+            self.generate_mutex_prototypes()
+            self.generate_peer_init_prototypes()
+            self.generate_peer_init_functions()
+            self.generate_node_init_function()
 
         self.header_writer.write_header_guard_close()
 
         self.header_writer.close_file()
         self.src_writer.close_file()
 
+    def configure(self, target: str):
+        self.target = target
+        self.node: ProtonConfig.Node = self.config.nodes[self.target]
+        self.peers: List[ProtonConfig.Node] = []
+        self.connections: List[ProtonConfig.Connection] = []
+
+        # Add peer from any connection that has target node
+        for connection in self.config.connections:
+            if connection.first.node == self.target:
+                self.peers.append(self.config.nodes[connection.second.node])
+                self.connections.append(connection)
+            elif connection.second.node == self.target:
+                self.peers.append(self.config.nodes[connection.first.node])
+                self.connections.append(connection)
+
+        self.nodes = self.peers + [self.node]
+
+        self.bundles_struct_name = f"proton_bundles_{self.target}"
+        self.bundles_init_func_name = f"proton_bundles_{self.target}_init"
+        self.bundles_define = f"PROTON__BUNDLES__{self.target.upper()}__DEFAULT_VALUE"
+
+        self.node_init_func = f"proton_node_{self.target.lower()}_init"
 
 def main():
     parser = argparse.ArgumentParser()
@@ -817,6 +1116,15 @@ def main():
         help="Target node for generation.",
     )
 
+    parser.add_argument(
+      "-n",
+      "--node",
+      type=bool,
+      action="store",
+      default=False,
+      help="Generate code for node and transport implementation",
+    )
+
     args = parser.parse_args()
 
     file = args.config
@@ -826,15 +1134,15 @@ def main():
     generator = ProtonCGenerator(file, dest)
 
     exists = False
-    for node in generator.config.nodes:
-        if node.name == target:
+    for name in generator.config.nodes.keys():
+        if name == target:
             exists = True
             break
 
-    if not exists:
-        raise Exception(f'Invalid target "{target}"')
+    if exists:
+        generator.generate(config_name, target, generate_node=args.node)
     else:
-        generator.generate(config_name, target)
+        raise Exception(f'Invalid target "{target}"')
 
 if __name__ == "__main__":
     main()

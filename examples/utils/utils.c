@@ -13,7 +13,24 @@
 #include "utils.h"
 #include "protonc/proton.h"
 
-__attribute__((weak)) void send_log(const char *file, const char* func, int line, uint8_t level, char *msg, ...)
+/**
+ * @brief Define print function for proton debugging logs
+ *
+ * @param format
+ * @return int
+ */
+int proton_print(const char * format, ...)
+{
+  va_list args;
+
+  va_start(args, format);
+  int ret = vprintf(format, args);
+  va_end(args);
+
+  return ret;
+}
+
+__attribute__((weak)) void send_log(void * context, const char *file, const char* func, int line, uint8_t level, char *msg, ...)
 {}
 
 int msleep(long msec) {
@@ -47,19 +64,19 @@ int socket_init(uint32_t ip, uint32_t port, bool server) {
   {
     // Put the socket in non-blocking mode:
     if (fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK) < 0) {
-      printf("Set non-blocking error\r\n");
+      PROTON_PRINT("Set non-blocking error\r\n");
       return -2;
     }
 
     if (bind(sock, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
-      printf("bind error\r\n");
+      PROTON_PRINT("bind error\r\n");
       return -3;
     }
   }
   else
   {
     if (connect(sock, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) != 0) {
-      printf("connect error\r\n");
+      PROTON_PRINT("connect error\r\n");
       return -1;
     }
   }
@@ -72,7 +89,7 @@ int serial_init(const char * device)
   int serial_port = open(device, O_RDWR | O_NOCTTY | O_SYNC);
 
   if (serial_port == -1) {
-    printf("Error opening serial device\r\n");
+    PROTON_PRINT("Error opening serial device\r\n");
     return -1;
   }
 
@@ -88,7 +105,7 @@ int serial_init(const char * device)
   tty.c_cflag |= (CLOCAL | CREAD);            // enable receiver
   tcsetattr(serial_port, TCSANOW, &tty);
 
-  printf("Opened serial device %d\r\n", serial_port);
+  PROTON_PRINT("Opened serial device %d\r\n", serial_port);
 
   return serial_port;
 }
@@ -102,7 +119,11 @@ size_t serial_read(int serial_port, uint8_t *buf, size_t len) {
   }
 
   // Get payload length from header
-  uint16_t payload_len = PROTON_GetFramedPayloadLength(buf);
+  uint16_t payload_len;
+  if (proton_get_framed_payload_length(buf, &payload_len) != PROTON_OK)
+  {
+    return 0;
+  }
 
   // Invalid header
   if (payload_len == 0)
@@ -123,7 +144,7 @@ size_t serial_read(int serial_port, uint8_t *buf, size_t len) {
   ret = read(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
 
   // Check for valid CRC16
-  if (ret != PROTON_FRAME_CRC_OVERHEAD || !PROTON_CheckFramedPayload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))))
+  if (ret != PROTON_FRAME_CRC_OVERHEAD || proton_check_framed_payload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))) != PROTON_OK)
   {
     return 0;
   }
@@ -135,12 +156,12 @@ size_t serial_write(int serial_port, const uint8_t *buf, size_t len) {
   uint8_t header[4];
   uint8_t crc[2];
 
-  if (!PROTON_FillFrameHeader(header, len))
+  if (proton_fill_frame_header(header, len) != PROTON_OK)
   {
     return 0;
   }
 
-  if (!PROTON_FillCRC16(buf, len, crc))
+  if (proton_fill_crc16(buf, len, crc) != PROTON_OK)
   {
     return 0;
   }
@@ -148,21 +169,21 @@ size_t serial_write(int serial_port, const uint8_t *buf, size_t len) {
   // Write header
   int ret = write(serial_port, header, PROTON_FRAME_HEADER_OVERHEAD);
 
-  if (ret < 0) {
+  if (ret != PROTON_FRAME_HEADER_OVERHEAD) {
     return 0;
   }
 
   // Write payload
   ret = write(serial_port, buf, len);
 
-  if (ret < 0) {
+  if (ret != len) {
     return 0;
   }
 
   // Write CRC16
   ret = write(serial_port, crc, PROTON_FRAME_CRC_OVERHEAD);
 
-  if (ret < 0) {
+  if (ret != PROTON_FRAME_CRC_OVERHEAD) {
     return 0;
   }
 

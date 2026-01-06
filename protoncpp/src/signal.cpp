@@ -15,7 +15,7 @@
 using namespace proton;
 
 SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name,
-                           std::shared_ptr<Signal> ptr) {
+                           Signal* signal) {
   name_ = config.name;
   bundle_name_ = bundle_name;
   length_ = config.length;
@@ -29,7 +29,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name,
                              " for signal " + name_);
   }
 
-  signal_ = ptr;
+  signal_ = signal;
 
   switch (type_) {
   case Signal::SignalCase::kDoubleValue: {
@@ -220,6 +220,15 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name,
 
   default:
     break;
+  }
+}
+
+SignalHandle::~SignalHandle()
+{
+  if (const_)
+  {
+    // Const signals are created with new, rather than from a Bundle.
+    //delete signal_;
   }
 }
 

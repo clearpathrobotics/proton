@@ -13,31 +13,14 @@
 #ifndef INC_PROTONC_PROTON_H_
 #define INC_PROTONC_PROTON_H_
 
+#include "proton/common.h"
 #include "protonc/bundle.pb.h"
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
 
-#define PROTON_FRAME_HEADER_MAGIC_BYTE_0 (uint8_t)0x50
-#define PROTON_FRAME_HEADER_MAGIC_BYTE_1 (uint8_t)0x52
-#define PROTON_FRAME_HEADER_LENGTH_OVERHEAD sizeof(uint16_t)
-#define PROTON_FRAME_CRC_OVERHEAD sizeof(uint16_t)
-#define PROTON_FRAME_HEADER_OVERHEAD sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_0) + sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_1) + PROTON_FRAME_HEADER_LENGTH_OVERHEAD
-#define PROTON_FRAME_OVERHEAD PROTON_FRAME_HEADER_OVERHEAD + PROTON_FRAME_CRC_OVERHEAD
-
-
-typedef enum {
-  PROTON_OK = 0,
-  PROTON_ERR = 1,
-  PROTON_READ_ERR = 2,
-} proton_status_e;
-
-typedef void (*proton_callback_t)(void);
-typedef bool (*proton_transport_connect_t)(void);
-typedef bool (*proton_transport_disconnect_t)(void);
-typedef size_t (*proton_transport_read_t)(uint8_t *buf, size_t len);
-typedef size_t (*proton_transport_write_t)(const uint8_t *buf, size_t len);
-typedef bool (*proton_receive_t)(const uint8_t * buf, size_t len);
+typedef uint64_t proton_producer_t;
+typedef uint64_t proton_consumer_t;
 
 typedef struct {
   size_t length; // Length of list
@@ -48,57 +31,55 @@ typedef struct {
 
 typedef struct {
   proton_Signal signal;
-  proton_list_t arg;
+  proton_list_t value;
 } proton_signal_handle_t;
 
 typedef struct {
   proton_Bundle bundle;
-  proton_list_t arg;
+  proton_list_t signals;
+  proton_producer_t producers;
+  proton_consumer_t consumers;
 } proton_bundle_handle_t;
-
-typedef struct {
-  proton_transport_connect_t connect;
-  proton_transport_disconnect_t disconnect;
-  proton_transport_read_t read;
-  proton_transport_write_t write;
-} proton_transport_t;
 
 typedef struct {
   uint8_t * data;
   size_t len;
 } proton_buffer_t;
 
-typedef struct {
-  proton_transport_t transport;
-  bool connected;
-  proton_receive_t receive;
-  proton_buffer_t read_buf;
-  proton_buffer_t write_buf;
-} proton_node_t;
+typedef struct proton_bundle_heartbeat {
+  uint32_t heartbeat;
+} proton_bundle_heartbeat_t;
 
-#define proton_list_arg_init_default {NULL, 0, 0, 0}
+#define PROTON_LIST_ARG_DEFAULT_VALUE {NULL, 0, 0, 0}
+#define PROTON_BUFFER_DEFAULT_VALUE {NULL, 0}
+#define PROTON_HEARTBEAT_BUNDLE_DEFAULT_VALUE {0}
 
-void PROTON_InitBundle(proton_bundle_handle_t *handle, uint32_t id,
-                       proton_signal_handle_t *signal_handles, uint32_t signal_count);
+proton_status_e proton_init_signal(proton_signal_handle_t * handle,
+                                   pb_size_t which_signal,
+                                   void * data,
+                                   size_t length,
+                                   size_t capacity);
 
-void PROTON_InitNode(proton_node_t *node, proton_transport_t transport, proton_receive_t receive, proton_buffer_t read_buf, proton_buffer_t write_buf);
+proton_status_e proton_init_bundle(proton_bundle_handle_t *handle,
+                                  uint32_t id,
+                                  proton_signal_handle_t *signal_handles,
+                                  uint32_t signal_count,
+                                  proton_producer_t producers,
+                                  proton_consumer_t consumers);
 
-int PROTON_Encode(proton_bundle_handle_t *handle, uint8_t *buffer,
-                  size_t buffer_length);
-int PROTON_Decode(proton_bundle_handle_t *handle, const uint8_t *buffer,
-                  const size_t buffer_length);
-bool PROTON_DecodeId(uint32_t *id, const uint8_t *buffer, size_t buffer_length);
+proton_status_e proton_encode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t *bytes_encoded);
+proton_status_e proton_decode(proton_bundle_handle_t * handle, proton_buffer_t buffer, size_t length);
+proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id);
 
-proton_status_e PROTON_Spin(proton_node_t *node);
-proton_status_e PROTON_SpinOnce(proton_node_t *node);
+void proton_print_bundle(proton_Bundle bundle);
+void proton_print_signal(proton_Signal signal);
 
-uint16_t PROTON_CRC16(const uint8_t *data, uint16_t len);
-bool PROTON_FillFrameHeader(uint8_t * header, uint16_t payload_len);
-bool PROTON_FillCRC16(const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
-bool PROTON_CheckFramedPayload(const uint8_t *payload, const size_t payload_len, const uint16_t frame_crc);
-uint16_t PROTON_GetFramedPayloadLength(const uint8_t * framed_buf);
+#ifdef PROTON_DEBUG
+int proton_print(const char * format, ...);
+#define PROTON_PRINT(...) proton_print(__VA_ARGS__);
+#else
+#define PROTON_PRINT(...)
+#endif
 
-void PROTON_PrintBundle(proton_Bundle bundle);
-void PROTON_PrintSignal(proton_Signal signal);
 
 #endif // INC_PROTONC_PROTON_H_

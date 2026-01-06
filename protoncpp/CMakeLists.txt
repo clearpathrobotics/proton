@@ -49,13 +49,14 @@ set(GENERATED_HEADERS
 )
 
 add_custom_command(
-    OUTPUT ${GENERATED_FILES}
-    COMMAND protoc
-        --proto_path=${PROTO_PATH}
-        --cpp_out=${GENERATED_DIR} signal.proto bundle.proto
-    DEPENDS  ${PROTO_FILES}
-    WORKING_DIRECTORY ${PROTO_PATH}
-    COMMENT "Generating cpp protobuf files for ${PROTO_NAME}.proto"
+  OUTPUT ${GENERATED_FILES}
+  COMMAND protoc
+      --proto_path=${PROTO_PATH}
+      --cpp_out=${GENERATED_DIR}
+      ${PROTO_FILES}
+  DEPENDS ${PROTO_FILES}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating cpp protobuf files for ${PROTO_NAME}.proto"
 )
 
 add_custom_command(
@@ -64,7 +65,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.cc
   COMMAND cp ${GENERATED_DIR}/signal.pb.cc ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.cc ${GENERATED_SRC_DIR}
-  DEPENDS ${GENERATED_FILES}
+  DEPENDS ${PROTO_FILES} ${GENERATED_FILES}
 )
 
 add_custom_command(
@@ -72,7 +73,7 @@ add_custom_command(
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${GENERATED_FILES}
+  DEPENDS ${PROTO_FILES} ${GENERATED_FILES}
 )
 
 add_custom_target(generate_protocpp ALL
@@ -81,6 +82,9 @@ add_custom_target(generate_protocpp ALL
   ${GENERATED_SRCS}
   ${GENERATED_HEADERS}
 )
+
+# Build protoncpp library
+set(PROTON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
 add_library(protoncpp
   src/proton.cpp
@@ -100,6 +104,7 @@ target_include_directories(protoncpp
   PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${PROTON_INCLUDE_DIR}>
       $<INSTALL_INTERFACE:include>
 )
 
@@ -117,3 +122,4 @@ install(TARGETS protoncpp
 
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)
+install(DIRECTORY ${PROTON_INCLUDE_DIR}/ DESTINATION include)

@@ -15,11 +15,11 @@
 
 using namespace proton;
 
-Udp4Transport::Udp4Transport(socket_endpoint target, socket_endpoint peer)
+Udp4Transport::Udp4Transport(socket_endpoint node, socket_endpoint peer)
 {
-  socket_endpoints_[SOCKET_TARGET] = target;
+  socket_endpoints_[SOCKET_NODE] = node;
   socket_endpoints_[SOCKET_PEER] = peer;
-  socket_[SOCKET_TARGET] = -1;
+  socket_[SOCKET_NODE] = -1;
   socket_[SOCKET_PEER] = -1;
 }
 
@@ -55,41 +55,36 @@ int Udp4Transport::initSocket(socket_endpoint s, bool server, bool blocking)
 
   if (server)
   {
-    std::cout << "Binding server " << std::hex << s.first << ":" << std::dec << s.second << std::endl;
     int one = 1;
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
     if (::bind(sock, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) != 0)
     {
-      std::cerr << "Bind error" << std::endl;
+      std::cerr << "Bind error: {" << s.first << ", " << s.second << "}" << std::endl;
       return -1;
     }
   }
   else
   {
-    std::cout << "Connecting to " << std::hex << s.first << ":" << std::dec << s.second << std::endl;
     if (::connect(sock, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) != 0)
     {
-      std::cout << "Connect error" << std::endl;
+      std::cout << "Connect error: {" << s.first << ", " << s.second << "}" << std::endl;
       return -1;
     }
   }
 
-  std::cout << "Init socket " << sock << std::endl;
-
   return sock;
 }
 
-
-bool Udp4Transport::connect()
+proton_status_e Udp4Transport::connect()
 {
-  if (connected_)
+  if (state_ != PROTON_TRANSPORT_DISCONNECTED)
   {
-    return true;
+    return PROTON_INVALID_STATE_TRANSITION_ERROR;
   }
 
-  if (socket_[SOCKET_TARGET] == -1)
+  if (socket_[SOCKET_NODE] == -1)
   {
-    socket_[SOCKET_TARGET] = initSocket(socket_endpoints_[SOCKET_TARGET], true, true);
+    socket_[SOCKET_NODE] = initSocket(socket_endpoints_[SOCKET_NODE], true, true);
   }
 
   if (socket_[SOCKET_PEER] == -1)
@@ -97,46 +92,58 @@ bool Udp4Transport::connect()
     socket_[SOCKET_PEER] = initSocket(socket_endpoints_[SOCKET_PEER], false, false);
   }
 
-  connected_ = socket_[SOCKET_TARGET] != -1 && socket_[SOCKET_PEER] != -1;
 
-  return connected_;
-}
-
-bool Udp4Transport::disconnect()
-{
-  return true;
-}
-
-size_t Udp4Transport::read(uint8_t * buf, size_t len)
-{
-  if (!connected_)
+  if (socket_[SOCKET_NODE] == -1 || socket_[SOCKET_PEER] == -1)
   {
-    return 0;
+    return PROTON_CONNECT_ERROR;
   }
 
-  int ret = ::recv(socket_[SOCKET_TARGET], buf, len, 0);
+  return PROTON_OK;
+}
+
+proton_status_e Udp4Transport::disconnect()
+{
+  return PROTON_OK;
+}
+
+proton_status_e Udp4Transport::read(uint8_t *buf, const size_t& len, size_t& bytes_read)
+{
+  if (!connected())
+  {
+    return PROTON_INVALID_STATE_ERROR;
+  }
+
+  if (buf == nullptr)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  ssize_t ret = ::recv(socket_[SOCKET_NODE], buf, len, 0);
 
   if (ret < 0)
   {
-    return 0;
+    return PROTON_READ_ERROR;
   }
 
-  return ret;
+  bytes_read = ret;
+  return PROTON_OK;
 }
 
-size_t Udp4Transport::write(const uint8_t * buf, size_t len)
+proton_status_e Udp4Transport::write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
 {
-  if (!connected_)
+  if (!connected())
   {
-    return 0;
+    return PROTON_INVALID_STATE_ERROR;
   }
 
-  int ret = send(socket_[SOCKET_PEER], buf, len, 0);
+  ssize_t ret = ::send(socket_[SOCKET_PEER], buf, len, 0);
 
-  if (ret < 0)
+  if (ret != len)
   {
-    return 0;
+    std::cout << "Write error" << std::endl;
+    return PROTON_WRITE_ERROR;
   }
 
-  return ret;
+  bytes_written = ret;
+  return PROTON_OK;
 }

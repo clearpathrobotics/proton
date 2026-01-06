@@ -17,15 +17,15 @@ using namespace proton;
 BundleHandle::BundleHandle(BundleConfig config) {
   name_ = config.name;
   id_ = config.id;
-  producer_ = config.producer;
-  consumer_ = config.consumer;
+  producers_ = config.producers;
+  consumers_ = config.consumers;
   bundle_ = std::make_shared<Bundle>();
   bundle_->set_id(id_);
   callback_ = nullptr;
   rx_count_ = rxps_ = 0;
   tx_count_ = txps_ = 0;
 
-  // Add each signal_ for this bundle
+  // Add each signal for this bundle
   for (auto s : config.signals) {
     addSignal(s);
   }
@@ -35,8 +35,6 @@ BundleHandle::BundleHandle()
 {
   name_ = "UNKNOWN";
   id_ = 0;
-  producer_ = "UNKNOWN";
-  consumer_ = "UNKNOWN";
   bundle_ = std::make_shared<Bundle>();
   bundle_->set_id(id_);
   callback_ = nullptr;
@@ -91,19 +89,19 @@ void BundleHandle::printBundleVerbose() {
 }
 
 void BundleHandle::addSignal(SignalConfig config) {
-  std::shared_ptr<Signal> sig;
+  Signal* signal;
   // Non-constant signals are added to the bundle
   if (!config.is_const)
   {
-    sig = std::shared_ptr<Signal>(bundle_->add_signals());
+    signal = bundle_->add_signals();
   }
   // Constant signals exist just to store their value
   else
   {
-    sig = std::make_shared<Signal>();
+    signal = new Signal();
   }
 
-  signals_.emplace(config.name, SignalHandle(config, name_, sig));
+  signals_.emplace(config.name, SignalHandle(config, name_, signal));
 }
 
 SignalHandle &BundleHandle::getSignal(const std::string &signal_name) {

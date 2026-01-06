@@ -27,15 +27,137 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from enum import StrEnum, auto
-from typing import List
+from ipaddress import ip_address
+from typing import List, Dict
+
+class BaseConfig:
+    class Define:
+        def __init__(self, name: str, value):
+            self.name = name
+            self.value = value
+
+        def __str__(self):
+            return self.name
+
+    class Enum:
+        def __init__(self, name: str, value: int=None):
+            self.name = name
+            self.value = value
+
+        def __str__(self):
+            return self.name
+
+    class Struct:
+        def __init__(self, name: str):
+            self.struct = name.lower()
+            self.typedef = f'{name}_t'.lower()
+
+        def __str__(self):
+            return self.struct
+
+    class Function:
+        def __init__(self, name: str):
+            self.name = name
+
+        def __str__(self):
+            return self.name
+
+    def __init__(self, prefix: List[str] = None):
+        self.prefix = prefix
+        self.defines: List[BaseConfig.Define] = []
+        self.enum_entries: List[BaseConfig.Enum] = []
+        self.structs: List[BaseConfig.Struct] = []
+        self.functions: List[BaseConfig.Function] = []
 
 
-class ProtonConfig:
+    def create_define(self, name: str, value=None, add_quotes=False, prefix: List[str]=None) -> Define:
+        n = ''
+        if prefix:
+            n = f'{prefix}__{name}'
+        else:
+            for p in self.prefix:
+                n += f'{p}__'
+            n += name
+
+        # Make booleans lowercase
+        if isinstance(value, bool):
+            value = str(value).lower()
+
+        if add_quotes:
+            v = f'"{value}"'
+        else:
+            v = value
+
+        define = BaseConfig.Define(n, v)
+        self.defines.append(define)
+        return define
+
+    def create_enum_entry(self, name: str=None, value: int=None, prefix: List[str]=None) -> Enum:
+        n = ''
+        if prefix:
+            n = prefix
+        else:
+            for i, p in enumerate(self.prefix):
+                if i < len(self.prefix) - 1:
+                    n += f'{p}__'
+                else:
+                    n += p
+        if name:
+            n += f'__{name}'
+
+        if value:
+            enum = BaseConfig.Enum(n, hex(value))
+        else:
+            enum = BaseConfig.Enum(n)
+        self.enum_entries.append(enum)
+        return enum
+
+    def create_struct(self, name: str=None, prefix: List[str]=None) -> Struct:
+        n = ''
+        if prefix:
+            n = prefix
+        else:
+            for i, p in enumerate(self.prefix):
+                if i < len(self.prefix) - 1:
+                    n += f'{p}_'
+                else:
+                    n += p
+        if name:
+            n += f'_{name}'
+
+        struct = BaseConfig.Struct(n)
+        self.structs.append(struct)
+        return struct
+
+    def create_function(self, name: str, prefix: List[str]=None) -> Function:
+        n = ''
+        if prefix:
+            for p in prefix:
+                n += f'{p}_'
+            n += name
+        else:
+            for p in self.prefix:
+                n += f'{p}_'
+            n += name
+        n = n.lower()
+        func = BaseConfig.Function(n)
+        self.functions.append(func)
+        return func
+
+
+class ProtonConfig(BaseConfig):
     # Top level keys
     NODES = "nodes"
+    CONNECTIONS = "connections"
     BUNDLES = "bundles"
 
-    class Signal:
+    # Prefixes
+    PROTON_PREFIX = "PROTON"
+
+    # Enums
+    PROTON_BUNDLE_ENUM = "PROTON__BUNDLE_e"
+
+    class Signal(BaseConfig):
         # Signal keys
         NAME = "name"
         TYPE = "type"
@@ -43,10 +165,10 @@ class ProtonConfig:
         CAPACITY = "capacity"
         VALUE = "value"
 
-        SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
-        LENGTH_SUFFIX = "__LENGTH"
-        CAPACITY_SUFFIX = "__CAPACITY"
-        VALUE_SUFFIX = "__DEFAULT_VALUE"
+        SIGNAL_PREFIX = "SIGNAL"
+        LENGTH_SUFFIX = "LENGTH"
+        CAPACITY_SUFFIX = "CAPACITY"
+        VALUE_SUFFIX = "DEFAULT_VALUE"
 
         # Signal types
         class SignalTypes(StrEnum):
@@ -90,9 +212,11 @@ class ProtonConfig:
             SignalTypes.LIST_BYTES: {}
         }
 
-        def __init__(self, bundle: str, signal: dict):
+        def __init__(self, bundle: str, signal: dict, prefix: List[str]=None):
             self.bundle: str = bundle
             self.name: str = signal[self.NAME]
+            super().__init__(prefix + [self.SIGNAL_PREFIX, self.name.upper()])
+
             self.type: ProtonConfig.Signal.SignalTypes = (
                 ProtonConfig.Signal.SignalTypes(signal[self.TYPE])
             )
@@ -151,15 +275,14 @@ class ProtonConfig:
                         f"{self.type} type signals must have a non-zero capacity"
                     )
 
-            self.signal_enum_name = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}'
-            self.capacity_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.CAPACITY_SUFFIX}'
-            self.length_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.LENGTH_SUFFIX}'
-            self.value_define = f'{self.SIGNAL_ENUM_PREFIX}{self.bundle.upper()}__{self.name.upper()}{self.VALUE_SUFFIX}'
-
             self.is_const = self.value is not None
 
             if not self.is_const:
                 self.value = self.DEFAULT_VALUES[self.type]
+
+            self.signal_enum_name = self.create_enum_entry()
+            self.capacity_define = self.create_define(self.CAPACITY_SUFFIX, self.capacity)
+            self.length_define = self.create_define(self.LENGTH_SUFFIX, self.length)
 
             self.c_value = None
 
@@ -209,136 +332,325 @@ class ProtonConfig:
                             list_def += f"{v}"
                     self.c_value = f"{{{list_def}}}"
 
+            self.value_define = self.create_define(self.VALUE_SUFFIX, self.c_value)
 
-    class Bundle:
+
+    class Bundle(BaseConfig):
         # Bundle keys
         NAME = "name"
         ID = "id"
-        PRODUCER = "producer"
-        CONSUMER = "consumer"
+        PRODUCERS = "producers"
+        CONSUMERS = "consumers"
         SIGNALS = "signals"
         BUNDLE_SUFFIX = "_bundle"
-        HANDLE_SUFFIX = "_handle"
-        BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE__"
-        BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS__"
-        BUNDLE_ID_PREFIX = "PROTON_BUNDLE_ID__"
+        BUNDLE_HANDLE_SUFFIX = "_bundle_handle"
+        HEARTBEAT_STRUCT_SUFFIX = "_heartbeat"
+        BUNDLE_PREFIX = "BUNDLE"
+        BUNDLE_STRUCT_PREFIX = "PROTON_BUNDLE"
+        BUNDLE_SIGNAL_ENUM_PREFIX = "PROTON_SIGNALS"
+        BUNDLE_ID_PREFIX = "PROTON_BUNDLE_ID"
         SIGNAL_HANDLES_SUFFIX = "_signal_handles"
-        INIT_FUNCTION_SUFFIX = "PROTON_BUNDLE_Init"
+        INIT_FUNCTION_SUFFIX = "Init"
         CALLBACK_PREFIX = "PROTON_BUNDLE_"
         CALLBACK_SUFFIX = "Callback"
-        DEFAULT_VALUE_SUFFIX = "__DEFAULT_VALUE"
+        DEFAULT_VALUE_SUFFIX = "DEFAULT_VALUE"
+        PRODUCERS_SUFFIX = "PRODUCERS"
+        CONSUMERS_SUFFIX = "CONSUMERS"
+        HEARTBEAT_BUNDLE_ID = "PROTON_HEARTBEAT_ID"
+        SIGNAL_SUFFIX = "SIGNAL"
+        STRUCT_SUFFIX = "STRUCT"
 
-        def __init__(self, bundle: dict):
+        HEARTBEAT_STRUCT = "proton_bundle_heartbeat_t"
+        HEARTBEAT_DEFAULT_VALUE = "PROTON_HEARTBEAT_BUNDLE_DEFAULT_VALUE"
+
+        def __init__(self, bundle: dict, prefix: List[str]=None):
             self.name = bundle[self.NAME]
+            super().__init__(prefix + [self.BUNDLE_PREFIX, self.name.upper()])
             self.id = bundle[self.ID]
-            self.producer = bundle[self.PRODUCER]
-            self.consumer = bundle[self.CONSUMER]
+            self.producers: List[str] = []
+            self.consumers: List[str] = []
+
+            if isinstance(bundle[self.PRODUCERS], str):
+                self.producers.append(bundle[self.PRODUCERS])
+            elif isinstance(bundle[self.PRODUCERS], List):
+                self.producers = bundle[self.PRODUCERS]
+            else:
+                raise RuntimeError(f"Invalid Producers format: {bundle[self.PRODUCERS]}")
+
+            if isinstance(bundle[self.CONSUMERS], str):
+                self.consumers.append(bundle[self.CONSUMERS])
+            elif isinstance(bundle[self.CONSUMERS], List):
+                self.consumers = bundle[self.CONSUMERS]
+            else:
+                raise RuntimeError(f"Invalid Consumers format: {bundle[self.CONSUMERS]}")
+
             self.signals: List[ProtonConfig.Signal] = []
             self.needs_init = False
 
-            self.bundle_enum_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name.upper()}'
-            self.internal_handle_variable_name = f'_{self.name}{self.HANDLE_SUFFIX}'
+            self.bundle_enum_name = self.create_enum_entry()
+            self.internal_handle_variable_name = f'_{self.name}{self.BUNDLE_HANDLE_SUFFIX}'
             self.signal_handles_variable_name = f'_{self.name}{self.SIGNAL_HANDLES_SUFFIX}'
-            self.struct_name = f'{self.BUNDLE_STRUCT_PREFIX}{self.name}'
+            self.struct = self.create_struct()
             self.bundle_variable_name = f'{self.name}{self.BUNDLE_SUFFIX}'
-            self.signals_enum_name = f'{self.BUNDLE_SIGNAL_ENUM_PREFIX}{self.name}'
-            self.signals_enum_count = f'{self.signals_enum_name.upper()}_COUNT'
-            self.init_function_name = f'{self.INIT_FUNCTION_SUFFIX}{self.name.title().replace('_', '')}'
-            self.callback_function_name = f'{self.CALLBACK_PREFIX}{self.name.title().replace('_', '')}{self.CALLBACK_SUFFIX}'
-            self.default_value_define = f'{self.bundle_enum_name}{self.DEFAULT_VALUE_SUFFIX}'
-            self.default_value = []
+            self.signals_enum_name = self.create_enum_entry(self.SIGNAL_SUFFIX)
+            self.signals_enum_count = f'{self.signals_enum_name.name}__COUNT'
+            self.init_function_name = self.create_function(self.INIT_FUNCTION_SUFFIX)
+            self.callback_function_name = self.create_function(self.CALLBACK_SUFFIX)
 
             try:
                 for signal in bundle[self.SIGNALS]:
-                    s = ProtonConfig.Signal(self.name, signal)
+                    s = ProtonConfig.Signal(self.name, signal, prefix=self.prefix)
                     self.signals.append(s)
                     if s.type == ProtonConfig.Signal.SignalTypes.LIST_STRING:
                         self.needs_init = True
             except KeyError:
                 pass
 
-    class Node:
+            self.default_value = "{"
+            for i, s in enumerate(self.signals):
+                if i < len(self.signals) - 1:
+                    self.default_value += f'{s.value_define.name}, '
+                else:
+                    self.default_value += f'{s.value_define.name}'
+            self.default_value += "}"
+            self.default_value_define = self.create_define(f'{self.DEFAULT_VALUE_SUFFIX}', self.default_value)
+
+            self.producers_define = self.create_define(self.PRODUCERS_SUFFIX, self.producers)
+            self.consumers_define = self.create_define(self.CONSUMERS_SUFFIX, self.consumers)
+
+    class Connection(BaseConfig):
+        # Connection keys
+        FIRST = "first"
+        SECOND = "second"
+
+        class Endpoint:
+            NODE = "node"
+            ID = "id"
+            def __init__(self, endpoint: dict):
+                self.node = endpoint[self.NODE]
+
+                try:
+                    self.id = endpoint[self.ID]
+                except KeyError:
+                    self.id = 0
+
+        def __init__(self, connection: dict):
+            self.first = self.Endpoint(connection[self.FIRST])
+            self.second = self.Endpoint(connection[self.SECOND])
+
+
+    class Node(BaseConfig):
         # Node keys
         NAME = "name"
-        TRANSPORT = "transport"
+        ENDPOINTS = "endpoints"
+        ID = "id"
         TYPE = "type"
         IP = "ip"
         PORT = "port"
         DEVICE = "device"
+        HEARTBEAT = "heartbeat"
 
-        # Transport types
-        UDP4 = "udp4"
-        SERIAL = "serial"
+        NODE_PREFIX = "NODE"
+        ID_SUFFIX = "ID"
+        NAME_SUFFIX = "NAME"
+        IP_SUFFIX = "IP"
+        PORT_SUFFIX = "PORT"
+        DEVICE_SUFFIX = "DEVICE"
+        DEFAULT_VALUE_SUFFIX = "DEFAULT_VALUE"
+        PEERS_SUFFIX = "PEERS"
+        PEER_SUFFIX = "PEER"
+        PEER_PREFIX = "PEER"
+        INIT_SUFFIX = "Init"
+        RECEIVE_SUFFIX = "Receive"
 
-        NODE_PREFIX = "PROTON_NODE__"
-        NAME_SUFFIX = "__NAME"
-        IP_SUFFIX = "__IP"
-        PORT_SUFFIX = "__PORT"
-        DEVICE_SUFFIX = "__DEVICE"
-
-        TRANSPORT_PREFIX = "PROTON_TRANSPORT__"
+        TRANSPORT_PREFIX = "TRANSPORT"
         TRANSPORT_CONNECT = "Connect"
         TRANSPORT_DISCONNECT = "Disconnect"
         TRANSPORT_READ = "Read"
-        TRANSPORT_Write = "Write"
+        TRANSPORT_WRITE = "Write"
 
-        MUTEX_PREFIX = "PROTON_MUTEX__"
+        HEARTBEAT_SUFFIX = "HEARTBEAT"
+
         MUTEX_LOCK = "Lock"
         MUTEX_UNLOCK = "Unlock"
 
-        def __init__(self, node: dict):
-            self.name = node[self.NAME]
-            transport = node[self.TRANSPORT]
-            self.type = transport[self.TYPE]
-            self.name_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.NAME_SUFFIX}'
-            self.node_variable_name = f'{self.name}_node'
-            self.transport_connect_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_CONNECT}'
-            self.transport_disconnect_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_DISCONNECT}'
-            self.transport_read_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_READ}'
-            self.transport_write_func = f'{self.TRANSPORT_PREFIX}{self.name.title()}{self.TRANSPORT_Write}'
-            self.mutex_lock_func = f'{self.MUTEX_PREFIX}{self.name.title()}{self.MUTEX_LOCK}'
-            self.mutex_unlock_func = f'{self.MUTEX_PREFIX}{self.name.title()}{self.MUTEX_UNLOCK}'
+        class Heartbeat(BaseConfig):
+            # Heartbeat keys
+            ENABLED = "enabled"
+            PERIOD = "period"
 
-            match self.type:
-                case self.UDP4:
-                    self.ip = transport[self.IP]
-                    self.port = transport[self.PORT]
-                    self.ip_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.IP_SUFFIX}'
-                    self.port_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.PORT_SUFFIX}'
-                case self.SERIAL:
-                    self.device = transport[self.DEVICE]
-                    self.device_define = f'{self.NODE_PREFIX}{self.name.upper()}{self.DEVICE_SUFFIX}'
+            # Prefixes
+            HEARTBEAT_PREFIX = "HEARTBEAT"
+
+            # Suffixes
+            ENABLED_SUFFIX = "ENABLED"
+            PERIOD_SUFFIX = "PERIOD"
+            DEFAULT_VALUE_SUFFIX = "DEFAULT_VALUE"
+
+            def __init__(self, heartbeat: dict, prefix: List[str]=None):
+                super().__init__(prefix + [self.HEARTBEAT_PREFIX])
+
+                self.enabled = False
+                self.period = 1000
+
+                try:
+                    if not isinstance(heartbeat[self.ENABLED], bool):
+                        raise RuntimeError(f"Invalid heartbeat enabled {heartbeat[self.ENABLED]}")
+                    self.enabled = heartbeat[self.ENABLED]
+                except KeyError:
+                    pass
+
+                try:
+                    if not isinstance(heartbeat[self.PERIOD], int) or heartbeat[self.PERIOD] <= 0:
+                        raise RuntimeError(f"Invalid heartbeat period {heartbeat[self.PERIOD]}")
+                    self.period = heartbeat[self.PERIOD]
+                except KeyError:
+                    pass
+
+                self.enabled_define = self.create_define(self.ENABLED_SUFFIX, self.enabled)
+                self.period_define = self.create_define(self.PERIOD_SUFFIX, self.period)
+                self.default_value_define = self.create_define(self.DEFAULT_VALUE_SUFFIX, f'{{{self.enabled_define}, {self.period_define}}}')
+
+        class Endpoint(BaseConfig):
+            # Endpoint keys
+            ID = "id"
+            TYPE = "type"
+            IP = "ip"
+            PORT = "port"
+            DEVICE = "device"
+
+            # Transport types
+            UDP4 = "udp4"
+            SERIAL = "serial"
+
+            # Prefixes
+            ENDPOINT_PREFIX = "ENDPOINT"
+
+            # Suffixes
+            ID_SUFFIX = "ID"
+            TYPE_SUFFIX = "TYPE"
+            IP_SUFFIX = "IP"
+            IPHL_SUFFIX = "IPHL"
+            IPNL_SUFFIX = "IPNL"
+            PORT_SUFFIX = "PORT"
+            DEVICE_SUFFIX = "DEVICE"
+
+            def __init__(self, endpoint: dict, prefix: List[str] =None):
+                try:
+                    self.id = endpoint[self.ID]
+                except KeyError:
+                    self.id = 0
+                super().__init__(prefix + [self.ENDPOINT_PREFIX, self.id])
+
+                self.type = endpoint[self.TYPE]
+
+                self.id_define = self.create_define(self.ID_SUFFIX, self.id)
+                self.type_define = self.create_define(self.TYPE_SUFFIX, self.type, add_quotes=True)
+
+                if self.type == self.UDP4:
+                    # Define IP
+                    self.ip = endpoint[self.IP]
+                    self.ip_define = self.create_define(self.IP_SUFFIX, self.ip, add_quotes=True)
+                    # Convert string IP to hostlong and netlong formats
+                    ip_split = self.ip.split(".")
+                    self.ip_hl = 0
+                    self.ip_nl = 0
+                    for i in range(0, 4):
+                        self.ip_hl |= int(ip_split[i]) << 8 * (3 - i)
+                        self.ip_nl |= int(ip_split[i]) << 8 * i
+
+                    self.ip_hl_define = self.create_define(self.IPHL_SUFFIX, hex(self.ip_hl))
+                    self.ip_nl_define = self.create_define(self.IPNL_SUFFIX, hex(self.ip_nl))
+
+                    # Define port
+                    self.port = endpoint[self.PORT]
+                    self.port_define = self.create_define(self.PORT_SUFFIX, self.port)
+                elif self.type == self.SERIAL:
+                    self.device = endpoint[self.DEVICE]
+                    self.device_define = self.create_define(self.DEVICE_SUFFIX, self.device, add_quotes=True)
+                else:
+                    raise RuntimeError(f"Invalid endpoint type {self.type}")
+
+        def __init__(self, node: dict, id: int, prefix: List[str]=None):
+            # Node name
+            self.name = node[self.NAME]
+            super().__init__(prefix + [self.NODE_PREFIX, self.name.upper()])
+
+            self.id = id
+
+            # Add each endpoint
+            self.endpoints: List[ProtonConfig.Node.Endpoint] = []
+            for endpoint in node[self.ENDPOINTS]:
+                self.endpoints.append(ProtonConfig.Node.Endpoint(endpoint, prefix=self.prefix))
+
+            # Set heartbeat configuration
+            try:
+                self.heartbeat = self.Heartbeat(node[self.HEARTBEAT], prefix=self.prefix)
+            except KeyError:
+                self.heartbeat = self.Heartbeat({}, prefix=self.prefix)
+
+            self.name_define = self.create_define(self.NAME_SUFFIX, self.name, add_quotes=True)
+            self.id_define = self.create_define(self.ID_SUFFIX, self.id)
+            self.peer_define = self.create_define(self.name.upper(), prefix=f'{ProtonConfig.PROTON_PREFIX}__{self.PEER_PREFIX}')
+            self.node_default_value_define = self.create_define(self.DEFAULT_VALUE_SUFFIX, f'PROTON_NODE_DEFAULT({self.name_define})')
+            self.peer_default_value_define = self.create_define(f'{self.PEER_SUFFIX}__{self.DEFAULT_VALUE_SUFFIX}', f'PROTON_PEER_DEFAULT({self.name_define})')
+
+            self.transport_connect_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_CONNECT}')
+            self.transport_disconnect_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_DISCONNECT}')
+            self.transport_read_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_READ}')
+            self.transport_write_func = self.create_function(f'{self.TRANSPORT_PREFIX}_{self.TRANSPORT_WRITE}')
+            self.transport_define = self.create_define(f'{self.TRANSPORT_PREFIX}__{self.DEFAULT_VALUE_SUFFIX}', f'{{PROTON_TRANSPORT_DISCONNECTED, {self.transport_connect_func}, {self.transport_disconnect_func}, {self.transport_read_func}, {self.transport_write_func}}}')
+
+            self.node_variable_name = f'{self.name}_node'
+            self.peer_variable_name = f'{self.name}_peers'
+
+            self.mutex_lock_func = self.create_function(self.MUTEX_LOCK)
+            self.mutex_unlock_func = self.create_function(self.MUTEX_UNLOCK)
+            self.peer_init_func = self.create_function(self.INIT_SUFFIX, prefix=[ProtonConfig.PROTON_PREFIX, ProtonConfig.Node.PEER_PREFIX, self.name])
+            self.receive_func = self.create_function(self.RECEIVE_SUFFIX)
+            self.buffer_variable_name = f'proton_{self.name.lower()}_buffer'
 
     def __init__(self, dictionary: dict):
         self.dictionary = dictionary
-        self.nodes: List[ProtonConfig.Node] = []
-        self.target_node: ProtonConfig.Node = None
+        self.nodes: Dict[str, ProtonConfig.Node] = {}
+        self.connections: List[ProtonConfig.Connection] = []
         self.bundles: List[ProtonConfig.Bundle] = []
+        self.heartbeats: List[ProtonConfig.Bundle] = []
         self.parse_nodes()
-        self.parse_messages()
+        self.parse_connections()
+        self.parse_bundles()
+        self.parse_heartbeats()
 
     def parse_nodes(self):
-        try:
-            nodes = self.dictionary[self.NODES]
-        except KeyError:
-            print("Nodes key missing")
-            return
-        for node in nodes:
-            self.nodes.append(ProtonConfig.Node(node))
+        nodes = self.dictionary[self.NODES]
+        for i, n in enumerate(nodes):
+            node = ProtonConfig.Node(n, hex(1 << i), prefix=[self.PROTON_PREFIX])
+            self.nodes[node.name] = node
 
-    def parse_messages(self):
-        try:
-            bundles = self.dictionary[self.BUNDLES]
-        except KeyError:
-            print("Bundles key missing")
-            return
+    def parse_connections(self):
+        connections = self.dictionary[self.CONNECTIONS]
+        for connection in connections:
+            self.connections.append(ProtonConfig.Connection(connection))
+
+    def parse_bundles(self):
+        bundles = self.dictionary[self.BUNDLES]
         for bundle in bundles:
             self.bundles.append(
-                ProtonConfig.Bundle(bundle)
+                ProtonConfig.Bundle(bundle, prefix=[self.PROTON_PREFIX])
             )
 
-    def set_target(self, target: str):
-        for n in self.nodes:
-            if n.name == target:
-                self.target_node = n
+    def parse_heartbeats(self):
+        for node in self.nodes.values():
+            if node.heartbeat.enabled:
+                heartbeat_bundle_dict: dict = {}
+                heartbeat_bundle_dict[ProtonConfig.Bundle.NAME] = f'{node.name}{ProtonConfig.Bundle.HEARTBEAT_STRUCT_SUFFIX}'
+                heartbeat_bundle_dict[ProtonConfig.Bundle.ID] = 0
+                heartbeat_bundle_dict[ProtonConfig.Bundle.PRODUCERS] = node.name
+                heartbeat_bundle_dict[ProtonConfig.Bundle.CONSUMERS] = [n.name for n in self.nodes.values() if n.name != node.name]
 
+                heartbeat_signal_dict: dict = {}
+                heartbeat_signal_dict[ProtonConfig.Signal.NAME] = 'heartbeat'
+                heartbeat_signal_dict[ProtonConfig.Signal.TYPE] = ProtonConfig.Signal.SignalTypes.UINT32
+
+                heartbeat_bundle_dict[ProtonConfig.Bundle.SIGNALS] = [heartbeat_signal_dict]
+                self.heartbeats.append(ProtonConfig.Bundle(heartbeat_bundle_dict, prefix=[ProtonConfig.PROTON_PREFIX]))

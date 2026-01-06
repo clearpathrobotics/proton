@@ -1,19 +1,32 @@
 nodes:
   - name: pc
-    transport:
-      type: udp4
-      ip: 127.0.0.1
-      port: 11416
+    heartbeat:
+      enabled: true
+      period: 1000
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11416
   - name: mcu
-    transport:
-      type: udp4
-      ip: 127.0.0.1
-      port: 11417
+    heartbeat:
+      enabled: true
+      period: 100
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11417
+
+connections:
+  - first: {node: mcu, id: 0}
+    second: {node: pc, id: 0}
+
 bundles:
   - name: log
     id: 0x100
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: level, type: uint32}
       - {name: name, type: string, capacity: 64}
@@ -23,8 +36,8 @@ bundles:
       - {name: line, type: uint32}
   - name: status
     id: 0x101
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: hardware_id, type: string, capacity: 10}
@@ -35,8 +48,8 @@ bundles:
       - {name: connection_uptime_nanosec, type: uint32}
   - name: power
     id: 0x102
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: shore_power_connected, type: int32, value: -1}
@@ -48,21 +61,21 @@ bundles:
       - {name: measured_currents, type: list_float, length: 13}
   - name: emergency_stop
     id: 0x103
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: data, type: bool}
   - name: temperature
     id: 0x104
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: temperatures, type: list_float, length: 18}
   - name: stop_status
     id: 0x105
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: stop_power_status, type: bool, value: True}
@@ -70,8 +83,8 @@ bundles:
       - {name: needs_reset, type: bool}
   - name: pinout_state
     id: 0x106
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
       - {name: rails, type: list_bool, length: 1}
@@ -80,63 +93,63 @@ bundles:
       - {name: output_periods, type: list_uint32, length: 7}
   - name: alerts
     id: 0x107
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: data, type: string, capacity: 86}
   - name: cmd_fans
     id: 0x200
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: fans, type: bytes, capacity: 8}
   - name: display_status
     id: 0x201
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: string1, type: string, capacity: 50}
       - {name: string2, type: string, capacity: 50}
   - name: cmd_lights
     id: 0x202
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: lights, type: list_bytes, length: 4, capacity: 3}
   - name: battery
     id: 0x203
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: percentage, type: float}
   - name: pinout_command
     id: 0x204
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: rails, type: list_bool, length: 1}
       - {name: outputs, type: list_uint32, length: 7}
   - name: cmd_shutdown
     id: 0x300
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
     signals:
       - {name: data, type: bool}
   - name: cmd_shutdown_response
     id: 0x301
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: success, type: bool}
       - {name: message, type: string, capacity: 64}
   - name: clear_needs_reset
     id: 0x302
-    producer: pc
-    consumer: mcu
+    producers: pc
+    consumers: mcu
   - name: clear_needs_reset_response
     id: 0x303
-    producer: mcu
-    consumer: pc
+    producers: mcu
+    consumers: pc
     signals:
       - {name: success, type: bool}
       - {name: message, type: string, capacity: 64}

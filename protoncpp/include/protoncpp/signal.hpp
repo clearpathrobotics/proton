@@ -55,7 +55,9 @@ namespace default_values {
 class SignalHandle {
 
 public:
-  SignalHandle(SignalConfig config, std::string bundle_name, std::shared_ptr<Signal> ptr);
+  SignalHandle(SignalConfig config, std::string bundle_name, Signal* signal);
+
+  ~SignalHandle();
 
   // Value getter and setter
   template <typename T> const T getValue() const;
@@ -68,7 +70,7 @@ public:
   Signal::SignalCase getType() { return type_; }
   uint32_t getLength() const { return length_; }
   uint32_t getCapacity() const { return capacity_; }
-  std::shared_ptr<Signal> getSignalPtr() { return signal_; }
+  Signal* getSignalPtr() { return signal_; }
 
 private:
   std::string name_;
@@ -76,7 +78,7 @@ private:
   Signal::SignalCase type_;
   uint32_t length_;
   uint32_t capacity_;
-  std::shared_ptr<Signal> signal_;
+  Signal* signal_;
   bool const_;
 };
 
