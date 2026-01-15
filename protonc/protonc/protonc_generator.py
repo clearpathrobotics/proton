@@ -321,45 +321,48 @@ class ProtonCGenerator:
             self.src_writer.write_function_start(
                 Function(b.init_function_name.name, [Variable('bundle', f'{typedef} *')], "proton_status_e")
             )
-            self.src_writer.write("proton_status_e status;")
-            self.src_writer.write_newline()
-            for s in b.signals:
-                if s.is_const:
-                    continue
-                match s.type:
-                    case (
-                        ProtonConfig.Signal.SignalTypes.DOUBLE
-                        | ProtonConfig.Signal.SignalTypes.FLOAT
-                        | ProtonConfig.Signal.SignalTypes.INT32
-                        | ProtonConfig.Signal.SignalTypes.INT64
-                        | ProtonConfig.Signal.SignalTypes.UINT32
-                        | ProtonConfig.Signal.SignalTypes.UINT64
-                        | ProtonConfig.Signal.SignalTypes.BOOL
-                    ):
-                        self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, &bundle->{s.name}, 0, 0);")
-                    case (
-                        ProtonConfig.Signal.SignalTypes.STRING
-                        | ProtonConfig.Signal.SignalTypes.BYTES
-                    ):
-                        self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, 0, {s.capacity_define});")
 
-                    case (
-                        ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
-                        | ProtonConfig.Signal.SignalTypes.LIST_FLOAT
-                        | ProtonConfig.Signal.SignalTypes.LIST_INT32
-                        | ProtonConfig.Signal.SignalTypes.LIST_INT64
-                        | ProtonConfig.Signal.SignalTypes.LIST_UINT32
-                        | ProtonConfig.Signal.SignalTypes.LIST_UINT64
-                        | ProtonConfig.Signal.SignalTypes.LIST_BOOL
-                    ):
-                        self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, {s.length_define}, 0);")
-
-                    case (ProtonConfig.Signal.SignalTypes.LIST_STRING | ProtonConfig.Signal.SignalTypes.LIST_BYTES):
-                        self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, {s.length_define}, {s.capacity_define});")
-                self.src_writer.write_if_statement_start('status != PROTON_OK')
-                self.src_writer.write("return status;", indent_level=2)
-                self.src_writer.write_if_statement_end()
+            if len(b.signals) > 0:
+                self.src_writer.write("proton_status_e status;")
                 self.src_writer.write_newline()
+                for s in b.signals:
+                    if s.is_const:
+                        continue
+                    match s.type:
+                        case (
+                            ProtonConfig.Signal.SignalTypes.DOUBLE
+                            | ProtonConfig.Signal.SignalTypes.FLOAT
+                            | ProtonConfig.Signal.SignalTypes.INT32
+                            | ProtonConfig.Signal.SignalTypes.INT64
+                            | ProtonConfig.Signal.SignalTypes.UINT32
+                            | ProtonConfig.Signal.SignalTypes.UINT64
+                            | ProtonConfig.Signal.SignalTypes.BOOL
+                        ):
+                            self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, &bundle->{s.name}, 0, 0);")
+                        case (
+                            ProtonConfig.Signal.SignalTypes.STRING
+                            | ProtonConfig.Signal.SignalTypes.BYTES
+                        ):
+                            self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, 0, {s.capacity_define});")
+
+                        case (
+                            ProtonConfig.Signal.SignalTypes.LIST_DOUBLE
+                            | ProtonConfig.Signal.SignalTypes.LIST_FLOAT
+                            | ProtonConfig.Signal.SignalTypes.LIST_INT32
+                            | ProtonConfig.Signal.SignalTypes.LIST_INT64
+                            | ProtonConfig.Signal.SignalTypes.LIST_UINT32
+                            | ProtonConfig.Signal.SignalTypes.LIST_UINT64
+                            | ProtonConfig.Signal.SignalTypes.LIST_BOOL
+                        ):
+                            self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, {s.length_define}, 0);")
+
+                        case (ProtonConfig.Signal.SignalTypes.LIST_STRING | ProtonConfig.Signal.SignalTypes.LIST_BYTES):
+                            self.src_writer.write(f"status = proton_init_signal(&{b.signal_handles_variable_name}[{s.signal_enum_name}], {self.SIGNAL_TAG_MAP[s.type]}, bundle->{s.name}, {s.length_define}, {s.capacity_define});")
+                    self.src_writer.write_if_statement_start('status != PROTON_OK')
+                    self.src_writer.write("return status;", indent_level=2)
+                    self.src_writer.write_if_statement_end()
+                    self.src_writer.write_newline()
+
             self.src_writer.write(
                 f"return {self.PROTON_INIT_BUNDLE}(&{b.internal_handle_variable_name}, "
                 f"{b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name}, "
@@ -493,7 +496,7 @@ class ProtonCGenerator:
 
 
             # Initialise variables
-            self.src_writer.write(f"{ProtonConfig.PROTON_BUNDLE_ENUM} id;")
+            self.src_writer.write("uint32_t id;")
             self.src_writer.write("proton_callback_t callback;")
             self.src_writer.write("proton_status_e status;")
             self.src_writer.write(f"proton_peer_t peer = node->peers[{n.peer_define}];")
@@ -564,7 +567,7 @@ class ProtonCGenerator:
             [
               Variable("buffer", "proton_buffer_t"),
               Variable("producer", "proton_producer_t"),
-              Variable("id", f"{ProtonConfig.PROTON_BUNDLE_ENUM} *"),
+              Variable("id", "uint32_t *"),
               Variable("length", "size_t")
             ],
             "proton_status_e",
@@ -813,6 +816,12 @@ class ProtonCGenerator:
                 )
         self.src_writer.write("break;", indent_level=3)
         self.src_writer.write_case_end()
+
+        self.src_writer.write_newline()
+        # Default case is invalid, return error
+        self.src_writer.write_case_default_start()
+        self.src_writer.write("return PROTON_ERROR;", indent_level=3)
+        self.src_writer.write_case_end()
         self.src_writer.write_switch_end()
 
         # Lock buffer
@@ -1020,6 +1029,7 @@ class ProtonCGenerator:
         )
 
         self.header_writer.write_header_guard_open()
+        self.header_writer.write_extern_c_open()
         self.header_writer.write_include("stdint.h")
         self.header_writer.write_include("stdbool.h")
         if generate_node:
@@ -1059,6 +1069,7 @@ class ProtonCGenerator:
             self.generate_peer_init_functions()
             self.generate_node_init_function()
 
+        self.header_writer.write_extern_c_close()
         self.header_writer.write_header_guard_close()
 
         self.header_writer.close_file()

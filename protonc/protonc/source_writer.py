@@ -90,6 +90,18 @@ class CWriter:
     def write_header_guard_close(self):
         self.write(f'#endif  // PROTONC__{self.header_guard}', indent_level=0)
 
+    def write_extern_c_open(self):
+        self.write('#ifdef __cplusplus', indent_level=0)
+        self.write('extern "C" {', indent_level=0)
+        self.write('#endif', indent_level=0)
+        self.write_newline()
+
+    def write_extern_c_close(self):
+        self.write('#ifdef __cplusplus', indent_level=0)
+        self.write('}', indent_level=0)
+        self.write('#endif', indent_level=0)
+        self.write_newline()
+
     def write_variable(self, variable: Variable, indent_level=0):
         if variable.const:
             var_string = f"const {variable.type} {variable.name}"
