@@ -83,7 +83,7 @@ typedef enum {
  * @param crc16 Output CRC16
  * @return proton_status_e return status
  */
-static proton_status_e proton_crc16(const uint8_t *data, uint16_t len, uint16_t *crc16) {
+static inline proton_status_e proton_crc16(const uint8_t *data, uint16_t len, uint16_t *crc16) {
   if (!data || !crc16)
   {
     return PROTON_NULL_PTR_ERROR;
@@ -111,7 +111,7 @@ static proton_status_e proton_crc16(const uint8_t *data, uint16_t len, uint16_t 
  * @param payload_len Payload length
  * @return proton_status_e return status
  */
-static proton_status_e proton_fill_frame_header(uint8_t *header, const uint16_t payload_len) {
+static inline proton_status_e proton_fill_frame_header(uint8_t *header, const uint16_t payload_len) {
   if (!header) {
     return PROTON_NULL_PTR_ERROR;
   }
@@ -132,7 +132,7 @@ static proton_status_e proton_fill_frame_header(uint8_t *header, const uint16_t 
  * @param crc Pointer to start of CRC16
  * @return proton_status_e return status
  */
-static proton_status_e proton_fill_crc16(const uint8_t *payload,
+static inline proton_status_e proton_fill_crc16(const uint8_t *payload,
                                   const uint16_t payload_len,
                                   uint8_t *crc) {
   if (!payload || !crc) {
@@ -159,7 +159,7 @@ static proton_status_e proton_fill_crc16(const uint8_t *payload,
  * @param frame_crc Received CRC16
  * @return proton_status_e return status
  */
-static proton_status_e proton_check_framed_payload(const uint8_t *payload,
+static inline proton_status_e proton_check_framed_payload(const uint8_t *payload,
                                             const uint16_t payload_len,
                                             const uint16_t frame_crc) {
   if (!payload)
@@ -186,7 +186,7 @@ static proton_status_e proton_check_framed_payload(const uint8_t *payload,
  * @param length Output length
  * @return proton_status_e return status
  */
-static proton_status_e proton_get_framed_payload_length(const uint8_t *framed_buf, uint16_t *length) {
+static inline proton_status_e proton_get_framed_payload_length(const uint8_t *framed_buf, uint16_t *length) {
   if (!framed_buf || !length)
   {
     return PROTON_NULL_PTR_ERROR;

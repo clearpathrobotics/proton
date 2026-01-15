@@ -589,7 +589,9 @@ void proton_print_signal(proton_Signal signal) {
       for (int i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t[");
         for (int j = 0; j < arg->capacity; j++) {
+          #ifdef PROTON_DEBUG
           uint8_t data = ((uint8_t(*)[arg->capacity])arg->data)[i][j];
+
           if (j == arg->capacity - 1) {
             if (i == arg->length - 1) {
               PROTON_PRINT("0x%x]\r\n", data);
@@ -599,6 +601,7 @@ void proton_print_signal(proton_Signal signal) {
           } else {
             PROTON_PRINT("0x%x, ", data);
           }
+          #endif
         }
       }
       PROTON_PRINT("\t\t}\r\n");

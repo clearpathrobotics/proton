@@ -138,7 +138,7 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
         return false;
       }
 
-      if (!pb_read(istream, (char *)arg->data, len))
+      if (!pb_read(istream, (pb_byte_t *)arg->data, len))
       {
         return false;
       }
@@ -189,7 +189,7 @@ bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
         return false;
       }
 
-      if (!pb_encode_string(ostream, string, strlen(string)))
+      if (!pb_encode_string(ostream, (pb_byte_t *)string, strlen(string)))
       {
         return false;
       }
@@ -362,7 +362,7 @@ bool proton_ListInt32s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
       arg->size = 0;
     }
 
-    if (!pb_decode_varint32(istream, value))
+    if (!pb_decode_varint32(istream, (uint32_t *)value))
     {
       return false;
     }
@@ -419,7 +419,7 @@ bool proton_ListInt64s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
       arg->size = 0;
     }
 
-    if (!pb_decode_varint(istream, value))
+    if (!pb_decode_varint(istream, (uint64_t *)value))
     {
       return false;
     }
@@ -435,7 +435,7 @@ bool proton_ListInt64s_callback(pb_istream_t *istream, pb_ostream_t *ostream, co
         {
           return false;
         }
-        if (!pb_encode_varint(ostream, ((int64_t *)arg->data)[i]))
+        if (!pb_encode_varint(ostream, ((uint64_t *)arg->data)[i]))
         {
           return false;
         }
@@ -657,7 +657,7 @@ bool proton_ListStrings_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
         arg->size = 0;
       }
 
-      if (!pb_read(istream, string, len))
+      if (!pb_read(istream, (pb_byte_t *)string, len))
       {
         return false;
       }
@@ -689,7 +689,7 @@ bool proton_ListStrings_callback(pb_istream_t *istream, pb_ostream_t *ostream, c
           return false;
         }
 
-        if (!pb_encode_string(ostream, string, strlen(string)))
+        if (!pb_encode_string(ostream, (pb_byte_t *)string, strlen(string)))
         {
           return false;
         }
