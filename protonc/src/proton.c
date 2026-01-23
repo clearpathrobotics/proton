@@ -391,7 +391,7 @@ void proton_print_bundle(proton_Bundle bundle) {
   PROTON_PRINT("Proton Bundle { \r\n");
   PROTON_PRINT("\tID: 0x%x\r\n", bundle.id);
   PROTON_PRINT("\tSignals { \r\n");
-  for (int i = 0; i < args->length; i++) {
+  for (size_t i = 0; i < args->length; i++) {
     proton_print_signal(((proton_signal_handle_t *)args->data)[i].signal);
   }
   PROTON_PRINT("\t}\r\n}\r\n");
@@ -457,7 +457,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.bytes_value) {
       arg = (proton_list_t *)signal.signal.bytes_value;
       PROTON_PRINT("\t\tbytes_value: [");
-      for (int i = 0; i < arg->capacity; i++) {
+      for (size_t i = 0; i < arg->capacity; i++) {
         PROTON_PRINT("0x%x", ((uint8_t *)arg->data)[i]);
         if (i != arg->capacity - 1) {
           PROTON_PRINT(", ");
@@ -474,7 +474,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_double_value.doubles) {
       arg = (proton_list_t *)signal.signal.list_double_value.doubles;
       PROTON_PRINT("\t\tlist_double_value: {\r\n");
-      for (int i = 0; i < arg->length; i++) {
+      for (size_t i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t%lf\r\n", ((double *)arg->data)[i]);
       }
       PROTON_PRINT("\t\t}\r\n");
@@ -488,7 +488,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_float_value.floats) {
       arg = (proton_list_t *)signal.signal.list_float_value.floats;
       PROTON_PRINT("\t\tlist_float_value: {\r\n");
-      for (int i = 0; i < arg->length; i++) {
+      for (size_t i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t%f\r\n", ((float *)arg->data)[i]);
       }
       PROTON_PRINT("\t\t}\r\n");
@@ -502,7 +502,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_int32_value.int32s) {
       arg = (proton_list_t *)signal.signal.list_int32_value.int32s;
       PROTON_PRINT("\t\tlist_int32_value: {\r\n");
-      for (int i = 0; i < arg->length; i++) {
+      for (size_t i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t%d\r\n", ((int32_t *)arg->data)[i]);
       }
       PROTON_PRINT("\t\t}\r\n");
@@ -516,7 +516,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_int64_value.int64s) {
       arg = (proton_list_t *)signal.signal.list_int64_value.int64s;
       PROTON_PRINT("\t\tlist_int64_value: {\r\n");
-      for (int i = 0; i < arg->length; i++) {
+      for (size_t i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t%ld\r\n", ((int64_t *)arg->data)[i]);
       }
       PROTON_PRINT("\t\t}\r\n");
@@ -530,7 +530,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_uint32_value.uint32s) {
       arg = (proton_list_t *)signal.signal.list_uint32_value.uint32s;
       PROTON_PRINT("\t\tlist_uint32_value: {\r\n");
-      for (int i = 0; i < arg->length; i++) {
+      for (size_t i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t%u\r\n", ((uint32_t *)arg->data)[i]);
       }
       PROTON_PRINT("\t\t}\r\n");
@@ -544,7 +544,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_uint64_value.uint64s) {
       arg = (proton_list_t *)signal.signal.list_uint64_value.uint64s;
       PROTON_PRINT("\t\tlist_uint64_value: {\r\n");
-      for (int i = 0; i < arg->length; i++) {
+      for (size_t i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t%lu\r\n", ((uint64_t *)arg->data)[i]);
       }
       PROTON_PRINT("\t\t}\r\n");
@@ -558,7 +558,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_bool_value.bools) {
       arg = (proton_list_t *)signal.signal.list_bool_value.bools;
       PROTON_PRINT("\t\tlist_bool_value: {\r\n");
-      for (int i = 0; i < arg->length; i++) {
+      for (size_t i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t%u\r\n", ((bool *)arg->data)[i]);
       }
       PROTON_PRINT("\t\t}\r\n");
@@ -572,7 +572,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_string_value.strings) {
       arg = (proton_list_t *)signal.signal.list_string_value.strings;
       PROTON_PRINT("\t\tlist_string_value: {\r\n");
-      for (int i = 0; i < arg->length; i += arg->capacity) {
+      for (size_t i = 0; i < arg->length; i += arg->capacity) {
         PROTON_PRINT("\t\t\t%s\r\n", (((char(*)[arg->capacity])arg->data)[i]));
       }
       PROTON_PRINT("\t\t}\r\n");
@@ -586,7 +586,7 @@ void proton_print_signal(proton_Signal signal) {
     if (signal.signal.list_bytes_value.bytes) {
       arg = (proton_list_t *)signal.signal.list_bytes_value.bytes;
       PROTON_PRINT("\t\tlist_bytes_value: {\r\n");
-      for (int i = 0; i < arg->length; i++) {
+      for (size_t i = 0; i < arg->length; i++) {
         PROTON_PRINT("\t\t\t[");
         for (int j = 0; j < arg->capacity; j++) {
           #ifdef PROTON_DEBUG
