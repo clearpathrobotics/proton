@@ -386,6 +386,7 @@ class ProtonConfig(BaseConfig):
 
             self.signals: List[ProtonConfig.Signal] = []
             self.needs_init = False
+            self.has_signals = False
 
             self.bundle_enum_name = self.create_enum_entry()
             self.internal_handle_variable_name = f'_{self.name}{self.BUNDLE_HANDLE_SUFFIX}'
@@ -405,6 +406,9 @@ class ProtonConfig(BaseConfig):
                         self.needs_init = True
             except KeyError:
                 pass
+
+            if len(self.signals) > 0:
+                self.has_signals = True
 
             self.default_value = "{"
             for i, s in enumerate(self.signals):
