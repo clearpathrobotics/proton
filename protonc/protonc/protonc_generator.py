@@ -140,6 +140,8 @@ class ProtonCGenerator:
         self.header_writer.write_newline()
         bundle_structs = []
         for b in self.config.bundles:
+            if not b.has_signals:
+                continue
             bundle_structs.append(Variable(f"{b.name}_bundle", b.struct.typedef))
             vars = []
             for s in b.signals:
@@ -167,6 +169,8 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Signal Enums", indent_level=0)
         self.header_writer.write_newline()
         for b in self.config.bundles + self.config.heartbeats:
+            if not b.has_signals:
+                continue
             e = [s.signal_enum_name.name for s in b.signals if not s.is_const]
             self.header_writer.write_enum(b.signals_enum_name.name, e, prefix_name=False)
             self.header_writer.write_newline()
@@ -176,8 +180,6 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Constant definitions", indent_level=0)
         self.header_writer.write_newline()
 
-
-
         for b in self.config.bundles + self.config.heartbeats:
             for i, s in enumerate(b.signals):
                 if s.length > 0:
@@ -185,7 +187,8 @@ class ProtonCGenerator:
                 if s.capacity > 0:
                     self.header_writer.write_define(f"{s.capacity_define} {s.capacity_define.value}")
                 self.header_writer.write_define(f"{s.value_define} {s.value_define.value}")
-            self.header_writer.write_define(f"{b.default_value_define} {b.default_value_define.value}")
+            if b.has_signals:
+                self.header_writer.write_define(f"{b.default_value_define} {b.default_value_define.value}")
 
             # OR all producer node IDs
             producers = "("
@@ -222,6 +225,8 @@ class ProtonCGenerator:
 
         bundles_defaults = "{"
         for i, b in enumerate(self.config.bundles + self.config.heartbeats):
+            if not b.has_signals:
+                continue
             if i < len(self.config.bundles + self.config.heartbeats) - 1:
                 bundles_defaults += f"{b.default_value_define}, "
             else:
@@ -267,6 +272,8 @@ class ProtonCGenerator:
         self.src_writer.write_comment("Internal Signals", indent_level=0)
         self.src_writer.write_newline()
         for b in self.config.bundles + self.config.heartbeats:
+            if not b.has_signals:
+                continue
             signals = Variable(
                 b.signal_handles_variable_name,
                 "static proton_signal_handle_t",
@@ -287,9 +294,14 @@ class ProtonCGenerator:
         self.header_writer.write_comment("Bundle Init Prototype", indent_level=0)
         self.header_writer.write_newline()
         for b in self.config.bundles:
-            self.header_writer.write_function_prototype(
-                Function(b.init_function_name.name, [Variable('bundle', f'{b.struct.typedef} *')], "proton_status_e")
-            )
+            if b.has_signals:
+                self.header_writer.write_function_prototype(
+                    Function(b.init_function_name.name, [Variable('bundle', f'{b.struct.typedef} *')], "proton_status_e")
+                )
+            else:
+                self.header_writer.write_function_prototype(
+                    Function(b.init_function_name.name, [], "proton_status_e")
+                )
 
         for h in self.config.heartbeats:
             self.header_writer.write_function_prototype(
@@ -318,9 +330,14 @@ class ProtonCGenerator:
         self.src_writer.write_comment("Bundle Init Functions", indent_level=0)
         self.src_writer.write_newline()
         def generate_function(self, b, typedef):
-            self.src_writer.write_function_start(
-                Function(b.init_function_name.name, [Variable('bundle', f'{typedef} *')], "proton_status_e")
-            )
+            if b.has_signals:
+                self.src_writer.write_function_start(
+                    Function(b.init_function_name.name, [Variable('bundle', f'{typedef} *')], "proton_status_e")
+                )
+            else:
+                self.src_writer.write_function_start(
+                    Function(b.init_function_name.name, [], "proton_status_e")
+                )
 
             if len(b.signals) > 0:
                 self.src_writer.write("proton_status_e status;")
@@ -363,12 +380,20 @@ class ProtonCGenerator:
                     self.src_writer.write_if_statement_end()
                     self.src_writer.write_newline()
 
-            self.src_writer.write(
-                f"return {self.PROTON_INIT_BUNDLE}(&{b.internal_handle_variable_name}, "
-                f"{b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name}, "
-                f"{b.signal_handles_variable_name}, {b.signals_enum_count}, "
-                f"{b.producers_define}, {b.consumers_define});"
-            )
+            if b.has_signals:
+                self.src_writer.write(
+                    f"return {self.PROTON_INIT_BUNDLE}(&{b.internal_handle_variable_name}, "
+                    f"{b.HEARTBEAT_BUNDLE_ID if b.id == 0 else b.bundle_enum_name}, "
+                    f"{b.signal_handles_variable_name}, {b.signals_enum_count}, "
+                    f"{b.producers_define}, {b.consumers_define});"
+                )
+            else:
+                self.src_writer.write(
+                    f"return {self.PROTON_INIT_BUNDLE}(&{b.internal_handle_variable_name}, "
+                    f"{b.bundle_enum_name}, "
+                    f"NULL, 0, "
+                    f"{b.producers_define}, {b.consumers_define});"
+                )
             self.src_writer.write_function_end()
 
         for b in self.config.bundles:
@@ -384,7 +409,10 @@ class ProtonCGenerator:
         self.src_writer.write("proton_status_e status;")
         for b in self.config.bundles + self.config.heartbeats:
             self.src_writer.write_newline()
-            self.src_writer.write(f"status = {b.init_function_name}(&bundles->{b.bundle_variable_name});")
+            if b.has_signals:
+                self.src_writer.write(f"status = {b.init_function_name}(&bundles->{b.bundle_variable_name});")
+            else:
+                self.src_writer.write(f"status = {b.init_function_name}();")
             self.src_writer.write_if_statement_start('status != PROTON_OK')
             self.src_writer.write("return status;", indent_level=2)
             self.src_writer.write_if_statement_end()

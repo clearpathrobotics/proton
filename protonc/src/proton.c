@@ -146,7 +146,25 @@ proton_status_e proton_init_bundle(proton_bundle_handle_t *handle,
                                    uint32_t signal_count,
                                    proton_producer_t producers,
                                    proton_consumer_t consumers) {
-  if (signal_handles && handle) {
+  if (handle == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  // No signals in bundle
+  if (signal_count == 0)
+  {
+    handle->signals.data = NULL;
+    handle->signals.length = 0;
+    handle->signals.size = 0;
+    handle->bundle.id = id;
+    handle->bundle.signals = NULL;
+    handle->producers = producers;
+    handle->consumers = consumers;
+    return PROTON_OK;
+  }
+  // Signals in bundle
+  else if (signal_handles != NULL) {
     handle->signals.data = signal_handles;
     handle->signals.length = signal_count;
     handle->signals.size = 0;
@@ -292,7 +310,7 @@ proton_status_e proton_decode_id(proton_buffer_t buffer, uint32_t *id) {
  * @return proton_status_e Status of the decoding
  */
 proton_status_e proton_decode(proton_bundle_handle_t *handle, proton_buffer_t buffer, size_t length) {
-  if (handle == NULL || handle->signals.data == NULL || buffer.data == NULL)
+  if (handle == NULL || buffer.data == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }

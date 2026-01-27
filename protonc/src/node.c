@@ -215,7 +215,7 @@ proton_status_e proton_spin_once(proton_node_t *node, const uint8_t peer) {
         // Receive bundle from read data
         if (peer_handle->receive(node, bytes_read) != PROTON_OK) {
           // Unlock atomic buffer
-          if (!peer_handle->atomic_buffer.unlock(node->context))
+          if (peer_handle->atomic_buffer.unlock(node->context) != PROTON_OK)
           {
             PROTON_PRINT("Mutex unlock error\r\n");
             return PROTON_MUTEX_ERROR;
