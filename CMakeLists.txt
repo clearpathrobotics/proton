@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.20)
 project(proton LANGUAGES C CXX VERSION 0.0.0)
 
 if(NOT CMAKE_CROSSCOMPILING)
