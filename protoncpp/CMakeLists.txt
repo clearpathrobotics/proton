@@ -95,7 +95,7 @@ add_library(protoncpp
   src/transport/udp4.cpp
   src/transport/serial.cpp
   ${GENERATED_SRCS}
-  ${GENERATED_HDRS}
+  ${GENERATED_HEADERS}
 )
 
 add_library(proton::protoncpp ALIAS protoncpp)
