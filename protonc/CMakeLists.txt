@@ -162,7 +162,6 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # Install
-
 if (PROTON_INSTALL)
   install(TARGETS protonc
       EXPORT ProtonTargets

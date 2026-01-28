@@ -112,14 +112,15 @@ target_link_libraries(protoncpp PRIVATE protobuf::libprotobuf)
 target_link_libraries(protoncpp PUBLIC yaml-cpp)
 
 # Install
+if (PROTON_INSTALL)
+  install(TARGETS protoncpp
+      EXPORT ProtonTargets
+      LIBRARY DESTINATION lib
+      ARCHIVE DESTINATION lib
+      RUNTIME DESTINATION bin
+  )
 
-install(TARGETS protoncpp
-    EXPORT ProtonTargets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-)
-
-install(DIRECTORY include/ DESTINATION include)
-install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)
-install(DIRECTORY ${PROTON_INCLUDE_DIR}/ DESTINATION include)
+  install(DIRECTORY include/ DESTINATION include)
+  install(DIRECTORY ${GENERATED_INC_DIR}/ DESTINATION include/protoncpp)
+  install(DIRECTORY ${PROTON_INCLUDE_DIR}/ DESTINATION include)
+endif()
