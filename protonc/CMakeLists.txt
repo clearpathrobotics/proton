@@ -162,19 +162,19 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # Install
+if (PROTON_INSTALL)
+  install(TARGETS protonc
+      EXPORT ProtonTargets
+      LIBRARY DESTINATION lib
+      ARCHIVE DESTINATION lib
+      RUNTIME DESTINATION bin
+  )
 
-# install(TARGETS protonc
-#     EXPORT ProtonTargets
-#     LIBRARY DESTINATION lib
-#     ARCHIVE DESTINATION lib
-#     RUNTIME DESTINATION bin
-# )
+  install(DIRECTORY
+          include/
+          DESTINATION include)
 
-# install(DIRECTORY
-#         include/
-#         DESTINATION include)
-
-# install(DIRECTORY
-#         ${GENERATED_INC_DIR}/
-#         DESTINATION include/protonc)
-
+  install(DIRECTORY
+          ${GENERATED_INC_DIR}/
+          DESTINATION include/protonc)
+endif()
