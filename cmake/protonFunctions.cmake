@@ -3,12 +3,17 @@ function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET G
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
   # Get the directory where this function is defined (proton/cmake)
-  # and derive paths relative to the proton package
   get_filename_component(PROTON_CMAKE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_FILE}" DIRECTORY)
-  get_filename_component(PROTON_ROOT_DIR "${PROTON_CMAKE_DIR}" DIRECTORY)
 
-  set(PROTONC_GENERATOR_SCRIPT "${PROTON_ROOT_DIR}/protonc/protonc/protonc_generator.py")
-  set(PROTONC_PYTHONPATH "${PROTON_ROOT_DIR}/protonc")
+  # When installed to lib/cmake/proton, the prefix is 4 levels up:
+  # <prefix>/lib/cmake/proton/protonFunctions.cmake
+  # We need to go to <prefix>/share/proton/protonc
+  get_filename_component(_prefix "${PROTON_CMAKE_DIR}" DIRECTORY)  # lib/cmake
+  get_filename_component(_prefix "${_prefix}" DIRECTORY)            # lib
+  get_filename_component(_prefix "${_prefix}" DIRECTORY)            # <prefix>
+
+  set(PROTONC_GENERATOR_SCRIPT "${_prefix}/share/proton/protonc/protonc_generator.py")
+  set(PROTONC_PYTHONPATH "${_prefix}/share/proton")
 
   # Add a custom command to execute the script
   add_custom_command(

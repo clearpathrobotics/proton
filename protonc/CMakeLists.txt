@@ -177,4 +177,11 @@ if (PROTON_INSTALL)
   install(DIRECTORY
           ${GENERATED_INC_DIR}/
           DESTINATION include/protonc)
+
+  # Install the protonc Python package so protonc_generator is available
+  install(DIRECTORY
+          ${CMAKE_CURRENT_SOURCE_DIR}/protonc/
+          DESTINATION share/proton/protonc
+          FILES_MATCHING PATTERN "*.py"
+  )
 endif()
