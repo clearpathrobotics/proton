@@ -36,12 +36,6 @@ configure_package_config_file(
     INSTALL_DESTINATION lib/cmake/proton
 )
 
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
-
 if (PROTON_INSTALL)
   install(
       EXPORT ProtonTargets
@@ -52,7 +46,6 @@ if (PROTON_INSTALL)
   install(
       FILES
           ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
-          ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
           ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
       DESTINATION lib/cmake/proton
   )
