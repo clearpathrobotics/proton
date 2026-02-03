@@ -38,7 +38,7 @@ configure_package_config_file(
 
 if (PROTON_INSTALL)
   install(
-      EXPORT protonTargets
+      EXPORT ProtonTargets
       NAMESPACE proton::
       DESTINATION lib/cmake/proton
   )
@@ -47,7 +47,6 @@ if (PROTON_INSTALL)
       FILES
           ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
           ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
-          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonTargets.cmake
       DESTINATION lib/cmake/proton
   )
 endif()
