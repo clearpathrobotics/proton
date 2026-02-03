@@ -86,7 +86,7 @@ add_custom_target(generate_protocpp ALL
 # Build protoncpp library
 set(PROTON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
-add_library(protoncpp
+add_library(protoncpp SHARED
   src/proton.cpp
   src/config.cpp
   src/signal.cpp
