@@ -2,6 +2,8 @@
 
 Proton communication protocol.
 
+Documentation is available [here](https://docs.clearpathrobotics.com/docs_proton/)
+
 ## Build steps
 
 Build all C/C++ code with:
