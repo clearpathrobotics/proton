@@ -8,7 +8,7 @@ function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET G
   get_filename_component(PROTON_ROOT_DIR "${PROTON_CMAKE_DIR}" DIRECTORY)
 
   set(PROTONC_GENERATOR_SCRIPT "${PROTON_ROOT_DIR}/protonc/protonc/protonc_generator.py")
-  set(PROTONC_PYTHONPATH "${PROTON_ROOT_DIR}/protonc")
+  set(PROTONC_PYTHONPATH "$ENV{PYTHONPATH}:${PROTON_ROOT_DIR}/protonc")
 
   # Add a custom command to execute the script
   add_custom_command(
