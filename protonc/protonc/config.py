@@ -299,9 +299,9 @@ class ProtonConfig(BaseConfig):
                     list_def = ""
                     for (i, v) in enumerate(self.value):
                         if i != len(self.value) - 1:
-                            list_def += f"{"true" if v else "false"}, "
+                            list_def += f"{'true' if v else 'false'}, "
                         else:
-                            list_def += f"{"true" if v else "false"}"
+                            list_def += f"{'true' if v else 'false'}"
                     self.c_value =f"{{{list_def}}}"
                 case (ProtonConfig.Signal.SignalTypes.LIST_STRING):
                     list_def = ""
