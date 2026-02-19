@@ -170,12 +170,12 @@ class CWriter:
         for i in range(0, len(enum)):
             if values is not None:
                 if prefix_name:
-                    self.write(f'{name.upper() + '__' + enum[i].upper()} = {hex(values[i])},', indent_level + 1)
+                    self.write(f'{name.upper() + "__" + enum[i].upper()} = {hex(values[i])},', indent_level + 1)
                 else:
                     self.write(f'{enum[i].upper()} = {hex(values[i])},', indent_level + 1)
             else:
                 if prefix_name:
-                    self.write(f'{name.upper() + '__' + enum[i].upper()},', indent_level + 1)
+                    self.write(f'{name.upper() + "__" + enum[i].upper()},', indent_level + 1)
                 else:
                     self.write(f'{enum[i].upper()},', indent_level + 1)
         if values is None:
