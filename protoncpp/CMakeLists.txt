@@ -78,7 +78,7 @@ add_custom_command(
   DEPENDS ${PROTO_FILES} ${GENERATED_FILES}
 )
 
-add_custom_target(generate_protocpp ALL
+add_custom_target(generate_protocpp
   DEPENDS
   ${GENERATED_FILES}
   ${GENERATED_SRCS}

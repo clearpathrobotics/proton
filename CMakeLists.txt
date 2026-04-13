@@ -20,8 +20,6 @@ if(NOT CMAKE_CROSSCOMPILING)
       pkg_search_module(Abseil absl)
     endif()
   endif()
-
-  message (WARNING "PROTOBUF_LIBRARIES ${PROTOBUF_LIBRARIES}")
 endif()
 
 option(PROTON_BUILD_PROTONC "Build protonc library" ON)
