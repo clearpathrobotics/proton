@@ -148,7 +148,7 @@ add_library(protonc
 )
 
 if (PROTON_DEBUG)
-  target_compile_definitions(protonc PRIVATE PROTON_DEBUG)
+  target_compile_definitions(protonc PUBLIC PROTON_DEBUG)
 endif()
 
 add_library(proton::protonc ALIAS protonc)

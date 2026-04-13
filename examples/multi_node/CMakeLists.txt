@@ -12,12 +12,12 @@ add_executable(multi_node_1_cpp
 )
 
 target_link_libraries(multi_node_1_cpp
-  PRIVATE
+  PUBLIC
   proton::protoncpp
 )
 
-target_compile_definitions(multi_node_1_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(multi_node_1_cpp PRIVATE -Wno-narrowing)
+target_compile_definitions(multi_node_1_cpp PUBLIC CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(multi_node_1_cpp PUBLIC -Wno-narrowing)
 
 ## Node 2
 
@@ -26,12 +26,12 @@ add_executable(multi_node_2_cpp
 )
 
 target_link_libraries(multi_node_2_cpp
-  PRIVATE
+  PUBLIC
   proton::protoncpp
 )
 
-target_compile_definitions(multi_node_2_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(multi_node_2_cpp PRIVATE -Wno-narrowing)
+target_compile_definitions(multi_node_2_cpp PUBLIC CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(multi_node_2_cpp PUBLIC -Wno-narrowing)
 
 ## Node 3
 
@@ -40,12 +40,12 @@ add_executable(multi_node_3_cpp
 )
 
 target_link_libraries(multi_node_3_cpp
-  PRIVATE
+  PUBLIC
   proton::protoncpp
 )
 
-target_compile_definitions(multi_node_3_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(multi_node_3_cpp PRIVATE -Wno-narrowing)
+target_compile_definitions(multi_node_3_cpp PUBLIC CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(multi_node_3_cpp PUBLIC -Wno-narrowing)
 
 # C Nodes
 
@@ -65,12 +65,12 @@ add_executable(multi_node_1_c
 )
 
 target_link_libraries(multi_node_1_c
-  PRIVATE
+  PUBLIC
   proton::protonc
 )
 
 target_include_directories(multi_node_1_c
-    PRIVATE
+    PUBLIC
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
@@ -93,12 +93,12 @@ add_executable(multi_node_2_c
 )
 
 target_link_libraries(multi_node_2_c
-  PRIVATE
+  PUBLIC
   proton::protonc
 )
 
 target_include_directories(multi_node_2_c
-    PRIVATE
+    PUBLIC
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
@@ -121,12 +121,12 @@ add_executable(multi_node_3_c
 )
 
 target_link_libraries(multi_node_3_c
-  PRIVATE
+  PUBLIC
   proton::protonc
 )
 
 target_include_directories(multi_node_3_c
-    PRIVATE
+    PUBLIC
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}

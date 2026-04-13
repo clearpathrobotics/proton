@@ -17,6 +17,7 @@
  */
 
 #include "protoncpp/bundle_manager.hpp"
+#include <mutex>
 
 #include <mutex>
 
