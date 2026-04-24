@@ -4,6 +4,22 @@ Proton communication protocol.
 
 Documentation is available [here](https://docs.clearpathrobotics.com/docs_proton/)
 
+## Requirements
+
+Proton has several external requirements for both code generation and runtime usage
+
+### C
+- `nanopb` (included): lightweight protobuf library and code generator for protonc
+
+### C++
+- `libboost-all-dev`: Specifically for `boost/asio.hpp`: an asynchronous serial input/output executor
+- `protobuf-compiler`: Used at both build-time (for generating code versions of .proto files), and as a general protobuf library for protoncpp
+- `libyaml-cpp-dev`: For parsing bundle config files during the code generation step.
+
+### Python
+- `protobuf`: pip package for `nanopb` code generator
+- `pyyaml`: yaml file parser
+
 ## Build steps
 
 Build all C/C++ code with:
@@ -13,6 +29,14 @@ mkdir build
 cd build
 cmake ..
 make
+```
+
+> **NOTE:** CMake does not check for Python packages. If you run into problems running the `nanopb` code generator, install the above Python dependencies in a `venv`
+
+```
+python3 -m venv venv
+. venv/bin/activate
+pip3 install protobuf pyyaml
 ```
 
 ## Run Examples

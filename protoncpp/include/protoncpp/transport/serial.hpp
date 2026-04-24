@@ -25,10 +25,11 @@
 #include <termios.h>
 #include <unistd.h>
 #include <iostream>
-#include <asio.hpp>
 #include <optional>
 #include <thread>
 #include <vector>
+
+#include <boost/asio.hpp>
 
 #include "protoncpp/transport/transport.hpp"
 
@@ -61,8 +62,8 @@ private:
   std::optional<std::vector<uint8_t>> buildPacket(const uint8_t *buf, const size_t& len);
 
   serial_device device;
-  asio::io_context io_context_;
-  asio::serial_port port_;
+  boost::asio::io_context io_context_;
+  boost::asio::serial_port port_;
   std::thread io_thread_;
 };
 
