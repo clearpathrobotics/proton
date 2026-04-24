@@ -18,6 +18,8 @@
 
 #include "protoncpp/bundle_manager.hpp"
 
+#include <mutex>
+
 using namespace proton;
 
 void BundleManager::addBundle(BundleConfig config) {
