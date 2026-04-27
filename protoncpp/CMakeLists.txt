@@ -10,6 +10,7 @@ endif()
 
 # YAML-CPP
 find_package(yaml-cpp REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system thread)
 
 # -------------------------------
 # Proto files

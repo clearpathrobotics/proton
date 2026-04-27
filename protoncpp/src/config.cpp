@@ -19,6 +19,7 @@
 #include "protoncpp/config.hpp"
 
 #include <iostream>
+#include <mutex>
 
 namespace YAML {
 
