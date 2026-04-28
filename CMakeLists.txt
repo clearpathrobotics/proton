@@ -13,11 +13,6 @@ if(NOT CMAKE_CROSSCOMPILING)
   find_package(Protobuf REQUIRED)
 
   if (Protobuf_VERSION VERSION_GREATER_EQUAL "4.22")
-    message(WARNING "PROTOBUF GREATER THAN")
-
-    #find_package(Protobuf REQUIRED)
-    message(WARNING "Protobuf_VERSION ${Protobuf_VERSION}")
-
     # Find Abseil separately - required for protobuf v4.22+
     find_package(absl CONFIG QUIET)
     if(NOT absl_FOUND)
