@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(proton LANGUAGES C CXX VERSION 0.0.0)
 
 if(NOT CMAKE_CROSSCOMPILING)
-  # Protobuf
-  # protobuf v4.22+ will fail to find Abseil, which is a required dependency.
+  # protobuf v*.23.0+ will fail to find Abseil, which is a required dependency.
   # Using pkg-config to find protobuf config information instead of direct find_package, to get correct depdendencies
   find_package(PkgConfig REQUIRED)
   if(PkgConfig_FOUND)
@@ -12,8 +11,7 @@ if(NOT CMAKE_CROSSCOMPILING)
 
   find_package(Protobuf REQUIRED)
 
-  if (Protobuf_VERSION VERSION_GREATER_EQUAL "4.22")
-    # Find Abseil separately - required for protobuf v4.22+
+  if (Protobuf_VERSION_MINOR GREATER_EQUAL 23)
     find_package(absl CONFIG QUIET)
     if(NOT absl_FOUND)
       message(WARNING "Abseil not found via CMake config, trying pkg-config")
