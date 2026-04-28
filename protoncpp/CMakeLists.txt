@@ -71,13 +71,14 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT ${GENERATED_HEADERS}
-  COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
+  COMMAND sed -i 's|"bundle.pb.h"|"${PROJECT_NAME}/bundle.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
+  COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
   DEPENDS ${PROTO_FILES} ${GENERATED_FILES}
 )
 
-add_custom_target(generate_protocpp ALL
+add_custom_target(generate_protocpp
   DEPENDS
   ${GENERATED_FILES}
   ${GENERATED_SRCS}
@@ -106,10 +107,16 @@ target_include_directories(protoncpp
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${PROTON_INCLUDE_DIR}>
+      ${PROTOBUF_INCLUDE_DIRS}
       $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(protoncpp PRIVATE protobuf::libprotobuf)
+target_link_libraries(protoncpp PUBLIC ${PROTOBUF_LIBRARIES})
+if(absl_FOUND)
+  target_link_libraries(protoncpp PUBLIC absl::strings absl::base)
+elseif(Abseil_FOUND)
+  target_link_libraries(protoncpp PUBLIC ${Abseil_LIBRARIES})
+endif()
 target_link_libraries(protoncpp PUBLIC yaml-cpp)
 
 # Install

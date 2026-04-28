@@ -12,12 +12,12 @@ add_executable(j100_pc_cpp
 )
 
 target_link_libraries(j100_pc_cpp
-  PRIVATE
+  PUBLIC
   proton::protoncpp
 )
 
-target_compile_definitions(j100_pc_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(j100_pc_cpp PRIVATE -Wno-narrowing)
+target_compile_definitions(j100_pc_cpp PUBLIC CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(j100_pc_cpp PUBLIC -Wno-narrowing)
 
 # C Nodes
 
@@ -37,12 +37,12 @@ add_executable(j100_mcu_c
 )
 
 target_link_libraries(j100_mcu_c
-  PRIVATE
+  PUBLIC
   proton::protonc
 )
 
 target_include_directories(j100_mcu_c
-    PRIVATE
+    PUBLIC
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}

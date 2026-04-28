@@ -12,12 +12,13 @@ add_executable(a300_pc_cpp
 )
 
 target_link_libraries(a300_pc_cpp
-  PRIVATE
+  PUBLIC
   proton::protoncpp
+  ${PROTOBUF_LIBRARIES}
 )
 
-target_compile_definitions(a300_pc_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
-target_compile_options(a300_pc_cpp PRIVATE -Wno-narrowing)
+target_compile_definitions(a300_pc_cpp PUBLIC CONFIG_FILE="${CONFIG_FILE}")
+target_compile_options(a300_pc_cpp PUBLIC -Wno-narrowing)
 
 # C Nodes
 
@@ -37,12 +38,12 @@ add_executable(a300_mcu_c
 )
 
 target_link_libraries(a300_mcu_c
-  PRIVATE
+  PUBLIC
   proton::protonc
 )
 
 target_include_directories(a300_mcu_c
-    PRIVATE
+    PUBLIC
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}

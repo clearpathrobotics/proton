@@ -22,12 +22,12 @@ add_executable(signal_test_c
   ${GENERATED_FOLDER}/proton__test_producer.c
 )
 
-target_link_libraries(signal_test_c PRIVATE
+target_link_libraries(signal_test_c PUBLIC
   GTest::gtest_main
   proton::protonc
 )
 
-target_include_directories(signal_test_c PRIVATE
+target_include_directories(signal_test_c PUBLIC
   ${GENERATED_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -39,12 +39,12 @@ add_executable(proton_test_c
   ${GENERATED_FOLDER}/proton__test_producer.c
 )
 
-target_link_libraries(proton_test_c PRIVATE
+target_link_libraries(proton_test_c PUBLIC
   GTest::gtest_main
   proton::protonc
 )
 
-target_include_directories(proton_test_c PRIVATE
+target_include_directories(proton_test_c PUBLIC
   ${GENERATED_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -53,15 +53,15 @@ target_include_directories(proton_test_c PRIVATE
 
 ## Signals
 add_executable(signal_test_cpp protoncpp/signal_test.cpp protoncpp/utils.cpp)
-target_include_directories(signal_test_cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(signal_test_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(signal_test_cpp GTest::gtest_main proton::protoncpp)
-target_compile_definitions(signal_test_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+target_compile_definitions(signal_test_cpp PUBLIC CONFIG_FILE="${CONFIG_FILE}")
 
 ## Bundles
 add_executable(bundle_test_cpp protoncpp/bundle_test.cpp protoncpp/utils.cpp)
-target_include_directories(bundle_test_cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(bundle_test_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(bundle_test_cpp GTest::gtest_main proton::protoncpp)
-target_compile_definitions(bundle_test_cpp PRIVATE CONFIG_FILE="${CONFIG_FILE}")
+target_compile_definitions(bundle_test_cpp PUBLIC CONFIG_FILE="${CONFIG_FILE}")
 
 include(GoogleTest)
 gtest_discover_tests(signal_test_c)
