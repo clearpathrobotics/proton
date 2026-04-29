@@ -216,10 +216,12 @@ void proton_bundle_print(PROTON__BUNDLE_e bundle)
 
 // Bundle Receive Function
 
+{% for node in nodes %}
+{% if node.name != target %}
 proton_status_e proton_node_pc_receive(proton_node_t * node, size_t length)
 {
   // Check that the node is not NULL
-  if (node == NULL || node->peers == NULL || node->peer_count <= PROTON__PEER__PC)
+  if (node == NULL || node->peers == NULL || node->peer_count < PROTON__PEER__COUNT)
   {
     return PROTON_NULL_PTR_ERROR;
   }
@@ -227,7 +229,7 @@ proton_status_e proton_node_pc_receive(proton_node_t * node, size_t length)
   uint32_t id;
   proton_callback_t callback;
   proton_status_e status;
-  proton_peer_t peer = node->peers[PROTON__PEER__PC];
+  proton_peer_t peer = node->peers[PROTON__PEER__{{ node.name | upper }}];
 
   // Check that peer mutex functions are not NULL
   if (peer.state == PROTON_NODE_UNCONFIGURED)
@@ -245,51 +247,19 @@ proton_status_e proton_node_pc_receive(proton_node_t * node, size_t length)
 
   switch (id)
   {
-    case PROTON__BUNDLE__CMD_FANS:
+    {% for bundle in bundles %}
+    {% if bundle.producers == node.name and bundle.consumers == target %}
+    case PROTON__BUNDLE__{{ bundle.name | upper }}
     {
-      callback = proton_bundle_cmd_fans_callback;
+      callback = proton_bundle_{{ bundle.name }}_callback;
       break;
     }
-
-    case PROTON__BUNDLE__DISPLAY_STATUS:
-    {
-      callback = proton_bundle_display_status_callback;
-      break;
-    }
-
-    case PROTON__BUNDLE__CMD_LIGHTS:
-    {
-      callback = proton_bundle_cmd_lights_callback;
-      break;
-    }
-
-    case PROTON__BUNDLE__BATTERY:
-    {
-      callback = proton_bundle_battery_callback;
-      break;
-    }
-
-    case PROTON__BUNDLE__PINOUT_COMMAND:
-    {
-      callback = proton_bundle_pinout_command_callback;
-      break;
-    }
-
-    case PROTON__BUNDLE__CMD_SHUTDOWN:
-    {
-      callback = proton_bundle_cmd_shutdown_callback;
-      break;
-    }
-
-    case PROTON__BUNDLE__CLEAR_NEEDS_RESET:
-    {
-      callback = proton_bundle_clear_needs_reset_callback;
-      break;
-    }
+    {% endif %}
+    {% endfor %}
 
     case PROTON_HEARTBEAT_ID:
     {
-      callback = proton_bundle_pc_heartbeat_callback;
+      callback = proton_bundle_{{node.name }}_heartbeat_callback;
       break;
     }
 
@@ -307,6 +277,8 @@ proton_status_e proton_node_pc_receive(proton_node_t * node, size_t length)
 
   return PROTON_OK;
 }
+{% endif %}
+{% endfor %}
 
 // Bundle Send Function
 
@@ -341,69 +313,19 @@ proton_status_e proton_bundle_send(proton_node_t * node, uint32_t id)
   // Find correct bundle handle
   switch (id)
   {
-    case PROTON__BUNDLE__LOG:
+    {% for bundle in bundles %}
+    {% if bundle.producers == target %}
+    case PROTON__BUNDLE__{{ bundle.name | upper }}:
     {
-      handle = &_log_bundle_handle;
+      handle = &_{{ bundle.name }}_bundle_handle;
       break;
     }
-
-    case PROTON__BUNDLE__STATUS:
-    {
-      handle = &_status_bundle_handle;
-      break;
-    }
-
-    case PROTON__BUNDLE__POWER:
-    {
-      handle = &_power_bundle_handle;
-      break;
-    }
-
-    case PROTON__BUNDLE__EMERGENCY_STOP:
-    {
-      handle = &_emergency_stop_bundle_handle;
-      break;
-    }
-
-    case PROTON__BUNDLE__TEMPERATURE:
-    {
-      handle = &_temperature_bundle_handle;
-      break;
-    }
-
-    case PROTON__BUNDLE__STOP_STATUS:
-    {
-      handle = &_stop_status_bundle_handle;
-      break;
-    }
-
-    case PROTON__BUNDLE__PINOUT_STATE:
-    {
-      handle = &_pinout_state_bundle_handle;
-      break;
-    }
-
-    case PROTON__BUNDLE__ALERTS:
-    {
-      handle = &_alerts_bundle_handle;
-      break;
-    }
-
-    case PROTON__BUNDLE__CMD_SHUTDOWN_RESPONSE:
-    {
-      handle = &_cmd_shutdown_response_bundle_handle;
-      break;
-    }
-
-    case PROTON__BUNDLE__CLEAR_NEEDS_RESET_RESPONSE:
-    {
-      handle = &_clear_needs_reset_response_bundle_handle;
-      break;
-    }
+    {% endif %}
+    {% endfor %}
 
     case PROTON_HEARTBEAT_ID:
     {
-      handle = &_mcu_heartbeat_bundle_handle;
+      handle = &_{{ target }}_heartbeat_bundle_handle;
       break;
     }
 
@@ -443,83 +365,58 @@ proton_status_e proton_bundle_send(proton_node_t * node, uint32_t id)
 }
 
 // Weak Consumer callbacks
-
-__attribute__((weak)) void proton_bundle_cmd_fans_callback(void * context)
+{% for bundle in bundles %}
+{% if bundle.consumers == target %}
+__attribute__((weak)) void proton_bundle_{{ bundle.name }}_callback(void * context)
 {
   (void)context;
 }
+{% endif %}
+{% endfor %}
 
-__attribute__((weak)) void proton_bundle_display_status_callback(void * context)
+{% for node in nodes %}
+{% if node.name != target and node.heartbeat.enabled %}
+__attribute__((weak)) void proton_bundle_{{ node.name }}_heartbeat_callback(void * context)
 {
   (void)context;
 }
-
-__attribute__((weak)) void proton_bundle_cmd_lights_callback(void * context)
-{
-  (void)context;
-}
-
-__attribute__((weak)) void proton_bundle_battery_callback(void * context)
-{
-  (void)context;
-}
-
-__attribute__((weak)) void proton_bundle_pinout_command_callback(void * context)
-{
-  (void)context;
-}
-
-__attribute__((weak)) void proton_bundle_cmd_shutdown_callback(void * context)
-{
-  (void)context;
-}
-
-__attribute__((weak)) void proton_bundle_clear_needs_reset_callback(void * context)
-{
-  (void)context;
-}
-
-__attribute__((weak)) void proton_bundle_pc_heartbeat_callback(void * context)
-{
-  (void)context;
-}
+{% endif %}
+{% endfor %}
 
 // Weak Mutex functions
 
-__attribute__((weak)) proton_status_e proton_node_pc_lock(void * context)
+{% for node in nodes %}
+{% for lock in ["lock", "unlock"]%}
+__attribute__((weak)) proton_status_e proton_node_{{ node.name }}_{{ lock }}(void * context)
 {
   (void)context;
-  return PROTON_OK;
+  return PROTON_OK
 }
-
-__attribute__((weak)) proton_status_e proton_node_pc_unlock(void * context)
-{
-  (void)context;
-  return PROTON_OK;
-}
-
-__attribute__((weak)) proton_status_e proton_node_mcu_lock(void * context)
-{
-  (void)context;
-  return PROTON_OK;
-}
-
-__attribute__((weak)) proton_status_e proton_node_mcu_unlock(void * context)
-{
-  (void)context;
-  return PROTON_OK;
-}
+{% endfor %}
+{% endfor %}
 
 // Peer Init Functions
-
-proton_status_e proton_peer_pc_init(proton_peer_t * peer, proton_buffer_t buffer)
+{% for node in nodes %}
+{% if node.name != target %}
+{% set node_name = "PROTON__NODE__" + node.name | upper + "__" %}
+proton_status_e proton_peer_{{ node.name }}_init(proton_peer_t * peer, proton_buffer_t buffer)
 {
-  return proton_init_peer(peer, PROTON__NODE__PC__ID, (proton_heartbeat_t)PROTON__NODE__PC__HEARTBEAT__DEFAULT_VALUE, (proton_transport_t)PROTON__NODE__PC__TRANSPORT__DEFAULT_VALUE, proton_node_pc_receive, proton_node_pc_lock, proton_node_pc_unlock, buffer);
+  return proton_init_peer(
+    peer,
+    {{ node_name }}ID,
+    (proton_heartbeat_t){{ node_name }}HEARTBEAT__DEFAULT_VALUE,
+    (proton_transport_t){{ node_name }}TRANSPORT__DEFAULT_VALUE,
+    proton_node_{{ node.name }}_receive,
+    proton_node_{{ node.name }}_lock,
+    proton_node_{{ node.name }}_unlock,
+    buffer
+  );
 }
+{% endif %}
+{% endfor %}
 
 // Proton Node Init
-
-proton_status_e proton_node_mcu_init(proton_node_t * node, proton_peer_t * peers, proton_buffer_t buffer, void * context)
+proton_status_e proton_node_{{ target }}_init(proton_node_t * node, proton_peer_t * peers, proton_buffer_t buffer, void * context)
 {
   // Check that the node is not NULL
   if (node == NULL || peers == NULL)
@@ -529,7 +426,16 @@ proton_status_e proton_node_mcu_init(proton_node_t * node, proton_peer_t * peers
 
   proton_status_e status;
 
-  status = proton_configure(node, (proton_heartbeat_t)PROTON__NODE__MCU__HEARTBEAT__DEFAULT_VALUE, proton_node_mcu_lock, proton_node_mcu_unlock, buffer, peers, PROTON__PEER__COUNT, context);
+  status = proton_configure(
+    node, 
+    (proton_heartbeat_t)PROTON__NODE__{{ target | upper }}__HEARTBEAT__DEFAULT_VALUE, 
+    proton_node_{{ target }}_lock, 
+    proton_node_{{ target }}_unlock, 
+    buffer, 
+    peers, 
+    PROTON__PEER__COUNT, 
+    context
+  );
   if (status != PROTON_OK)
   {
     return status;
@@ -537,4 +443,3 @@ proton_status_e proton_node_mcu_init(proton_node_t * node, proton_peer_t * peers
 
   return proton_activate(node);
 }
-
