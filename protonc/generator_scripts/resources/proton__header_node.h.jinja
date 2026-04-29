@@ -73,12 +73,14 @@ typedef enum PROTON__BUNDLE__{{ bundle_name }}__SIGNAL {
 {% endfor %}
 
 // Heartbeat signal enums
-{% for heartbeat in heartbeats %}
-{% set heartbeat_name = heartbeat.name | upper %}
+{% for node in nodes %}
+{% if node.heartbeat.enabled %}
+{% set heartbeat_name = node.name | upper %}
 typedef enum PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT_SIGNAL {
   PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT__SIGNAL__HEARTBEAT,
   PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT__SIGNAL__COUNT
 } PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT_SIGNAL_e;
+{% endif %}
 {% endfor %}
 
 // Constant definitions
@@ -104,15 +106,17 @@ typedef enum PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT_SIGNAL {
 
 {% endfor %}
 
-{% for heartbeat in heartbeats %}
+{% for node in nodes %}
+{% if node.heartbeat.enabled %}
 {% set heartbeat_name = heartbeat.name | upper %}
 #define PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT__SIGNAL__HEARTBEAT__DEFAULT_VALUE 0
 #define PROTON__BUNDLE__{{ heartbeat_name }}__HEARTBEAT__DEFAULT_VALUE {PROTON__BUNDLE__{{ heartbeat_name }}__SIGNAL__HEARTBEAT__DEFAULT_VALUE}
-#define PROTON__BUNDLE__{{ heartbeat_name }}__PRODUCERS(PROTON__NODE__{{ heartbeat.producers | upper }}__ID)
-#define PROTON__BUNDLE__{{ heartbeat_name }}__CONSUMERS(PROTON__NODE__{{ heartbeat.consumers | upper }}__ID)
+#define PROTON__BUNDLE__{{ heartbeat_name }}__PRODUCERS(PROTON__NODE__{{ node.producers | upper }}__ID)
+#define PROTON__BUNDLE__{{ heartbeat_name }}__CONSUMERS(PROTON__NODE__{{ node.consumers | upper }}__ID)
+{% endif %}
 {% endfor %}
 
-#define PROTON__BUNDLES__{{ target | upper }}__DEFAULT_VALUE { {% for bundle in bundles %}PROTON__BUNDLE__{{ bundle.name | upper }}__DEFAULT_VALUE, {% endfor %}{% for heartbeat in heartbeats %}PROTON__BUNDLE__{{ heartbeat.name | upper }}_HEARTBEAT__DEFAULT_VALUE{% if not loop.last %}, {% endif %} {% endfor %} }
+#define PROTON__BUNDLES__{{ target | upper }}__DEFAULT_VALUE { {% for bundle in bundles %}PROTON__BUNDLE__{{ bundle.name | upper }}__DEFAULT_VALUE, {% endfor %}{% for node in nodes %}{% if node.heartbeat.enabled %}PROTON__BUNDLE__{{ heartbeat.name | upper }}_HEARTBEAT__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endif %} {% endfor %} }
 
 // Bundle Structure Definitions
 {% for bundle in bundles %}
@@ -133,8 +137,10 @@ typedef struct proton_bundles_{{ target }} {
 {% for bundle in bundles %}
   proton_bundle_{{ bundle.name }}_t {{ bundle.name}}_bundle;
 {% endfor %}
-{% for heartbeat in heartbeats %}
-  proton_bundle_heartbeat_t {{ heartbeat.name }}_heartbeat_bundle;
+{% for node in nodes %}
+{% if node.heartbeat.enabled %}
+  proton_bundle_heartbeat_t {{ node.name }}_heartbeat_bundle;
+{% endif %}
 {% endfor %}
 } proton_bundles_{{ target }}_t;
 
@@ -142,8 +148,10 @@ typedef struct proton_bundles_{{ target }} {
 {% for bundle in bundles %}
 proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is defined %} proton_bundle_{{ bundle.name }}_t * bundle {% endif %});
 {% endfor %}
-{% for heartbeat in heartbeats %}
-proton_status_e proton_bundle_{{ heartbeat.name }}_heartbeat_init(proton_bundle_heartbeat_t * bundle);
+{% for node in nodes %}
+{% if node.heartbeat.enabled %}
+proton_status_e proton_bundle_{{ node.name }}_heartbeat_init(proton_bundle_heartbeat_t * bundle);
+{% endif %}
 {% endfor %}
 
 proton_status_e proton_bundles_{{ target }}_init(proton_bundles_{{ target }}_t * bundles);
@@ -187,8 +195,8 @@ proton_status_e proton_bundle_send(proton_node_t * node, uint32_t id);
 {% if bundle.consumers == target %}void proton_bundle_{{ bundle.name }}_callback(void * context);{% endif %}
 {% endfor %}
 
-{% for heartbeat in heartbeats %}
-{% if heartbeat.consumers == target %}void proton_heartbeat_{{ heartbeat.name }}_callback(void * context);{% endif %}
+{% for node in nodes %}
+{% if node.name != target %}void proton_bundle_{{ node.name }}_callback(void * context);{% endif %}
 {% endfor %}
 
 // Transport Prototypes

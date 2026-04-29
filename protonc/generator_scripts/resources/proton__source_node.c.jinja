@@ -23,16 +23,20 @@
 {% for bundle in bundles %}
 static proton_signal_handle_t _{{ bundle.name }}_signal_handles[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__COUNT];
 {% endfor %}
-{% for heartbeat in heartbeats %}
-static proton_signal_handle_t _{{ heartbeat.name }}_heartbeat_signal_handles[PROTON__BUNDLE__{{ heartbeat.name | upper }}_HEARTBEAT__SIGNAL__COUNT];
+{% for node in nodes %}
+{% if node.heartbeat.enabled %}
+static proton_signal_handle_t _{{ node.name }}_heartbeat_signal_handles[PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__SIGNAL__COUNT];
+{% endif %}
 {% endfor %}
 
 // Internal Bundles
 {% for bundle in bundles %}
 static proton_signal_handle_t _{{ bundle.name }}_signal_handle;
 {% endfor %}
-{% for heartbeat in heartbeats %}
-static proton_signal_handle_t _{{ heartbeat.name }}_heartbeat_signal_handle;
+{% for node in nodes %}
+{% if node.heartbeat.enabled %}
+static proton_signal_handle_t _{{ node.name }}_heartbeat_signal_handle;
+{% endif %}
 {% endfor %}
 
 // Bundle Init Functions
@@ -68,12 +72,15 @@ proton_status_e proton_bundles_{{ target }}_init(proton_bundles_{{ target }}_t *
   {
     return status;
   }
-  {% for heartbeat in heartbeats %}
-  status = proton_bundle_{{ heartbeat.name }}_heartbeat_init(&bundles->{{ heartbeat.name }}_heartbeat_bundle);
+  {% endfor %}
+  {% for node in nodes %}
+  {% if node.name != target and node.heartbeat.enabled %}
+  status = proton_bundle_{{ node.name }}_heartbeat_init(&bundles->{{ node.name }}_heartbeat_bundle);
   if (status != PROTON_OK)
   {
     return status;
   }
+  {% endif %}
   {% endfor %}
 
   return PROTON_OK;
@@ -427,13 +434,13 @@ proton_status_e proton_node_{{ target }}_init(proton_node_t * node, proton_peer_
   proton_status_e status;
 
   status = proton_configure(
-    node, 
-    (proton_heartbeat_t)PROTON__NODE__{{ target | upper }}__HEARTBEAT__DEFAULT_VALUE, 
-    proton_node_{{ target }}_lock, 
-    proton_node_{{ target }}_unlock, 
-    buffer, 
-    peers, 
-    PROTON__PEER__COUNT, 
+    node,
+    (proton_heartbeat_t)PROTON__NODE__{{ target | upper }}__HEARTBEAT__DEFAULT_VALUE,
+    proton_node_{{ target }}_lock,
+    proton_node_{{ target }}_unlock,
+    buffer,
+    peers,
+    PROTON__PEER__COUNT,
     context
   );
   if (status != PROTON_OK)
