@@ -35,20 +35,23 @@ extern "C" {
 #define PROTON__NODE__{{ node_name }}__NAME "{{ node.name }}"
 #define PROTON__NODE__{{ node_name }}__ID {{ node.id }}
 #define PROTON__NODE__{{ node_name }}__DEFAULT_VALUE PROTON_NODE_DEFAULT(PROTON__NODE__{{ node_name }}__NAME)
-#define PROTON__NODE__{{ node_name }}__HEARTBEAT__ENABLED {{ node.heartbeat_enabled }}
-#define PROTON__NODE__{{ node_name }}__HEARTBEAT__PERIOD {{ node.heartbeat_period }}
+#define PROTON__NODE__{{ node_name }}__HEARTBEAT__ENABLED {{ node.heartbeat.enabled }}
+#define PROTON__NODE__{{ node_name }}__HEARTBEAT__PERIOD {{ node.heartbeat.period }}
 #define PROTON__NODE__{{ node_name }}__HEARTBEAT__DEFAULT_VALUE {PROTON__NODE__{{ node_name }}__HEARTBEAT__ENABLED, PROTON__NODE__{{ node_name }}__HEARTBEAT__PERIOD}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__0__ID {{ node.endpoint_id }}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__0__TYPE {{ node.endpoint_type }}
-{% if node.endpoint_type == "udp4" %}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__0__IP "{{ node.endpoint_ip }}"
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__0__IPHL {{ '%#x' % node.endpoint_iphl }}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__0__IPNL {{ '%#x' % node.endpoint_ipnl }}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__0__PORT {{ node.endpoint_port }}
-{% elif node.endpoint_type == "serial" %}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__0__DEVICE "{{ node.endpoint_device }}"
+{% set node_ns = namespace(endpoint_count=0) %}
+{% for endpoint in node.endpoints %}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__ID {{ endpoint.id }}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__TYPE {{ endpoint.type }}
+{% if endpoint.type == "udp4" %}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__IP "{{ endpoint.ip }}"
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__IPHL {{ '%#x' % endpoint.iphl }}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__IPNL {{ '%#x' % endpoint.ipnl }}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__PORT {{ endpoint.port }}
+{% elif endpoint.type == "serial" %}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__DEVICE "{{ endpoint.device }}"
 {% endif %}
-
+{% set node_ns.endpoint_count = node_ns.endpoint_count + 1 %}
+{% endfor %}
 {% endfor %}
 
 // Bundle IDs
@@ -108,7 +111,7 @@ typedef enum PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT_SIGNAL {
 
 {% for node in nodes %}
 {% if node.heartbeat.enabled %}
-{% set heartbeat_name = heartbeat.name | upper %}
+{% set heartbeat_name = node.name | upper %}
 #define PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT__SIGNAL__HEARTBEAT__DEFAULT_VALUE 0
 #define PROTON__BUNDLE__{{ heartbeat_name }}__HEARTBEAT__DEFAULT_VALUE {PROTON__BUNDLE__{{ heartbeat_name }}__SIGNAL__HEARTBEAT__DEFAULT_VALUE}
 #define PROTON__BUNDLE__{{ heartbeat_name }}__PRODUCERS(PROTON__NODE__{{ node.producers | upper }}__ID)
@@ -116,7 +119,7 @@ typedef enum PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT_SIGNAL {
 {% endif %}
 {% endfor %}
 
-#define PROTON__BUNDLES__{{ target | upper }}__DEFAULT_VALUE { {% for bundle in bundles %}PROTON__BUNDLE__{{ bundle.name | upper }}__DEFAULT_VALUE, {% endfor %}{% for node in nodes %}{% if node.heartbeat.enabled %}PROTON__BUNDLE__{{ heartbeat.name | upper }}_HEARTBEAT__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endif %} {% endfor %} }
+#define PROTON__BUNDLES__{{ target | upper }}__DEFAULT_VALUE { {% for bundle in bundles %}PROTON__BUNDLE__{{ bundle.name | upper }}__DEFAULT_VALUE, {% endfor %}{% for node in nodes %}{% if node.heartbeat.enabled %}PROTON__BUNDLE__{{ node.heartbeat.name | upper }}_HEARTBEAT__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endif %} {% endfor %} }
 
 // Bundle Structure Definitions
 {% for bundle in bundles %}
