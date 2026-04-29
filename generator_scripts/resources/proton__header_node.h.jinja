@@ -28,29 +28,36 @@ extern "C" {
 #include "stdbool.h"
 #include "protonc/node.h"
 
+{% set node_ns = namespace(id=0) %}
 {% for node in nodes %}
 // {{ node.name }} Node Defines
 {% set node_name = node.name | upper %}
+{% set node_ns.id = node_ns.id + 1 %}
+{% set endpoint_ns = namespace(count=0) %}
 
 #define PROTON__NODE__{{ node_name }}__NAME "{{ node.name }}"
-#define PROTON__NODE__{{ node_name }}__ID {{ node.id }}
+#define PROTON__NODE__{{ node_name }}__ID {{ '%#x' % node_ns.id }}
+{% if node.name != target %}
+#define PROTON__NODE__{{ node_name }}__PEER__DEFAULT_VALUE PROTON_PEER_DEFAULT(PROTON__NODE__{{ node_name }}__NAME)
+#define PROTON__NODE__{{ node_name }}__TRANSPORT__DEFAULT_VALUE {PROTON_TRANSPORT_DISCONNECTED, proton_node_{{ node.name }}_transport_connect, proton_node_{{ node.name }}_transport_disconnect, proton_node_{{ node.name }}_transport_read, proton_node_{{ node.name }}_transport_write}
+{% else %}
 #define PROTON__NODE__{{ node_name }}__DEFAULT_VALUE PROTON_NODE_DEFAULT(PROTON__NODE__{{ node_name }}__NAME)
-#define PROTON__NODE__{{ node_name }}__HEARTBEAT__ENABLED {{ node.heartbeat.enabled }}
+{% endif %}
+#define PROTON__NODE__{{ node_name }}__HEARTBEAT__ENABLED {{ node.heartbeat.enabled | lower }}
 #define PROTON__NODE__{{ node_name }}__HEARTBEAT__PERIOD {{ node.heartbeat.period }}
 #define PROTON__NODE__{{ node_name }}__HEARTBEAT__DEFAULT_VALUE {PROTON__NODE__{{ node_name }}__HEARTBEAT__ENABLED, PROTON__NODE__{{ node_name }}__HEARTBEAT__PERIOD}
-{% set node_ns = namespace(endpoint_count=0) %}
 {% for endpoint in node.endpoints %}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__ID {{ endpoint.id }}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__TYPE {{ endpoint.type }}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__ID {{ endpoint.id }}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__TYPE "{{ endpoint.type }}"
 {% if endpoint.type == "udp4" %}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__IP "{{ endpoint.ip }}"
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__IPHL {{ '%#x' % endpoint.iphl }}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__IPNL {{ '%#x' % endpoint.ipnl }}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__PORT {{ endpoint.port }}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__IP "{{ endpoint.ip }}"
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__IPHL {{ '%#x' % endpoint.iphl }}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__IPNL {{ '%#x' % endpoint.ipnl }}
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__PORT {{ endpoint.port }}
 {% elif endpoint.type == "serial" %}
-#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ node_ns.endpoint_count }}__DEVICE "{{ endpoint.device }}"
+#define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__DEVICE "{{ endpoint.device }}"
 {% endif %}
-{% set node_ns.endpoint_count = node_ns.endpoint_count + 1 %}
+{% set endpoint_ns.count = endpoint_ns.count + 1 %}
 {% endfor %}
 {% endfor %}
 
@@ -68,9 +75,9 @@ typedef enum PROTON__BUNDLE {
 {% for bundle in bundles %}
 {% set bundle_name = bundle.name | upper %}
 typedef enum PROTON__BUNDLE__{{ bundle_name }}__SIGNAL {
-  {% for signal in bundle.signals %}
+{% for signal in bundle.signals %}
   PROTON__BUNDLE__{{ bundle_name }}__SIGNAL__{{ signal.name | upper }},
-  {% endfor %}
+{% endfor %}
 } PROTON__BUNDLE__{{ bundle_name }}__SIGNAL_e;
 
 {% endfor %}
@@ -89,20 +96,20 @@ typedef enum PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT_SIGNAL {
 // Constant definitions
 
 {% for bundle in bundles %}
-  {% set bundle_name = "PROTON__BUNDLE__" + bundle.name | upper %}
-  {% for signal in bundle.signals %}
-    {% set signal_name = signal.name | upper %}
-    {% if signal.is_repeated_type %}
-      {% if signal.type == "string" %}
+{% set bundle_name = "PROTON__BUNDLE__" + bundle.name | upper %}
+{% for signal in bundle.signals %}
+{% set signal_name = signal.name | upper %}
+{% if signal.is_repeated_type %}
+{% if signal.type == "string" %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE "{{ signal.default }}"
-      {% else %}
+{% else %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE {}
-      {% endif %}
+{% endif %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__CAPACITY {{ signal.capacity }}
-    {% else %}
+{% else %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE {{ signal.default }}
-    {% endif %}
-  {% endfor %}
+{% endif %}
+{% endfor %}
 #define {{ bundle_name }}__DEFAULT_VALUE { {% for signal in bundle.signals %}{{ bundle_name }}__SIGNAL__{{ signal.name | upper }}__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endfor %} }
 #define {{ bundle_name }}__PRODUCERS (PROTON__NODE__{{ bundle.producers | upper }}__ID)
 #define {{ bundle_name }}__CONSUMERS (PROTON__NODE__{{ bundle.consumers | upper }}__ID)
@@ -125,13 +132,13 @@ typedef enum PROTON__BUNDLE__{{ heartbeat_name }}_HEARTBEAT_SIGNAL {
 {% for bundle in bundles %}
 {% set struct_name = "proton_bundle_" + bundle.name %}
 typedef struct {{ struct_name }} {
-  {% for signal in bundle.signals %}
-    {% if signal.is_repeated_type %}
-  {% if signal.value is defined %}const {% endif %}{{ signal.internal_type }} {{ signal.name }}[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY];
-    {% else %}
-  {{ signal.internal_type }} {{ signal.name }};
-    {% endif %}
-  {% endfor %}
+{% for signal in bundle.signals %}
+{% if signal.is_repeated_type %}
+{% if signal.value is defined %}const {% endif %}{{ signal.internal_type }} {{ signal.name }}[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY];
+{% else %}
+{{ signal.internal_type }} {{ signal.name }};
+{% endif %}
+{% endfor %}
 } {{ struct_name }}_t;
 {% endfor %}
 
@@ -178,7 +185,7 @@ typedef enum PROTON__PEER {
 {% for node in nodes %}
 {% if node.name != target %}
   PROTON__PEER__{{ node.name | upper }} = {{ '%#x' % ns.peer_count }},
-  {% set ns.peer_count = ns.peer_count + 1 %}
+{% set ns.peer_count = ns.peer_count + 1 %}
 {% endif %}
 {% endfor %}
   PROTON__PEER__COUNT = {{ '%#x' % ns.peer_count }},
