@@ -53,6 +53,16 @@ INTERNAL_TYPE_MAP = {
     "list_bytes": "uint8_t",
 }
 
+"""Default values for particular types"""
+DEFAULT_VALUE_MAP = {
+    "double": "0.0f",
+    "float": "0.0f",
+    "int32": 0,
+    "int64": 0,
+    "uint32": 0,
+    "uint64": 0,
+    "bool": "false",
+}
 
 def load_config(config_path: str) -> dict:
     """Read and parse proton configs
@@ -80,7 +90,7 @@ def load_config(config_path: str) -> dict:
     return config
 
 
-def parse_node_endpoint_address(nodes: List[dict]):
+def set_node_endpoint_address(nodes: List[dict]):
     """Read node IP configuration and add IPNL and IPHL elements
     ARGS:
         nodes: "nodes" stanza in proton config
@@ -99,8 +109,28 @@ def parse_node_endpoint_address(nodes: List[dict]):
                 endpoint["ipnl"] = ip_nl
 
 
-def set_signal_repeated_types(bundles: List[dict]):
-    """Check signals to determine if they're a repeated type, as that affects code generation
+def set_heartbeat_producers_consumers(nodes: List[dict], connections: List[dict]):
+    """Determine which heartbeats go where
+    ARGS:
+        nodes: "nodes" stanza in proton config
+        connections: "connections" stanza in proton config
+    """
+
+    for node in nodes:
+        if node.get("heartbeat") is not None:
+            if node["heartbeat"]["enabled"]:
+                node["heartbeat"]["producers"] = node["name"]
+                for connection in connections:
+                    if node["heartbeat"].get("consumers") is None:
+                        node["heartbeat"]["consumers"] = []
+                    if connection["first"]["node"] == node["name"]:
+                        node["heartbeat"]["consumers"].append(connection["second"]["node"])
+                    if connection["second"]["node"] == node["name"]:
+                        node["heartbeat"]["consumers"].append(connection["first"]["node"])
+
+
+def set_signal_properties(bundles: List[dict]):
+    """Set properties for signals. Default values, repeated type lengths, constness
     ARGS:
         bundles: "bundles" stanza in proton config
     """
@@ -108,7 +138,20 @@ def set_signal_repeated_types(bundles: List[dict]):
         if "signals" in bundle:
             for signal in bundle["signals"]:
                 signal_type = signal["type"]
+
                 signal["is_repeated_type"] = signal_type.startswith("list_") or signal_type in ("string", "bytes")
+
+                if signal_type in INTERNAL_TYPE_MAP:
+                    signal["internal_type"] = INTERNAL_TYPE_MAP[signal_type]
+
+                signal["is_const"] = signal.get("value") is not None
+                if signal["is_const"]:
+                    # Special case for strings: they must have a capacity variable generated in the template,
+                    # Even if they're already defined as consts. The length is equal to the strlen + 1 for the nullchar in C
+                    if signal_type == "string" and "capacity" not in signal:
+                        signal["capacity"] = len(signal["value"]) + 1
+                elif signal_type in DEFAULT_VALUE_MAP:
+                    signal["value"] = DEFAULT_VALUE_MAP[signal_type]
 
 
 def generate_header(dest_path: Path, config: dict, name: str, target: str):
@@ -197,8 +240,9 @@ def main():
 
     # validate node config here
 
-    parse_node_endpoint_address(config["nodes"])
-    set_signal_repeated_types(config["bundles"])
+    set_node_endpoint_address(config["nodes"])
+    set_heartbeat_producers_consumers(config["nodes"], config["connections"])
+    set_signal_properties(config["bundles"])
 
     generate_header(dest_path, config, name, target)
     generate_source(dest_path, config, name, target)
