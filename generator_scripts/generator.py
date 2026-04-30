@@ -27,7 +27,11 @@ import sys
 from jinja2 import Template
 import yaml
 
-from normalize import set_heartbeat_producers_consumers, set_node_endpoint_address, set_signal_properties
+from normalize import (
+    set_heartbeat_producers_consumers,
+    set_node_endpoint_address,
+    set_signal_properties,
+)
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -52,10 +56,11 @@ def load_config(config_path: str) -> dict:
             f"YAML file {config_path} is attempting to create unsafe objects"
         ) from c
     # Check contents are a Dictionary
-    assert isinstance(config, dict), (
-        f"YAML file {config_path} is not a dictionary, is {type(config)}"
-    )
+    assert isinstance(
+        config, dict
+    ), f"YAML file {config_path} is not a dictionary, is {type(config)}"
     return config
+
 
 def generate_header(dest_path: Path, config: dict, name: str, target: str):
     """Generate protonc file according to template
@@ -71,7 +76,9 @@ def generate_header(dest_path: Path, config: dict, name: str, target: str):
 
     template = Template(template_content)
 
-    output = template.render(name=name, target=target, nodes=config["nodes"], bundles=config["bundles"])
+    output = template.render(
+        name=name, target=target, nodes=config["nodes"], bundles=config["bundles"]
+    )
 
     output_header = dest_path / f"proton__{name}_{target}.h"
 
@@ -93,7 +100,9 @@ def generate_source(dest_path: Path, config: dict, name: str, target: str):
 
     template = Template(template_content)
 
-    output = template.render(name=name, target=target, nodes=config["nodes"], bundles=config["bundles"])
+    output = template.render(
+        name=name, target=target, nodes=config["nodes"], bundles=config["bundles"]
+    )
 
     output_header = dest_path / f"proton__{name}_{target}.c"
 
@@ -125,11 +134,11 @@ def main():
     )
 
     parser.add_argument(
-      "-n",
-      "--node",
-      type=bool,
-      default=False,
-      help="Generate code for node and transport implementation",
+        "-n",
+        "--node",
+        type=bool,
+        default=False,
+        help="Generate code for node and transport implementation",
     )
 
     args = parser.parse_args()

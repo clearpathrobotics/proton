@@ -20,6 +20,7 @@ from typing import List
 
 from internal_types import INTERNAL_TYPE_MAP
 
+
 def validate_node_elements(node: dict):
     """Validate that required configuration elements are in place
     ARGS:
@@ -28,12 +29,9 @@ def validate_node_elements(node: dict):
 
     required_top_level_elements = {"name": str, "endpoints": List[dict]}
     required_endpoint_elements = {"id": str, "type": "str"}
-    required_endpoint_configs = {
-        "serial": ["ip", "port"],
-        "udp4": ["device"]
-    }
+    required_endpoint_configs = {"serial": ["ip", "port"], "udp4": ["device"]}
 
-    for (tl, tl_type) in required_top_level_elements.items():
+    for tl, tl_type in required_top_level_elements.items():
         if tl not in node:
             raise RuntimeError(f"Element {tl} not in {node}")
         if not isinstance(node[tl], tl_type):
@@ -44,15 +42,21 @@ def validate_node_elements(node: dict):
     for endpoint in endpoints:
         for ep in required_endpoint_elements:
             if ep not in endpoint:
-                raise RuntimeError(f"Endpoint element {ep} not in {node_name}/endpoints")
+                raise RuntimeError(
+                    f"Endpoint element {ep} not in {node_name}/endpoints"
+                )
 
         endpoint_type = endpoint["type"]
         if endpoint_type not in required_endpoint_configs:
-            raise RuntimeError(f"Endpoint type {endpoint_type} not in {required_endpoint_configs.keys()}")
+            raise RuntimeError(
+                f"Endpoint type {endpoint_type} not in {required_endpoint_configs.keys()}"
+            )
 
         for ep_c in required_endpoint_configs[endpoint_type]:
             if ep_c not in endpoint:
-                raise RuntimeError(f"Required endpoint element {ep_c} not found in {node_name}/{endpoint}")
+                raise RuntimeError(
+                    f"Required endpoint element {ep_c} not found in {node_name}/{endpoint}"
+                )
 
 
 def validate_signal_elements(signal: dict):

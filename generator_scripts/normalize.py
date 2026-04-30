@@ -22,6 +22,7 @@ from typing import List
 from config import validate_signal_elements
 from internal_types import DEFAULT_VALUE_MAP, INTERNAL_TYPE_MAP
 
+
 def normalize_node_heartbeats(nodes: List[dict]):
     """Normalize the configuration for whether or not heartbeats are present
     ARGS:
@@ -32,6 +33,7 @@ def normalize_node_heartbeats(nodes: List[dict]):
 
     for node in nodes:
         node.setdefault("heartbeat", default_heartbeat)
+
 
 def normalize_signals(bundle: dict):
     """Normalize signal configuration for optional node elements
@@ -96,7 +98,7 @@ def set_node_endpoint_address(nodes: List[dict]):
                 ip_split = endpoint["ip"].split(".")
                 ip_hl = 0
                 ip_nl = 0
-                for (i, octet) in enumerate(ip_split):
+                for i, octet in enumerate(ip_split):
                     ip_hl |= int(octet) << 8 * (3 - i)
                     ip_nl |= int(octet) << 8 * i
                 endpoint["iphl"] = ip_hl
@@ -118,9 +120,13 @@ def set_heartbeat_producers_consumers(nodes: List[dict], connections: List[dict]
                     if node["heartbeat"].get("consumers") is None:
                         node["heartbeat"]["consumers"] = []
                     if connection["first"]["node"] == node["name"]:
-                        node["heartbeat"]["consumers"].append(connection["second"]["node"])
+                        node["heartbeat"]["consumers"].append(
+                            connection["second"]["node"]
+                        )
                     if connection["second"]["node"] == node["name"]:
-                        node["heartbeat"]["consumers"].append(connection["first"]["node"])
+                        node["heartbeat"]["consumers"].append(
+                            connection["first"]["node"]
+                        )
 
 
 def set_signal_properties(bundles: List[dict]):
