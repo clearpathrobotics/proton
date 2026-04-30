@@ -72,33 +72,31 @@ proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is def
 {% endfor %}
 
 {% for node in nodes %}
-proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is defined %}proton_bundle_{{ bundle.name }}_t * bundle{% endif %})
+{% if node.heartbeat.enabled %}
+proton_status_e proton_bundle_{{ node.name }}_heartbeat_init(proton_bundle_heartbeat_t * bundle)
 {
-{% if bundle.signals is defined %}  proton_status_e status;{% endif %}
-{% for signal in bundle.signals %}
-{% if not signal.is_const %}
-  status = proton_init_signal(
-    &_{{ bundle.name }}_signal_handles[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}],
-    proton_Signal_{{ signal.type }}_value_tag,
-    {% if not signal.is_repeated_type %}&{%endif %}bundle->{{ signal.name }},
-    {% if signal.length is defined %}PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__LENGTH{% else %}0{% endif %},
-    {% if signal.capacity is defined %}PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY{% else %}0{% endif %}
+  proton_status_e status;
+  status = proton_init_bundle(
+    &_{{ node.name }}_heartbeat_signal_handles[PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__SIGNAL__HEARTBEAT],
+    proton_Signal_uint32_value_tag,
+    &bundle->heartbeat,
+    0,
+    0
   );
   if (status != PROTON_OK)
   {
     return status;
   }
-{% endif %}
-{% endfor %}
   return proton_init_bundle(
-    &_{{ bundle.name }}_bundle_handle,
-    PROTON__BUNDLE__{{ bundle.name | upper }},
-    {% if bundle.signals is defined %}_{{ bundle.name }}_signal_handles{% else %}NULL{% endif %},
-    {% if bundle.signals is defined %}PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__COUNT{% else %}0{% endif %},
-    PROTON__BUNDLE__{{ bundle.name | upper }}__PRODUCERS,
-    PROTON__BUNDLE__{{ bundle.name | upper }}__CONSUMERS
+    &_{{ node.name }}_heartbeat_bundle_handle,
+    PROTON_HEARTBEAT_ID,
+    _{{ node.name }}_heartbeat_signal_handles,
+    PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__SIGNAL__COUNT,
+    PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__PRODUCERS,
+    PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__CONSUMERS
   );
 }
+{% endif %}
 {% endfor %}
 
 proton_status_e proton_bundles_{{ target }}_init(proton_bundles_{{ target }}_t * bundles)
@@ -106,14 +104,14 @@ proton_status_e proton_bundles_{{ target }}_init(proton_bundles_{{ target }}_t *
   proton_status_e status;
 
 {% for bundle in bundles %}
-  status = proton_bundle_{{ bundle.name }}_init(&bundles->{{ bundle.name }}_bundle);
+  status = proton_bundle_{{ bundle.name }}_init({% if bundle.signals is defined %}&bundles->{{ bundle.name }}_bundle{% endif %});
   if (status != PROTON_OK)
   {
     return status;
   }
 {% endfor %}
 {% for node in nodes %}
-{% if node.name != target and node.heartbeat.enabled %}
+{% if node.heartbeat.enabled %}
   status = proton_bundle_{{ node.name }}_heartbeat_init(&bundles->{{ node.name }}_heartbeat_bundle);
   if (status != PROTON_OK)
   {
@@ -214,11 +212,13 @@ proton_status_e proton_bundle_encode(proton_buffer_t buffer, uint32_t id, size_t
   switch (id)
   {
 {% for bundle in bundles %}
+{% if target in bundle.producers %}
     case PROTON__BUNDLE__{{ bundle.name | upper}}:
     {
       handle = &_{{ bundle.name }}_bundle_handle;
       break;
     }
+{% endif %}
 {% endfor %}
 
     case PROTON_HEARTBEAT_ID:
@@ -294,8 +294,8 @@ proton_status_e proton_node_pc_receive(proton_node_t * node, size_t length)
   switch (id)
   {
 {% for bundle in bundles %}
-{% if bundle.producers == node.name and bundle.consumers == target %}
-    case PROTON__BUNDLE__{{ bundle.name | upper }}
+{% if target in bundle.consumers and node.name in bundle.producers %}
+    case PROTON__BUNDLE__{{ bundle.name | upper }}:
     {
       callback = proton_bundle_{{ bundle.name }}_callback;
       break;
@@ -360,7 +360,7 @@ proton_status_e proton_bundle_send(proton_node_t * node, uint32_t id)
   switch (id)
   {
 {% for bundle in bundles %}
-{% if bundle.producers == target %}
+{% if target in bundle.producers %}
     case PROTON__BUNDLE__{{ bundle.name | upper }}:
     {
       handle = &_{{ bundle.name }}_bundle_handle;
@@ -412,7 +412,7 @@ proton_status_e proton_bundle_send(proton_node_t * node, uint32_t id)
 
 // Weak Consumer callbacks
 {% for bundle in bundles %}
-{% if bundle.consumers == target %}
+{% if target in bundle.consumers %}
 __attribute__((weak)) void proton_bundle_{{ bundle.name }}_callback(void * context)
 {
   (void)context;
