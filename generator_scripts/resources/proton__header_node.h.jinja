@@ -103,10 +103,13 @@ typedef enum {{ heartbeat_name }} {
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__LENGTH {{ signal.length }}
 {% if signal.is_list_type %}
 {% if signal.type == "list_strings" %}
+{# This is a goofy case, where we have an array of string constants. Note the ""'s around the value, and the comma after each element except the last #}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %}"{{ val }}"{% if not loop.last %}, {% endif %}{% endfor %} }
 {% elif signal.type == "list_bytes" %}
+{# A similar goofy case, except instead of quotes, this is an array of arrays. Note the open {}'s #}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %} { {{ val }} }{% if not loop.last %}, {% endif %}{% endfor %} }
 {% else %}
+{# Any other list element type is simply an array of scalars #}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %}{{ val }}{% if not loop.last %}, {% endif %}{% endfor %} }
 {% endif %}
 {% elif signal.type == "string" %}

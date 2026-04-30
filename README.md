@@ -19,6 +19,7 @@ Proton has several external requirements for both code generation and runtime us
 ### Python
 - `protobuf`: pip package for `nanopb` code generator
 - `pyyaml`: yaml file parser
+- `jinja2`: code generator for signals and bundles
 
 ## Build steps
 
@@ -36,7 +37,7 @@ make
 ```
 python3 -m venv venv
 . venv/bin/activate
-pip3 install protobuf pyyaml
+pip3 install protobuf pyyaml jinja2
 ```
 
 ## Run Examples
