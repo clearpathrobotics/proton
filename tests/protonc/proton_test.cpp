@@ -18,11 +18,6 @@
 
 #include "protonc/utils.hpp"
 
-uint8_t read_buf[PROTON_MAX_MESSAGE_SIZE];
-uint8_t write_buf[PROTON_MAX_MESSAGE_SIZE];
-proton_buffer_t proton_producer_buffer = {write_buf, PROTON_MAX_MESSAGE_SIZE};
-proton_buffer_t proton_consumer_buffer = {read_buf, PROTON_MAX_MESSAGE_SIZE};
-
 TEST(PROTONC_Proton, InitBundle) {
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
@@ -41,6 +36,12 @@ TEST(PROTONC_Proton, InitBundle) {
 }
 
 TEST(PROTONC_Proton, InitNode) {
+  uint8_t write_buf[PROTON_MAX_MESSAGE_SIZE];
+  proton_buffer_t proton_producer_buffer = {write_buf, PROTON_MAX_MESSAGE_SIZE};
+
+  uint8_t read_buf[PROTON_MAX_MESSAGE_SIZE];
+  proton_buffer_t proton_consumer_buffer = {read_buf, PROTON_MAX_MESSAGE_SIZE};
+
   proton_node_t producer_node = PROTON__NODE__PRODUCER__DEFAULT_VALUE;
   proton_peer_t producer_peers[PROTON__PEER__COUNT] = {PROTON__NODE__CONSUMER__PEER__DEFAULT_VALUE};
 
@@ -67,6 +68,9 @@ TEST(PROTONC_Proton, InitNode) {
 }
 
 TEST(PROTONC_Proton, Encode) {
+  uint8_t write_buf[PROTON_MAX_MESSAGE_SIZE];
+  proton_buffer_t proton_producer_buffer = {write_buf, PROTON_MAX_MESSAGE_SIZE};
+
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT];
@@ -147,6 +151,9 @@ TEST(PROTONC_Proton, Encode) {
 }
 
 TEST(PROTONC_Proton, DecodeId) {
+  uint8_t write_buf[PROTON_MAX_MESSAGE_SIZE];
+  proton_buffer_t proton_producer_buffer = {write_buf, PROTON_MAX_MESSAGE_SIZE};
+
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handle;
@@ -174,6 +181,9 @@ TEST(PROTONC_Proton, DecodeId) {
 }
 
 TEST(PROTONC_Proton, Decode) {
+  uint8_t write_buf[PROTON_MAX_MESSAGE_SIZE];
+  proton_buffer_t proton_producer_buffer = {write_buf, PROTON_MAX_MESSAGE_SIZE};
+
   // Create structs to hold bundle and signals
   proton_bundle_handle_t test_bundle_handle;
   proton_signal_handle_t test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT];
