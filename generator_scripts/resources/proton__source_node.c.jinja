@@ -76,7 +76,7 @@ proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is def
 proton_status_e proton_bundle_{{ node.name }}_heartbeat_init(proton_bundle_heartbeat_t * bundle)
 {
   proton_status_e status;
-  status = proton_init_bundle(
+  status = proton_init_signal(
     &_{{ node.name }}_heartbeat_signal_handles[PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__SIGNAL__HEARTBEAT],
     proton_Signal_uint32_value_tag,
     &bundle->heartbeat,
@@ -146,7 +146,7 @@ proton_status_e proton_bundle_decode(proton_buffer_t buffer, proton_producer_t p
   switch (*id)
   {
 {% for bundle in bundles %}
-    case PROTON__BUNDLE__{{ bundle.name | upper}}:
+    case PROTON__BUNDLE__{{ bundle.name | upper }}:
     {
       handle = &_{{ bundle.name }}_bundle_handle;
       break;
@@ -158,11 +158,13 @@ proton_status_e proton_bundle_decode(proton_buffer_t buffer, proton_producer_t p
       switch (producer)
       {
 {% for node in nodes %}
+{% if node.heartbeat.enabled %}
         case PROTON__NODE__{{ node.name | upper }}__ID:
         {
           handle = &_{{ node.name }}_heartbeat_bundle_handle;
           break;
         }
+{% endif %}
 {% endfor %}
 
         default:
@@ -213,7 +215,7 @@ proton_status_e proton_bundle_encode(proton_buffer_t buffer, uint32_t id, size_t
   {
 {% for bundle in bundles %}
 {% if target in bundle.producers %}
-    case PROTON__BUNDLE__{{ bundle.name | upper}}:
+    case PROTON__BUNDLE__{{ bundle.name | upper }}:
     {
       handle = &_{{ bundle.name }}_bundle_handle;
       break;
@@ -221,12 +223,15 @@ proton_status_e proton_bundle_encode(proton_buffer_t buffer, uint32_t id, size_t
 {% endif %}
 {% endfor %}
 
+{% for node in nodes %}
+{% if node.name == target and node.heartbeat.enabled %}
     case PROTON_HEARTBEAT_ID:
     {
       handle = &_{{ target }}_heartbeat_bundle_handle;
       break;
     }
-
+{% endif %}
+{% endfor %}
     default:
     {
       return PROTON_ERROR;
@@ -244,7 +249,7 @@ void proton_bundle_print(PROTON__BUNDLE_e bundle)
   switch (bundle)
   {
 {% for bundle in bundles %}
-    case PROTON__BUNDLE__{{ bundle.name | upper}}:
+    case PROTON__BUNDLE__{{ bundle.name | upper }}:
     {
       handle = &_{{ bundle.name }}_bundle_handle;
       break;
@@ -303,12 +308,13 @@ proton_status_e proton_node_{{ node.name }}_receive(proton_node_t * node, size_t
 {% endif %}
 {% endfor %}
 
+{% if node.heartbeat.enabled %}
     case PROTON_HEARTBEAT_ID:
     {
-      callback = proton_bundle_{{node.name }}_heartbeat_callback;
+      callback = proton_bundle_{{ node.name }}_heartbeat_callback;
       break;
     }
-
+{% endif %}
     default:
     {
       return PROTON_ERROR;
@@ -369,12 +375,15 @@ proton_status_e proton_bundle_send(proton_node_t * node, uint32_t id)
 {% endif %}
 {% endfor %}
 
+{% for node in nodes %}
+{% if node.name == target and node.heartbeat.enabled %}
     case PROTON_HEARTBEAT_ID:
     {
       handle = &_{{ target }}_heartbeat_bundle_handle;
       break;
     }
-
+{% endif %}
+{% endfor %}
     default:
     {
       return PROTON_ERROR;

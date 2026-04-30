@@ -12,19 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# @author Roni Kreinin (roni.kreinin@rockwellautomation.com)
+# @author Tom Wallis (thomas.wallis@rockwellautomation.com)
 
 from setuptools import setup
 
-package_name = 'protonc'
+package_name = "protonc"
 
 setup(
     name=package_name,
     version="0.0.0",
     packages=[package_name],
+    install_requires=[
+      "jinja2 >= 3.1.2",
+    ],
     entry_points={
         "console_scripts": [
-            "protonc_generator=protonc.protonc_generator:main",
+            "protonc_generator=generator_scripts.generator:main",
         ],
     },
     python_requires=">=3.12",

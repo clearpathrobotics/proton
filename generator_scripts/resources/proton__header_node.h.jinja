@@ -105,21 +105,21 @@ typedef enum {{ heartbeat_name }} {
 {% if signal.type == "list_strings" %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %}"{{ val }}"{% if not loop.last %}, {% endif %}{% endfor %} }
 {% elif signal.type == "list_bytes" %}
-#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %}[{{ val }}]{% if not loop.last %}, {% endif %}{% endfor %} }
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %} { {{ val }} }{% if not loop.last %}, {% endif %}{% endfor %} }
 {% else %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %}{{ val }}{% if not loop.last %}, {% endif %}{% endfor %} }
 {% endif %}
 {% elif signal.type == "string" %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE "{{ signal.value }}"
 {% elif signal.type == "bytes" %}
-#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE [{{ signal.value }}]
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {{ signal.value }} }
 {% else %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE {{ signal.value | lower }}
 {% endif %}
 
 {% endfor %}
-#define {{ bundle_name }}__DEFAULT_VALUE { {% for signal in bundle.signals %}{{ bundle_name }}__SIGNAL__{{ signal.name | upper }}__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endfor %} }
 {% endif %}
+#define {{ bundle_name }}__DEFAULT_VALUE { {% for signal in bundle.signals %}{{ bundle_name }}__SIGNAL__{{ signal.name | upper }}__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endfor %} }
 #define {{ bundle_name }}__PRODUCERS ({% for producer in bundle.producers %}PROTON__NODE__{{ producer | upper }}__ID{% if not loop.last %} | {% endif %}{% endfor %})
 #define {{ bundle_name }}__CONSUMERS ({% for consumer in bundle.consumers %}PROTON__NODE__{{ consumer | upper }}__ID{% if not loop.last %} | {% endif %}{% endfor %})
 {% endfor %}
@@ -134,7 +134,7 @@ typedef enum {{ heartbeat_name }} {
 {% endif %}
 {% endfor %}
 
-#define PROTON__BUNDLES__{{ target | upper }}__DEFAULT_VALUE { {% for bundle in bundles %}PROTON__BUNDLE__{{ bundle.name | upper }}__DEFAULT_VALUE, {% endfor %}{% for node in nodes %}{% if node.heartbeat.enabled %}PROTON__BUNDLE__{{ node.heartbeat.name | upper }}_HEARTBEAT__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endif %} {% endfor %} }
+#define PROTON__BUNDLES__{{ target | upper }}__DEFAULT_VALUE { {% for bundle in bundles %}{% if bundle.signals is defined %}PROTON__BUNDLE__{{ bundle.name | upper }}__DEFAULT_VALUE, {% endif %}{% endfor %}{% for node in nodes %}{% if node.heartbeat.enabled %}PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endif %} {% endfor %} }
 
 // Bundle Structure Definitions
 {% for bundle in bundles %}

@@ -64,10 +64,6 @@ def normalize_signals(bundle: dict):
             if signal_type in DEFAULT_VALUE_MAP:
                 signal["value"] = DEFAULT_VALUE_MAP[signal_type]
 
-            if is_list_type and not isinstance(signal["value"], List):
-                val = signal["value"]
-                signal["value"] = list(val)
-
             if is_const:
                 # Special case for capacity types: they must have a capacity variable generated in the template,
                 # Even if they're already defined as consts. The length is equal to the strlen + 1 for the nullchar in C

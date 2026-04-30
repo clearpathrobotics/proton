@@ -20,9 +20,7 @@
 """Generator for protonc C code"""
 
 import argparse
-import os
 from pathlib import Path
-import sys
 
 from jinja2 import Template
 import yaml
@@ -31,9 +29,8 @@ from normalize import (
     set_heartbeat_producers_consumers,
     set_node_endpoint_address,
     set_signal_properties,
+    normalize_node_heartbeats,
 )
-
-sys.path.insert(0, os.path.dirname(__file__))
 
 
 def load_config(config_path: str) -> dict:
@@ -71,7 +68,9 @@ def generate_header(dest_path: Path, config: dict, name: str, target: str):
         target: name of peer on the proton network
     """
 
-    with open(f"resources/proton__header_node.h.jinja", "r") as f:
+    template_file = Path(__file__).parent / "resources" / "proton__header_node.h.jinja"
+
+    with open(template_file.resolve(), "r") as f:
         template_content = f.read()
 
     template = Template(template_content)
@@ -80,9 +79,10 @@ def generate_header(dest_path: Path, config: dict, name: str, target: str):
         name=name, target=target, nodes=config["nodes"], bundles=config["bundles"]
     )
 
-    output_header = dest_path / f"proton__{name}_{target}.h"
+    dest_path.mkdir(parents=True, exist_ok=True)
+    output_file = dest_path / f"proton__{name}_{target}.h"
 
-    with open(output_header, "w") as f:
+    with open(output_file, "w") as f:
         f.write(output)
 
 
@@ -94,8 +94,9 @@ def generate_source(dest_path: Path, config: dict, name: str, target: str):
         name: name of proton "project" (for lack of a better term)
         target: name of peer on the proton network
     """
+    template_file = Path(__file__).parent / "resources" / "proton__source_node.c.jinja"
 
-    with open(f"resources/proton__source_node.c.jinja", "r") as f:
+    with open(template_file.resolve(), "r") as f:
         template_content = f.read()
 
     template = Template(template_content)
@@ -104,9 +105,10 @@ def generate_source(dest_path: Path, config: dict, name: str, target: str):
         name=name, target=target, nodes=config["nodes"], bundles=config["bundles"]
     )
 
-    output_header = dest_path / f"proton__{name}_{target}.c"
+    dest_path.mkdir(parents=True, exist_ok=True)
+    output_file = dest_path / f"proton__{name}_{target}.c"
 
-    with open(output_header, "w") as f:
+    with open(output_file, "w") as f:
         f.write(output)
 
 
@@ -153,6 +155,7 @@ def main():
     # validate node config here
 
     set_node_endpoint_address(config["nodes"])
+    normalize_node_heartbeats(config["nodes"])
     set_heartbeat_producers_consumers(config["nodes"], config["connections"])
     set_signal_properties(config["bundles"])
 
