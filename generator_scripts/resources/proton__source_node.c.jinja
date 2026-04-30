@@ -51,8 +51,8 @@ proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is def
     &_{{ bundle.name }}_signal_handles[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}],
     proton_Signal_{{ signal.type }}_value_tag,
     {% if not signal.is_repeated_type %}&{%endif %}bundle->{{ signal.name }},
-    {% if signal.length is defined %}PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__LENGTH{% else %}0{% endif %},
-    {% if signal.capacity is defined %}PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY{% else %}0{% endif %}
+    PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__LENGTH,
+    PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY
   );
   if (status != PROTON_OK)
   {

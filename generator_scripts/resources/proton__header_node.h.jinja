@@ -99,17 +99,24 @@ typedef enum {{ heartbeat_name }} {
 {% if bundle.signals is defined %}
 {% for signal in bundle.signals %}
 {% set signal_name = signal.name | upper %}
-{% if signal.is_repeated_type %}
-{% if signal.capacity is defined %}#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__CAPACITY {{ signal.capacity }}{% endif %}
-{% if signal.length is defined %}#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__LENGTH {{ signal.length }}{% endif %}
-{% if signal.type == "string" %}
-#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE "{{ signal.value }}"
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__CAPACITY {{ signal.capacity }}
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__LENGTH {{ signal.length }}
+{% if signal.is_list_type %}
+{% if signal.type == "list_strings" %}
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %}"{{ val }}"{% if not loop.last %}, {% endif %}{% endfor %} }
+{% elif signal.type == "list_bytes" %}
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %}[{{ val }}]{% if not loop.last %}, {% endif %}{% endfor %} }
 {% else %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {% for val in signal.value %}{{ val }}{% if not loop.last %}, {% endif %}{% endfor %} }
 {% endif %}
+{% elif signal.type == "string" %}
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE "{{ signal.value }}"
+{% elif signal.type == "bytes" %}
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE [{{ signal.value }}]
 {% else %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE {{ signal.value | lower }}
 {% endif %}
+
 {% endfor %}
 #define {{ bundle_name }}__DEFAULT_VALUE { {% for signal in bundle.signals %}{{ bundle_name }}__SIGNAL__{{ signal.name | upper }}__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endfor %} }
 {% endif %}
@@ -136,7 +143,7 @@ typedef enum {{ heartbeat_name }} {
 typedef struct {{ struct_name }} {
 {% for signal in bundle.signals %}
 {% if signal.is_repeated_type %}
-  {% if signal.is_const %}const {% endif %}{{ signal.internal_type }} {{ signal.name }}{% if signal.length is defined %}[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__LENGTH]{% endif %}{% if signal.capacity is defined %}[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY]{% endif %};
+  {% if signal.is_const %}const {% endif %}{{ signal.internal_type }} {{ signal.name }}{% if signal.length > 0 %}[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__LENGTH]{% endif %}{% if signal.capacity > 0 %}[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY]{% endif %};
 {% else %}
   {% if signal.is_const %}const {% endif %}{{ signal.internal_type }} {{ signal.name }};
 {% endif %}
