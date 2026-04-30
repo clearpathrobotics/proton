@@ -148,8 +148,13 @@ def set_signal_properties(bundles: List[dict]):
                 if signal["is_const"]:
                     # Special case for strings: they must have a capacity variable generated in the template,
                     # Even if they're already defined as consts. The length is equal to the strlen + 1 for the nullchar in C
-                    if signal_type == "string" and "capacity" not in signal:
-                        signal["capacity"] = len(signal["value"]) + 1
+                    if signal_type == "string":
+                        if "capacity" not in signal:
+                            signal["capacity"] = len(signal["value"]) + 1
+                    elif signal["is_repeated_type"]:
+                        # Special case for const repeated signals that aren't strings:
+                        # the config doesn't contain the length field
+                        signal["length"] = len(signal["value"])
                 elif signal_type in DEFAULT_VALUE_MAP:
                     signal["value"] = DEFAULT_VALUE_MAP[signal_type]
 
