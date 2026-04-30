@@ -264,7 +264,7 @@ void proton_bundle_print(PROTON__BUNDLE_e bundle)
 
 {% for node in nodes %}
 {% if node.name != target %}
-proton_status_e proton_node_pc_receive(proton_node_t * node, size_t length)
+proton_status_e proton_node_{{ node.name }}_receive(proton_node_t * node, size_t length)
 {
   // Check that the node is not NULL
   if (node == NULL || node->peers == NULL || node->peer_count < PROTON__PEER__COUNT)

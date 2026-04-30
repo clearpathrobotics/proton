@@ -113,8 +113,8 @@ typedef enum {{ heartbeat_name }} {
 {% endfor %}
 #define {{ bundle_name }}__DEFAULT_VALUE { {% for signal in bundle.signals %}{{ bundle_name }}__SIGNAL__{{ signal.name | upper }}__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endfor %} }
 {% endif %}
-#define {{ bundle_name }}__PRODUCERS ({% for producer in bundle.producers %}PROTON__NODE__{{ producer | upper }}__ID{% if not loop.last %}| {% endif %}{% endfor %})
-#define {{ bundle_name }}__CONSUMERS ({% for consumer in bundle.consumers %}PROTON__NODE__{{ consumer | upper }}__ID{% if not loop.last %}| {% endif %}{% endfor %})
+#define {{ bundle_name }}__PRODUCERS ({% for producer in bundle.producers %}PROTON__NODE__{{ producer | upper }}__ID{% if not loop.last %} | {% endif %}{% endfor %})
+#define {{ bundle_name }}__CONSUMERS ({% for consumer in bundle.consumers %}PROTON__NODE__{{ consumer | upper }}__ID{% if not loop.last %} | {% endif %}{% endfor %})
 {% endfor %}
 
 {% for node in nodes %}
@@ -123,7 +123,7 @@ typedef enum {{ heartbeat_name }} {
 #define PROTON__BUNDLE__{{ heartbeat_name }}__SIGNAL__HEARTBEAT__DEFAULT_VALUE 0
 #define PROTON__BUNDLE__{{ heartbeat_name }}__DEFAULT_VALUE {PROTON__BUNDLE__{{ heartbeat_name }}__SIGNAL__HEARTBEAT__DEFAULT_VALUE}
 #define PROTON__BUNDLE__{{ heartbeat_name }}__PRODUCERS (PROTON__NODE__{{ node.name | upper }}__ID)
-#define PROTON__BUNDLE__{{ heartbeat_name }}__CONSUMERS ({% for consumer in node.heartbeat.consumers %}PROTON__NODE__{{ consumer | upper }}__ID{% if not loop.last %}| {% endif %}{% endfor %})
+#define PROTON__BUNDLE__{{ heartbeat_name }}__CONSUMERS ({% for consumer in node.heartbeat.consumers %}PROTON__NODE__{{ consumer | upper }}__ID{% if not loop.last %} | {% endif %}{% endfor %})
 {% endif %}
 {% endfor %}
 
@@ -195,8 +195,11 @@ typedef enum PROTON__PEER {
 } PROTON__PEER_e;
 
 // Bundle Receive Prototype
-
-proton_status_e proton_node_pc_receive(proton_node_t * node, size_t length);
+{% for node in nodes %}
+{% if node.name != target %}
+proton_status_e proton_node_{{ node.name }}_receive(proton_node_t * node, size_t length);
+{% endif %}
+{% endfor %}
 
 // Bundle Send Prototype
 
