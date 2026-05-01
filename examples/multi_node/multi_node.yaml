@@ -48,7 +48,7 @@ connections:
 bundles:
   - name: log
     id: 0x100
-    producers: node1
+    producers: [node1]
     consumers: [node2, node3]
     signals:
       - {name: level, type: uint32}
@@ -60,13 +60,13 @@ bundles:
   - name: node_name
     id: 0x101
     producers: [node2, node3]
-    consumers: node1
+    consumers: [node1]
     signals:
       - {name: name, type: string, capacity: 64}
   - name: time
     id: 0x102
-    producers: node2
-    consumers: node3
+    producers: [node2]
+    consumers: [node3]
     signals:
       - {name: seconds, type: int32}
       - {name: nanoseconds, type: uint32}

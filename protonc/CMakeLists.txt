@@ -28,11 +28,11 @@ endif()
 
 # Protonc generator
 
-set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/protonc/protonc/protonc_generator.py)
+set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/generator_scripts/generator.py)
 
 function(protonc_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET GENERATE_NODE)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
-  set(PROTONC_GENERATOR ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/protonc/protonc_generator.py)
+  set(PROTONC_GENERATOR ${CMAKE_SOURCE_DIR}/generator_scripts/generator.py)
   # Add a custom target to execute the script
   add_custom_command(
     OUTPUT ${GENERATED_FILES}
