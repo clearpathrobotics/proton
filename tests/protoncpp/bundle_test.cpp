@@ -20,10 +20,11 @@
 
 using namespace proton;
 
-std::map<std::string, BundleHandle> bundles;
-
 TEST(BundleTests, Serialize)
 {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
+
   auto& handle = bundles.at("value_test");
   auto bundle = handle.getBundlePtr();
 
@@ -40,6 +41,5 @@ TEST(BundleTests, Serialize)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  bundles = getBundles(CONFIG_FILE);
   return RUN_ALL_TESTS();
 }

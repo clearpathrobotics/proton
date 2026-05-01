@@ -19,9 +19,9 @@
 
 using namespace proton;
 
-std::map<std::string, BundleHandle> bundles;
-
 TEST(SignalValues, DoubleValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("double_value");
 
@@ -37,6 +37,8 @@ TEST(SignalValues, DoubleValue) {
 }
 
 TEST(SignalValues, FloatValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("float_value");
 
@@ -52,6 +54,8 @@ TEST(SignalValues, FloatValue) {
 }
 
 TEST(SignalValues, Int32Value) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("int32_value");
 
@@ -74,6 +78,8 @@ TEST(SignalValues, Int32Value) {
 }
 
 TEST(SignalValues, Int64Value) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("int64_value");
 
@@ -96,6 +102,8 @@ TEST(SignalValues, Int64Value) {
 }
 
 TEST(SignalValues, Uint32Value) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("uint32_value");
 
@@ -111,6 +119,8 @@ TEST(SignalValues, Uint32Value) {
 }
 
 TEST(SignalValues, Uint64Value) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("uint64_value");
 
@@ -126,6 +136,8 @@ TEST(SignalValues, Uint64Value) {
 }
 
 TEST(SignalValues, BoolValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("bool_value");
 
@@ -141,6 +153,8 @@ TEST(SignalValues, BoolValue) {
 }
 
 TEST(SignalValues, StringValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("string_value");
 
@@ -153,6 +167,8 @@ TEST(SignalValues, StringValue) {
 }
 
 TEST(SignalValues, BytesValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("bytes_value");
 
@@ -165,6 +181,8 @@ TEST(SignalValues, BytesValue) {
 }
 
 TEST(SignalValues, ListDoubleValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_double_value");
 
@@ -177,6 +195,8 @@ TEST(SignalValues, ListDoubleValue) {
 }
 
 TEST(SignalValues, ListFloatValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_float_value");
 
@@ -189,6 +209,8 @@ TEST(SignalValues, ListFloatValue) {
 }
 
 TEST(SignalValues, ListInt32Value) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_int32_value");
 
@@ -201,6 +223,8 @@ TEST(SignalValues, ListInt32Value) {
 }
 
 TEST(SignalValues, ListInt64Value) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_int64_value");
 
@@ -213,6 +237,8 @@ TEST(SignalValues, ListInt64Value) {
 }
 
 TEST(SignalValues, ListUint32Value) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_uint32_value");
 
@@ -225,6 +251,8 @@ TEST(SignalValues, ListUint32Value) {
 }
 
 TEST(SignalValues, ListUint64Value) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_uint64_value");
 
@@ -237,6 +265,8 @@ TEST(SignalValues, ListUint64Value) {
 }
 
 TEST(SignalValues, ListBoolValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_bool_value");
 
@@ -249,6 +279,8 @@ TEST(SignalValues, ListBoolValue) {
 }
 
 TEST(SignalValues, ListStringValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_string_value");
 
@@ -261,6 +293,8 @@ TEST(SignalValues, ListStringValue) {
 }
 
 TEST(SignalValues, ListBytesValue) {
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
   auto& bundle = bundles.at("value_test");
   auto& signal = bundle.getSignal("list_bytes_value");
 
@@ -275,6 +309,5 @@ TEST(SignalValues, ListBytesValue) {
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  bundles = getBundles(CONFIG_FILE);
   return RUN_ALL_TESTS();
 }
