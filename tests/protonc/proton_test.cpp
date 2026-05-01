@@ -160,7 +160,7 @@ TEST(PROTONC_Proton, DecodeId) {
   proton_bundle_value_test_t test_bundle;
 
   // Initialise bundle with ID 0x123
-  proton_status_e status = proton_init_bundle(&test_bundle_handle, 0x123, &test_signal_handle, 0, 0, 0);
+  proton_status_e status = proton_init_bundle(&test_bundle_handle, 0x123, &test_signal_handle, 1, 0, 0);
   EXPECT_EQ(status, PROTON_OK);
 
   // Encode bundle
