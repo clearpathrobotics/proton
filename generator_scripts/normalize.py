@@ -71,8 +71,8 @@ def normalize_signals(bundle: dict):
                     if is_list_type:
                         max_cap = 0
                         for elem in signal["value"]:
-                            max_cap = len(elem) + 1 if len(elem) > max_cap else max_cap
-                        signal["capacity"] = max_cap
+                            max_cap = len(elem)if len(elem) > max_cap else max_cap
+                        signal["capacity"] = max_cap + 1
                     else:
                         signal["capacity"] = len(signal["value"]) + 1
 
