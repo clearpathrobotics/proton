@@ -50,20 +50,6 @@ struct convert<proton::SignalConfig> {
         {
           rhs.capacity = value_key.size();
         }
-        else if (rhs.type_string == proton::value_types::LIST_STRING || rhs.type_string == proton::value_types::LIST_BYTES)
-        {
-          // Set capacity to largest of values
-          for (const auto& v : value_key)
-          {
-            if (v.size() > rhs.capacity)
-            {
-              rhs.capacity = v.size();
-            }
-          }
-
-          // Set length to sequence size
-          rhs.length = value_key.size();
-        }
         else
         {
           rhs.length = value_key.size();
@@ -73,16 +59,6 @@ struct convert<proton::SignalConfig> {
     else
     {
       rhs.is_const = false;
-
-      auto length_key = node[proton::keys::LENGTH];
-      if (length_key.IsDefined())
-      {
-        rhs.length = length_key.as<uint32_t>();
-      }
-      else if (proton::signal_map::SignalMap.at(rhs.type_string) >= proton::Signal::SignalCase::kListDoubleValue)
-      {
-        throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string + " must define a length");
-      }
 
       auto capacity_key = node[proton::keys::CAPACITY];
       if (capacity_key.IsDefined())
@@ -95,8 +71,6 @@ struct convert<proton::SignalConfig> {
         {
           case proton::Signal::SignalCase::kStringValue:
           case proton::Signal::SignalCase::kBytesValue:
-          case proton::Signal::SignalCase::kListStringValue:
-          case proton::Signal::SignalCase::kListBytesValue:
           {
             throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string + " must define a capacity");
           }

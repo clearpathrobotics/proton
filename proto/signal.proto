@@ -4,9 +4,6 @@ package proton;
 
 message Signal {
   reserved 10 to 18;
-  reserved list_double_value, list_float_value, list_int32_value, list_int64_value;
-  reserved list_uint32_value, list_uint64_value, list_bool_value, list_string_value;
-  reserved list_bytes_value;
 
   oneof signal {
     double double_value = 1;
