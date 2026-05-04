@@ -201,11 +201,8 @@ void update_power(proton_node_t * node, proton_bundle_power_t * power_bundle) {
     return;
   }
 
-  for (uint8_t i = 0; i < PROTON__BUNDLE__POWER__SIGNAL__MEASURED_VOLTAGES__LENGTH;
-       i++) {
-    power_bundle->measured_currents[i] = rand_float();
-    power_bundle->measured_voltages[i] = rand_float();
-  }
+  power_bundle->measured_current = rand_float();
+  power_bundle->measured_voltage = rand_float();
 
   proton_bundle_send(node, PROTON__BUNDLE__POWER);
 }
@@ -221,10 +218,7 @@ void update_temperature(proton_node_t * node, proton_bundle_temperature_t * temp
     return;
   }
 
-  for (uint8_t i = 0; i < PROTON__BUNDLE__TEMPERATURE__SIGNAL__TEMPERATURES__LENGTH;
-       i++) {
-    temperature_bundle->temperatures[i] = rand_float();
-  }
+  temperature_bundle->temperature = rand_float();
 
   proton_bundle_send(node, PROTON__BUNDLE__TEMPERATURE);
 }
@@ -307,16 +301,17 @@ void update_pinout_state(proton_node_t * node, proton_bundle_pinout_state_t * pi
     return;
   }
 
-  pinout_state_bundle->rails[0] = true;
+  pinout_state_bundle->rails = true;
 
-  for (uint8_t i = 0; i < PROTON__BUNDLE__PINOUT_STATE__SIGNAL__OUTPUTS__LENGTH; i++) {
-    pinout_state_bundle->outputs[i] = rand_bool();
-  }
+  pinout_state_bundle->output_bitfield = rand_uint8();
 
-  for (uint8_t i = 0; i < PROTON__BUNDLE__PINOUT_STATE__SIGNAL__OUTPUT_PERIODS__LENGTH;
-       i++) {
-    pinout_state_bundle->output_periods[i] = rand_uint32();
-  }
+  pinout_state_bundle->output_period_0 = rand_uint32();
+  pinout_state_bundle->output_period_1 = rand_uint32();
+  pinout_state_bundle->output_period_2 = rand_uint32();
+  pinout_state_bundle->output_period_3 = rand_uint32();
+  pinout_state_bundle->output_period_4 = rand_uint32();
+  pinout_state_bundle->output_period_5 = rand_uint32();
+  pinout_state_bundle->output_period_6 = rand_uint32();
 
   proton_bundle_send(node, PROTON__BUNDLE__PINOUT_STATE);
 }

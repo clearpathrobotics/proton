@@ -54,11 +54,15 @@ std::vector<std::string> logs;
  */
 void update_lights()
 {
-  auto& cmd_lights_signal = node->getBundle("cmd_lights").getSignal("lights");
-  for (auto i = 0; i < cmd_lights_signal.getLength(); i++)
-  {
-    cmd_lights_signal.setValue<proton::bytes>(i, {rand() % 255, rand() % 255, rand() % 255});
-  }
+  auto& front_left_signal = node->getBundle("cmd_lights").getSignal("front_left_rgb");
+  auto& front_right_signal = node->getBundle("cmd_lights").getSignal("front_right_rgb");
+  auto& rear_left_signal = node->getBundle("cmd_lights").getSignal("rear_left_rgb");
+  auto& rear_right_signal = node->getBundle("cmd_lights").getSignal("rear_right_rgb");
+
+  front_left_signal.setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
+  front_right_signal.setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
+  rear_left_signal.setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
+  rear_right_signal.setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
 
   node->sendBundle("cmd_lights");
 }
@@ -100,8 +104,8 @@ void update_battery()
  */
 void update_pinout_command()
 {
-  node->getBundle("pinout_command").getSignal("rails").setValue<proton::list_bool>({true});
-  node->getBundle("pinout_command").getSignal("outputs").setValue<proton::list_uint32>({true});
+  node->getBundle("pinout_command").getSignal("rails").setValue<bool>(true);
+  node->getBundle("pinout_command").getSignal("output").setValue<uint32_t>(rand() & 0xFF);
   node->sendBundle("pinout_command");
 }
 
