@@ -42,7 +42,8 @@ void update_hmi()
 void update_motor_command()
 {
   node->getBundle("motor_command").getSignal("mode").setValue<int32_t>(-1);
-  node->getBundle("motor_command").getSignal("drivers").setValue<proton::list_float>({static_cast<float>(rand()), static_cast<float>(rand())});
+  node->getBundle("motor_command").getSignal("left_driver").setValue<float>(static_cast<float>(rand()));
+  node->getBundle("motor_command").getSignal("right_driver").setValue<float>(static_cast<float>(rand()));
   node->sendBundle("motor_command");
 }
 

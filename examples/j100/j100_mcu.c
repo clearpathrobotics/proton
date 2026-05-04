@@ -99,8 +99,8 @@ void proton_bundle_motor_command_callback(void * context) {
   c->cb_counts[CALLBACK_MOTOR_COMMAND]++;
   c->bundles.motor_feedback_bundle.actual_mode = c->bundles.motor_command_bundle.mode;
   c->bundles.motor_feedback_bundle.commanded_mode = c->bundles.motor_command_bundle.mode;
-  c->bundles.motor_feedback_bundle.drivers_measured_velocity[0] = c->bundles.motor_command_bundle.drivers[0];
-  c->bundles.motor_feedback_bundle.drivers_measured_velocity[1] = c->bundles.motor_command_bundle.drivers[1];
+  c->bundles.motor_feedback_bundle.left_measured_velocity = c->bundles.motor_command_bundle.left_driver;
+  c->bundles.motor_feedback_bundle.right_measured_velocity = c->bundles.motor_command_bundle.right_driver;
 }
 
 /**
@@ -146,11 +146,19 @@ void send_log(void * context, const char *file, const char* func, int line, uint
  */
 void update_power(void * context) {
   context_t * c = (context_t *)context;
-  for (uint8_t i = 0; i < PROTON__BUNDLE__POWER__SIGNAL__MEASURED_VOLTAGES__LENGTH;
-       i++) {
-    c->bundles.power_bundle.measured_currents[i] = rand_float();
-    c->bundles.power_bundle.measured_voltages[i] = rand_float();
-  }
+
+  float computer_current = rand_float();
+  float drive_current = rand_float();
+  float user_current = rand_float();
+
+  c->bundles.power_bundle.j100_computer_current = computer_current;
+  c->bundles.power_bundle.j100_drive_current = drive_current;
+  c->bundles.power_bundle.j100_user_current = user_current;
+  c->bundles.power_bundle.j100_total_current = computer_current + drive_current + user_current;
+
+  c->bundles.power_bundle.j100_measured_battery = rand_float();
+  c->bundles.power_bundle.j100_measured_5v = rand_float();
+  c->bundles.power_bundle.j100_measured_12v = rand_float();
 
   proton_bundle_send(c->node, PROTON__BUNDLE__POWER);
 }
@@ -161,10 +169,9 @@ void update_power(void * context) {
  */
 void update_temperature(void * context) {
   context_t * c = (context_t *)context;
-  for (uint8_t i = 0; i < PROTON__BUNDLE__TEMPERATURE__SIGNAL__TEMPERATURES__LENGTH;
-       i++) {
-    c->bundles.temperature_bundle.temperatures[i] = rand_float();
-  }
+
+  c->bundles.temperature_bundle.j100_mcu = rand_float();
+  c->bundles.temperature_bundle.j100_pcb = rand_float();
 
   proton_bundle_send(c->node, PROTON__BUNDLE__TEMPERATURE);
 }
@@ -267,15 +274,19 @@ void update_nmea(void * context) {
 void update_motor_feedback(void * context) {
   context_t * c = (context_t *)context;
 
-  for (uint8_t i = 0; i < 2; i++)
-  {
-    c->bundles.motor_feedback_bundle.drivers_current[i] = rand_float();
-    c->bundles.motor_feedback_bundle.drivers_bridge_temperature[i] = rand_float();
-    c->bundles.motor_feedback_bundle.drivers_motor_temperature[i] = rand_float();
-    c->bundles.motor_feedback_bundle.drivers_driver_fault[i] = rand_bool();
-    c->bundles.motor_feedback_bundle.drivers_duty_cycle[i] = rand_float();
-    c->bundles.motor_feedback_bundle.drivers_measured_travel[i] = rand_float();
-  }
+  c->bundles.motor_feedback_bundle.left_current = rand_float();
+  c->bundles.motor_feedback_bundle.left_bridge_temperature = rand_float();
+  c->bundles.motor_feedback_bundle.left_motor_temperature = rand_float();
+  c->bundles.motor_feedback_bundle.left_driver_fault = rand_bool();
+  c->bundles.motor_feedback_bundle.left_duty_cycle = rand_float();
+  c->bundles.motor_feedback_bundle.left_measured_travel = rand_float();
+
+  c->bundles.motor_feedback_bundle.right_current = rand_float();
+  c->bundles.motor_feedback_bundle.right_bridge_temperature = rand_float();
+  c->bundles.motor_feedback_bundle.right_motor_temperature = rand_float();
+  c->bundles.motor_feedback_bundle.right_driver_fault = rand_bool();
+  c->bundles.motor_feedback_bundle.right_duty_cycle = rand_float();
+  c->bundles.motor_feedback_bundle.right_measured_travel = rand_float();
 
   proton_bundle_send(c->node, PROTON__BUNDLE__MOTOR_FEEDBACK);
 }

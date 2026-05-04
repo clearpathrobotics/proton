@@ -56,16 +56,14 @@ bundles:
       - {name: charger_connected, type: int32, value: -1}
       - {name: charging_complete, type: int32, value: -1}
 
-      - {name: measured_voltages, type: list_float, length: 3}
-      - {name: J100_MEASURED_BATTERY, type: uint32, value: 0}
-      - {name: J100_MEASURED_5V, type: uint32, value: 1}
-      - {name: J100_MEASURED_12V, type: uint32, value: 2}
+      - {name: j100_measured_battery, type: float}
+      - {name: j100_measured_5v, type: float}
+      - {name: j100_measured_12v, type: float}
 
-      - {name: measured_currents, type: list_float, length: 4}
-      - {name: J100_TOTAL_CURRENT, type: uint32, value: 0}
-      - {name: J100_COMPUTER_CURRENT, type: uint32, value: 1}
-      - {name: J100_DRIVE_CURRENT, type: uint32, value: 2}
-      - {name: J100_USER_CURRENT, type: uint32, value: 3}
+      - {name: j100_total_current, type: float}
+      - {name: j100_computer_current, type: float}
+      - {name: j100_drive_current, type: float}
+      - {name: j100_user_current, type: float}
 
   - name: emergency_stop
     id: 0x103
@@ -79,9 +77,8 @@ bundles:
     consumers: [pc]
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: temperatures, type: list_float, length: 2}
-      - {name: J100_MCU, type: uint32, value: 0}
-      - {name: J100_PCB, type: uint32, value: 1}
+      - {name: j100_mcu, type: float}
+      - {name: j100_pcb, type: float}
   - name: stop_status
     id: 0x105
     producers: [mcu]
@@ -100,11 +97,11 @@ bundles:
       - {name: linear_acceleration_x, type: double}
       - {name: linear_acceleration_y, type: double}
       - {name: linear_acceleration_z, type: double}
-      - {name: linear_acceleration_covariance, type: list_double, value: [0.03924, 0, 0, 0, 0.03924, 0, 0, 0, 0.03924]}
+      - {name: linear_acceleration_covariance, type: double, value: 0.03924}
       - {name: angular_velocity_x, type: double}
       - {name: angular_velocity_y, type: double}
       - {name: angular_velocity_z, type: double}
-      - {name: angular_velocity_covariance, type: list_double, value: [0.0000010966, 0, 0, 0, 0.0000010966, 0, 0, 0, 0.0000010966]}
+      - {name: angular_velocity_covariance, type: double, value: 0.0000010966}
   - name: magnetometer
     id: 0x107
     producers: [mcu]
@@ -114,7 +111,7 @@ bundles:
       - {name: magnetic_field_x, type: double}
       - {name: magnetic_field_y, type: double}
       - {name: magnetic_field_z, type: double}
-      - {name: magnetic_field_covariance, type: list_double, value: [-1.0, 0, 0, 0, -1.0, 0, 0, 0, -1.0]}
+      - {name: magnetic_field_covariance, type: double, value: -1.0}
   - name: nmea
     id: 0x108
     producers: [mcu]
@@ -128,13 +125,20 @@ bundles:
     consumers: [pc]
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: drivers_current, type: list_float, length: 2}
-      - {name: drivers_bridge_temperature, type: list_float, length: 2}
-      - {name: drivers_motor_temperature, type: list_float, length: 2}
-      - {name: drivers_driver_fault, type: list_bool, length: 2}
-      - {name: drivers_duty_cycle, type: list_float, length: 2}
-      - {name: drivers_measured_velocity, type: list_float, length: 2}
-      - {name: drivers_measured_travel, type: list_float, length: 2}
+      - {name: left_current, type: float}
+      - {name: left_bridge_temperature, type: float}
+      - {name: left_motor_temperature, type: float}
+      - {name: left_driver_fault, type: bool}
+      - {name: left_duty_cycle, type: float}
+      - {name: left_measured_velocity, type: float}
+      - {name: left_measured_travel, type: float}
+      - {name: right_current, type: float}
+      - {name: right_bridge_temperature, type: float}
+      - {name: right_motor_temperature, type: float}
+      - {name: right_driver_fault, type: bool}
+      - {name: right_duty_cycle, type: float}
+      - {name: right_measured_velocity, type: float}
+      - {name: right_measured_travel, type: float}
       - {name: commanded_mode, type: int32}
       - {name: actual_mode, type: int32}
 
@@ -156,7 +160,8 @@ bundles:
     consumers: [mcu]
     signals:
       - {name: mode, type: int32}
-      - {name: drivers, type: list_float, length: 2}
+      - {name: left_driver, type: float}
+      - {name: right_driver, type: float}
       - {name: MODE_VELOCITY, type: int32, value: 0}
       - {name: MODE_PWM, type: int32, value: 1}
       - {name: MODE_NONE, type: int32, value: -1}
