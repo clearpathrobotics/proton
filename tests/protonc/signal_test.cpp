@@ -100,6 +100,14 @@ TEST(PROTONC_Signal, Values) {
   EXPECT_EQ(memcmp(test_bundle.bytes_value, bytes_value, sizeof(bytes_value)), 0);
 }
 
+TEST(PROTONC_Signal, DeprecatedType) {
+  proton_signal_handle_t signal_handle;
+  int32_t int32_value = -12;
+
+  // Try to initialize signal with deprecated type (one of the old list_ types)
+  EXPECT_EQ(proton_init_signal(&signal_handle, 11, &int32_value, 0), PROTON_ERROR);
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
