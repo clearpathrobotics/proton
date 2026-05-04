@@ -67,15 +67,6 @@ namespace value_types {
   static constexpr std::string_view BOOL = "bool";
   static constexpr std::string_view STRING = "string";
   static constexpr std::string_view BYTES = "bytes";
-  static constexpr std::string_view LIST_DOUBLE = "list_double";
-  static constexpr std::string_view LIST_FLOAT = "list_float";
-  static constexpr std::string_view LIST_INT32 = "list_int32";
-  static constexpr std::string_view LIST_INT64 = "list_int64";
-  static constexpr std::string_view LIST_UINT32 = "list_uint32";
-  static constexpr std::string_view LIST_UINT64 = "list_uint64";
-  static constexpr std::string_view LIST_BOOL = "list_bool";
-  static constexpr std::string_view LIST_STRING = "list_string";
-  static constexpr std::string_view LIST_BYTES = "list_bytes";
 } // namespace value_types
 
 namespace signal_map {
@@ -89,15 +80,6 @@ namespace signal_map {
       {value_types::BOOL, proton::Signal::SignalCase::kBoolValue},
       {value_types::STRING, proton::Signal::SignalCase::kStringValue},
       {value_types::BYTES, proton::Signal::SignalCase::kBytesValue},
-      {value_types::LIST_DOUBLE, proton::Signal::SignalCase::kListDoubleValue},
-      {value_types::LIST_FLOAT, proton::Signal::SignalCase::kListFloatValue},
-      {value_types::LIST_INT32, proton::Signal::SignalCase::kListInt32Value},
-      {value_types::LIST_INT64, proton::Signal::SignalCase::kListInt64Value},
-      {value_types::LIST_UINT32, proton::Signal::SignalCase::kListUint32Value},
-      {value_types::LIST_UINT64, proton::Signal::SignalCase::kListUint64Value},
-      {value_types::LIST_BOOL, proton::Signal::SignalCase::kListBoolValue},
-      {value_types::LIST_STRING, proton::Signal::SignalCase::kListStringValue},
-      {value_types::LIST_BYTES, proton::Signal::SignalCase::kListBytesValue}
   };
 }
 
