@@ -41,6 +41,7 @@ if (PROTON_BUILD_EXAMPLES)
 endif()
 
 if (PROTON_BUILD_TESTS)
+  enable_testing()
   add_subdirectory(tests)
 endif()
 
