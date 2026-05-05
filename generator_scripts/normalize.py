@@ -15,7 +15,7 @@
 # @author Tom Wallis (thomas.wallis@rockwellautomation.com)
 
 
-"""Nnormalize elements of the proton config"""
+"""Normalize elements of the proton config"""
 
 from typing import List
 
@@ -63,7 +63,7 @@ def normalize_signals(bundle: dict):
 
             if is_const:
                 # Special case for capacity types: they must have a capacity variable generated in the template,
-                # Even if they're already defined as consts. The length is equal to the strlen + 1 for the nullchar in C
+                # Even if they're already defined as consts. The length is equal to the strlen + 1 for the null char in C
                 if is_capacity_type:
                     signal["capacity"] = len(signal["value"]) + 1
 
@@ -112,7 +112,7 @@ def set_heartbeat_producers_consumers(nodes: List[dict], connections: List[dict]
 
 
 def set_signal_properties(bundles: List[dict]):
-    """Set properties for signals. Default values, repeated type lengths, constness
+    """Set properties for signals. Default values, repeated type lengths, const-ness
     ARGS:
         bundles: "bundles" stanza in proton config
     """

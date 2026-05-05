@@ -10,3 +10,7 @@ DerivePointerAlignment: false
 PointerAlignment: Middle
 ReflowComments: false
 IncludeBlocks: Preserve
+
+---
+Language: Proto
+DisableFormat: true

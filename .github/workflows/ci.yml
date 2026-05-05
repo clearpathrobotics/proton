@@ -33,7 +33,10 @@ jobs:
 
       - name: Run pre-commit
         run: |
+          echo $(pwd)
+          ls $(pwd)
           . venv/bin/activate
+          pre-commit install
           pre-commit run --all-files
 
   build-and-test:
