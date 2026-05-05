@@ -1,0 +1,54 @@
+# cspell:ignore EDITMSG
+default_stages: [pre-commit]
+default_install_hook_types: [pre-commit, commit-msg]
+repos:
+  # Standard hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-xml
+      - id: check-toml
+      - id: check-yaml
+        args: ["--allow-multiple-documents"]
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+        exclude_types: [rst]
+      - id: fix-byte-order-marker
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v20.1.6
+    hooks:
+      - id: clang-format
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v9.0.1
+    hooks:
+      - id: cspell # Spell check changed files
+        args:
+          - --no-must-find-files
+          - --no-progress
+          - --no-summary
+          - --show-context
+          - --show-suggestions
+          - --gitignore
+          - --files # this needs to be the last argument so that the paths are passed correctly.
+        additional_dependencies: ["@cspell/dict-en-ca"]
+      - id: cspell # Spell check the commit message
+        name: check commit message spelling
+        args:
+          - --no-must-find-files
+          - --no-progress
+          - --no-summary
+          - --language-id cpp
+          - --files
+          - .git/COMMIT_EDITMSG
+        stages: [commit-msg]
+        always_run: true # This might not be necessary.
+        additional_dependencies: ["@cspell/dict-en-ca"]

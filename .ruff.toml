@@ -1,0 +1,50 @@
+line-length = 99
+
+
+[lint]
+# select = ['F','E','W','A','PLC','PLE','PLW','I','D']
+preview = true # Needed for some pycodestyle rules
+select = [
+    "E",  # pycodestyle
+    "W",  # pycodestyle
+    "F",  # Pyflakes
+    "A", # flake8-builtins
+    "PLE", # pylint
+    "PLW", # pylint
+    "PLC", # pylint
+    # "PLR", # pylint refactor (we may want to adust the defaults for this before we use it)
+    "I", # isort
+    "D", # flake8-docstrings # this will check for pep257 violations. Below here are extras compared to ament_flake8
+    "B", # flake8-bugbear
+    "S", # flake8-bandit
+    "ISC", # flake8-implicit-str-concat
+    "ICN", # flake8-import-conventions
+    "PIE", # flake8-pie
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "RUF", # Ruff-specific rules
+    "YTT", # flake8-2020
+    "UP", # pyupgrade
+    "C4", # flake8-comprehensions
+    "PTH", # flake8-use-pathlib
+    "G", # flake8-logging-format
+    "INP", # flake8-no-pep420
+    "T20", # flake8-print
+]
+ignore = ['D100','D101','D102','D103','D104','D105','D106','D107','D203','D212','D404','D415']
+
+[lint.isort]
+# sections.ros = ['rclpy']
+# section-order = ['future', 'standard-library', 'third-party', 'ros', 'first-party', 'local-folder']
+# force-single-line = true
+force-sort-within-sections = true
+# # lexicographical = true
+# single-line-exclusions = ['typing']
+order-by-type = false
+# # group-by-package = true
+
+[format]
+preview = true # Needed for some pycodestyle rules
+quote-style = "single"
+docstring-code-format = true
