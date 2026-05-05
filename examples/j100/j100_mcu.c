@@ -27,7 +27,8 @@
  *
  * Key features:
  * - Callback handlers for various bundle types (WiFi connected, HMI, motor command, PC heartbeat)
- * - Periodic update functions for power, temperature, status, emergency stop, IMU, magnetometer, NMEA, and motor feedback data
+ * - Periodic update functions for power, temperature, status, emergency stop, IMU, magnetometer,
+ * NMEA, and motor feedback data
  * - Serial transport layer for PC communication
  * - Thread-safe operations using mutexes for MCU and PC resources
  * - Real-time monitoring and statistics collection
@@ -41,9 +42,9 @@
  *
  */
 
-#include "utils.h"
 #include "proton__j100_mcu.h"
 #include "stdarg.h"
+#include "utils.h"
 
 /**
  * @brief Enumeration of callback types for bundle reception.
@@ -61,7 +62,7 @@ typedef enum {
  *
  */
 typedef struct {
-  proton_node_t * node;
+  proton_node_t* node;
   proton_bundles_mcu_t bundles;
   pthread_mutex_t mcu_lock;
   pthread_mutex_t pc_lock;
@@ -76,8 +77,8 @@ typedef struct {
  * @brief Callback for WiFi connected bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_wifi_connected_callback(void * context) {
-  context_t * c = (context_t *)context;
+void proton_bundle_wifi_connected_callback(void* context) {
+  context_t* c = (context_t*)context;
   c->cb_counts[CALLBACK_WIFI_CONNECTED]++;
 }
 
@@ -85,8 +86,8 @@ void proton_bundle_wifi_connected_callback(void * context) {
  * @brief Callback for HMI bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_hmi_callback(void * context) {
-  context_t * c = (context_t *)context;
+void proton_bundle_hmi_callback(void* context) {
+  context_t* c = (context_t*)context;
   c->cb_counts[CALLBACK_HMI]++;
 }
 
@@ -94,22 +95,23 @@ void proton_bundle_hmi_callback(void * context) {
  * @brief Callback for motor command bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_motor_command_callback(void * context) {
-  context_t * c = (context_t *)context;
+void proton_bundle_motor_command_callback(void* context) {
+  context_t* c = (context_t*)context;
   c->cb_counts[CALLBACK_MOTOR_COMMAND]++;
   c->bundles.motor_feedback_bundle.actual_mode = c->bundles.motor_command_bundle.mode;
   c->bundles.motor_feedback_bundle.commanded_mode = c->bundles.motor_command_bundle.mode;
-  c->bundles.motor_feedback_bundle.left_measured_velocity = c->bundles.motor_command_bundle.left_driver;
-  c->bundles.motor_feedback_bundle.right_measured_velocity = c->bundles.motor_command_bundle.right_driver;
+  c->bundles.motor_feedback_bundle.left_measured_velocity =
+      c->bundles.motor_command_bundle.left_driver;
+  c->bundles.motor_feedback_bundle.right_measured_velocity =
+      c->bundles.motor_command_bundle.right_driver;
 }
 
 /**
  * @brief Callback for PC heartbeat bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_pc_heartbeat_callback(void * context)
-{
-  context_t * c = (context_t *)context;
+void proton_bundle_pc_heartbeat_callback(void* context) {
+  context_t* c = (context_t*)context;
   printf("Heartbeat received %u\r\n", c->bundles.pc_heartbeat_bundle.heartbeat);
   c->node->peers[PROTON__PEER__PC].state = PROTON_NODE_ACTIVE;
   c->last_pc_heartbeat = time(NULL);
@@ -125,8 +127,9 @@ void proton_bundle_pc_heartbeat_callback(void * context)
  * @param msg Log message format string.
  * @param ... Additional arguments for format string.
  */
-void send_log(void * context, const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
-  context_t * c = (context_t *)context;
+void send_log(void* context, const char* file, const char* func, int line, uint8_t level, char* msg,
+              ...) {
+  context_t* c = (context_t*)context;
   strcpy(c->bundles.log_bundle.name, "J100_proton");
   strcpy(c->bundles.log_bundle.file, file);
   strcpy(c->bundles.log_bundle.function, func);
@@ -144,8 +147,8 @@ void send_log(void * context, const char *file, const char* func, int line, uint
  * @brief Updates and sends power bundle data.
  * @param context Pointer to context_t structure.
  */
-void update_power(void * context) {
-  context_t * c = (context_t *)context;
+void update_power(void* context) {
+  context_t* c = (context_t*)context;
 
   float computer_current = rand_float();
   float drive_current = rand_float();
@@ -167,8 +170,8 @@ void update_power(void * context) {
  * @brief Updates and sends temperature bundle data.
  * @param context Pointer to context_t structure.
  */
-void update_temperature(void * context) {
-  context_t * c = (context_t *)context;
+void update_temperature(void* context) {
+  context_t* c = (context_t*)context;
 
   c->bundles.temperature_bundle.j100_mcu = rand_float();
   c->bundles.temperature_bundle.j100_pcb = rand_float();
@@ -181,8 +184,8 @@ void update_temperature(void * context) {
  * @param context Pointer to context_t structure.
  * @param s Uptime in seconds.
  */
-void update_status(void * context, uint32_t s) {
-  context_t * c = (context_t *)context;
+void update_status(void* context, uint32_t s) {
+  context_t* c = (context_t*)context;
 
   c->bundles.status_bundle.connection_uptime_sec = s;
   c->bundles.status_bundle.connection_uptime_nanosec = rand_uint32();
@@ -196,8 +199,8 @@ void update_status(void * context, uint32_t s) {
  * @brief Updates and sends emergency stop bundle data.
  * @param context Pointer to context_t structure.
  */
-void update_emergency_stop(void * context) {
-  context_t * c = (context_t *)context;
+void update_emergency_stop(void* context) {
+  context_t* c = (context_t*)context;
   c->bundles.emergency_stop_bundle.data = !c->bundles.emergency_stop_bundle.data;
 
   proton_bundle_send(c->node, PROTON__BUNDLE__EMERGENCY_STOP);
@@ -207,9 +210,10 @@ void update_emergency_stop(void * context) {
  * @brief Updates and sends stop status bundle data.
  * @param context Pointer to context_t structure.
  */
-void update_stop_status(void * context) {
-  context_t * c = (context_t *)context;
-  c->bundles.stop_status_bundle.external_stop_present = !c->bundles.stop_status_bundle.external_stop_present;
+void update_stop_status(void* context) {
+  context_t* c = (context_t*)context;
+  c->bundles.stop_status_bundle.external_stop_present =
+      !c->bundles.stop_status_bundle.external_stop_present;
 
   proton_bundle_send(c->node, PROTON__BUNDLE__STOP_STATUS);
 }
@@ -218,8 +222,8 @@ void update_stop_status(void * context) {
  * @brief Updates and sends IMU bundle data.
  * @param context Pointer to context_t structure.
  */
-void update_imu(void * context) {
-  context_t * c = (context_t *)context;
+void update_imu(void* context) {
+  context_t* c = (context_t*)context;
 
   c->bundles.imu_bundle.linear_acceleration_x = rand_double();
   c->bundles.imu_bundle.linear_acceleration_y = rand_double();
@@ -235,8 +239,8 @@ void update_imu(void * context) {
  * @brief Updates and sends magnetometer bundle data.
  * @param context Pointer to context_t structure.
  */
-void update_mag(void * context) {
-  context_t * c = (context_t *)context;
+void update_mag(void* context) {
+  context_t* c = (context_t*)context;
 
   c->bundles.magnetometer_bundle.magnetic_field_x = rand_double();
   c->bundles.magnetometer_bundle.magnetic_field_y = rand_double();
@@ -249,19 +253,18 @@ void update_mag(void * context) {
  * @brief Updates and sends NMEA bundle data.
  * @param context Pointer to context_t structure.
  */
-void update_nmea(void * context) {
-  context_t * c = (context_t *)context;
+void update_nmea(void* context) {
+  context_t* c = (context_t*)context;
 
   char tmp[PROTON__BUNDLE__NMEA__SIGNAL__SENTENCE__CAPACITY] = {0};
 
   uint16_t i;
 
-  for (i = 0; i < (rand() % (PROTON__BUNDLE__NMEA__SIGNAL__SENTENCE__CAPACITY - 1)); i++)
-  {
+  for (i = 0; i < (rand() % (PROTON__BUNDLE__NMEA__SIGNAL__SENTENCE__CAPACITY - 1)); i++) {
     tmp[i] = rand_char();
   }
 
-  tmp[i+1] = '\0';
+  tmp[i + 1] = '\0';
   strncpy(c->bundles.nmea_bundle.sentence, tmp, PROTON__BUNDLE__NMEA__SIGNAL__SENTENCE__CAPACITY);
 
   proton_bundle_send(c->node, PROTON__BUNDLE__NMEA);
@@ -271,8 +274,8 @@ void update_nmea(void * context) {
  * @brief Updates and sends motor feedback bundle data.
  * @param context Pointer to context_t structure.
  */
-void update_motor_feedback(void * context) {
-  context_t * c = (context_t *)context;
+void update_motor_feedback(void* context) {
+  context_t* c = (context_t*)context;
 
   c->bundles.motor_feedback_bundle.left_current = rand_float();
   c->bundles.motor_feedback_bundle.left_bridge_temperature = rand_float();
@@ -295,8 +298,8 @@ void update_motor_feedback(void * context) {
  * @brief Connects PC transport
  * @return PROTON_OK if connection successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_connect(void * context) {
-  context_t * c = (context_t *)context;
+proton_status_e proton_node_pc_transport_connect(void* context) {
+  context_t* c = (context_t*)context;
   c->serial_port = serial_init(PROTON__NODE__PC__ENDPOINT__0__DEVICE);
   return c->serial_port >= 0 ? PROTON_OK : PROTON_CONNECT_ERROR;
 }
@@ -305,7 +308,7 @@ proton_status_e proton_node_pc_transport_connect(void * context) {
  * @brief Disconnects PC transport
  * @return PROTON_OK if disconnection successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_disconnect(void * context) {
+proton_status_e proton_node_pc_transport_disconnect(void* context) {
   (void)context;
   return PROTON_OK;
 }
@@ -318,16 +321,14 @@ proton_status_e proton_node_pc_transport_disconnect(void * context) {
  * @param bytes_read Pointer to store number of bytes actually read.
  * @return PROTON_OK if read successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_read(void * context, uint8_t *buf, size_t len, size_t * bytes_read) {
-  context_t * c = (context_t *)context;
+proton_status_e
+proton_node_pc_transport_read(void* context, uint8_t* buf, size_t len, size_t* bytes_read) {
+  context_t* c = (context_t*)context;
   size_t bytes = serial_read(c->serial_port, buf, len);
 
-  if (bytes_read > 0)
-  {
+  if (bytes_read > 0) {
     c->rx += bytes + PROTON_FRAME_OVERHEAD;
-  }
-  else
-  {
+  } else {
     return PROTON_READ_ERROR;
   }
 
@@ -344,16 +345,14 @@ proton_status_e proton_node_pc_transport_read(void * context, uint8_t *buf, size
  * @param bytes_written Pointer to store number of bytes actually written.
  * @return PROTON_OK if write successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_write(void * context, const uint8_t *buf, size_t len, size_t * bytes_written) {
-  context_t * c = (context_t *)context;
+proton_status_e proton_node_pc_transport_write(void* context, const uint8_t* buf, size_t len,
+                                               size_t* bytes_written) {
+  context_t* c = (context_t*)context;
   size_t bytes = serial_write(c->serial_port, buf, len);
 
-  if (bytes > 0)
-  {
+  if (bytes > 0) {
     c->tx += bytes + PROTON_FRAME_OVERHEAD;
-  }
-  else
-  {
+  } else {
     return PROTON_WRITE_ERROR;
   }
 
@@ -367,13 +366,12 @@ proton_status_e proton_node_pc_transport_write(void * context, const uint8_t *bu
  * @param context Pointer to context_t structure.
  * @return True if lock successful, false otherwise.
  */
-proton_status_e proton_node_mcu_lock(void * context) {
-  if (context == NULL)
-  {
+proton_status_e proton_node_mcu_lock(void* context) {
+  if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t * c = (context_t *)context;
+  context_t* c = (context_t*)context;
   return pthread_mutex_lock(&c->mcu_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
@@ -382,13 +380,12 @@ proton_status_e proton_node_mcu_lock(void * context) {
  * @param context Pointer to context_t structure.
  * @return True if unlock successful, false otherwise.
  */
-proton_status_e proton_node_mcu_unlock(void * context) {
-  if (context == NULL)
-  {
+proton_status_e proton_node_mcu_unlock(void* context) {
+  if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t * c = (context_t *)context;
+  context_t* c = (context_t*)context;
   return pthread_mutex_unlock(&c->mcu_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
@@ -397,13 +394,12 @@ proton_status_e proton_node_mcu_unlock(void * context) {
  * @param context Pointer to context_t structure.
  * @return True if lock successful, false otherwise.
  */
-proton_status_e proton_node_pc_lock(void * context) {
-  if (context == NULL)
-  {
+proton_status_e proton_node_pc_lock(void* context) {
+  if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t * c = (context_t *)context;
+  context_t* c = (context_t*)context;
   return pthread_mutex_lock(&c->pc_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
@@ -412,13 +408,12 @@ proton_status_e proton_node_pc_lock(void * context) {
  * @param context Pointer to context_t structure.
  * @return True if unlock successful, false otherwise.
  */
-proton_status_e proton_node_pc_unlock(void * context) {
-  if (context == NULL)
-  {
+proton_status_e proton_node_pc_unlock(void* context) {
+  if (context == NULL) {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t * c = (context_t *)context;
+  context_t* c = (context_t*)context;
   return pthread_mutex_unlock(&c->pc_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
@@ -427,13 +422,12 @@ proton_status_e proton_node_pc_unlock(void * context) {
  * @param arg Thread argument (pointer to context_t structure).
  * @return NULL.
  */
-void *timer_1hz(void *arg) {
-  if (arg == NULL)
-  {
+void* timer_1hz(void* arg) {
+  if (arg == NULL) {
     return NULL;
   }
 
-  context_t * context = (context_t *)arg;
+  context_t* context = (context_t*)arg;
   uint32_t i = 0;
   while (1) {
     LOG_INFO(context, "1hz timer %ld", i++);
@@ -442,8 +436,7 @@ void *timer_1hz(void *arg) {
     update_stop_status(context);
     msleep(1000);
 
-    if (time(NULL) - context->last_pc_heartbeat > PROTON__NODE__PC__HEARTBEAT__PERIOD / 1000)
-    {
+    if (time(NULL) - context->last_pc_heartbeat > PROTON__NODE__PC__HEARTBEAT__PERIOD / 1000) {
       context->node->peers[PROTON__PEER__PC].state = PROTON_NODE_INACTIVE;
     }
   }
@@ -456,13 +449,12 @@ void *timer_1hz(void *arg) {
  * @param arg Thread argument (pointer to context_t structure).
  * @return NULL.
  */
-void *timer_10hz(void *arg) {
-  if (arg == NULL)
-  {
+void* timer_10hz(void* arg) {
+  if (arg == NULL) {
     return NULL;
   }
 
-  context_t * context = (context_t *)arg;
+  context_t* context = (context_t*)arg;
   uint32_t i = 0;
 
   while (1) {
@@ -483,13 +475,12 @@ void *timer_10hz(void *arg) {
  * @param arg Thread argument (pointer to context_t structure).
  * @return NULL.
  */
-void *timer_50hz(void *arg) {
-  if (arg == NULL)
-  {
+void* timer_50hz(void* arg) {
+  if (arg == NULL) {
     return NULL;
   }
 
-  context_t * context = (context_t *)arg;
+  context_t* context = (context_t*)arg;
   uint32_t i = 0;
   while (1) {
     update_imu(context);
@@ -507,13 +498,12 @@ void *timer_50hz(void *arg) {
  * @param arg Thread argument (pointer to context_t structure).
  * @return NULL.
  */
-void *stats(void *arg) {
-  if (arg == NULL)
-  {
+void* stats(void* arg) {
+  if (arg == NULL) {
     return NULL;
   }
 
-  context_t * context = (context_t *)arg;
+  context_t* context = (context_t*)arg;
   uint32_t i = 0;
 
   while (1) {
@@ -521,7 +511,8 @@ void *stats(void *arg) {
     printf("--------- J100 MCU C --------\r\n");
     printf("Node: %u\r\n", context->node->state);
     printf("Peer: %s\r\n", PROTON__NODE__PC__NAME);
-    printf("  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__PC].state, context->node->peers[PROTON__PEER__PC].transport.state);
+    printf("  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__PC].state,
+           context->node->peers[PROTON__PEER__PC].transport.state);
     printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", context->rx / 1000, context->tx / 1000);
     printf("--- Received Bundles (hz) ---\r\n");
     printf("wifi_connected: %d\r\n", context->cb_counts[CALLBACK_WIFI_CONNECTED]);
@@ -561,10 +552,7 @@ int main() {
 
   // Context
   context_t context = {
-    .node = &mcu_node,
-    .bundles = PROTON__BUNDLES__MCU__DEFAULT_VALUE,
-    .last_pc_heartbeat = 0
-  };
+      .node = &mcu_node, .bundles = PROTON__BUNDLES__MCU__DEFAULT_VALUE, .last_pc_heartbeat = 0};
 
   // Init
   proton_bundles_mcu_init(&context.bundles);
@@ -575,9 +563,10 @@ int main() {
   proton_peer_pc_init(&mcu_peers[PROTON__PEER__PC], proton_pc_buffer);
   proton_node_mcu_init(&mcu_node, mcu_peers, proton_mcu_buffer, &context);
 
-
-  strncpy(context.bundles.status_bundle.firmware_version, "3.0.0", PROTON__BUNDLE__STATUS__SIGNAL__FIRMWARE_VERSION__CAPACITY);
-  strncpy(context.bundles.status_bundle.hardware_id, "J100", PROTON__BUNDLE__STATUS__SIGNAL__HARDWARE_ID__CAPACITY);
+  strncpy(context.bundles.status_bundle.firmware_version, "3.0.0",
+          PROTON__BUNDLE__STATUS__SIGNAL__FIRMWARE_VERSION__CAPACITY);
+  strncpy(context.bundles.status_bundle.hardware_id, "J100",
+          PROTON__BUNDLE__STATUS__SIGNAL__HARDWARE_ID__CAPACITY);
 
   // Start threads
   pthread_create(&thread_50hz, NULL, &timer_50hz, &context);
