@@ -26,7 +26,7 @@
 
 std::unique_ptr<proton::Node> node;
 
-void send_log(const char* file, const char* func, int line, uint8_t level, std::string msg, ...);
+void send_log(const char * file, const char * func, int line, uint8_t level, std::string msg, ...);
 
 #define LOG_DEBUG(message, ...) \
   send_log(__FILE_NAME__, __func__, __LINE__, 10U, message, ##__VA_ARGS__)
@@ -39,8 +39,9 @@ void send_log(const char* file, const char* func, int line, uint8_t level, std::
 #define LOG_FATAL(message, ...) \
   send_log(__FILE_NAME__, __func__, __LINE__, 50U, message, ##__VA_ARGS__)
 
-void send_log(const char* file, const char* func, int line, uint8_t level, std::string msg, ...) {
-  auto& log_bundle = node->getBundle("log");
+void send_log(const char * file, const char * func, int line, uint8_t level, std::string msg, ...)
+{
+  auto & log_bundle = node->getBundle("log");
   log_bundle.getSignal("name").setValue<std::string>("a300_mcu_cpp");
   log_bundle.getSignal("file").setValue<std::string>(file);
   log_bundle.getSignal("line").setValue<uint32_t>(line);
@@ -64,35 +65,40 @@ void send_log(const char* file, const char* func, int line, uint8_t level, std::
   node->sendBundle("log");
 }
 
-void run_1hz_thread() {
+void run_1hz_thread()
+{
   uint32_t i = 0;
-  while (1) {
+  while (1)
+  {
     LOG_INFO("Test Log %d", i++);
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 
-void run_10hz_thread() {
+void run_10hz_thread()
+{
   uint32_t i = 0;
-  while (1) {
+  while (1)
+  {
     LOG_INFO("Test Log %d", i++);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
 
-void run_stats_thread() {
-  while (1) {
+void run_stats_thread()
+{
+  while (1)
+  {
     node->printStats();
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 
-void empty_callback(proton::BundleHandle& bundle) {
-  bundle.printBundleVerbose();
-}
+void empty_callback(proton::BundleHandle & bundle) { bundle.printBundleVerbose(); }
 
-int main() {
+int main()
+{
   node = std::make_unique<proton::Node>(CONFIG_FILE, "node1");
 
   node->registerCallback("node_name", empty_callback);

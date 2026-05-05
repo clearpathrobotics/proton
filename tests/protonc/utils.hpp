@@ -21,7 +21,8 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
+extern "C"
+{
 #include "proton__test_producer.h"
 }
 

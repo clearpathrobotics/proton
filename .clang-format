@@ -1,48 +1,12 @@
-BasedOnStyle: Google
-
-# Indentation
-IndentWidth: 2
-TabWidth: 2
-UseTab: Never
-
-# Column limit
+Language:        Cpp
+BasedOnStyle:  Google
 ColumnLimit: 100
-
-# Braces
-BreakBeforeBraces: Attach
-
-# Control statements
-AllowShortIfStatementsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: Empty
-
-# Namespaces
-NamespaceIndentation: None
-
-# Includes
+AccessModifierOffset: -2
+AlignAfterOpenBracket: AlwaysBreak
+BreakBeforeBraces: Allman
+ConstructorInitializerIndentWidth: 0
+ContinuationIndentWidth: 2
+DerivePointerAlignment: false
+PointerAlignment: Middle
+ReflowComments: false
 IncludeBlocks: Preserve
-SortIncludes: true
-
-# Spacing
-SpaceBeforeParens: ControlStatements
-SpacesInParentheses: false
-
-# Alignment
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-
-# Pointer/reference style
-PointerAlignment: Left
-
-# C++11/14/17 features
-Standard: Auto
-
-# Keep empty lines reasonable
-MaxEmptyLinesToKeep: 1
-
-# Constructor initializer formatting
-ConstructorInitializerAllOnOneLineOrOnePerLine: true
-BreakConstructorInitializers: BeforeComma
-
-# Penalties (tune line breaking behavior)
-PenaltyBreakBeforeFirstCallParameter: 1
-PenaltyReturnTypeOnItsOwnLine: 1

@@ -49,7 +49,8 @@
  * @brief Enumeration of callback types for bundle reception.
  *
  */
-typedef enum {
+typedef enum
+{
   CALLBACK_CMD_FANS,
   CALLBACK_DISPLAY_STATUS,
   CALLBACK_CMD_LIGHTS,
@@ -64,8 +65,9 @@ typedef enum {
  * @brief Context structure for MCU node operations.
  *
  */
-typedef struct {
-  proton_node_t* node;
+typedef struct
+{
+  proton_node_t * node;
   proton_bundles_mcu_t bundles;
   pthread_mutex_t mcu_lock;
   pthread_mutex_t pc_lock;
@@ -81,8 +83,9 @@ typedef struct {
  * @brief Callback for fan command bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_cmd_fans_callback(void* context) {
-  context_t* c = (context_t*)context;
+void proton_bundle_cmd_fans_callback(void * context)
+{
+  context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_CMD_FANS]++;
 }
 
@@ -90,8 +93,9 @@ void proton_bundle_cmd_fans_callback(void* context) {
  * @brief Callback for display status bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_display_status_callback(void* context) {
-  context_t* c = (context_t*)context;
+void proton_bundle_display_status_callback(void * context)
+{
+  context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_DISPLAY_STATUS]++;
 }
 
@@ -99,8 +103,9 @@ void proton_bundle_display_status_callback(void* context) {
  * @brief Callback for light command bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_cmd_lights_callback(void* context) {
-  context_t* c = (context_t*)context;
+void proton_bundle_cmd_lights_callback(void * context)
+{
+  context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_CMD_LIGHTS]++;
 }
 
@@ -108,8 +113,9 @@ void proton_bundle_cmd_lights_callback(void* context) {
  * @brief Callback for battery bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_battery_callback(void* context) {
-  context_t* c = (context_t*)context;
+void proton_bundle_battery_callback(void * context)
+{
+  context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_BATTERY]++;
 }
 
@@ -117,8 +123,9 @@ void proton_bundle_battery_callback(void* context) {
  * @brief Callback for pinout command bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_pinout_command_callback(void* context) {
-  context_t* c = (context_t*)context;
+void proton_bundle_pinout_command_callback(void * context)
+{
+  context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_PINOUT_COMMAND]++;
 }
 
@@ -126,8 +133,9 @@ void proton_bundle_pinout_command_callback(void* context) {
  * @brief Callback for PC heartbeat bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_pc_heartbeat_callback(void* context) {
-  context_t* c = (context_t*)context;
+void proton_bundle_pc_heartbeat_callback(void * context)
+{
+  context_t * c = (context_t *)context;
   printf("Heartbeat received %u\r\n", c->bundles.pc_heartbeat_bundle.heartbeat);
   c->node->peers[PROTON__PEER__PC].state = PROTON_NODE_ACTIVE;
   c->last_pc_heartbeat = time(NULL);
@@ -137,8 +145,9 @@ void proton_bundle_pc_heartbeat_callback(void* context) {
  * @brief Callback for shutdown command bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_cmd_shutdown_callback(void* context) {
-  context_t* c = (context_t*)context;
+void proton_bundle_cmd_shutdown_callback(void * context)
+{
+  context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_CMD_SHUTDOWN]++;
   strcpy(c->bundles.cmd_shutdown_response_bundle.message, "SHUTTING DOWN");
   c->bundles.cmd_shutdown_response_bundle.success = true;
@@ -152,8 +161,9 @@ void proton_bundle_cmd_shutdown_callback(void* context) {
  * @brief Callback for clear needs reset bundle reception.
  * @param context Pointer to context_t structure.
  */
-void proton_bundle_clear_needs_reset_callback(void* context) {
-  context_t* c = (context_t*)context;
+void proton_bundle_clear_needs_reset_callback(void * context)
+{
+  context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_CLEAR_NEEDS_RESET]++;
   c->bundles.stop_status_bundle.needs_reset = false;
 
@@ -173,10 +183,11 @@ void proton_bundle_clear_needs_reset_callback(void* context) {
  * @param msg Format string for message.
  * @param ... Variable arguments for format string.
  */
-void send_log(void* context, const char* file, const char* func, int line, uint8_t level, char* msg,
-              ...) {
-  context_t* c = (context_t*)context;
-  proton_bundle_log_t* log_bundle = &c->bundles.log_bundle;
+void send_log(
+  void * context, const char * file, const char * func, int line, uint8_t level, char * msg, ...)
+{
+  context_t * c = (context_t *)context;
+  proton_bundle_log_t * log_bundle = &c->bundles.log_bundle;
   strcpy(log_bundle->name, "A300_proton");
   strcpy(log_bundle->file, file);
   strcpy(log_bundle->function, func);
@@ -196,8 +207,10 @@ void send_log(void* context, const char* file, const char* func, int line, uint8
  * @param node Pointer to proton_node_t structure.
  * @param power_bundle Pointer to power bundle to update.
  */
-void update_power(proton_node_t* node, proton_bundle_power_t* power_bundle) {
-  if (!power_bundle) {
+void update_power(proton_node_t * node, proton_bundle_power_t * power_bundle)
+{
+  if (!power_bundle)
+  {
     return;
   }
 
@@ -212,8 +225,10 @@ void update_power(proton_node_t* node, proton_bundle_power_t* power_bundle) {
  * @param node Pointer to proton_node_t structure.
  * @param temperature_bundle Pointer to temperature bundle to update.
  */
-void update_temperature(proton_node_t* node, proton_bundle_temperature_t* temperature_bundle) {
-  if (!temperature_bundle) {
+void update_temperature(proton_node_t * node, proton_bundle_temperature_t * temperature_bundle)
+{
+  if (!temperature_bundle)
+  {
     return;
   }
 
@@ -228,8 +243,10 @@ void update_temperature(proton_node_t* node, proton_bundle_temperature_t* temper
  * @param status_bundle Pointer to status bundle to update.
  * @param s Uptime in seconds.
  */
-void update_status(proton_node_t* node, proton_bundle_status_t* status_bundle, uint32_t s) {
-  if (!status_bundle) {
+void update_status(proton_node_t * node, proton_bundle_status_t * status_bundle, uint32_t s)
+{
+  if (!status_bundle)
+  {
     return;
   }
 
@@ -247,9 +264,11 @@ void update_status(proton_node_t* node, proton_bundle_status_t* status_bundle, u
  * @param node Pointer to proton_node_t structure.
  * @param emergency_stop_bundle Pointer to emergency stop bundle to update.
  */
-void update_emergency_stop(proton_node_t* node,
-                           proton_bundle_emergency_stop_t* emergency_stop_bundle) {
-  if (!emergency_stop_bundle) {
+void update_emergency_stop(
+  proton_node_t * node, proton_bundle_emergency_stop_t * emergency_stop_bundle)
+{
+  if (!emergency_stop_bundle)
+  {
     return;
   }
 
@@ -263,8 +282,10 @@ void update_emergency_stop(proton_node_t* node,
  * @param node Pointer to proton_node_t structure.
  * @param stop_status_bundle Pointer to stop status bundle to update.
  */
-void update_stop_status(proton_node_t* node, proton_bundle_stop_status_t* stop_status_bundle) {
-  if (!stop_status_bundle) {
+void update_stop_status(proton_node_t * node, proton_bundle_stop_status_t * stop_status_bundle)
+{
+  if (!stop_status_bundle)
+  {
     return;
   }
 
@@ -276,8 +297,10 @@ void update_stop_status(proton_node_t* node, proton_bundle_stop_status_t* stop_s
  * @param node Pointer to proton_node_t structure.
  * @param alerts_bundle Pointer to alerts bundle to update.
  */
-void update_alerts(proton_node_t* node, proton_bundle_alerts_t* alerts_bundle) {
-  if (!alerts_bundle) {
+void update_alerts(proton_node_t * node, proton_bundle_alerts_t * alerts_bundle)
+{
+  if (!alerts_bundle)
+  {
     return;
   }
 
@@ -291,8 +314,10 @@ void update_alerts(proton_node_t* node, proton_bundle_alerts_t* alerts_bundle) {
  * @param node Pointer to proton_node_t structure.
  * @param pinout_state_bundle Pointer to pinout state bundle to update.
  */
-void update_pinout_state(proton_node_t* node, proton_bundle_pinout_state_t* pinout_state_bundle) {
-  if (!pinout_state_bundle) {
+void update_pinout_state(proton_node_t * node, proton_bundle_pinout_state_t * pinout_state_bundle)
+{
+  if (!pinout_state_bundle)
+  {
     return;
   }
 
@@ -315,16 +340,18 @@ void update_pinout_state(proton_node_t* node, proton_bundle_pinout_state_t* pino
  * @brief Establishes PC transport connection.
  * @return PROTON_OK if connection successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_connect(void* context) {
-  if (context == NULL) {
+proton_status_e proton_node_pc_transport_connect(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t* c = (context_t*)context;
+  context_t * c = (context_t *)context;
   c->sock_recv =
-      socket_init(PROTON__NODE__MCU__ENDPOINT__0__IPHL, PROTON__NODE__MCU__ENDPOINT__0__PORT, true);
+    socket_init(PROTON__NODE__MCU__ENDPOINT__0__IPHL, PROTON__NODE__MCU__ENDPOINT__0__PORT, true);
   c->sock_send =
-      socket_init(PROTON__NODE__PC__ENDPOINT__0__IPHL, PROTON__NODE__PC__ENDPOINT__0__PORT, false);
+    socket_init(PROTON__NODE__PC__ENDPOINT__0__IPHL, PROTON__NODE__PC__ENDPOINT__0__PORT, false);
 
   return (c->sock_recv >= 0 && c->sock_send >= 0) ? PROTON_OK : PROTON_CONNECT_ERROR;
 }
@@ -333,7 +360,8 @@ proton_status_e proton_node_pc_transport_connect(void* context) {
  * @brief Closes PC transport connection.
  * @return PROTON_OK if disconnection successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_disconnect(void* context) {
+proton_status_e proton_node_pc_transport_disconnect(void * context)
+{
   (void)context;
   return PROTON_OK;
 }
@@ -345,16 +373,19 @@ proton_status_e proton_node_pc_transport_disconnect(void* context) {
  * @param bytes_read Pointer to store number of bytes actually read.
  * @return PROTON_OK if read successful, error code otherwise.
  */
-proton_status_e
-proton_node_pc_transport_read(void* context, uint8_t* buf, size_t len, size_t* bytes_read) {
-  if (context == NULL) {
+proton_status_e proton_node_pc_transport_read(
+  void * context, uint8_t * buf, size_t len, size_t * bytes_read)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t* c = (context_t*)context;
+  context_t * c = (context_t *)context;
   int ret = recv(c->sock_recv, buf, len, 0);
 
-  if (ret < 0) {
+  if (ret < 0)
+  {
     return PROTON_READ_ERROR;
   }
 
@@ -371,15 +402,18 @@ proton_node_pc_transport_read(void* context, uint8_t* buf, size_t len, size_t* b
  * @param bytes_written Pointer to store number of bytes actually written.
  * @return PROTON_OK if write successful, error code otherwise.
  */
-proton_status_e proton_node_pc_transport_write(void* context, const uint8_t* buf, size_t len,
-                                               size_t* bytes_written) {
-  if (context == NULL) {
+proton_status_e proton_node_pc_transport_write(
+  void * context, const uint8_t * buf, size_t len, size_t * bytes_written)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
-  context_t* c = (context_t*)context;
+  context_t * c = (context_t *)context;
   int ret = send(c->sock_send, buf, len, 0);
 
-  if (ret < 0) {
+  if (ret < 0)
+  {
     return PROTON_WRITE_ERROR;
   }
 
@@ -394,12 +428,14 @@ proton_status_e proton_node_pc_transport_write(void* context, const uint8_t* buf
  * @param context Pointer to context_t structure.
  * @return True if lock successful, false otherwise.
  */
-proton_status_e proton_node_mcu_lock(void* context) {
-  if (context == NULL) {
+proton_status_e proton_node_mcu_lock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t* c = (context_t*)context;
+  context_t * c = (context_t *)context;
   return pthread_mutex_lock(&c->mcu_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
@@ -408,12 +444,14 @@ proton_status_e proton_node_mcu_lock(void* context) {
  * @param context Pointer to context_t structure.
  * @return True if unlock successful, false otherwise.
  */
-proton_status_e proton_node_mcu_unlock(void* context) {
-  if (context == NULL) {
+proton_status_e proton_node_mcu_unlock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t* c = (context_t*)context;
+  context_t * c = (context_t *)context;
   return pthread_mutex_unlock(&c->mcu_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
@@ -422,12 +460,14 @@ proton_status_e proton_node_mcu_unlock(void* context) {
  * @param context Pointer to context_t structure.
  * @return True if lock successful, false otherwise.
  */
-proton_status_e proton_node_pc_lock(void* context) {
-  if (context == NULL) {
+proton_status_e proton_node_pc_lock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t* c = (context_t*)context;
+  context_t * c = (context_t *)context;
   return pthread_mutex_lock(&c->pc_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
@@ -436,12 +476,14 @@ proton_status_e proton_node_pc_lock(void* context) {
  * @param context Pointer to context_t structure.
  * @return True if unlock successful, false otherwise.
  */
-proton_status_e proton_node_pc_unlock(void* context) {
-  if (context == NULL) {
+proton_status_e proton_node_pc_unlock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  context_t* c = (context_t*)context;
+  context_t * c = (context_t *)context;
   return pthread_mutex_unlock(&c->pc_lock) == 0 ? PROTON_OK : PROTON_MUTEX_ERROR;
 }
 
@@ -450,15 +492,18 @@ proton_status_e proton_node_pc_unlock(void* context) {
  * @param arg Thread argument (pointer to context_t structure).
  * @return NULL.
  */
-void* timer_1hz(void* arg) {
-  if (arg == NULL) {
+void * timer_1hz(void * arg)
+{
+  if (arg == NULL)
+  {
     return NULL;
   }
 
   uint32_t i = 0;
-  context_t* context = (context_t*)arg;
+  context_t * context = (context_t *)arg;
 
-  while (1) {
+  while (1)
+  {
     LOG_INFO(context, "1hz timer %ld", i++);
     update_status(context->node, &context->bundles.status_bundle, i);
     update_emergency_stop(context->node, &context->bundles.emergency_stop_bundle);
@@ -466,7 +511,8 @@ void* timer_1hz(void* arg) {
     update_alerts(context->node, &context->bundles.alerts_bundle);
     msleep(1000);
 
-    if (time(NULL) - context->last_pc_heartbeat > PROTON__NODE__PC__HEARTBEAT__PERIOD / 1000) {
+    if (time(NULL) - context->last_pc_heartbeat > PROTON__NODE__PC__HEARTBEAT__PERIOD / 1000)
+    {
       context->node->peers[PROTON__PEER__PC].state = PROTON_NODE_INACTIVE;
     }
   }
@@ -479,15 +525,18 @@ void* timer_1hz(void* arg) {
  * @param arg Thread argument (pointer to context_t structure).
  * @return NULL.
  */
-void* timer_10hz(void* arg) {
-  if (arg == NULL) {
+void * timer_10hz(void * arg)
+{
+  if (arg == NULL)
+  {
     return NULL;
   }
 
   uint32_t i = 0;
-  context_t* context = (context_t*)arg;
+  context_t * context = (context_t *)arg;
 
-  while (1) {
+  while (1)
+  {
     LOG_INFO(context, "10hz timer %ld", i++);
     update_power(context->node, &context->bundles.power_bundle);
     update_temperature(context->node, &context->bundles.temperature_bundle);
@@ -506,21 +555,25 @@ void* timer_10hz(void* arg) {
  * @param arg Thread argument (pointer to context_t structure).
  * @return NULL.
  */
-void* stats(void* arg) {
-  if (arg == NULL) {
+void * stats(void * arg)
+{
+  if (arg == NULL)
+  {
     return NULL;
   }
 
   uint32_t i = 0;
-  context_t* context = (context_t*)arg;
+  context_t * context = (context_t *)arg;
 
-  while (1) {
+  while (1)
+  {
     printf("\033[2J\033[1;1H");
     printf("--------- A300 MCU C --------\r\n");
     printf("Node: %u\r\n", context->node->state);
     printf("Peer: %s\r\n", PROTON__NODE__PC__NAME);
-    printf("  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__PC].state,
-           context->node->peers[PROTON__PEER__PC].transport.state);
+    printf(
+      "  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__PC].state,
+      context->node->peers[PROTON__PEER__PC].transport.state);
     printf("Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", context->rx / 1000, context->tx / 1000);
     printf("--- Received Bundles (hz) ---\r\n");
     printf("cmd_fans: %d\r\n", context->cb_counts[CALLBACK_CMD_FANS]);
@@ -535,7 +588,8 @@ void* stats(void* arg) {
     context->rx = 0.0;
     context->tx = 0.0;
 
-    for (uint8_t i = 0; i < CALLBACK_COUNT; i++) {
+    for (uint8_t i = 0; i < CALLBACK_COUNT; i++)
+    {
       context->cb_counts[i] = 0;
     }
 
@@ -549,7 +603,8 @@ void* stats(void* arg) {
  * @brief Main entry point for A300 MCU application.
  * @return Exit code.
  */
-int main() {
+int main()
+{
   pthread_t thread_10hz, thread_1hz, thread_stats;
 
   // Node
@@ -566,7 +621,7 @@ int main() {
 
   // Context
   context_t context = {
-      .node = &mcu_node, .bundles = PROTON__BUNDLES__MCU__DEFAULT_VALUE, .last_pc_heartbeat = 0};
+    .node = &mcu_node, .bundles = PROTON__BUNDLES__MCU__DEFAULT_VALUE, .last_pc_heartbeat = 0};
 
   // Init
   proton_bundles_mcu_init(&context.bundles);
@@ -577,10 +632,12 @@ int main() {
   proton_peer_pc_init(&mcu_peers[PROTON__PEER__PC], proton_pc_buffer);
   proton_node_mcu_init(&mcu_node, mcu_peers, proton_mcu_buffer, &context);
 
-  strncpy(context.bundles.status_bundle.firmware_version, "3.0.0",
-          PROTON__BUNDLE__STATUS__SIGNAL__FIRMWARE_VERSION__CAPACITY);
-  strncpy(context.bundles.status_bundle.hardware_id, "A300",
-          PROTON__BUNDLE__STATUS__SIGNAL__HARDWARE_ID__CAPACITY);
+  strncpy(
+    context.bundles.status_bundle.firmware_version, "3.0.0",
+    PROTON__BUNDLE__STATUS__SIGNAL__FIRMWARE_VERSION__CAPACITY);
+  strncpy(
+    context.bundles.status_bundle.hardware_id, "A300",
+    PROTON__BUNDLE__STATUS__SIGNAL__HARDWARE_ID__CAPACITY);
   context.bundles.stop_status_bundle.needs_reset = true;
 
   // Start threads

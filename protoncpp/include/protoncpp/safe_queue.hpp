@@ -25,13 +25,16 @@
 #include <optional>
 #include <queue>
 
-namespace proton {
+namespace proton
+{
 
 template <typename T>
-class SafeQueue {
- public:
+class SafeQueue
+{
+public:
   // Producer: Push item
-  void push(T item) {
+  void push(T item)
+  {
     {
       std::lock_guard<std::mutex> lock(mutex_);
       queue_.push(std::move(item));
@@ -40,7 +43,8 @@ class SafeQueue {
   }
 
   // Consumer: Pop item (blocking)
-  T pop() {
+  T pop()
+  {
     std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [this] { return !queue_.empty(); });
     T item = std::move(queue_.front());
@@ -49,9 +53,11 @@ class SafeQueue {
   }
 
   // Consumer: Try pop (non-blocking)
-  std::optional<T> try_pop() {
+  std::optional<T> try_pop()
+  {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (queue_.empty()) {
+    if (queue_.empty())
+    {
       return std::nullopt;
     }
     T item = std::move(queue_.front());
@@ -60,18 +66,20 @@ class SafeQueue {
   }
 
   // Check if empty
-  bool empty() const {
+  bool empty() const
+  {
     std::lock_guard<std::mutex> lock(mutex_);
     return queue_.empty();
   }
 
   // Get size
-  size_t size() const {
+  size_t size() const
+  {
     std::lock_guard<std::mutex> lock(mutex_);
     return queue_.size();
   }
 
- private:
+private:
   std::queue<T> queue_;
   mutable std::mutex mutex_;
   std::condition_variable cv_;

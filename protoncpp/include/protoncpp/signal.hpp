@@ -24,11 +24,13 @@
 
 #include <memory>
 
-namespace proton {
+namespace proton
+{
 
 using bytes = std::vector<uint8_t>;
 
-namespace default_values {
+namespace default_values
+{
 inline static const double DOUBLE = 0.0;
 inline static const float FLOAT = 0.0f;
 inline static const int32_t INT32 = 0;
@@ -40,9 +42,10 @@ inline static const std::string STRING = "";
 inline static const proton::bytes BYTES = {};
 }  // namespace default_values
 
-class SignalHandle {
- public:
-  SignalHandle(SignalConfig config, std::string bundle_name, Signal* signal);
+class SignalHandle
+{
+public:
+  SignalHandle(SignalConfig config, std::string bundle_name, Signal * signal);
 
   ~SignalHandle();
 
@@ -56,28 +59,18 @@ class SignalHandle {
   template <typename T>
   void setValue(uint16_t index, uint16_t subindex, const T value);
 
-  std::string getName() {
-    return name_;
-  }
-  std::string getBundleName() {
-    return bundle_name_;
-  }
-  Signal::SignalCase getType() {
-    return type_;
-  }
-  uint32_t getCapacity() const {
-    return capacity_;
-  }
-  Signal* getSignalPtr() {
-    return signal_;
-  }
+  std::string getName() { return name_; }
+  std::string getBundleName() { return bundle_name_; }
+  Signal::SignalCase getType() { return type_; }
+  uint32_t getCapacity() const { return capacity_; }
+  Signal * getSignalPtr() { return signal_; }
 
- private:
+private:
   std::string name_;
   std::string bundle_name_;
   Signal::SignalCase type_;
   uint32_t capacity_;
-  Signal* signal_;
+  Signal * signal_;
   bool const_;
 };
 

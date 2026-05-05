@@ -6,7 +6,8 @@
     "**/vscode-extension/**",
     ".git/*/**",
     ".vscode",
-    "**/build/**"
+    "**/build/**",
+    ".clang-format"
   ],
   "import": [
     "@cspell/dict-en-ca/cspell-ext.json"

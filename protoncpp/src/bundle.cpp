@@ -20,7 +20,8 @@
 
 using namespace proton;
 
-BundleHandle::BundleHandle(BundleConfig config) {
+BundleHandle::BundleHandle(BundleConfig config)
+{
   name_ = config.name;
   id_ = config.id;
   producers_ = config.producers;
@@ -32,12 +33,14 @@ BundleHandle::BundleHandle(BundleConfig config) {
   tx_count_ = txps_ = 0;
 
   // Add each signal for this bundle
-  for (auto s : config.signals) {
+  for (auto s : config.signals)
+  {
     addSignal(s);
   }
 }
 
-BundleHandle::BundleHandle() {
+BundleHandle::BundleHandle()
+{
   name_ = "UNKNOWN";
   id_ = 0;
   bundle_ = std::make_shared<Bundle>();
@@ -47,23 +50,28 @@ BundleHandle::BundleHandle() {
   tx_count_ = txps_ = 0;
 }
 
-void BundleHandle::registerCallback(BundleCallback callback) {
-  if (callback) {
+void BundleHandle::registerCallback(BundleCallback callback)
+{
+  if (callback)
+  {
     callback_ = callback;
   }
 }
 
-void BundleHandle::printBundle() {
+void BundleHandle::printBundle()
+{
   std::cout << name_ << " bundle: {" << std::endl;
   std::cout << "  id: 0x" << std::hex << id_ << std::dec << std::endl;
   std::cout << "}" << std::endl;
 }
 
-void BundleHandle::printBundleVerbose() {
+void BundleHandle::printBundleVerbose()
+{
   std::cout << name_ << " bundle: {" << std::endl;
   std::cout << "  id: 0x" << std::hex << id_ << std::dec << std::endl;
   std::cout << "  signals: {" << std::endl;
-  for (auto &[name, handle] : signals_) {
+  for (auto & [name, handle] : signals_)
+  {
     std::cout << "    " << name << " {" << std::endl;
     std::string debug = handle.getSignalPtr()->DebugString();
     std::string spaces = "  ";  // tab
@@ -71,13 +79,15 @@ void BundleHandle::printBundleVerbose() {
     std::string close_bracket = "      }\r\n";
 
     auto it = debug.find(spaces);
-    while (it != std::string::npos) {
+    while (it != std::string::npos)
+    {
       debug.replace(it, spaces.size(), tab);
       it = debug.find(spaces, it);
     }
 
     it = debug.find('}');
-    if (it != std::string::npos) {
+    if (it != std::string::npos)
+    {
       debug.replace(it, close_bracket.size(), close_bracket);
     }
 
@@ -88,36 +98,48 @@ void BundleHandle::printBundleVerbose() {
   std::cout << "}" << std::endl;
 }
 
-void BundleHandle::addSignal(SignalConfig config) {
-  Signal *signal;
+void BundleHandle::addSignal(SignalConfig config)
+{
+  Signal * signal;
   // Non-constant signals are added to the bundle
-  if (!config.is_const) {
+  if (!config.is_const)
+  {
     signal = bundle_->add_signals();
   }
   // Constant signals exist just to store their value
-  else {
+  else
+  {
     signal = new Signal();
   }
 
   signals_.emplace(config.name, SignalHandle(config, name_, signal));
 }
 
-SignalHandle &BundleHandle::getSignal(const std::string &signal_name) {
-  try {
+SignalHandle & BundleHandle::getSignal(const std::string & signal_name)
+{
+  try
+  {
     return signals_.at(signal_name);
-  } catch (std::out_of_range &e) {
+  }
+  catch (std::out_of_range & e)
+  {
     throw std::runtime_error("Invalid signal name " + signal_name + " in bundle " + name_);
   }
 }
 
-const SignalHandle BundleHandle::getConstSignal(const std::string &signal_name) const {
-  try {
+const SignalHandle BundleHandle::getConstSignal(const std::string & signal_name) const
+{
+  try
+  {
     return signals_.at(signal_name);
-  } catch (std::out_of_range &e) {
+  }
+  catch (std::out_of_range & e)
+  {
     throw std::runtime_error("Invalid signal name " + signal_name + " in bundle " + name_);
   }
 }
 
-bool BundleHandle::hasSignal(const std::string &signal_name) const {
+bool BundleHandle::hasSignal(const std::string & signal_name) const
+{
   return signals_.find(signal_name) != signals_.end();
 }

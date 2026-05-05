@@ -33,13 +33,15 @@
  * @param buffer Read buffer
  * @return proton_status_e Initialization status
  */
-proton_status_e proton_init_peer(proton_peer_t* peer, proton_peer_id_t id,
-                                 proton_heartbeat_t heartbeat, proton_transport_t transport,
-                                 proton_receive_t receive_func, proton_mutex_lock_t lock_func,
-                                 proton_mutex_unlock_t unlock_func, proton_buffer_t buffer) {
-  if (peer && TRANSPORT_VALID(transport) && receive_func && lock_func && unlock_func &&
-      buffer.data) {
-    if (heartbeat.enabled && heartbeat.period == 0) {
+proton_status_e proton_init_peer(
+  proton_peer_t * peer, proton_peer_id_t id, proton_heartbeat_t heartbeat,
+  proton_transport_t transport, proton_receive_t receive_func, proton_mutex_lock_t lock_func,
+  proton_mutex_unlock_t unlock_func, proton_buffer_t buffer)
+{
+  if (peer && TRANSPORT_VALID(transport) && receive_func && lock_func && unlock_func && buffer.data)
+  {
+    if (heartbeat.enabled && heartbeat.period == 0)
+    {
       return PROTON_ERROR;
     }
 
@@ -71,11 +73,13 @@ proton_status_e proton_init_peer(proton_peer_t* peer, proton_peer_id_t id,
  * @param context User-defined context
  * @return proton_status_e Configuration status
  */
-proton_status_e
-proton_configure(proton_node_t* node, proton_heartbeat_t heartbeat, proton_mutex_lock_t lock_func,
-                 proton_mutex_unlock_t unlock_func, proton_buffer_t buffer, proton_peer_t* peers,
-                 uint16_t peer_count, void* context) {
-  if (node && lock_func && unlock_func && buffer.data && peers && peer_count > 0) {
+proton_status_e proton_configure(
+  proton_node_t * node, proton_heartbeat_t heartbeat, proton_mutex_lock_t lock_func,
+  proton_mutex_unlock_t unlock_func, proton_buffer_t buffer, proton_peer_t * peers,
+  uint16_t peer_count, void * context)
+{
+  if (node && lock_func && unlock_func && buffer.data && peers && peer_count > 0)
+  {
     node->peer_count = peer_count;
     node->peers = peers;
     node->heartbeat = heartbeat;
@@ -85,8 +89,10 @@ proton_configure(proton_node_t* node, proton_heartbeat_t heartbeat, proton_mutex
     node->state = PROTON_NODE_INACTIVE;
     node->context = context;
 
-    for (uint16_t p = 0; p < peer_count; p++) {
-      if (peers[p].state == PROTON_NODE_UNCONFIGURED) {
+    for (uint16_t p = 0; p < peer_count; p++)
+    {
+      if (peers[p].state == PROTON_NODE_UNCONFIGURED)
+      {
         return PROTON_INVALID_STATE_ERROR;
       }
 
@@ -105,12 +111,15 @@ proton_configure(proton_node_t* node, proton_heartbeat_t heartbeat, proton_mutex
  * @param node Node to activate
  * @return proton_status_e Activation status
  */
-proton_status_e proton_activate(proton_node_t* node) {
-  if (node == NULL) {
+proton_status_e proton_activate(proton_node_t * node)
+{
+  if (node == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  if (node->state == PROTON_NODE_UNCONFIGURED) {
+  if (node->state == PROTON_NODE_UNCONFIGURED)
+  {
     return PROTON_INVALID_STATE_ERROR;
   }
 
@@ -125,12 +134,15 @@ proton_status_e proton_activate(proton_node_t* node) {
  * @param peer Peer index
  * @return proton_status_e Spin status
  */
-proton_status_e proton_spin(proton_node_t* node, const uint8_t peer) {
+proton_status_e proton_spin(proton_node_t * node, const uint8_t peer)
+{
   proton_status_e status;
-  while (1) {
+  while (1)
+  {
     status = proton_spin_once(node, peer);
 
-    if (status != PROTON_OK) {
+    if (status != PROTON_OK)
+    {
       PROTON_PRINT("Spin error %u\r\n", status);
     }
   }
@@ -145,56 +157,72 @@ proton_status_e proton_spin(proton_node_t* node, const uint8_t peer) {
  * @param peer Peer index
  * @return proton_status_e Spin status
  */
-proton_status_e proton_spin_once(proton_node_t* node, const uint8_t peer) {
-  if (node == NULL || node->peers == NULL) {
+proton_status_e proton_spin_once(proton_node_t * node, const uint8_t peer)
+{
+  if (node == NULL || node->peers == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  if (node->state != PROTON_NODE_ACTIVE) {
+  if (node->state != PROTON_NODE_ACTIVE)
+  {
     return PROTON_INVALID_STATE_ERROR;
   }
 
-  if (peer >= node->peer_count) {
+  if (peer >= node->peer_count)
+  {
     return PROTON_ERROR;
   }
 
-  proton_peer_t* peer_handle = &node->peers[peer];
+  proton_peer_t * peer_handle = &node->peers[peer];
 
-  if (peer_handle == NULL) {
+  if (peer_handle == NULL)
+  {
     return PROTON_ERROR;
   }
 
   size_t bytes_read = 0;
   proton_status_e status = PROTON_OK;
 
-  switch (peer_handle->transport.state) {
-    case PROTON_TRANSPORT_DISCONNECTED: {
+  switch (peer_handle->transport.state)
+  {
+    case PROTON_TRANSPORT_DISCONNECTED:
+    {
       status = peer_handle->transport.connect(node->context);
-      if (status == PROTON_OK) {
+      if (status == PROTON_OK)
+      {
         peer_handle->transport.state = PROTON_TRANSPORT_CONNECTED;
-      } else {
+      }
+      else
+      {
         peer_handle->transport.state = PROTON_TRANSPORT_ERROR;
       }
       break;
     }
 
-    case PROTON_TRANSPORT_CONNECTED: {
+    case PROTON_TRANSPORT_CONNECTED:
+    {
       // Lock atomic buffer
       status = peer_handle->atomic_buffer.lock(node->context);
-      if (status != PROTON_OK) {
+      if (status != PROTON_OK)
+      {
         PROTON_PRINT("Mutex lock error\r\n");
         return status;
       }
 
       // Read from peer transport
-      status = peer_handle->transport.read(node->context, peer_handle->atomic_buffer.buffer.data,
-                                           peer_handle->atomic_buffer.buffer.len, &bytes_read);
+      status = peer_handle->transport.read(
+        node->context, peer_handle->atomic_buffer.buffer.data,
+        peer_handle->atomic_buffer.buffer.len, &bytes_read);
 
-      if (status == PROTON_OK && bytes_read > 0) {
+      if (status == PROTON_OK && bytes_read > 0)
+      {
         // Receive bundle from read data
-        if (peer_handle->receive(node, bytes_read) != PROTON_OK) {
+        if (peer_handle->receive(node, bytes_read) != PROTON_OK)
+        {
           // Unlock atomic buffer
-          if (peer_handle->atomic_buffer.unlock(node->context) != PROTON_OK) {
+          if (peer_handle->atomic_buffer.unlock(node->context) != PROTON_OK)
+          {
             PROTON_PRINT("Mutex unlock error\r\n");
             return PROTON_MUTEX_ERROR;
           }
@@ -204,7 +232,8 @@ proton_status_e proton_spin_once(proton_node_t* node, const uint8_t peer) {
       }
       // Unlock atomic buffer
       status = peer_handle->atomic_buffer.unlock(node->context);
-      if (status != PROTON_OK) {
+      if (status != PROTON_OK)
+      {
         PROTON_PRINT("Mutex unlock error\r\n");
         return status;
       }
@@ -212,15 +241,18 @@ proton_status_e proton_spin_once(proton_node_t* node, const uint8_t peer) {
       break;
     }
 
-    case PROTON_TRANSPORT_ERROR: {
+    case PROTON_TRANSPORT_ERROR:
+    {
       status = peer_handle->transport.disconnect(node->context);
-      if (status == PROTON_OK) {
+      if (status == PROTON_OK)
+      {
         peer_handle->transport.state = PROTON_TRANSPORT_DISCONNECTED;
       }
       break;
     }
 
-    default: {
+    default:
+    {
       return PROTON_ERROR;
     }
   }

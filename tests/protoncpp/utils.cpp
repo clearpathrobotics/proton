@@ -18,10 +18,12 @@
 
 #include "utils.hpp"
 
-std::map<std::string, proton::BundleHandle> getBundles(std::string config_file) {
+std::map<std::string, proton::BundleHandle> getBundles(std::string config_file)
+{
   std::map<std::string, proton::BundleHandle> bundles;
 
-  for (auto& bundle_config : proton::Config(config_file).getBundles()) {
+  for (auto & bundle_config : proton::Config(config_file).getBundles())
+  {
     bundles.emplace(bundle_config.name, proton::BundleHandle(bundle_config));
   }
 

@@ -27,20 +27,25 @@ std::unique_ptr<proton::Node> node;
 
 std::vector<std::string> logs;
 
-void run_1hz_thread() {
-  while (1) {
+void run_1hz_thread()
+{
+  while (1)
+  {
     node->getBundle("node_name").getSignal("name").setValue<std::string>(node->getName());
     node->sendBundle("node_name");
     std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 
-void run_stats_thread() {
-  while (1) {
+void run_stats_thread()
+{
+  while (1)
+  {
     node->printStats();
 
     std::cout << "------------- Logs --------------" << std::endl;
-    for (auto& l : logs) {
+    for (auto & l : logs)
+    {
       std::cout << l << std::endl;
     }
     std::cout << "---------------------------------" << std::endl;
@@ -50,11 +55,13 @@ void run_stats_thread() {
   }
 }
 
-void logger_callback(proton::BundleHandle& bundle) {
+void logger_callback(proton::BundleHandle & bundle)
+{
   logs.push_back(bundle.getSignal("msg").getValue<std::string>());
 }
 
-int main() {
+int main()
+{
   node = std::make_unique<proton::Node>(CONFIG_FILE, "node3");
 
   std::cout << "Init" << std::endl;

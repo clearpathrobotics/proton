@@ -32,10 +32,13 @@
 #include "protoncpp/transport/serial.hpp"
 #include "protoncpp/transport/udp4.hpp"
 
-namespace proton {
+namespace proton
+{
 
-inline std::ostream& operator<<(std::ostream& os, proton_transport_state_e state) {
-  switch (state) {
+inline std::ostream & operator<<(std::ostream & os, proton_transport_state_e state)
+{
+  switch (state)
+  {
     case PROTON_TRANSPORT_DISCONNECTED:
       return os << "Disconnected";
     case PROTON_TRANSPORT_CONNECTED:
@@ -47,8 +50,10 @@ inline std::ostream& operator<<(std::ostream& os, proton_transport_state_e state
   }
 }
 
-inline std::ostream& operator<<(std::ostream& os, proton_node_state_e state) {
-  switch (state) {
+inline std::ostream & operator<<(std::ostream & os, proton_node_state_e state)
+{
+  switch (state)
+  {
     case PROTON_NODE_UNCONFIGURED:
       return os << "Unconfigured";
     case PROTON_NODE_INACTIVE:
@@ -60,8 +65,10 @@ inline std::ostream& operator<<(std::ostream& os, proton_node_state_e state) {
   }
 }
 
-inline std::ostream& operator<<(std::ostream& os, proton_status_e state) {
-  switch (state) {
+inline std::ostream & operator<<(std::ostream & os, proton_status_e state)
+{
+  switch (state)
+  {
     case PROTON_OK:
       return os << "OK";
     case PROTON_ERROR:
@@ -93,34 +100,27 @@ inline std::ostream& operator<<(std::ostream& os, proton_status_e state) {
   }
 }
 
-class Connection : public TransportManager {
- public:
-  using ReadCompleteCallback = std::function<proton_status_e(Bundle&, const std::string& producer)>;
+class Connection : public TransportManager
+{
+public:
+  using ReadCompleteCallback =
+    std::function<proton_status_e(Bundle &, const std::string & producer)>;
 
   Connection();
-  Connection(const NodeConfig& node_config, const NodeConfig& peer_config,
-             const ConnectionConfig& connection_config, ReadCompleteCallback callback);
+  Connection(
+    const NodeConfig & node_config, const NodeConfig & peer_config,
+    const ConnectionConfig & connection_config, ReadCompleteCallback callback);
 
   void run();
   void heartbeat();
-  NodeConfig getConfig() {
-    return config_;
-  }
-  proton_node_state_e getNodeState() {
-    return state_;
-  }
-  std::string getTransportType() {
-    return transport_type_;
-  }
+  NodeConfig getConfig() { return config_; }
+  proton_node_state_e getNodeState() { return state_; }
+  std::string getTransportType() { return transport_type_; }
 
-  double getRxKbps() {
-    return rx_kbps_;
-  }
-  double getTxKbps() {
-    return tx_kbps_;
-  }
+  double getRxKbps() { return rx_kbps_; }
+  double getTxKbps() { return tx_kbps_; }
 
- private:
+private:
   void spin();
   void checkHeartbeat();
   proton_status_e pollForBundle();
@@ -134,16 +134,19 @@ class Connection : public TransportManager {
   double rx_kbps_, tx_kbps_;
 };
 
-class Node : public BundleManager {
- public:
-  struct ReceivedBundle {
+class Node : public BundleManager
+{
+public:
+  struct ReceivedBundle
+  {
     Bundle bundle;
     std::string producer;
   };
 
   Node();
-  Node(const std::string config_file, const std::string target, bool auto_configure = true,
-       bool auto_activate = true);
+  Node(
+    const std::string config_file, const std::string target, bool auto_configure = true,
+    bool auto_activate = true);
 
   proton_status_e configure();
   proton_status_e activate();
@@ -151,34 +154,26 @@ class Node : public BundleManager {
   proton_status_e spin();
 
   proton_status_e waitForBundle();
-  proton_status_e readCompleteCallback(Bundle& bundle, const std::string& producer);
+  proton_status_e readCompleteCallback(Bundle & bundle, const std::string & producer);
 
-  proton_status_e sendBundle(const std::string& bundle_name);
-  proton_status_e sendBundle(BundleHandle& bundle_handle);
+  proton_status_e sendBundle(const std::string & bundle_name);
+  proton_status_e sendBundle(BundleHandle & bundle_handle);
   proton_status_e sendHeartbeat();
 
-  proton_status_e
-  registerCallback(const std::string& bundle_name, BundleHandle::BundleCallback callback);
-  proton_status_e
-  registerHeartbeatCallback(const std::string& producer, BundleHandle::BundleCallback callback);
+  proton_status_e registerCallback(
+    const std::string & bundle_name, BundleHandle::BundleCallback callback);
+  proton_status_e registerHeartbeatCallback(
+    const std::string & producer, BundleHandle::BundleCallback callback);
 
-  std::string getName() const {
-    return name_;
-  }
-  NodeConfig getNodeConfig() const {
-    return node_config_;
-  }
-  Config& getConfig() {
-    return config_;
-  }
-  std::map<std::string, Connection>& getConnections() {
-    return connections_;
-  }
+  std::string getName() const { return name_; }
+  NodeConfig getNodeConfig() const { return node_config_; }
+  Config & getConfig() { return config_; }
+  std::map<std::string, Connection> & getConnections() { return connections_; }
 
   void startStatsThread();
   void printStats();
 
- private:
+private:
   void runStatsThread();
   void runHeartbeatThread();
 

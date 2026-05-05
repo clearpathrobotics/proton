@@ -19,11 +19,12 @@
 
 using namespace proton;
 
-TEST(SignalValues, DoubleValue) {
+TEST(SignalValues, DoubleValue)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("double_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("double_value");
 
   // Check that the default value is correctly set
   AssertSignalValue(signal, default_values::DOUBLE);
@@ -36,11 +37,12 @@ TEST(SignalValues, DoubleValue) {
   AssertSignalValue(signal, value);
 }
 
-TEST(SignalValues, FloatValue) {
+TEST(SignalValues, FloatValue)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("float_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("float_value");
 
   // Check that the default value is correctly set
   AssertSignalValue(signal, default_values::FLOAT);
@@ -53,11 +55,12 @@ TEST(SignalValues, FloatValue) {
   AssertSignalValue(signal, value);
 }
 
-TEST(SignalValues, Int32Value) {
+TEST(SignalValues, Int32Value)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("int32_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("int32_value");
 
   // Check that the default value is correctly set
   AssertSignalValue(signal, default_values::INT32);
@@ -77,11 +80,12 @@ TEST(SignalValues, Int32Value) {
   AssertSignalValue(signal, value);
 }
 
-TEST(SignalValues, Int64Value) {
+TEST(SignalValues, Int64Value)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("int64_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("int64_value");
 
   // Check that the default value is correctly set
   AssertSignalValue(signal, default_values::INT64);
@@ -101,11 +105,12 @@ TEST(SignalValues, Int64Value) {
   AssertSignalValue(signal, value);
 }
 
-TEST(SignalValues, Uint32Value) {
+TEST(SignalValues, Uint32Value)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("uint32_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("uint32_value");
 
   // Check that the default value is correctly set
   AssertSignalValue(signal, default_values::UINT32);
@@ -118,11 +123,12 @@ TEST(SignalValues, Uint32Value) {
   AssertSignalValue(signal, value);
 }
 
-TEST(SignalValues, Uint64Value) {
+TEST(SignalValues, Uint64Value)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("uint64_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("uint64_value");
 
   // Check that the default value is correctly set
   AssertSignalValue(signal, default_values::UINT64);
@@ -135,11 +141,12 @@ TEST(SignalValues, Uint64Value) {
   AssertSignalValue(signal, value);
 }
 
-TEST(SignalValues, BoolValue) {
+TEST(SignalValues, BoolValue)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("bool_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("bool_value");
 
   // Check that the default value is correctly set
   AssertSignalValue(signal, default_values::BOOL);
@@ -152,11 +159,12 @@ TEST(SignalValues, BoolValue) {
   AssertSignalValue(signal, value);
 }
 
-TEST(SignalValues, StringValue) {
+TEST(SignalValues, StringValue)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("string_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("string_value");
 
   // Set a value
   std::string value = "test";
@@ -166,11 +174,12 @@ TEST(SignalValues, StringValue) {
   AssertSignalValue(signal, value);
 }
 
-TEST(SignalValues, BytesValue) {
+TEST(SignalValues, BytesValue)
+{
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
-  auto& bundle = bundles.at("value_test");
-  auto& signal = bundle.getSignal("bytes_value");
+  auto & bundle = bundles.at("value_test");
+  auto & signal = bundle.getSignal("bytes_value");
 
   // Set a value
   proton::bytes value = {0, 1, 2, 3};
@@ -180,7 +189,8 @@ TEST(SignalValues, BytesValue) {
   AssertSignalValue(signal, value);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv)
+{
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
