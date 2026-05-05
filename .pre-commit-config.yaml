@@ -50,3 +50,12 @@ repos:
         stages: [commit-msg]
         always_run: true # This might not be necessary.
         additional_dependencies: ["@cspell/dict-en-ca"]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.15.12
+    hooks:
+      # Run the linter.
+      - id: ruff-check
+        args: [--fix]
+      # Run the formatter.
+      - id: ruff-format

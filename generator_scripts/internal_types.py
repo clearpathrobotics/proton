@@ -15,26 +15,27 @@
 # @author Tom Wallis (thomas.wallis@rockwellautomation.com)
 
 
-"""Mapping of protobuf Signal types to C internal types"""
+"""Mapping of protobuf Signal types to C internal types."""
+
 INTERNAL_TYPE_MAP = {
-    "double": "double",
-    "float": "float",
-    "int32": "int32_t",
-    "int64": "int64_t",
-    "uint32": "uint32_t",
-    "uint64": "uint64_t",
-    "bool": "bool",
-    "string": "char",
-    "bytes": "uint8_t",
+    'double': 'double',
+    'float': 'float',
+    'int32': 'int32_t',
+    'int64': 'int64_t',
+    'uint32': 'uint32_t',
+    'uint64': 'uint64_t',
+    'bool': 'bool',
+    'string': 'char',
+    'bytes': 'uint8_t',
 }
 
 """Default values for particular types"""
 DEFAULT_VALUE_MAP = {
-    "double": "0.0f",
-    "float": "0.0f",
-    "int32": 0,
-    "int64": 0,
-    "uint32": 0,
-    "uint64": 0,
-    "bool": "false",
+    'double': '0.0f',
+    'float': '0.0f',
+    'int32': 0,
+    'int64': 0,
+    'uint32': 0,
+    'uint64': 0,
+    'bool': 'false',
 }

@@ -16,19 +16,19 @@
 
 from setuptools import setup
 
-package_name = "protonc"
+package_name = 'protonc'
 
 setup(
     name=package_name,
-    version="0.0.0",
+    version='0.0.0',
     packages=[package_name],
     install_requires=[
-      "jinja2 >= 3.1.2",
+        'jinja2 >= 3.1.2',
     ],
     entry_points={
-        "console_scripts": [
-            "protonc_generator=generator_scripts.generator:main",
+        'console_scripts': [
+            'protonc_generator=generator_scripts.generator:main',
         ],
     },
-    python_requires=">=3.12",
+    python_requires='>=3.12',
 )

@@ -15,106 +15,110 @@
 # @author Tom Wallis (thomas.wallis@rockwellautomation.com)
 
 
-"""Normalize elements of the proton config"""
-
-from typing import List
+"""Normalize elements of the proton config."""
 
 from config import validate_signal_elements
 from internal_types import DEFAULT_VALUE_MAP, INTERNAL_TYPE_MAP
 
 
-def normalize_node_heartbeats(nodes: List[dict]):
-    """Normalize the configuration for whether or not heartbeats are present
-    ARGS:
-        nodes: "nodes" stanza in proton config
+def normalize_node_heartbeats(nodes: list[dict]):
     """
+    Normalize the configuration for whether or not heartbeats are present.
 
-    default_heartbeat = {"enabled": False, "period": 0}
+    Args:
+        nodes: "nodes" stanza in proton config
+
+    """
+    default_heartbeat = {'enabled': False, 'period': 0}
 
     for node in nodes:
-        node.setdefault("heartbeat", default_heartbeat)
+        node.setdefault('heartbeat', default_heartbeat)
 
 
 def normalize_signals(bundle: dict):
-    """Normalize signal configuration for optional node elements
-    ARGS:
-        bundle: a bundle from proton config
     """
+    Normalize signal configuration for optional node elements.
 
-    if "signals" in bundle:
-        for signal in bundle["signals"]:
+    Args:
+        bundle: a bundle from proton config
+
+    """
+    if 'signals' in bundle:
+        for signal in bundle['signals']:
             validate_signal_elements(signal)
 
-            signal.setdefault("length", 0)
-            signal.setdefault("capacity", 0)
+            signal.setdefault('length', 0)
+            signal.setdefault('capacity', 0)
 
-            signal_type = signal["type"]
+            signal_type = signal['type']
 
-            is_capacity_type = "bytes" in signal_type or "string" in signal_type
+            is_capacity_type = 'bytes' in signal_type or 'string' in signal_type
             # TODO CORE-37812 remote const-ness in signals
-            is_const = signal.get("value") is not None
+            is_const = signal.get('value') is not None
 
-            signal["is_capacity_type"] = is_capacity_type
-            signal["is_const"] = is_const
+            signal['is_capacity_type'] = is_capacity_type
+            signal['is_const'] = is_const
 
-            signal["internal_type"] = INTERNAL_TYPE_MAP[signal_type]
+            signal['internal_type'] = INTERNAL_TYPE_MAP[signal_type]
             if signal_type in DEFAULT_VALUE_MAP:
-                signal["value"] = DEFAULT_VALUE_MAP[signal_type]
+                signal['value'] = DEFAULT_VALUE_MAP[signal_type]
 
-            if is_const:
-                # Special case for capacity types: they must have a capacity variable generated in the template,
-                # Even if they're already defined as consts. The length is equal to the strlen + 1 for the null char in C
-                if is_capacity_type:
-                    signal["capacity"] = len(signal["value"]) + 1
+            # Special case for capacity types: they must have a capacity variable generated
+            # in the template, even if they're already defined as consts. The length is
+            # equal to the strlen + 1 for the null char in C
+            if is_const and is_capacity_type:
+                signal['capacity'] = len(signal['value']) + 1
 
 
-def set_node_endpoint_address(nodes: List[dict]):
-    """Read node IP configuration and add IPNL and IPHL elements
-    ARGS:
-        nodes: "nodes" stanza in proton config
+def set_node_endpoint_address(nodes: list[dict]):
     """
+    Read node IP configuration and add IPNL and IPHL elements.
 
+    Args:
+        nodes: "nodes" stanza in proton config
+
+    """
     for node in nodes:
-        for endpoint in node["endpoints"]:
-            if endpoint["type"] == "udp4":
-                ip_split = endpoint["ip"].split(".")
+        for endpoint in node['endpoints']:
+            if endpoint['type'] == 'udp4':
+                ip_split = endpoint['ip'].split('.')
                 ip_hl = 0
                 ip_nl = 0
                 for i, octet in enumerate(ip_split):
                     ip_hl |= int(octet) << 8 * (3 - i)
                     ip_nl |= int(octet) << 8 * i
-                endpoint["iphl"] = ip_hl
-                endpoint["ipnl"] = ip_nl
+                endpoint['iphl'] = ip_hl
+                endpoint['ipnl'] = ip_nl
 
 
-def set_heartbeat_producers_consumers(nodes: List[dict], connections: List[dict]):
-    """Determine which heartbeats go where
-    ARGS:
+def set_heartbeat_producers_consumers(nodes: list[dict], connections: list[dict]):
+    """
+    Determine which heartbeats go where.
+
+    Args:
         nodes: "nodes" stanza in proton config
         connections: "connections" stanza in proton config
+
     """
-
     for node in nodes:
-        if node.get("heartbeat") is not None:
-            if node["heartbeat"]["enabled"]:
-                node["heartbeat"]["producers"] = node["name"]
-                for connection in connections:
-                    if node["heartbeat"].get("consumers") is None:
-                        node["heartbeat"]["consumers"] = []
-                    if connection["first"]["node"] == node["name"]:
-                        node["heartbeat"]["consumers"].append(
-                            connection["second"]["node"]
-                        )
-                    if connection["second"]["node"] == node["name"]:
-                        node["heartbeat"]["consumers"].append(
-                            connection["first"]["node"]
-                        )
+        if node.get('heartbeat') is not None and node['heartbeat']['enabled']:
+            node['heartbeat']['producers'] = node['name']
+            for connection in connections:
+                if node['heartbeat'].get('consumers') is None:
+                    node['heartbeat']['consumers'] = []
+                if connection['first']['node'] == node['name']:
+                    node['heartbeat']['consumers'].append(connection['second']['node'])
+                if connection['second']['node'] == node['name']:
+                    node['heartbeat']['consumers'].append(connection['first']['node'])
 
 
-def set_signal_properties(bundles: List[dict]):
-    """Set properties for signals. Default values, repeated type lengths, const-ness
-    ARGS:
+def set_signal_properties(bundles: list[dict]):
+    """
+    Set properties for signals. Default values, repeated type lengths, const-ness.
+
+    Args:
         bundles: "bundles" stanza in proton config
+
     """
     for bundle in bundles:
         normalize_signals(bundle)
