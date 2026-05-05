@@ -57,8 +57,8 @@ bundles:
       - {name: power_12v_user_nominal, type: int32, value: -1}
       - {name: charger_connected, type: int32, value: -1}
       - {name: charging_complete, type: int32, value: -1}
-      - {name: measured_voltages, type: list_float, length: 13}
-      - {name: measured_currents, type: list_float, length: 13}
+      - {name: measured_voltage, type: float}
+      - {name: measured_current, type: float}
   - name: emergency_stop
     id: 0x103
     producers: [mcu]
@@ -71,7 +71,7 @@ bundles:
     consumers: [pc]
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: temperatures, type: list_float, length: 18}
+      - {name: temperature, type: float}
   - name: stop_status
     id: 0x105
     producers: [mcu]
@@ -87,10 +87,16 @@ bundles:
     consumers: [pc]
     signals:
       - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: rails, type: list_bool, length: 1}
-      - {name: inputs, type: list_bool, length: 7}
-      - {name: outputs, type: list_bool, length: 7}
-      - {name: output_periods, type: list_uint32, length: 7}
+      - {name: rails, type: bool}
+      - {name: input_bitfield, type: uint32}
+      - {name: output_bitfield, type: uint32}
+      - {name: output_period_0, type: uint32}
+      - {name: output_period_1, type: uint32}
+      - {name: output_period_2, type: uint32}
+      - {name: output_period_3, type: uint32}
+      - {name: output_period_4, type: uint32}
+      - {name: output_period_5, type: uint32}
+      - {name: output_period_6, type: uint32}
   - name: alerts
     id: 0x107
     producers: [mcu]
@@ -115,7 +121,10 @@ bundles:
     producers: [pc]
     consumers: [mcu]
     signals:
-      - {name: lights, type: list_bytes, length: 4, capacity: 3}
+      - {name: front_left_rgb, type: bytes, capacity: 4}
+      - {name: front_right_rgb, type: bytes, capacity: 4}
+      - {name: rear_left_rgb, type: bytes, capacity: 4}
+      - {name: rear_right_rgb, type: bytes, capacity: 4}
   - name: battery
     id: 0x203
     producers: [pc]
@@ -127,8 +136,8 @@ bundles:
     producers: [pc]
     consumers: [mcu]
     signals:
-      - {name: rails, type: list_bool, length: 1}
-      - {name: outputs, type: list_uint32, length: 7}
+      - {name: rails, type: bool}
+      - {name: output, type: uint32}
   - name: cmd_shutdown
     id: 0x300
     producers: [pc]

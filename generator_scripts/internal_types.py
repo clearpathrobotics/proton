@@ -26,15 +26,6 @@ INTERNAL_TYPE_MAP = {
     "bool": "bool",
     "string": "char",
     "bytes": "uint8_t",
-    "list_double": "double",
-    "list_float": "float",
-    "list_int32": "int32_t",
-    "list_int64": "int64_t",
-    "list_uint32": "uint32_t",
-    "list_uint64": "uint64_t",
-    "list_bool": "bool",
-    "list_string": "char",
-    "list_bytes": "uint8_t",
 }
 
 """Default values for particular types"""

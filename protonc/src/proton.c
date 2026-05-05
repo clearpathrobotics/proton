@@ -25,16 +25,13 @@
  * @param handle Handle to initialize
  * @param which_signal Signal type
  * @param data Pointer to data buffer
- * @param length Length of list (for list types)
  * @param capacity Capacity of data buffer (for strings and bytes types)
  * @return proton_status_e Status of the initialization
  */
 proton_status_e proton_init_signal(proton_signal_handle_t * handle,
                                    pb_size_t which_signal,
                                    void * data,
-                                   size_t length,
-                                   size_t capacity)
-{
+                                   size_t capacity) {
   if (!handle || !data)
   {
     return PROTON_NULL_PTR_ERROR;
@@ -65,60 +62,6 @@ proton_status_e proton_init_signal(proton_signal_handle_t * handle,
       break;
     }
 
-    case proton_Signal_list_double_value_tag:
-    {
-      handle->signal.signal.list_double_value.doubles = &handle->value;
-      break;
-    }
-
-    case proton_Signal_list_float_value_tag:
-    {
-      handle->signal.signal.list_float_value.floats = &handle->value;
-      break;
-    }
-
-    case proton_Signal_list_int32_value_tag:
-    {
-      handle->signal.signal.list_int32_value.int32s = &handle->value;
-      break;
-    }
-
-    case proton_Signal_list_int64_value_tag:
-    {
-      handle->signal.signal.list_int64_value.int64s = &handle->value;
-      break;
-    }
-
-    case proton_Signal_list_uint32_value_tag:
-    {
-      handle->signal.signal.list_uint32_value.uint32s = &handle->value;
-      break;
-    }
-
-    case proton_Signal_list_uint64_value_tag:
-    {
-      handle->signal.signal.list_uint64_value.uint64s = &handle->value;
-      break;
-    }
-
-    case proton_Signal_list_bool_value_tag:
-    {
-      handle->signal.signal.list_bool_value.bools = &handle->value;
-      break;
-    }
-
-    case proton_Signal_list_string_value_tag:
-    {
-      handle->signal.signal.list_string_value.strings = &handle->value;
-      break;
-    }
-
-    case proton_Signal_list_bytes_value_tag:
-    {
-      handle->signal.signal.list_bytes_value.bytes = &handle->value;
-      break;
-    }
-
     default:
     {
       PROTON_PRINT("Invalid signal type %d", which_signal);
@@ -127,8 +70,8 @@ proton_status_e proton_init_signal(proton_signal_handle_t * handle,
   }
 
   handle->signal.which_signal = which_signal;
+  handle->value.length = 1;
   handle->value.data = data;
-  handle->value.length = length;
   handle->value.capacity = capacity;
   handle->value.size = 0;
 
@@ -493,145 +436,8 @@ void proton_print_signal(proton_Signal signal) {
     }
     break;
   }
-
-  case proton_Signal_list_double_value_tag: {
-    if (signal.signal.list_double_value.doubles) {
-      arg = (proton_list_t *)signal.signal.list_double_value.doubles;
-      PROTON_PRINT("\t\tlist_double_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i++) {
-        PROTON_PRINT("\t\t\t%lf\r\n", ((double *)arg->data)[i]);
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL double array \r\n");
-    }
-    break;
-  }
-
-  case proton_Signal_list_float_value_tag: {
-    if (signal.signal.list_float_value.floats) {
-      arg = (proton_list_t *)signal.signal.list_float_value.floats;
-      PROTON_PRINT("\t\tlist_float_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i++) {
-        PROTON_PRINT("\t\t\t%f\r\n", ((float *)arg->data)[i]);
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL float array \r\n");
-    }
-    break;
-  }
-
-  case proton_Signal_list_int32_value_tag: {
-    if (signal.signal.list_int32_value.int32s) {
-      arg = (proton_list_t *)signal.signal.list_int32_value.int32s;
-      PROTON_PRINT("\t\tlist_int32_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i++) {
-        PROTON_PRINT("\t\t\t%d\r\n", ((int32_t *)arg->data)[i]);
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL int32 array \r\n");
-    }
-    break;
-  }
-
-  case proton_Signal_list_int64_value_tag: {
-    if (signal.signal.list_int64_value.int64s) {
-      arg = (proton_list_t *)signal.signal.list_int64_value.int64s;
-      PROTON_PRINT("\t\tlist_int64_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i++) {
-        PROTON_PRINT("\t\t\t%ld\r\n", ((int64_t *)arg->data)[i]);
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL int64 array \r\n");
-    }
-    break;
-  }
-
-  case proton_Signal_list_uint32_value_tag: {
-    if (signal.signal.list_uint32_value.uint32s) {
-      arg = (proton_list_t *)signal.signal.list_uint32_value.uint32s;
-      PROTON_PRINT("\t\tlist_uint32_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i++) {
-        PROTON_PRINT("\t\t\t%u\r\n", ((uint32_t *)arg->data)[i]);
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL uint32 array \r\n");
-    }
-    break;
-  }
-
-  case proton_Signal_list_uint64_value_tag: {
-    if (signal.signal.list_uint64_value.uint64s) {
-      arg = (proton_list_t *)signal.signal.list_uint64_value.uint64s;
-      PROTON_PRINT("\t\tlist_uint64_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i++) {
-        PROTON_PRINT("\t\t\t%lu\r\n", ((uint64_t *)arg->data)[i]);
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL uint64 array \r\n");
-    }
-    break;
-  }
-
-  case proton_Signal_list_bool_value_tag: {
-    if (signal.signal.list_bool_value.bools) {
-      arg = (proton_list_t *)signal.signal.list_bool_value.bools;
-      PROTON_PRINT("\t\tlist_bool_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i++) {
-        PROTON_PRINT("\t\t\t%u\r\n", ((bool *)arg->data)[i]);
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL bool array \r\n");
-    }
-    break;
-  }
-
-  case proton_Signal_list_string_value_tag: {
-    if (signal.signal.list_string_value.strings) {
-      arg = (proton_list_t *)signal.signal.list_string_value.strings;
-      PROTON_PRINT("\t\tlist_string_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i += arg->capacity) {
-        PROTON_PRINT("\t\t\t%s\r\n", (((char(*)[arg->capacity])arg->data)[i]));
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL string list\r\n");
-    }
-    break;
-  }
-
-  case proton_Signal_list_bytes_value_tag: {
-    if (signal.signal.list_bytes_value.bytes) {
-      arg = (proton_list_t *)signal.signal.list_bytes_value.bytes;
-      PROTON_PRINT("\t\tlist_bytes_value: {\r\n");
-      for (size_t i = 0; i < arg->length; i++) {
-        PROTON_PRINT("\t\t\t[");
-        for (int j = 0; j < arg->capacity; j++) {
-          #ifdef PROTON_DEBUG
-          uint8_t data = ((uint8_t(*)[arg->capacity])arg->data)[i][j];
-
-          if (j == arg->capacity - 1) {
-            if (i == arg->length - 1) {
-              PROTON_PRINT("0x%x]\r\n", data);
-            } else {
-              PROTON_PRINT("0x%x],\r\n", data);
-            }
-          } else {
-            PROTON_PRINT("0x%x, ", data);
-          }
-          #endif
-        }
-      }
-      PROTON_PRINT("\t\t}\r\n");
-    } else {
-      PROTON_PRINT("\t\tNULL bytes list\r\n");
-    }
+  default: {
+    PROTON_PRINT("Unknown type\r\n");
     break;
   }
   }

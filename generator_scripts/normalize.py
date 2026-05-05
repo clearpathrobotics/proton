@@ -50,14 +50,11 @@ def normalize_signals(bundle: dict):
 
             signal_type = signal["type"]
 
-            is_list_type = signal_type.startswith("list_")
             is_capacity_type = "bytes" in signal_type or "string" in signal_type
             # TODO CORE-37812 remote const-ness in signals
             is_const = signal.get("value") is not None
 
-            signal["is_list_type"] = is_list_type
             signal["is_capacity_type"] = is_capacity_type
-            signal["is_repeated_type"] = is_list_type or is_capacity_type
             signal["is_const"] = is_const
 
             signal["internal_type"] = INTERNAL_TYPE_MAP[signal_type]
@@ -68,18 +65,7 @@ def normalize_signals(bundle: dict):
                 # Special case for capacity types: they must have a capacity variable generated in the template,
                 # Even if they're already defined as consts. The length is equal to the strlen + 1 for the nullchar in C
                 if is_capacity_type:
-                    if is_list_type:
-                        max_cap = 0
-                        for elem in signal["value"]:
-                            max_cap = len(elem)if len(elem) > max_cap else max_cap
-                        signal["capacity"] = max_cap + 1
-                    else:
-                        signal["capacity"] = len(signal["value"]) + 1
-
-                if is_list_type:
-                    # Special case for const repeated signals that aren't strings:
-                    # the config doesn't contain the length field
-                    signal["length"] = len(signal["value"])
+                    signal["capacity"] = len(signal["value"]) + 1
 
 
 def set_node_endpoint_address(nodes: List[dict]):

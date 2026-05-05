@@ -63,7 +63,6 @@ typedef struct proton_bundle_heartbeat {
 proton_status_e proton_init_signal(proton_signal_handle_t * handle,
                                    pb_size_t which_signal,
                                    void * data,
-                                   size_t length,
                                    size_t capacity);
 
 proton_status_e proton_init_bundle(proton_bundle_handle_t *handle,
