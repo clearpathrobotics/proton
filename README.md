@@ -8,6 +8,11 @@ Documentation is available [here](https://docs.clearpathrobotics.com/docs_proton
 
 Proton has several external requirements for both code generation and runtime usage
 
+### General
+- `cmake`: Build system used for proton
+- `pkg-config`: used for finding info about dependencies in cmake
+- `build-essential`: Compiler
+
 ### C
 - `nanopb` (included): lightweight protobuf library and code generator for protonc
 
@@ -15,6 +20,7 @@ Proton has several external requirements for both code generation and runtime us
 - `libboost-all-dev`: Specifically for `boost/asio.hpp`: an asynchronous serial input/output executor
 - `protobuf-compiler`: Used at both build-time (for generating code versions of .proto files), and as a general protobuf library for protoncpp
 - `libyaml-cpp-dev`: For parsing bundle config files during the code generation step.
+- `libgtest-dev`: For unit testing
 
 ### Python
 - `protobuf`: pip package for `nanopb` code generator
