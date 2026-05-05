@@ -17,33 +17,39 @@
  */
 
 #include "protoncpp/transport/serial.hpp"
-#include <array>
 #include <poll.h>
 #include <string.h>
+#include <array>
 #include <vector>
 
 using namespace proton;
 
-SerialTransport::SerialTransport(serial_device device)
-    : device(device), port_(io_context_) {}
+SerialTransport::SerialTransport(serial_device device) : device(device), port_(io_context_) {}
 
-proton_status_e SerialTransport::connect() {
-  try {
+proton_status_e SerialTransport::connect()
+{
+  try
+  {
     port_.open(device.first);
 
     // Run io_context in separate thread
     io_thread_ = std::thread([this]() { io_context_.run(); });
     return PROTON_OK;
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception & e)
+  {
     std::cerr << "Failed to open serial port: " << e.what() << "\n";
     return PROTON_CONNECT_ERROR;
   }
 }
 
-proton_status_e SerialTransport::disconnect() {
-  if (port_.is_open()) {
+proton_status_e SerialTransport::disconnect()
+{
+  if (port_.is_open())
+  {
     io_context_.stop();
-    if (io_thread_.joinable()) {
+    if (io_thread_.joinable())
+    {
       io_thread_.join();
     }
     port_.close();
@@ -52,7 +58,8 @@ proton_status_e SerialTransport::disconnect() {
   return PROTON_OK;
 }
 
-std::optional<std::vector<uint8_t>> SerialTransport::buildPacket(const uint8_t *buf, const size_t& len)
+std::optional<std::vector<uint8_t>> SerialTransport::buildPacket(
+  const uint8_t * buf, const size_t & len)
 {
   if (buf == nullptr)
   {
@@ -76,8 +83,9 @@ std::optional<std::vector<uint8_t>> SerialTransport::buildPacket(const uint8_t *
   return packet;
 }
 
-proton_status_e SerialTransport::write(const uint8_t *buf, const size_t &len,
-                              size_t &bytes_written) {
+proton_status_e SerialTransport::write(
+  const uint8_t * buf, const size_t & len, size_t & bytes_written)
+{
   if (!port_.is_open())
   {
     return PROTON_CONNECT_ERROR;
@@ -92,7 +100,8 @@ proton_status_e SerialTransport::write(const uint8_t *buf, const size_t &len,
 
   auto packet = ret.value();
 
-  try {
+  try
+  {
     if (boost::asio::write(port_, boost::asio::buffer(packet, packet.size())) != packet.size())
     {
       return PROTON_WRITE_ERROR;
@@ -102,14 +111,16 @@ proton_status_e SerialTransport::write(const uint8_t *buf, const size_t &len,
       bytes_written = packet.size();
       return PROTON_OK;
     }
-  } catch (const std::exception &e) {
+  }
+  catch (const std::exception & e)
+  {
     std::cerr << "Write error: " << e.what() << std::endl;
     return PROTON_WRITE_ERROR;
   }
 }
 
-proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
-                             size_t &bytes_read) {
+proton_status_e SerialTransport::read(uint8_t * buf, const size_t & len, size_t & bytes_read)
+{
   if (!port_.is_open())
   {
     return PROTON_CONNECT_ERROR;
@@ -120,7 +131,8 @@ proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
   std::array<uint8_t, CRC16_OVERHEAD> crc;
 
   // Read header of next packet
-  try {
+  try
+  {
     // Synchronize to start of frame
     do
     {
@@ -128,19 +140,22 @@ proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
     } while (header[0] != FRAME_HEADER1);
 
     // Read the rest of the header
-    if (boost::asio::read(port_, boost::asio::buffer(&header[1], HEADER_OVERHEAD - 1)) != HEADER_OVERHEAD - 1)
+    if (
+      boost::asio::read(port_, boost::asio::buffer(&header[1], HEADER_OVERHEAD - 1)) !=
+      HEADER_OVERHEAD - 1)
     {
       return PROTON_READ_ERROR;
     }
   }
-  catch(std::system_error &e)
+  catch (std::system_error & e)
   {
     return PROTON_READ_ERROR;
   }
 
   bytes_read += HEADER_OVERHEAD;
 
-  if (proton_get_framed_payload_length(header.data(), &payload_len) != PROTON_OK) {
+  if (proton_get_framed_payload_length(header.data(), &payload_len) != PROTON_OK)
+  {
     return PROTON_INVALID_HEADER_ERROR;
   }
 
@@ -157,7 +172,7 @@ proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
       return PROTON_READ_ERROR;
     }
   }
-  catch(std::system_error &e)
+  catch (std::system_error & e)
   {
     return PROTON_READ_ERROR;
   }
@@ -172,7 +187,7 @@ proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
       return PROTON_READ_ERROR;
     }
   }
-  catch(std::system_error &e)
+  catch (std::system_error & e)
   {
     return PROTON_READ_ERROR;
   }
@@ -180,5 +195,6 @@ proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
   bytes_read += CRC16_OVERHEAD;
 
   // Check that CRC16 matches
-  return proton_check_framed_payload(buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8)));
+  return proton_check_framed_payload(
+    buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8)));
 }

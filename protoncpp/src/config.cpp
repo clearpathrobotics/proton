@@ -21,12 +21,16 @@
 #include <iostream>
 #include <mutex>
 
-namespace YAML {
+namespace YAML
+{
 
-template<>
-struct convert<proton::SignalConfig> {
-  static bool decode(const Node& node, proton::SignalConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+template <>
+struct convert<proton::SignalConfig>
+{
+  static bool decode(const Node & node, proton::SignalConfig & rhs)
+  {
+    if (!node.IsDefined() || node.IsNull())
+    {
       return false;
     }
 
@@ -67,12 +71,13 @@ struct convert<proton::SignalConfig> {
       }
       else
       {
-        switch(proton::signal_map::SignalMap.at(rhs.type_string))
+        switch (proton::signal_map::SignalMap.at(rhs.type_string))
         {
           case proton::Signal::SignalCase::kStringValue:
           case proton::Signal::SignalCase::kBytesValue:
           {
-            throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string + " must define a capacity");
+            throw std::runtime_error(
+              "Signal " + rhs.name + " of type " + rhs.type_string + " must define a capacity");
           }
         }
       }
@@ -82,10 +87,13 @@ struct convert<proton::SignalConfig> {
   }
 };
 
-template<>
-struct convert<proton::BundleConfig> {
-  static bool decode(const Node& node, proton::BundleConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+template <>
+struct convert<proton::BundleConfig>
+{
+  static bool decode(const Node & node, proton::BundleConfig & rhs)
+  {
+    if (!node.IsDefined() || node.IsNull())
+    {
       return false;
     }
 
@@ -93,7 +101,7 @@ struct convert<proton::BundleConfig> {
 
     if (node[proton::keys::PRODUCERS].IsSequence())
     {
-      for (const auto& p: node[proton::keys::PRODUCERS])
+      for (const auto & p : node[proton::keys::PRODUCERS])
       {
         rhs.producers.push_back(p.as<std::string>());
       }
@@ -105,7 +113,7 @@ struct convert<proton::BundleConfig> {
 
     if (node[proton::keys::CONSUMERS].IsSequence())
     {
-      for (const auto& p: node[proton::keys::CONSUMERS])
+      for (const auto & p : node[proton::keys::CONSUMERS])
       {
         rhs.consumers.push_back(p.as<std::string>());
       }
@@ -126,7 +134,8 @@ struct convert<proton::BundleConfig> {
     if (signals.IsDefined() && !signals.IsNull())
     {
       // Get signal configs for this bundle
-      for (const auto& signal : signals) {
+      for (const auto & signal : signals)
+      {
         rhs.signals.push_back(signal.as<proton::SignalConfig>());
       }
     }
@@ -135,10 +144,13 @@ struct convert<proton::BundleConfig> {
   }
 };
 
-template<>
-struct convert<proton::EndpointConfig> {
-  static bool decode(const Node& node, proton::EndpointConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+template <>
+struct convert<proton::EndpointConfig>
+{
+  static bool decode(const Node & node, proton::EndpointConfig & rhs)
+  {
+    if (!node.IsDefined() || node.IsNull())
+    {
       return false;
     }
 
@@ -166,11 +178,13 @@ struct convert<proton::EndpointConfig> {
   }
 };
 
-
-template<>
-struct convert<proton::HeartbeatConfig> {
-  static bool decode(const Node& node, proton::HeartbeatConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+template <>
+struct convert<proton::HeartbeatConfig>
+{
+  static bool decode(const Node & node, proton::HeartbeatConfig & rhs)
+  {
+    if (!node.IsDefined() || node.IsNull())
+    {
       return false;
     }
 
@@ -196,10 +210,13 @@ struct convert<proton::HeartbeatConfig> {
   }
 };
 
-template<>
-struct convert<proton::NodeConfig> {
-  static bool decode(const Node& node, proton::NodeConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+template <>
+struct convert<proton::NodeConfig>
+{
+  static bool decode(const Node & node, proton::NodeConfig & rhs)
+  {
+    if (!node.IsDefined() || node.IsNull())
+    {
       return false;
     }
 
@@ -207,7 +224,7 @@ struct convert<proton::NodeConfig> {
     auto endpoints = node[proton::keys::ENDPOINTS];
     if (endpoints && endpoints.IsSequence())
     {
-      for (const auto& endpoint: endpoints)
+      for (const auto & endpoint : endpoints)
       {
         uint32_t id = 0;
         if (endpoint[proton::keys::ID])
@@ -233,10 +250,13 @@ struct convert<proton::NodeConfig> {
   }
 };
 
-template<>
-struct convert<proton::ConnectionEndpointConfig> {
-  static bool decode(const Node& node, proton::ConnectionEndpointConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+template <>
+struct convert<proton::ConnectionEndpointConfig>
+{
+  static bool decode(const Node & node, proton::ConnectionEndpointConfig & rhs)
+  {
+    if (!node.IsDefined() || node.IsNull())
+    {
       return false;
     }
 
@@ -255,10 +275,13 @@ struct convert<proton::ConnectionEndpointConfig> {
   }
 };
 
-template<>
-struct convert<proton::ConnectionConfig> {
-  static bool decode(const Node& node, proton::ConnectionConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+template <>
+struct convert<proton::ConnectionConfig>
+{
+  static bool decode(const Node & node, proton::ConnectionConfig & rhs)
+  {
+    if (!node.IsDefined() || node.IsNull())
+    {
       return false;
     }
 
@@ -269,13 +292,14 @@ struct convert<proton::ConnectionConfig> {
   }
 };
 
-}
+}  // namespace YAML
 
 using namespace proton;
 
 Config::Config() {}
 
-Config::Config(std::string file) {
+Config::Config(std::string file)
+{
   std::string yaml_file_name = file.substr(file.find_last_of('/') + 1);
   name_ = yaml_file_name.substr(0, yaml_file_name.find(".yaml"));
 
@@ -284,19 +308,22 @@ Config::Config(std::string file) {
   std::unique_lock lock(mutex_);
 
   // Get node configs
-  for (auto node : yaml_node_[keys::NODES]) {
+  for (auto node : yaml_node_[keys::NODES])
+  {
     NodeConfig config = node.as<NodeConfig>();
     nodes_.emplace(config.name, config);
   }
 
   // Get connection configs
-  for (auto node : yaml_node_[keys::CONNECTIONS]) {
+  for (auto node : yaml_node_[keys::CONNECTIONS])
+  {
     ConnectionConfig config = node.as<ConnectionConfig>();
     connections_.push_back(config);
   }
 
   // Get bundle configs
-  for (auto bundle : yaml_node_[keys::BUNDLES]) {
+  for (auto bundle : yaml_node_[keys::BUNDLES])
+  {
     bundles_.push_back(bundle.as<BundleConfig>());
   }
 }

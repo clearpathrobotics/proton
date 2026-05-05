@@ -25,20 +25,22 @@
 
 #include "proton/common.h"
 
-namespace proton {
+namespace proton
+{
 
-class Transport {
+class Transport
+{
 public:
   Transport() : state_(PROTON_TRANSPORT_DISCONNECTED) {}
 
-  virtual ~Transport()
-  {}
+  virtual ~Transport() {}
 
   virtual proton_status_e connect() = 0;
   virtual proton_status_e disconnect() = 0;
 
-  virtual proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read) = 0;
-  virtual proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written) = 0;
+  virtual proton_status_e read(uint8_t * buf, const size_t & len, size_t & bytes_read) = 0;
+  virtual proton_status_e write(
+    const uint8_t * buf, const size_t & len, size_t & bytes_written) = 0;
 
   void setState(proton_transport_state_e state) { state_ = state; }
   proton_transport_state_e getState() { return state_; }
@@ -48,13 +50,13 @@ protected:
   proton_transport_state_e state_;
 };
 
-class TransportManager {
+class TransportManager
+{
 public:
-  void setTransport(std::unique_ptr<Transport> t) {
-    transport_ = std::move(t);
-  }
+  void setTransport(std::unique_ptr<Transport> t) { transport_ = std::move(t); }
 
-  bool connected() {
+  bool connected()
+  {
     if (transport_)
     {
       return transport_->connected();
@@ -62,7 +64,8 @@ public:
     return false;
   }
 
-  proton_transport_state_e getTransportState() {
+  proton_transport_state_e getTransportState()
+  {
     if (transport_)
     {
       return transport_->getState();
@@ -71,7 +74,8 @@ public:
     return PROTON_TRANSPORT_ERROR;
   }
 
-  proton_status_e connect() {
+  proton_status_e connect()
+  {
     if (transport_)
     {
       proton_status_e status = transport_->connect();
@@ -89,7 +93,8 @@ public:
     return PROTON_NULL_PTR_ERROR;
   }
 
-  proton_status_e disconnect() {
+  proton_status_e disconnect()
+  {
     if (transport_)
     {
       proton_status_e status = transport_->disconnect();
@@ -108,7 +113,7 @@ public:
     return PROTON_NULL_PTR_ERROR;
   }
 
-  proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read)
+  proton_status_e read(uint8_t * buf, const size_t & len, size_t & bytes_read)
   {
     if (transport_)
     {
@@ -128,7 +133,7 @@ public:
     return PROTON_NULL_PTR_ERROR;
   }
 
-  proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
+  proton_status_e write(const uint8_t * buf, const size_t & len, size_t & bytes_written)
   {
     if (transport_)
     {
@@ -150,7 +155,7 @@ public:
 
   void onError(proton_status_e error)
   {
-    switch(error)
+    switch (error)
     {
       case PROTON_OK:
       {
@@ -191,6 +196,6 @@ private:
   uint64_t rx_, tx_;
 };
 
-} // namespace proton
+}  // namespace proton
 
-#endif // INC_PROTONCPP_TRANSPORT_TRANSPORT_HPP_
+#endif  // INC_PROTONCPP_TRANSPORT_TRANSPORT_HPP_

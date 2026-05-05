@@ -19,29 +19,29 @@
 #ifndef INC_PROTONC_EXAMPLES_UTILS_H_
 #define INC_PROTONC_EXAMPLES_UTILS_H_
 
-#include <stdint.h>
-#include <stdbool.h>
-#include <time.h>
-#include <stdarg.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <string.h>
-#include <errno.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
-#include <pthread.h>
 
-void send_log(void * context, const char *file, const char* func, int line, uint8_t level, char *msg, ...);
+void send_log(
+  void * context, const char * file, const char * func, int line, uint8_t level, char * msg, ...);
 int msleep(long msec);
 int socket_init(uint32_t ip, uint32_t port, bool server);
 int serial_init(const char * device);
-size_t serial_read(int serial_port, uint8_t *buf, size_t len);
-size_t serial_write(int serial_port, const uint8_t *buf, size_t len);
+size_t serial_read(int serial_port, uint8_t * buf, size_t len);
+size_t serial_write(int serial_port, const uint8_t * buf, size_t len);
 
 float rand_float();
 double rand_double();
@@ -50,16 +50,15 @@ uint8_t rand_uint8();
 bool rand_bool();
 char rand_char();
 
-#define LOG_DEBUG(context, message, ...)                                                \
+#define LOG_DEBUG(context, message, ...) \
   send_log(context, __FILE_NAME__, __func__, __LINE__, 10U, message, ##__VA_ARGS__)
-#define LOG_INFO(context, message, ...)                                                 \
+#define LOG_INFO(context, message, ...) \
   send_log(context, __FILE_NAME__, __func__, __LINE__, 20U, message, ##__VA_ARGS__)
-#define LOG_WARNING(context, message, ...)                                              \
+#define LOG_WARNING(context, message, ...) \
   send_log(context, __FILE_NAME__, __func__, __LINE__, 30U, message, ##__VA_ARGS__)
-#define LOG_ERROR(context, message, ...)                                                \
+#define LOG_ERROR(context, message, ...) \
   send_log(context, __FILE_NAME__, __func__, __LINE__, 40U, message, ##__VA_ARGS__)
-#define LOG_FATAL(context, message, ...)                                                \
+#define LOG_FATAL(context, message, ...) \
   send_log(context, __FILE_NAME__, __func__, __LINE__, 50U, message, ##__VA_ARGS__)
-
 
 #endif  // INC_PROTONC_EXAMPLES_UTILS_H_

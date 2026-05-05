@@ -16,21 +16,20 @@
  * @author Roni Kreinin (roni.kreinin@rockwellautomation.com)
  */
 
-#include "protoncpp/proton.hpp"
-#include <iostream>
 #include <stdlib.h>
 #include <string.h>
-#include <thread>
 #include <chrono>
+#include <iostream>
+#include <thread>
+#include "protoncpp/proton.hpp"
 
 std::unique_ptr<proton::Node> node;
 
 std::vector<std::string> logs;
 
-
 void run_1hz_thread()
 {
-  while(1)
+  while (1)
   {
     node->getBundle("node_name").getSignal("name").setValue<std::string>(node->getName());
     node->sendBundle("node_name");
@@ -40,7 +39,7 @@ void run_1hz_thread()
 
 void run_stats_thread()
 {
-  while(1)
+  while (1)
   {
     node->printStats();
 
@@ -56,7 +55,7 @@ void run_stats_thread()
   }
 }
 
-void logger_callback(proton::BundleHandle& bundle)
+void logger_callback(proton::BundleHandle & bundle)
 {
   logs.push_back(bundle.getSignal("msg").getValue<std::string>());
 }
@@ -80,4 +79,3 @@ int main()
 
   return 0;
 }
-

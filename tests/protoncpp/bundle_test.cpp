@@ -25,7 +25,7 @@ TEST(BundleTests, Serialize)
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
 
-  auto& handle = bundles.at("value_test");
+  auto & handle = bundles.at("value_test");
   auto bundle = handle.getBundlePtr();
 
   // Serialize bundle to string
@@ -38,7 +38,7 @@ TEST(BundleTests, Serialize)
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(*bundle, deserialized_bundle));
 }
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

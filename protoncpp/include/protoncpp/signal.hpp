@@ -19,56 +19,61 @@
 #ifndef INC_PROTONCPP_SIGNAL_HPP_
 #define INC_PROTONCPP_SIGNAL_HPP_
 
-#include "protoncpp/signal.pb.h"
 #include "protoncpp/config.hpp"
+#include "protoncpp/signal.pb.h"
 
 #include <memory>
 
-namespace proton {
+namespace proton
+{
 
 using bytes = std::vector<uint8_t>;
 
-namespace default_values {
-  inline static const double DOUBLE = 0.0;
-  inline static const float FLOAT = 0.0f;
-  inline static const int32_t INT32 = 0;
-  inline static const int64_t INT64 = 0;
-  inline static const uint32_t UINT32 = 0;
-  inline static const uint64_t UINT64 = 0;
-  inline static const bool BOOL = false;
-  inline static const std::string STRING = "";
-  inline static const proton::bytes BYTES = {};
-}
+namespace default_values
+{
+inline static const double DOUBLE = 0.0;
+inline static const float FLOAT = 0.0f;
+inline static const int32_t INT32 = 0;
+inline static const int64_t INT64 = 0;
+inline static const uint32_t UINT32 = 0;
+inline static const uint64_t UINT64 = 0;
+inline static const bool BOOL = false;
+inline static const std::string STRING = "";
+inline static const proton::bytes BYTES = {};
+}  // namespace default_values
 
-class SignalHandle {
-
+class SignalHandle
+{
 public:
-  SignalHandle(SignalConfig config, std::string bundle_name, Signal* signal);
+  SignalHandle(SignalConfig config, std::string bundle_name, Signal * signal);
 
   ~SignalHandle();
 
   // Value getter and setter
-  template <typename T> const T getValue() const;
-  template <typename T> void setValue(const T value);
-  template <typename T> void setValue(uint16_t index, const T value);
-  template <typename T> void setValue(uint16_t index, uint16_t subindex, const T value);
+  template <typename T>
+  const T getValue() const;
+  template <typename T>
+  void setValue(const T value);
+  template <typename T>
+  void setValue(uint16_t index, const T value);
+  template <typename T>
+  void setValue(uint16_t index, uint16_t subindex, const T value);
 
   std::string getName() { return name_; }
   std::string getBundleName() { return bundle_name_; }
   Signal::SignalCase getType() { return type_; }
   uint32_t getCapacity() const { return capacity_; }
-  Signal* getSignalPtr() { return signal_; }
+  Signal * getSignalPtr() { return signal_; }
 
 private:
   std::string name_;
   std::string bundle_name_;
   Signal::SignalCase type_;
   uint32_t capacity_;
-  Signal* signal_;
+  Signal * signal_;
   bool const_;
 };
 
+}  // namespace proton
 
-} // namespace proton
-
-#endif // INC_PROTONCPP_BUNDLE_HPP_
+#endif  // INC_PROTONCPP_BUNDLE_HPP_

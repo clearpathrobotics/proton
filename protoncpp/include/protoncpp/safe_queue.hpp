@@ -19,27 +19,32 @@
 #ifndef INC_PROTONCPP_SAFE_QUEUE_HPP_
 #define INC_PROTONCPP_SAFE_QUEUE_HPP_
 
+#include <stdint.h>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <queue>
-#include <stdint.h>
 
-namespace proton {
+namespace proton
+{
 
-template <typename T> class SafeQueue {
+template <typename T>
+class SafeQueue
+{
 public:
   // Producer: Push item
-  void push(T item) {
+  void push(T item)
+  {
     {
       std::lock_guard<std::mutex> lock(mutex_);
       queue_.push(std::move(item));
     }
-    cv_.notify_one(); // Wake up consumer if waiting
+    cv_.notify_one();  // Wake up consumer if waiting
   }
 
   // Consumer: Pop item (blocking)
-  T pop() {
+  T pop()
+  {
     std::unique_lock<std::mutex> lock(mutex_);
     cv_.wait(lock, [this] { return !queue_.empty(); });
     T item = std::move(queue_.front());
@@ -48,9 +53,11 @@ public:
   }
 
   // Consumer: Try pop (non-blocking)
-  std::optional<T> try_pop() {
+  std::optional<T> try_pop()
+  {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (queue_.empty()) {
+    if (queue_.empty())
+    {
       return std::nullopt;
     }
     T item = std::move(queue_.front());
@@ -59,13 +66,15 @@ public:
   }
 
   // Check if empty
-  bool empty() const {
+  bool empty() const
+  {
     std::lock_guard<std::mutex> lock(mutex_);
     return queue_.empty();
   }
 
   // Get size
-  size_t size() const {
+  size_t size() const
+  {
     std::lock_guard<std::mutex> lock(mutex_);
     return queue_.size();
   }
@@ -76,6 +85,6 @@ private:
   std::condition_variable cv_;
 };
 
-} // namespace proton
+}  // namespace proton
 
-#endif // INC_PROTONCPP_COMMON_HPP_
+#endif  // INC_PROTONCPP_COMMON_HPP_

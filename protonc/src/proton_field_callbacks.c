@@ -16,10 +16,12 @@
  * @author Roni Kreinin (roni.kreinin@rockwellautomation.com)
  */
 
-#include "protonc/proton.h"
 #include <stdio.h>
 
-bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const pb_field_t *field)
+#include "protonc/proton.h"
+
+bool proton_Bundle_callback(
+  pb_istream_t * istream, pb_ostream_t * ostream, const pb_field_t * field)
 {
   if (!field)
   {
@@ -54,7 +56,7 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
         signal_list->size = 0;
       }
 
-      switch(signal->which_signal)
+      switch (signal->which_signal)
       {
         case proton_Signal_string_value_tag:
         case proton_Signal_bytes_value_tag:
@@ -102,7 +104,8 @@ bool proton_Bundle_callback(pb_istream_t *istream, pb_ostream_t *ostream, const 
   return false;
 }
 
-bool proton_Signal_callback(pb_istream_t *istream, pb_ostream_t *ostream, const pb_field_t *field)
+bool proton_Signal_callback(
+  pb_istream_t * istream, pb_ostream_t * ostream, const pb_field_t * field)
 {
   if (!field)
   {

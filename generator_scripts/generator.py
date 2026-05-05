@@ -17,130 +17,135 @@
 # @author Tom Wallis (thomas.wallis@rockwellautomation.com)
 
 
-"""Generator for protonc C code"""
+"""Generator for protonc C code."""
 
 import argparse
 from pathlib import Path
 
 from jinja2 import Template
-import yaml
-
 from normalize import (
+    normalize_node_heartbeats,
     set_heartbeat_producers_consumers,
     set_node_endpoint_address,
     set_signal_properties,
-    normalize_node_heartbeats,
 )
+import yaml
 
 
 def load_config(config_path: str) -> dict:
-    """Read and parse proton configs
-    ARGS:
-        config: string path to proton config file
-    THROWS:
-        RuntimeError if there are issues with the yaml construction or syntax
-        AssertionError if parsed yaml is not a dict
-    RETURNS:
+    """
+    Read and parse proton configs.
+
+    Args:
+        config_path: string path to proton config file
+    Raises:
+        RuntimeError: if there are issues with the yaml construction or syntax
+    Returns:
         yaml config as dict
+
     """
     try:
-        with open(config_path, "r") as f:
+        with Path(config_path).open('r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
     except yaml.scanner.ScannerError as s:
-        raise RuntimeError(f"YAML file {config_path} is not well formed") from s
+        raise RuntimeError(f'YAML file {config_path} is not well formed') from s
     except yaml.constructor.ConstructorError as c:
         raise RuntimeError(
-            f"YAML file {config_path} is attempting to create unsafe objects"
+            f'YAML file {config_path} is attempting to create unsafe objects'
         ) from c
     # Check contents are a Dictionary
-    assert isinstance(
-        config, dict
-    ), f"YAML file {config_path} is not a dictionary, is {type(config)}"
+    if not isinstance(config, dict):
+        raise RuntimeError(f'YAML file {config_path} is not a dictionary, is {type(config)}')
     return config
 
 
 def generate_header(dest_path: Path, config: dict, name: str, target: str):
-    """Generate protonc file according to template
-    ARGS:
+    """
+    Generate protonc file according to template.
+
+    Args:
         dest_path: path to destination folder
         config: proton config
         name: name of proton "project" (for lack of a better term)
         target: name of peer on the proton network
+
     """
+    template_file = Path(__file__).parent / 'resources' / 'proton__header_node.h.jinja'
 
-    template_file = Path(__file__).parent / "resources" / "proton__header_node.h.jinja"
-
-    with open(template_file.resolve(), "r") as f:
+    with Path(template_file.resolve()).open('r', encoding='utf-8') as f:
         template_content = f.read()
 
     template = Template(template_content)
 
     output = template.render(
-        name=name, target=target, nodes=config["nodes"], bundles=config["bundles"]
+        name=name, target=target, nodes=config['nodes'], bundles=config['bundles']
     )
 
     dest_path.mkdir(parents=True, exist_ok=True)
-    output_file = dest_path / f"proton__{name}_{target}.h"
+    output_file = dest_path / f'proton__{name}_{target}.h'
 
-    with open(output_file, "w") as f:
+    with Path(output_file).open('w', encoding='utf-8') as f:
         f.write(output)
 
 
 def generate_source(dest_path: Path, config: dict, name: str, target: str):
-    """Generate protonc file according to template
-    ARGS:
+    """
+    Generate protonc file according to template.
+
+    Args:
         dest_path: path to destination folder
         config: proton config
         name: name of proton "project" (for lack of a better term)
         target: name of peer on the proton network
-    """
-    template_file = Path(__file__).parent / "resources" / "proton__source_node.c.jinja"
 
-    with open(template_file.resolve(), "r") as f:
+    """
+    template_file = Path(__file__).parent / 'resources' / 'proton__source_node.c.jinja'
+
+    with Path(template_file.resolve()).open('r', encoding='utf-8') as f:
         template_content = f.read()
 
     template = Template(template_content)
 
     output = template.render(
-        name=name, target=target, nodes=config["nodes"], bundles=config["bundles"]
+        name=name, target=target, nodes=config['nodes'], bundles=config['bundles']
     )
 
     dest_path.mkdir(parents=True, exist_ok=True)
-    output_file = dest_path / f"proton__{name}_{target}.c"
+    output_file = dest_path / f'proton__{name}_{target}.c'
 
-    with open(output_file, "w") as f:
+    with Path(output_file).open('w', encoding='utf-8') as f:
         f.write(output)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-c",
-        "--config",
+        '-c',
+        '--config',
         type=str,
-        help="Configuration file path",
+        help='Configuration file path',
     )
 
     parser.add_argument(
-        "-d",
-        "--destination",
+        '-d',
+        '--destination',
         type=str,
-        help="Destination folder path for generated files",
+        help='Destination folder path for generated files',
     )
 
     parser.add_argument(
-        "-t",
-        "--target",
+        '-t',
+        '--target',
         type=str,
-        help="Target node for generation",
+        help='Target node for generation',
     )
 
     parser.add_argument(
-        "-n",
-        "--node",
+        '-n',
+        '--node',
         type=bool,
         default=False,
-        help="Generate code for node and transport implementation",
+        help='Generate code for node and transport implementation',
     )
 
     args = parser.parse_args()
@@ -154,14 +159,14 @@ def main():
 
     # validate node config here
 
-    set_node_endpoint_address(config["nodes"])
-    normalize_node_heartbeats(config["nodes"])
-    set_heartbeat_producers_consumers(config["nodes"], config["connections"])
-    set_signal_properties(config["bundles"])
+    set_node_endpoint_address(config['nodes'])
+    normalize_node_heartbeats(config['nodes'])
+    set_heartbeat_producers_consumers(config['nodes'], config['connections'])
+    set_signal_properties(config['bundles'])
 
     generate_header(dest_path, config, name, target)
     generate_source(dest_path, config, name, target)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

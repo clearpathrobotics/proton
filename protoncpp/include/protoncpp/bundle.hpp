@@ -19,15 +19,17 @@
 #ifndef INC_PROTONCPP_BUNDLE_HPP_
 #define INC_PROTONCPP_BUNDLE_HPP_
 
-#include "protoncpp/signal.hpp"
-#include "protoncpp/bundle.pb.h"
-#include "protoncpp/config.hpp"
 #include <map>
 #include <memory>
+#include "protoncpp/bundle.pb.h"
+#include "protoncpp/config.hpp"
+#include "protoncpp/signal.hpp"
 
-namespace proton {
+namespace proton
+{
 
-class BundleHandle {
+class BundleHandle
+{
 public:
   using BundleCallback = std::function<void(BundleHandle &)>;
 
@@ -35,9 +37,9 @@ public:
   BundleHandle(BundleConfig config);
 
   void addSignal(SignalConfig config);
-  SignalHandle &getSignal(const std::string &signal_name);
-  const SignalHandle getConstSignal(const std::string &signal_name) const;
-  bool hasSignal(const std::string &signal_name) const;
+  SignalHandle & getSignal(const std::string & signal_name);
+  const SignalHandle getConstSignal(const std::string & signal_name) const;
+  bool hasSignal(const std::string & signal_name) const;
 
   void printBundle();
   void printBundleVerbose();
@@ -52,7 +54,7 @@ public:
   std::map<std::string, SignalHandle> getSignalMap() { return signals_; }
   BundleCallback getCallback() { return callback_; }
 
-  void updateBundle(const Bundle &bundle) { *bundle_ = bundle; }
+  void updateBundle(const Bundle & bundle) { *bundle_ = bundle; }
 
   void incrementRxCount() { rx_count_++; };
   void resetRxCount() { rx_count_ = 0; };
@@ -80,6 +82,6 @@ private:
   uint32_t tx_count_, txps_;
 };
 
-} // namespace proton
+}  // namespace proton
 
-#endif // INC_PROTONCPP_BUNDLE_HPP_
+#endif  // INC_PROTONCPP_BUNDLE_HPP_

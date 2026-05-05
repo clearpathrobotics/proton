@@ -29,10 +29,12 @@ Udp4Transport::Udp4Transport(socket_endpoint node, socket_endpoint peer)
   socket_[SOCKET_PEER] = -1;
 }
 
-in_addr_t Udp4Transport::ipToInaddr(const std::string& ip) {
+in_addr_t Udp4Transport::ipToInaddr(const std::string & ip)
+{
   struct in_addr addr;
-  if (inet_pton(AF_INET, ip.c_str(), &addr) != 1) {
-      throw std::runtime_error("Invalid IPv4 address: " + ip);
+  if (inet_pton(AF_INET, ip.c_str(), &addr) != 1)
+  {
+    throw std::runtime_error("Invalid IPv4 address: " + ip);
   }
   return addr.s_addr;
 }
@@ -54,7 +56,8 @@ int Udp4Transport::initSocket(socket_endpoint s, bool server, bool blocking)
 
   if (!blocking)
   {
-    if(::fcntl(sock, F_SETFL, ::fcntl(sock, F_GETFL) | O_NONBLOCK) < 0) {
+    if (::fcntl(sock, F_SETFL, ::fcntl(sock, F_GETFL) | O_NONBLOCK) < 0)
+    {
       return -1;
     }
   }
@@ -98,7 +101,6 @@ proton_status_e Udp4Transport::connect()
     socket_[SOCKET_PEER] = initSocket(socket_endpoints_[SOCKET_PEER], false, false);
   }
 
-
   if (socket_[SOCKET_NODE] == -1 || socket_[SOCKET_PEER] == -1)
   {
     return PROTON_CONNECT_ERROR;
@@ -107,12 +109,9 @@ proton_status_e Udp4Transport::connect()
   return PROTON_OK;
 }
 
-proton_status_e Udp4Transport::disconnect()
-{
-  return PROTON_OK;
-}
+proton_status_e Udp4Transport::disconnect() { return PROTON_OK; }
 
-proton_status_e Udp4Transport::read(uint8_t *buf, const size_t& len, size_t& bytes_read)
+proton_status_e Udp4Transport::read(uint8_t * buf, const size_t & len, size_t & bytes_read)
 {
   if (!connected())
   {
@@ -135,7 +134,8 @@ proton_status_e Udp4Transport::read(uint8_t *buf, const size_t& len, size_t& byt
   return PROTON_OK;
 }
 
-proton_status_e Udp4Transport::write(const uint8_t *buf, const size_t& len, size_t& bytes_written)
+proton_status_e Udp4Transport::write(
+  const uint8_t * buf, const size_t & len, size_t & bytes_written)
 {
   if (!connected())
   {

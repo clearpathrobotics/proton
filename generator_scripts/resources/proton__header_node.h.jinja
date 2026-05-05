@@ -101,7 +101,7 @@ typedef enum {{ heartbeat_name }} {
 {% set signal_name = signal.name | upper %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__CAPACITY {{ signal.capacity }}
 {# Strings are surrounded by quotes #}
-{# TODO Change this to char array of nullchars, length of the string capacity #}
+{# TODO Change this to char array of null chars, length of the string capacity #}
 {% if signal.type == "string" %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE "{{ signal.value }}"
 {% elif signal.type == "bytes" %}

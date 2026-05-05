@@ -37,12 +37,12 @@
  * @see proton::BundleHandle
  */
 
-#include "protoncpp/proton.hpp"
-#include <iostream>
 #include <stdlib.h>
 #include <string.h>
-#include <thread>
 #include <chrono>
+#include <iostream>
+#include <thread>
+#include "protoncpp/proton.hpp"
 
 std::unique_ptr<proton::Node> node;
 
@@ -54,10 +54,10 @@ std::vector<std::string> logs;
  */
 void update_lights()
 {
-  auto& front_left_signal = node->getBundle("cmd_lights").getSignal("front_left_rgb");
-  auto& front_right_signal = node->getBundle("cmd_lights").getSignal("front_right_rgb");
-  auto& rear_left_signal = node->getBundle("cmd_lights").getSignal("rear_left_rgb");
-  auto& rear_right_signal = node->getBundle("cmd_lights").getSignal("rear_right_rgb");
+  auto & front_left_signal = node->getBundle("cmd_lights").getSignal("front_left_rgb");
+  auto & front_right_signal = node->getBundle("cmd_lights").getSignal("front_right_rgb");
+  auto & rear_left_signal = node->getBundle("cmd_lights").getSignal("rear_left_rgb");
+  auto & rear_right_signal = node->getBundle("cmd_lights").getSignal("rear_right_rgb");
 
   front_left_signal.setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
   front_right_signal.setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255});
@@ -73,7 +73,11 @@ void update_lights()
  */
 void update_fans()
 {
-  node->getBundle("cmd_fans").getSignal("fans").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255});
+  node->getBundle("cmd_fans")
+    .getSignal("fans")
+    .setValue<proton::bytes>(
+      {rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255,
+       rand() % 255, rand() % 255});
   node->sendBundle("cmd_fans");
 }
 
@@ -115,7 +119,7 @@ void update_pinout_command()
  */
 void run_1hz_thread()
 {
-  while(1)
+  while (1)
   {
     update_fans();
     update_display_status();
@@ -131,7 +135,7 @@ void run_1hz_thread()
  */
 void run_20hz_thread()
 {
-  while(1)
+  while (1)
   {
     update_lights();
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -144,7 +148,7 @@ void run_20hz_thread()
  */
 void run_stats_thread()
 {
-  while(1)
+  while (1)
   {
     node->printStats();
 
@@ -165,13 +169,14 @@ void run_stats_thread()
  *
  * @param bundle The bundle containing the log message.
  */
-void logger_callback(proton::BundleHandle& bundle)
+void logger_callback(proton::BundleHandle & bundle)
 {
   logs.push_back(bundle.getSignal("msg").getValue<std::string>());
 }
 
 /**
- * @brief Main function that initializes the node, registers callbacks, starts threads, and runs the node.
+ * @brief Main function that initializes the node, registers callbacks, starts threads, and runs the
+ * node.
  *
  * @return int
  */

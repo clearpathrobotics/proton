@@ -31,15 +31,17 @@
  * - Provides real-time statistics on throughput and message rates
  */
 
-#include "utils.h"
-#include "proton__multi_node_node1.h"
 #include <stdlib.h>
+
+#include "proton__multi_node_node1.h"
+#include "utils.h"
 
 /**
  * @brief Enumeration of callbacks for bundle reception.
  *
  */
-typedef enum {
+typedef enum
+{
   CALLBACK_NODE_NAME,
   CALLBACK_HEARTBEAT_NODE2,
   CALLBACK_HEARTBEAT_NODE3,
@@ -50,8 +52,9 @@ typedef enum {
  * @brief Context structure for Node 1 operations.
  *
  */
-typedef struct {
-  proton_node_t *node;
+typedef struct
+{
+  proton_node_t * node;
   proton_bundles_node1_t bundles;
   pthread_mutex_t node1_lock;
   pthread_mutex_t node2_lock;
@@ -73,7 +76,8 @@ typedef struct {
  *
  * @param context Pointer to the context_t structure
  */
-void proton_bundle_node_name_callback(void * context) {
+void proton_bundle_node_name_callback(void * context)
+{
   if (context == NULL) return;
   context_t * c = (context_t *)context;
   c->cb_counts[CALLBACK_NODE_NAME]++;
@@ -118,7 +122,9 @@ void proton_bundle_node3_heartbeat_callback(void * context)
  * @param msg Log message format string
  * @param ... Additional arguments for the log message
  */
-void send_log(void * context, const char *file, const char* func, int line, uint8_t level, char *msg, ...) {
+void send_log(
+  void * context, const char * file, const char * func, int line, uint8_t level, char * msg, ...)
+{
   if (context == NULL) return;
   context_t * c = (context_t *)context;
   proton_bundle_log_t * log_bundle = &c->bundles.log_bundle;
@@ -142,12 +148,15 @@ void send_log(void * context, const char *file, const char* func, int line, uint
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node2_transport_connect(void * context) {
+proton_status_e proton_node_node2_transport_connect(void * context)
+{
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
 
-  c->sock_recv = socket_init(PROTON__NODE__NODE1__ENDPOINT__0__IPHL, PROTON__NODE__NODE1__ENDPOINT__0__PORT, true);
-  c->sock_send = socket_init(PROTON__NODE__NODE2__ENDPOINT__0__IPHL, PROTON__NODE__NODE2__ENDPOINT__0__PORT, false);
+  c->sock_recv = socket_init(
+    PROTON__NODE__NODE1__ENDPOINT__0__IPHL, PROTON__NODE__NODE1__ENDPOINT__0__PORT, true);
+  c->sock_send = socket_init(
+    PROTON__NODE__NODE2__ENDPOINT__0__IPHL, PROTON__NODE__NODE2__ENDPOINT__0__PORT, false);
 
   return (c->sock_recv >= 0 && c->sock_send >= 0) ? PROTON_OK : PROTON_CONNECT_ERROR;
 }
@@ -158,7 +167,8 @@ proton_status_e proton_node_node2_transport_connect(void * context) {
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node2_transport_disconnect(void * context) {
+proton_status_e proton_node_node2_transport_disconnect(void * context)
+{
   (void)context;
   return PROTON_OK;
 }
@@ -172,13 +182,16 @@ proton_status_e proton_node_node2_transport_disconnect(void * context) {
  * @param bytes_read Pointer to store number of bytes actually read
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node2_transport_read(void * context, uint8_t *buf, size_t len, size_t * bytes_read) {
+proton_status_e proton_node_node2_transport_read(
+  void * context, uint8_t * buf, size_t len, size_t * bytes_read)
+{
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
 
   int ret = recv(c->sock_recv, buf, len, 0);
 
-  if (ret < 0) {
+  if (ret < 0)
+  {
     return PROTON_READ_ERROR;
   }
 
@@ -197,13 +210,16 @@ proton_status_e proton_node_node2_transport_read(void * context, uint8_t *buf, s
  * @param bytes_written Pointer to store number of bytes actually written
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node2_transport_write(void * context, const uint8_t *buf, size_t len, size_t * bytes_written) {
+proton_status_e proton_node_node2_transport_write(
+  void * context, const uint8_t * buf, size_t len, size_t * bytes_written)
+{
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
 
   int ret = send(c->sock_send, buf, len, 0);
 
-  if (ret < 0) {
+  if (ret < 0)
+  {
     return PROTON_WRITE_ERROR;
   }
 
@@ -218,7 +234,8 @@ proton_status_e proton_node_node2_transport_write(void * context, const uint8_t 
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node3_transport_connect(void * context) {
+proton_status_e proton_node_node3_transport_connect(void * context)
+{
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
 
@@ -233,7 +250,8 @@ proton_status_e proton_node_node3_transport_connect(void * context) {
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node3_transport_disconnect(void * context) {
+proton_status_e proton_node_node3_transport_disconnect(void * context)
+{
   (void)context;
   return PROTON_OK;
 }
@@ -247,13 +265,16 @@ proton_status_e proton_node_node3_transport_disconnect(void * context) {
  * @param bytes_read Pointer to store number of bytes actually read
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node3_transport_read(void * context, uint8_t *buf, size_t len, size_t * bytes_read) {
+proton_status_e proton_node_node3_transport_read(
+  void * context, uint8_t * buf, size_t len, size_t * bytes_read)
+{
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
 
   size_t bytes = serial_read(c->serial_port, buf, len);
 
-  if (bytes > 0) {
+  if (bytes > 0)
+  {
     c->rx3 += bytes + PROTON_FRAME_OVERHEAD;
   }
 
@@ -270,13 +291,16 @@ proton_status_e proton_node_node3_transport_read(void * context, uint8_t *buf, s
  * @param bytes_written Pointer to store number of bytes actually written
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node3_transport_write(void * context, const uint8_t *buf, size_t len, size_t * bytes_written) {
+proton_status_e proton_node_node3_transport_write(
+  void * context, const uint8_t * buf, size_t len, size_t * bytes_written)
+{
   if (context == NULL) return PROTON_NULL_PTR_ERROR;
   context_t * c = (context_t *)context;
 
   size_t bytes = serial_write(c->serial_port, buf, len);
 
-  if (bytes > 0) {
+  if (bytes > 0)
+  {
     c->tx3 += bytes + PROTON_FRAME_OVERHEAD;
   }
 
@@ -290,8 +314,10 @@ proton_status_e proton_node_node3_transport_write(void * context, const uint8_t 
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node1_lock(void * context) {
-  if (context == NULL) {
+proton_status_e proton_node_node1_lock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
@@ -305,8 +331,10 @@ proton_status_e proton_node_node1_lock(void * context) {
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node1_unlock(void * context) {
-  if (context == NULL) {
+proton_status_e proton_node_node1_unlock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
@@ -320,8 +348,10 @@ proton_status_e proton_node_node1_unlock(void * context) {
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node2_lock(void * context) {
-  if (context == NULL) {
+proton_status_e proton_node_node2_lock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
@@ -335,8 +365,10 @@ proton_status_e proton_node_node2_lock(void * context) {
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node2_unlock(void * context) {
-  if (context == NULL) {
+proton_status_e proton_node_node2_unlock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
@@ -349,8 +381,10 @@ proton_status_e proton_node_node2_unlock(void * context) {
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node3_lock(void * context) {
-  if (context == NULL) {
+proton_status_e proton_node_node3_lock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
@@ -363,8 +397,10 @@ proton_status_e proton_node_node3_lock(void * context) {
  * @param context Pointer to the context_t structure
  * @return proton_status_e Status of the operation
  */
-proton_status_e proton_node_node3_unlock(void * context) {
-  if (context == NULL) {
+proton_status_e proton_node_node3_unlock(void * context)
+{
+  if (context == NULL)
+  {
     return PROTON_NULL_PTR_ERROR;
   }
   context_t * c = (context_t *)context;
@@ -377,11 +413,13 @@ proton_status_e proton_node_node3_unlock(void * context) {
  * @param arg Pointer to the context_t structure
  * @return void*
  */
-void *timer_1hz(void *arg) {
+void * timer_1hz(void * arg)
+{
   if (arg == NULL) return NULL;
   context_t * context = (context_t *)arg;
   uint32_t i = 0;
-  while (1) {
+  while (1)
+  {
     LOG_INFO(context, "1hz timer %lu", i++);
 
     if (time(NULL) - context->last_node2_heartbeat > PROTON__NODE__NODE2__HEARTBEAT__PERIOD / 1000)
@@ -405,11 +443,13 @@ void *timer_1hz(void *arg) {
  * @param arg Pointer to the context_t structure
  * @return void*
  */
-void *timer_10hz(void *arg) {
+void * timer_10hz(void * arg)
+{
   if (arg == NULL) return NULL;
   context_t * context = (context_t *)arg;
   uint32_t i = 0;
-  while (1) {
+  while (1)
+  {
     LOG_INFO(context, "10hz timer %lu", i++);
     proton_bundle_send(context->node, PROTON_HEARTBEAT_ID);
     context->bundles.node1_heartbeat_bundle.heartbeat++;
@@ -424,19 +464,25 @@ void *timer_10hz(void *arg) {
  * @param arg Pointer to the context_t structure
  * @return void*
  */
-void * stats(void *arg) {
+void * stats(void * arg)
+{
   if (arg == NULL) return NULL;
   context_t * context = (context_t *)arg;
   uint32_t i = 0;
-  while (1) {
+  while (1)
+  {
     printf("\033[2J\033[1;1H");
     printf("--------- Multi Node 1 C --------\r\n");
     printf("Node: %u\r\n", context->node->state);
     printf("Peer: %s (%s)\r\n", PROTON__NODE__NODE2__NAME, PROTON__NODE__NODE2__ENDPOINT__0__TYPE);
-    printf("  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__NODE2].state, context->node->peers[PROTON__PEER__NODE2].transport.state);
+    printf(
+      "  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__NODE2].state,
+      context->node->peers[PROTON__PEER__NODE2].transport.state);
     printf("  Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", context->rx2 / 1000, context->tx2 / 1000);
     printf("Peer: %s (%s)\r\n", PROTON__NODE__NODE3__NAME, PROTON__NODE__NODE3__ENDPOINT__0__TYPE);
-    printf("  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__NODE3].state, context->node->peers[PROTON__PEER__NODE3].transport.state);
+    printf(
+      "  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__NODE3].state,
+      context->node->peers[PROTON__PEER__NODE3].transport.state);
     printf("  Rx: %.3lf KB/s Tx: %.3lf KB/s\r\n", context->rx3 / 1000, context->tx3 / 1000);
     printf("--- Received Bundles (hz) ---\r\n");
     printf("node_name: %d\r\n", context->cb_counts[CALLBACK_NODE_NAME]);
@@ -479,14 +525,13 @@ void * spin_node2(void * arg)
  *
  * @return int Exit status
  */
-int main() {
+int main()
+{
   pthread_t thread_10hz, thread_1hz, thread_stats, thread_node2;
 
   proton_node_t node1_node = PROTON__NODE__NODE1__DEFAULT_VALUE;
   proton_peer_t node1_peers[PROTON__PEER__COUNT] = {
-    PROTON__NODE__NODE2__PEER__DEFAULT_VALUE,
-    PROTON__NODE__NODE3__PEER__DEFAULT_VALUE
-  };
+    PROTON__NODE__NODE2__PEER__DEFAULT_VALUE, PROTON__NODE__NODE3__PEER__DEFAULT_VALUE};
 
   uint8_t node1_buf[PROTON_MAX_MESSAGE_SIZE];
   uint8_t node2_buf[PROTON_MAX_MESSAGE_SIZE];
@@ -507,8 +552,7 @@ int main() {
     .rx2 = 0.0,
     .tx2 = 0.0,
     .rx3 = 0.0,
-    .tx3 = 0.0
-  };
+    .tx3 = 0.0};
 
   // Init
   proton_bundles_node1_init(&context.bundles);
