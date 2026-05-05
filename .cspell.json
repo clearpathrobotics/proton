@@ -7,7 +7,8 @@
     ".git/*/**",
     ".vscode",
     "**/build/**",
-    ".clang-format"
+    ".clang-format",
+    ".github/workflows/**"
   ],
   "import": [
     "@cspell/dict-en-ca/cspell-ext.json"
