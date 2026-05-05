@@ -25,6 +25,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Mark safe repository
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
       - name: venv setup
         run: |
           python3 -m venv venv
@@ -35,8 +39,6 @@ jobs:
       - name: Run pre-commit
         run: |
           echo $(pwd)
-          ls -la
-          git status
           . venv/bin/activate
           pre-commit run --all-files
 
