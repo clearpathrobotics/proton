@@ -20,8 +20,7 @@
 
 using namespace proton;
 
-TEST(BundleTests, Serialize)
-{
+TEST(BundleTests, Serialize) {
   std::map<std::string, BundleHandle> bundles;
   bundles = getBundles(CONFIG_FILE);
 
@@ -38,8 +37,7 @@ TEST(BundleTests, Serialize)
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(*bundle, deserialized_bundle));
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

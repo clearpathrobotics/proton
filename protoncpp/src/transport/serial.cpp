@@ -17,15 +17,14 @@
  */
 
 #include "protoncpp/transport/serial.hpp"
-#include <array>
 #include <poll.h>
 #include <string.h>
+#include <array>
 #include <vector>
 
 using namespace proton;
 
-SerialTransport::SerialTransport(serial_device device)
-    : device(device), port_(io_context_) {}
+SerialTransport::SerialTransport(serial_device device) : device(device), port_(io_context_) {}
 
 proton_status_e SerialTransport::connect() {
   try {
@@ -52,53 +51,45 @@ proton_status_e SerialTransport::disconnect() {
   return PROTON_OK;
 }
 
-std::optional<std::vector<uint8_t>> SerialTransport::buildPacket(const uint8_t *buf, const size_t& len)
-{
-  if (buf == nullptr)
-  {
+std::optional<std::vector<uint8_t>>
+SerialTransport::buildPacket(const uint8_t *buf, const size_t &len) {
+  if (buf == nullptr) {
     return std::nullopt;
   }
 
   std::vector<uint8_t> packet(len + FRAME_OVERHEAD);
   // Fill header
-  if (proton_fill_frame_header(packet.data(), len) != PROTON_OK)
-  {
+  if (proton_fill_frame_header(packet.data(), len) != PROTON_OK) {
     return std::nullopt;
   }
   // Insert payload
   std::copy(buf, buf + len, packet.data() + HEADER_OVERHEAD);
   // Fill CRC16
-  if (proton_fill_crc16(buf, len, packet.data() + HEADER_OVERHEAD + len) != PROTON_OK)
-  {
+  if (proton_fill_crc16(buf, len, packet.data() + HEADER_OVERHEAD + len) != PROTON_OK) {
     return std::nullopt;
   }
 
   return packet;
 }
 
-proton_status_e SerialTransport::write(const uint8_t *buf, const size_t &len,
-                              size_t &bytes_written) {
-  if (!port_.is_open())
-  {
+proton_status_e
+SerialTransport::write(const uint8_t *buf, const size_t &len, size_t &bytes_written) {
+  if (!port_.is_open()) {
     return PROTON_CONNECT_ERROR;
   }
 
   auto ret = buildPacket(buf, len);
 
-  if (!ret)
-  {
+  if (!ret) {
     return PROTON_ERROR;
   }
 
   auto packet = ret.value();
 
   try {
-    if (boost::asio::write(port_, boost::asio::buffer(packet, packet.size())) != packet.size())
-    {
+    if (boost::asio::write(port_, boost::asio::buffer(packet, packet.size())) != packet.size()) {
       return PROTON_WRITE_ERROR;
-    }
-    else
-    {
+    } else {
       bytes_written = packet.size();
       return PROTON_OK;
     }
@@ -108,10 +99,8 @@ proton_status_e SerialTransport::write(const uint8_t *buf, const size_t &len,
   }
 }
 
-proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
-                             size_t &bytes_read) {
-  if (!port_.is_open())
-  {
+proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len, size_t &bytes_read) {
+  if (!port_.is_open()) {
     return PROTON_CONNECT_ERROR;
   }
 
@@ -122,19 +111,16 @@ proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
   // Read header of next packet
   try {
     // Synchronize to start of frame
-    do
-    {
+    do {
       boost::asio::read(port_, boost::asio::buffer(header, 1));
     } while (header[0] != FRAME_HEADER1);
 
     // Read the rest of the header
-    if (boost::asio::read(port_, boost::asio::buffer(&header[1], HEADER_OVERHEAD - 1)) != HEADER_OVERHEAD - 1)
-    {
+    if (boost::asio::read(port_, boost::asio::buffer(&header[1], HEADER_OVERHEAD - 1)) !=
+        HEADER_OVERHEAD - 1) {
       return PROTON_READ_ERROR;
     }
-  }
-  catch(std::system_error &e)
-  {
+  } catch (std::system_error &e) {
     return PROTON_READ_ERROR;
   }
 
@@ -144,41 +130,33 @@ proton_status_e SerialTransport::read(uint8_t *buf, const size_t &len,
     return PROTON_INVALID_HEADER_ERROR;
   }
 
-  if (len < payload_len)
-  {
+  if (len < payload_len) {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
 
   // Read the payload
-  try
-  {
-    if (boost::asio::read(port_, boost::asio::buffer(buf, payload_len)) != payload_len)
-    {
+  try {
+    if (boost::asio::read(port_, boost::asio::buffer(buf, payload_len)) != payload_len) {
       return PROTON_READ_ERROR;
     }
-  }
-  catch(std::system_error &e)
-  {
+  } catch (std::system_error &e) {
     return PROTON_READ_ERROR;
   }
 
   bytes_read += payload_len;
 
   // Read CRC16
-  try
-  {
-    if (boost::asio::read(port_, boost::asio::buffer(crc, CRC16_OVERHEAD)) != CRC16_OVERHEAD)
-    {
+  try {
+    if (boost::asio::read(port_, boost::asio::buffer(crc, CRC16_OVERHEAD)) != CRC16_OVERHEAD) {
       return PROTON_READ_ERROR;
     }
-  }
-  catch(std::system_error &e)
-  {
+  } catch (std::system_error &e) {
     return PROTON_READ_ERROR;
   }
 
   bytes_read += CRC16_OVERHEAD;
 
   // Check that CRC16 matches
-  return proton_check_framed_payload(buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8)));
+  return proton_check_framed_payload(buf, payload_len,
+                                     static_cast<uint16_t>(crc[0] | (crc[1] << 8)));
 }

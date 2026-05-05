@@ -23,10 +23,10 @@
 
 namespace YAML {
 
-template<>
+template <>
 struct convert<proton::SignalConfig> {
   static bool decode(const Node& node, proton::SignalConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+    if (!node.IsDefined() || node.IsNull()) {
       return false;
     }
 
@@ -35,44 +35,31 @@ struct convert<proton::SignalConfig> {
 
     auto value_key = node[proton::keys::VALUE];
     // Constant value defined
-    if (value_key.IsDefined() && !value_key.IsNull())
-    {
+    if (value_key.IsDefined() && !value_key.IsNull()) {
       rhs.is_const = true;
       rhs.value = value_key;
 
-      if (value_key.IsScalar() && rhs.type_string == proton::value_types::STRING)
-      {
+      if (value_key.IsScalar() && rhs.type_string == proton::value_types::STRING) {
         rhs.capacity = value_key.size();
-      }
-      else if (value_key.IsSequence())
-      {
-        if (rhs.type_string == proton::value_types::BYTES)
-        {
+      } else if (value_key.IsSequence()) {
+        if (rhs.type_string == proton::value_types::BYTES) {
           rhs.capacity = value_key.size();
-        }
-        else
-        {
+        } else {
           rhs.length = value_key.size();
         }
       }
-    }
-    else
-    {
+    } else {
       rhs.is_const = false;
 
       auto capacity_key = node[proton::keys::CAPACITY];
-      if (capacity_key.IsDefined())
-      {
+      if (capacity_key.IsDefined()) {
         rhs.capacity = capacity_key.as<uint32_t>();
-      }
-      else
-      {
-        switch(proton::signal_map::SignalMap.at(rhs.type_string))
-        {
+      } else {
+        switch (proton::signal_map::SignalMap.at(rhs.type_string)) {
           case proton::Signal::SignalCase::kStringValue:
-          case proton::Signal::SignalCase::kBytesValue:
-          {
-            throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string + " must define a capacity");
+          case proton::Signal::SignalCase::kBytesValue: {
+            throw std::runtime_error("Signal " + rhs.name + " of type " + rhs.type_string +
+                                     " must define a capacity");
           }
         }
       }
@@ -82,49 +69,39 @@ struct convert<proton::SignalConfig> {
   }
 };
 
-template<>
+template <>
 struct convert<proton::BundleConfig> {
   static bool decode(const Node& node, proton::BundleConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+    if (!node.IsDefined() || node.IsNull()) {
       return false;
     }
 
     rhs.name = node[proton::keys::NAME].as<std::string>();
 
-    if (node[proton::keys::PRODUCERS].IsSequence())
-    {
-      for (const auto& p: node[proton::keys::PRODUCERS])
-      {
+    if (node[proton::keys::PRODUCERS].IsSequence()) {
+      for (const auto& p : node[proton::keys::PRODUCERS]) {
         rhs.producers.push_back(p.as<std::string>());
       }
-    }
-    else if (node[proton::keys::PRODUCERS].IsScalar())
-    {
+    } else if (node[proton::keys::PRODUCERS].IsScalar()) {
       rhs.producers.push_back(node[proton::keys::PRODUCERS].as<std::string>());
     }
 
-    if (node[proton::keys::CONSUMERS].IsSequence())
-    {
-      for (const auto& p: node[proton::keys::CONSUMERS])
-      {
+    if (node[proton::keys::CONSUMERS].IsSequence()) {
+      for (const auto& p : node[proton::keys::CONSUMERS]) {
         rhs.consumers.push_back(p.as<std::string>());
       }
-    }
-    else if (node[proton::keys::CONSUMERS].IsScalar())
-    {
+    } else if (node[proton::keys::CONSUMERS].IsScalar()) {
       rhs.consumers.push_back(node[proton::keys::CONSUMERS].as<std::string>());
     }
 
     rhs.id = node[proton::keys::ID].as<uint32_t>();
-    if (rhs.id == 0U)
-    {
+    if (rhs.id == 0U) {
       throw std::runtime_error("Bundle ID cannot be 0");
     }
 
     YAML::Node signals = node[proton::keys::SIGNALS];
 
-    if (signals.IsDefined() && !signals.IsNull())
-    {
+    if (signals.IsDefined() && !signals.IsNull()) {
       // Get signal configs for this bundle
       for (const auto& signal : signals) {
         rhs.signals.push_back(signal.as<proton::SignalConfig>());
@@ -135,10 +112,10 @@ struct convert<proton::BundleConfig> {
   }
 };
 
-template<>
+template <>
 struct convert<proton::EndpointConfig> {
   static bool decode(const Node& node, proton::EndpointConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+    if (!node.IsDefined() || node.IsNull()) {
       return false;
     }
 
@@ -148,17 +125,12 @@ struct convert<proton::EndpointConfig> {
     auto port_node = node[proton::keys::PORT];
     auto device_node = node[proton::keys::DEVICE];
 
-    if (rhs.type == proton::transport_types::UDP4)
-    {
+    if (rhs.type == proton::transport_types::UDP4) {
       rhs.ip = ip_node.as<std::string>();
       rhs.port = port_node.as<uint32_t>();
-    }
-    else if (rhs.type == proton::transport_types::SERIAL)
-    {
+    } else if (rhs.type == proton::transport_types::SERIAL) {
       rhs.device = device_node.as<std::string>();
-    }
-    else
-    {
+    } else {
       return false;
     }
 
@@ -166,29 +138,22 @@ struct convert<proton::EndpointConfig> {
   }
 };
 
-
-template<>
+template <>
 struct convert<proton::HeartbeatConfig> {
   static bool decode(const Node& node, proton::HeartbeatConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+    if (!node.IsDefined() || node.IsNull()) {
       return false;
     }
 
-    if (node[proton::keys::ENABLED])
-    {
+    if (node[proton::keys::ENABLED]) {
       rhs.enabled = node[proton::keys::ENABLED].as<bool>();
-    }
-    else
-    {
+    } else {
       rhs.enabled = false;
     }
 
-    if (node[proton::keys::PERIOD])
-    {
+    if (node[proton::keys::PERIOD]) {
       rhs.period = node[proton::keys::PERIOD].as<uint32_t>();
-    }
-    else
-    {
+    } else {
       rhs.period = 1000;
     }
 
@@ -196,22 +161,19 @@ struct convert<proton::HeartbeatConfig> {
   }
 };
 
-template<>
+template <>
 struct convert<proton::NodeConfig> {
   static bool decode(const Node& node, proton::NodeConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+    if (!node.IsDefined() || node.IsNull()) {
       return false;
     }
 
     rhs.name = node[proton::keys::NAME].as<std::string>();
     auto endpoints = node[proton::keys::ENDPOINTS];
-    if (endpoints && endpoints.IsSequence())
-    {
-      for (const auto& endpoint: endpoints)
-      {
+    if (endpoints && endpoints.IsSequence()) {
+      for (const auto& endpoint : endpoints) {
         uint32_t id = 0;
-        if (endpoint[proton::keys::ID])
-        {
+        if (endpoint[proton::keys::ID]) {
           id = endpoint[proton::keys::ID].as<uint32_t>();
         }
 
@@ -219,12 +181,9 @@ struct convert<proton::NodeConfig> {
       }
     }
 
-    if (node[proton::keys::HEARTBEAT])
-    {
+    if (node[proton::keys::HEARTBEAT]) {
       rhs.heartbeat = node[proton::keys::HEARTBEAT].as<proton::HeartbeatConfig>();
-    }
-    else
-    {
+    } else {
       rhs.heartbeat.enabled = false;
       rhs.heartbeat.period = 0;
     }
@@ -233,19 +192,16 @@ struct convert<proton::NodeConfig> {
   }
 };
 
-template<>
+template <>
 struct convert<proton::ConnectionEndpointConfig> {
   static bool decode(const Node& node, proton::ConnectionEndpointConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+    if (!node.IsDefined() || node.IsNull()) {
       return false;
     }
 
-    if (node[proton::keys::ID])
-    {
+    if (node[proton::keys::ID]) {
       rhs.id = node[proton::keys::ID].as<uint32_t>();
-    }
-    else
-    {
+    } else {
       rhs.id = 0;
     }
 
@@ -255,10 +211,10 @@ struct convert<proton::ConnectionEndpointConfig> {
   }
 };
 
-template<>
+template <>
 struct convert<proton::ConnectionConfig> {
   static bool decode(const Node& node, proton::ConnectionConfig& rhs) {
-    if(!node.IsDefined() || node.IsNull()) {
+    if (!node.IsDefined() || node.IsNull()) {
       return false;
     }
 
@@ -269,7 +225,7 @@ struct convert<proton::ConnectionConfig> {
   }
 };
 
-}
+}  // namespace YAML
 
 using namespace proton;
 

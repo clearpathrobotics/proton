@@ -19,47 +19,40 @@
 #ifndef INC_PROTONCPP_TRANSPORT_UDP4_HPP_
 #define INC_PROTONCPP_TRANSPORT_UDP4_HPP_
 
-#include <string>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <iostream>
-
+#include <string>
 
 #include "protoncpp/transport/transport.hpp"
 
-namespace proton
-{
+namespace proton {
 
 using socket_endpoint = std::pair<std::string, uint32_t>;
 
-class Udp4Transport : public Transport
-{
-public:
-  enum {
-    SOCKET_NODE,
-    SOCKET_PEER,
-    SOCKET_COUNT
-  } sockets;
+class Udp4Transport : public Transport {
+ public:
+  enum { SOCKET_NODE, SOCKET_PEER, SOCKET_COUNT } sockets;
 
   Udp4Transport(socket_endpoint node, socket_endpoint peer);
 
   proton_status_e connect() override;
   proton_status_e disconnect() override;
-  proton_status_e read(uint8_t *buf, const size_t& len, size_t& bytes_read) override;
-  proton_status_e write(const uint8_t *buf, const size_t& len, size_t& bytes_written) override;
+  proton_status_e read(uint8_t* buf, const size_t& len, size_t& bytes_read) override;
+  proton_status_e write(const uint8_t* buf, const size_t& len, size_t& bytes_written) override;
 
   in_addr_t ipToInaddr(const std::string& ip);
   int initSocket(socket_endpoint s, bool server, bool blocking);
 
-public:
+ public:
   socket_endpoint socket_endpoints_[SOCKET_COUNT];
   int socket_[SOCKET_COUNT];
 };
 
-}
+}  // namespace proton
 
 #endif  // INC_PROTONCPP_TRANSPORT_UDP4_HPP_

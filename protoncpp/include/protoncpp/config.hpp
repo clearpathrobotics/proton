@@ -19,74 +19,73 @@
 #ifndef INC_PROTONCPP_CONFIG_HPP_
 #define INC_PROTONCPP_CONFIG_HPP_
 
-#include "stdint.h"
 #include <map>
 #include <shared_mutex>
 #include <string>
 #include <vector>
+#include "stdint.h"
 
-#include "yaml-cpp/yaml.h"
 #include "protoncpp/bundle.pb.h"
 #include "protoncpp/signal.pb.h"
-
+#include "yaml-cpp/yaml.h"
 
 namespace proton {
 
 namespace keys {
-  static const char *const NODES = "nodes";
-  static const char *const BUNDLES = "bundles";
-  static const char *const NAME = "name";
-  static const char *const HEARTBEAT = "heartbeat";
-  static const char *const ENABLED = "enabled";
-  static const char *const PERIOD = "period";
-  static const char *const ENDPOINTS = "endpoints";
-  static const char *const TYPE = "type";
-  static const char *const IP = "ip";
-  static const char *const PORT = "port";
-  static const char *const DEVICE = "device";
-  static const char *const CONNECTIONS = "connections";
-  static const char *const FIRST = "first";
-  static const char *const SECOND = "second";
-  static const char *const NODE = "node";
-  static const char *const LENGTH = "length";
-  static const char *const CAPACITY = "capacity";
-  static const char *const VALUE = "value";
-  static const char *const ID = "id";
-  static const char *const PRODUCERS = "producers";
-  static const char *const CONSUMERS = "consumers";
-  static const char *const SIGNALS = "signals";
-} // namespace keys
+static const char *const NODES = "nodes";
+static const char *const BUNDLES = "bundles";
+static const char *const NAME = "name";
+static const char *const HEARTBEAT = "heartbeat";
+static const char *const ENABLED = "enabled";
+static const char *const PERIOD = "period";
+static const char *const ENDPOINTS = "endpoints";
+static const char *const TYPE = "type";
+static const char *const IP = "ip";
+static const char *const PORT = "port";
+static const char *const DEVICE = "device";
+static const char *const CONNECTIONS = "connections";
+static const char *const FIRST = "first";
+static const char *const SECOND = "second";
+static const char *const NODE = "node";
+static const char *const LENGTH = "length";
+static const char *const CAPACITY = "capacity";
+static const char *const VALUE = "value";
+static const char *const ID = "id";
+static const char *const PRODUCERS = "producers";
+static const char *const CONSUMERS = "consumers";
+static const char *const SIGNALS = "signals";
+}  // namespace keys
 
 namespace value_types {
-  static constexpr std::string_view DOUBLE = "double";
-  static constexpr std::string_view FLOAT = "float";
-  static constexpr std::string_view INT32 = "int32";
-  static constexpr std::string_view INT64 = "int64";
-  static constexpr std::string_view UINT32 = "uint32";
-  static constexpr std::string_view UINT64 = "uint64";
-  static constexpr std::string_view BOOL = "bool";
-  static constexpr std::string_view STRING = "string";
-  static constexpr std::string_view BYTES = "bytes";
-} // namespace value_types
+static constexpr std::string_view DOUBLE = "double";
+static constexpr std::string_view FLOAT = "float";
+static constexpr std::string_view INT32 = "int32";
+static constexpr std::string_view INT64 = "int64";
+static constexpr std::string_view UINT32 = "uint32";
+static constexpr std::string_view UINT64 = "uint64";
+static constexpr std::string_view BOOL = "bool";
+static constexpr std::string_view STRING = "string";
+static constexpr std::string_view BYTES = "bytes";
+}  // namespace value_types
 
 namespace signal_map {
-  const std::map<std::string_view, proton::Signal::SignalCase> SignalMap = {
-      {value_types::DOUBLE, proton::Signal::SignalCase::kDoubleValue},
-      {value_types::FLOAT, proton::Signal::SignalCase::kFloatValue},
-      {value_types::INT32, proton::Signal::SignalCase::kInt32Value},
-      {value_types::INT64, proton::Signal::SignalCase::kInt64Value},
-      {value_types::UINT32, proton::Signal::SignalCase::kUint32Value},
-      {value_types::UINT64, proton::Signal::SignalCase::kUint64Value},
-      {value_types::BOOL, proton::Signal::SignalCase::kBoolValue},
-      {value_types::STRING, proton::Signal::SignalCase::kStringValue},
-      {value_types::BYTES, proton::Signal::SignalCase::kBytesValue},
-  };
+const std::map<std::string_view, proton::Signal::SignalCase> SignalMap = {
+    {value_types::DOUBLE, proton::Signal::SignalCase::kDoubleValue},
+    {value_types::FLOAT, proton::Signal::SignalCase::kFloatValue},
+    {value_types::INT32, proton::Signal::SignalCase::kInt32Value},
+    {value_types::INT64, proton::Signal::SignalCase::kInt64Value},
+    {value_types::UINT32, proton::Signal::SignalCase::kUint32Value},
+    {value_types::UINT64, proton::Signal::SignalCase::kUint64Value},
+    {value_types::BOOL, proton::Signal::SignalCase::kBoolValue},
+    {value_types::STRING, proton::Signal::SignalCase::kStringValue},
+    {value_types::BYTES, proton::Signal::SignalCase::kBytesValue},
+};
 }
 
 namespace transport_types {
-  inline static const std::string UDP4 = "udp4";
-  inline static const std::string SERIAL = "serial";
-}
+inline static const std::string UDP4 = "udp4";
+inline static const std::string SERIAL = "serial";
+}  // namespace transport_types
 
 struct SignalConfig {
   std::string name;
@@ -133,25 +132,31 @@ struct ConnectionConfig {
 };
 
 class Config {
-public:
+ public:
   Config();
   Config(std::string file);
 
-  std::vector<BundleConfig> getBundles() { return bundles_; }
-  std::map<std::string, NodeConfig>& getNodes() {
+  std::vector<BundleConfig> getBundles() {
+    return bundles_;
+  }
+  std::map<std::string, NodeConfig> &getNodes() {
     std::shared_lock lock(mutex_);
     return nodes_;
   }
 
-  std::vector<ConnectionConfig>& getConnections() {
+  std::vector<ConnectionConfig> &getConnections() {
     std::shared_lock lock(mutex_);
     return connections_;
   }
 
-  std::string getName() { return name_; }
-  ::YAML::Node getYamlNode() { return yaml_node_; }
+  std::string getName() {
+    return name_;
+  }
+  ::YAML::Node getYamlNode() {
+    return yaml_node_;
+  }
 
-private:
+ private:
   std::vector<BundleConfig> bundles_;
   std::map<std::string, NodeConfig> nodes_;
   std::vector<ConnectionConfig> connections_;
@@ -160,7 +165,6 @@ private:
   mutable std::shared_mutex mutex_;
 };
 
-} // namespace proton
+}  // namespace proton
 
-
-#endif // INC_PROTONCPP_CONFIG_HPP_
+#endif  // INC_PROTONCPP_CONFIG_HPP_

@@ -19,26 +19,26 @@
 #ifndef INC_PROTONCPP_BUNDLE_MANAGER_HPP_
 #define INC_PROTONCPP_BUNDLE_MANAGER_HPP_
 
-#include "protoncpp/bundle.hpp"
-#include <shared_mutex>
 #include <map>
 #include <optional>
+#include <shared_mutex>
+#include "protoncpp/bundle.hpp"
 
 namespace proton {
 
 class BundleManager {
-public:
+ public:
   void addBundle(BundleConfig config);
   void addHeartbeat(std::string producer, std::vector<std::string> consumers);
   BundleHandle &getBundle(const std::string &bundle_name);
   BundleHandle &getHeartbeat(const std::string &producer);
   std::map<std::string, BundleHandle> &getBundleMap();
-  std::optional<std::string> updateBundle(const Bundle &bundle, const std::string& producer);
+  std::optional<std::string> updateBundle(const Bundle &bundle, const std::string &producer);
 
   void printAllBundles();
   void printAllBundlesVerbose();
 
-protected:
+ protected:
   std::vector<std::string> nodes_;
   std::map<std::string, BundleHandle> bundles_;
   std::map<std::string, BundleHandle> heartbeat_bundles_;
@@ -46,6 +46,6 @@ protected:
   std::shared_mutex heartbeat_mutex_;
 };
 
-} // namespace proton
+}  // namespace proton
 
-#endif // INC_PROTONCPP_BUNDLE_MANAGER_HPP_
+#endif  // INC_PROTONCPP_BUNDLE_MANAGER_HPP_

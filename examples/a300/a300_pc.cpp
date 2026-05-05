@@ -37,12 +37,12 @@
  * @see proton::BundleHandle
  */
 
-#include "protoncpp/proton.hpp"
-#include <iostream>
 #include <stdlib.h>
 #include <string.h>
-#include <thread>
 #include <chrono>
+#include <iostream>
+#include <thread>
+#include "protoncpp/proton.hpp"
 
 std::unique_ptr<proton::Node> node;
 
@@ -52,8 +52,7 @@ std::vector<std::string> logs;
  * @brief Updates the light commands with random RGB values.
  *
  */
-void update_lights()
-{
+void update_lights() {
   auto& front_left_signal = node->getBundle("cmd_lights").getSignal("front_left_rgb");
   auto& front_right_signal = node->getBundle("cmd_lights").getSignal("front_right_rgb");
   auto& rear_left_signal = node->getBundle("cmd_lights").getSignal("rear_left_rgb");
@@ -71,9 +70,11 @@ void update_lights()
  * @brief Updates the fan commands with random speed values.
  *
  */
-void update_fans()
-{
-  node->getBundle("cmd_fans").getSignal("fans").setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255, rand() % 255});
+void update_fans() {
+  node->getBundle("cmd_fans")
+      .getSignal("fans")
+      .setValue<proton::bytes>({rand() % 255, rand() % 255, rand() % 255, rand() % 255,
+                                rand() % 255, rand() % 255, rand() % 255, rand() % 255});
   node->sendBundle("cmd_fans");
 }
 
@@ -81,8 +82,7 @@ void update_fans()
  * @brief Updates the display status strings.
  *
  */
-void update_display_status()
-{
+void update_display_status() {
   node->getBundle("display_status").getSignal("string1").setValue<std::string>("TEST_STRING_1");
   node->getBundle("display_status").getSignal("string2").setValue<std::string>("TEST_STRING_1");
   node->sendBundle("display_status");
@@ -92,8 +92,7 @@ void update_display_status()
  * @brief Updates the battery percentage with a random value.
  *
  */
-void update_battery()
-{
+void update_battery() {
   node->getBundle("battery").getSignal("percentage").setValue<float>(static_cast<float>(rand()));
   node->sendBundle("battery");
 }
@@ -102,8 +101,7 @@ void update_battery()
  * @brief Updates the pinout command signals.
  *
  */
-void update_pinout_command()
-{
+void update_pinout_command() {
   node->getBundle("pinout_command").getSignal("rails").setValue<bool>(true);
   node->getBundle("pinout_command").getSignal("output").setValue<uint32_t>(rand() & 0xFF);
   node->sendBundle("pinout_command");
@@ -113,10 +111,8 @@ void update_pinout_command()
  * @brief Runs the 1 Hz update thread for fans, display, battery, and pinout commands.
  *
  */
-void run_1hz_thread()
-{
-  while(1)
-  {
+void run_1hz_thread() {
+  while (1) {
     update_fans();
     update_display_status();
     update_battery();
@@ -129,10 +125,8 @@ void run_1hz_thread()
  * @brief Runs the 20 Hz update thread for light commands.
  *
  */
-void run_20hz_thread()
-{
-  while(1)
-  {
+void run_20hz_thread() {
+  while (1) {
     update_lights();
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
@@ -142,15 +136,12 @@ void run_20hz_thread()
  * @brief Runs the stats thread that prints node statistics and collected log messages.
  *
  */
-void run_stats_thread()
-{
-  while(1)
-  {
+void run_stats_thread() {
+  while (1) {
     node->printStats();
 
     std::cout << "------------- Logs --------------" << std::endl;
-    for (auto & l : logs)
-    {
+    for (auto& l : logs) {
       std::cout << l << std::endl;
     }
     std::cout << "---------------------------------" << std::endl;
@@ -165,18 +156,17 @@ void run_stats_thread()
  *
  * @param bundle The bundle containing the log message.
  */
-void logger_callback(proton::BundleHandle& bundle)
-{
+void logger_callback(proton::BundleHandle& bundle) {
   logs.push_back(bundle.getSignal("msg").getValue<std::string>());
 }
 
 /**
- * @brief Main function that initializes the node, registers callbacks, starts threads, and runs the node.
+ * @brief Main function that initializes the node, registers callbacks, starts threads, and runs the
+ * node.
  *
  * @return int
  */
-int main()
-{
+int main() {
   node = std::make_unique<proton::Node>(CONFIG_FILE, "pc");
 
   node->registerCallback("log", logger_callback);

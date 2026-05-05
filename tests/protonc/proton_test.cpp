@@ -24,7 +24,9 @@ TEST(PROTONC_Proton, InitBundle) {
   proton_signal_handle_t test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT];
   proton_bundle_value_test_t test_bundle;
 
-  proton_init_bundle(&test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles, PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT, PROTON__BUNDLE__VALUE_TEST__PRODUCERS, PROTON__BUNDLE__VALUE_TEST__CONSUMERS);
+  proton_init_bundle(&test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles,
+                     PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT,
+                     PROTON__BUNDLE__VALUE_TEST__PRODUCERS, PROTON__BUNDLE__VALUE_TEST__CONSUMERS);
 
   ASSERT_EQ(test_bundle_handle.bundle.id, PROTON__BUNDLE__VALUE_TEST);
   ASSERT_EQ(test_bundle_handle.bundle.signals, &test_bundle_handle.signals);
@@ -45,22 +47,25 @@ TEST(PROTONC_Proton, InitNode) {
   proton_node_t producer_node = PROTON__NODE__PRODUCER__DEFAULT_VALUE;
   proton_peer_t producer_peers[PROTON__PEER__COUNT] = {PROTON__NODE__CONSUMER__PEER__DEFAULT_VALUE};
 
-  ASSERT_EQ(proton_peer_consumer_init(&producer_peers[PROTON__PEER__CONSUMER], proton_consumer_buffer), PROTON_OK);
+  ASSERT_EQ(
+      proton_peer_consumer_init(&producer_peers[PROTON__PEER__CONSUMER], proton_consumer_buffer),
+      PROTON_OK);
 
-  ASSERT_EQ(proton_node_producer_init(
-    &producer_node,
-    producer_peers,
-    proton_producer_buffer,
-    nullptr),
-  PROTON_OK);
+  ASSERT_EQ(
+      proton_node_producer_init(&producer_node, producer_peers, proton_producer_buffer, nullptr),
+      PROTON_OK);
 
   ASSERT_STREQ(producer_node.name, PROTON__NODE__PRODUCER__NAME);
   ASSERT_EQ(producer_node.heartbeat.enabled, PROTON__NODE__PRODUCER__HEARTBEAT__ENABLED);
   ASSERT_EQ(producer_node.heartbeat.period, PROTON__NODE__PRODUCER__HEARTBEAT__PERIOD);
-  ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].transport.connect, proton_node_consumer_transport_connect);
-  ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].transport.disconnect, proton_node_consumer_transport_disconnect);
-  ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].transport.read, proton_node_consumer_transport_read);
-  ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].transport.write, proton_node_consumer_transport_write);
+  ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].transport.connect,
+            proton_node_consumer_transport_connect);
+  ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].transport.disconnect,
+            proton_node_consumer_transport_disconnect);
+  ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].transport.read,
+            proton_node_consumer_transport_read);
+  ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].transport.write,
+            proton_node_consumer_transport_write);
   ASSERT_EQ(producer_node.peers[PROTON__PEER__CONSUMER].receive, proton_node_consumer_receive);
   ASSERT_EQ(producer_node.atomic_buffer.buffer.data, proton_producer_buffer.data);
   ASSERT_EQ(producer_node.atomic_buffer.buffer.len, proton_producer_buffer.len);
@@ -95,22 +100,53 @@ TEST(PROTONC_Proton, Encode) {
   test_bundle.uint32_value = uint32_value;
   test_bundle.uint64_value = uint64_value;
   test_bundle.bool_value = bool_value;
-  strncpy(test_bundle.string_value, string_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY);
+  strncpy(test_bundle.string_value, string_value,
+          PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY);
   memcpy(test_bundle.bytes_value, bytes_value, sizeof(bytes_value));
 
   // Initialize signals
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE], proton_Signal_double_value_tag, &test_bundle.double_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE], proton_Signal_float_value_tag, &test_bundle.float_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE], proton_Signal_int32_value_tag, &test_bundle.int32_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE], proton_Signal_int64_value_tag, &test_bundle.int64_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE], proton_Signal_uint32_value_tag, &test_bundle.uint32_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE], proton_Signal_uint64_value_tag, &test_bundle.uint64_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE], proton_Signal_bool_value_tag, &test_bundle.bool_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE], proton_Signal_string_value_tag, &test_bundle.string_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE], proton_Signal_bytes_value_tag, &test_bundle.bytes_value,  PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__CAPACITY), PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE],
+                         proton_Signal_double_value_tag, &test_bundle.double_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE],
+                         proton_Signal_float_value_tag, &test_bundle.float_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE],
+                         proton_Signal_int32_value_tag, &test_bundle.int32_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE],
+                         proton_Signal_int64_value_tag, &test_bundle.int64_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE],
+                         proton_Signal_uint32_value_tag, &test_bundle.uint32_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE],
+                         proton_Signal_uint64_value_tag, &test_bundle.uint64_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE],
+                               proton_Signal_bool_value_tag, &test_bundle.bool_value, 0),
+            PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE],
+                         proton_Signal_string_value_tag, &test_bundle.string_value,
+                         PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE],
+                         proton_Signal_bytes_value_tag, &test_bundle.bytes_value,
+                         PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__CAPACITY),
+      PROTON_OK);
 
   // Initialise bundle
-  proton_status_e status = proton_init_bundle(&test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles, PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT, 0, 0);
+  proton_status_e status =
+      proton_init_bundle(&test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles,
+                         PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT, 0, 0);
   EXPECT_EQ(status, PROTON_OK);
 
   // Encode bundle
@@ -132,7 +168,8 @@ TEST(PROTONC_Proton, DecodeId) {
   proton_bundle_value_test_t test_bundle;
 
   // Initialise bundle with ID 0x123
-  proton_status_e status = proton_init_bundle(&test_bundle_handle, 0x123, &test_signal_handle, 1, 0, 0);
+  proton_status_e status =
+      proton_init_bundle(&test_bundle_handle, 0x123, &test_signal_handle, 1, 0, 0);
   EXPECT_EQ(status, PROTON_OK);
 
   // Encode bundle
@@ -180,22 +217,53 @@ TEST(PROTONC_Proton, Decode) {
   test_bundle.uint32_value = uint32_value;
   test_bundle.uint64_value = uint64_value;
   test_bundle.bool_value = bool_value;
-  strncpy(test_bundle.string_value, string_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY);
+  strncpy(test_bundle.string_value, string_value,
+          PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY);
   memcpy(test_bundle.bytes_value, bytes_value, sizeof(bytes_value));
 
   // Initialize signals
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE], proton_Signal_double_value_tag, &test_bundle.double_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE], proton_Signal_float_value_tag, &test_bundle.float_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE], proton_Signal_int32_value_tag, &test_bundle.int32_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE], proton_Signal_int64_value_tag, &test_bundle.int64_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE], proton_Signal_uint32_value_tag, &test_bundle.uint32_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE], proton_Signal_uint64_value_tag, &test_bundle.uint64_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE], proton_Signal_bool_value_tag, &test_bundle.bool_value, 0), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE], proton_Signal_string_value_tag, &test_bundle.string_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY), PROTON_OK);
-  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE], proton_Signal_bytes_value_tag, &test_bundle.bytes_value, PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__CAPACITY), PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE],
+                         proton_Signal_double_value_tag, &test_bundle.double_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE],
+                         proton_Signal_float_value_tag, &test_bundle.float_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE],
+                         proton_Signal_int32_value_tag, &test_bundle.int32_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE],
+                         proton_Signal_int64_value_tag, &test_bundle.int64_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE],
+                         proton_Signal_uint32_value_tag, &test_bundle.uint32_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE],
+                         proton_Signal_uint64_value_tag, &test_bundle.uint64_value, 0),
+      PROTON_OK);
+  EXPECT_EQ(proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE],
+                               proton_Signal_bool_value_tag, &test_bundle.bool_value, 0),
+            PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE],
+                         proton_Signal_string_value_tag, &test_bundle.string_value,
+                         PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY),
+      PROTON_OK);
+  EXPECT_EQ(
+      proton_init_signal(&test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE],
+                         proton_Signal_bytes_value_tag, &test_bundle.bytes_value,
+                         PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__CAPACITY),
+      PROTON_OK);
 
   // Initialise bundle
-  proton_status_e status = proton_init_bundle(&test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles, PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT, 0, 0);
+  proton_status_e status =
+      proton_init_bundle(&test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles,
+                         PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT, 0, 0);
   EXPECT_EQ(status, PROTON_OK);
 
   // Encode bundle
@@ -239,7 +307,7 @@ TEST(PROTONC_Proton, Decode) {
 
 //   proton_node_t node = proton_node_default;
 
-//   // Uninitialised node should report an error
+//   // Uninitialized node should report an error
 //   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_ERROR);
 
 //   // Set node to connected state
@@ -250,7 +318,8 @@ TEST(PROTONC_Proton, Decode) {
 //   node.transport.read = read_func;
 
 //   // Initialise node without defined buffers
-//   proton_configure(&node, node.transport, receive_func, proton_buffer_default, proton_buffer_default);
+//   proton_configure(&node, node.transport, receive_func, proton_buffer_default,
+//   proton_buffer_default);
 
 //   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_ERROR);
 
@@ -263,9 +332,7 @@ TEST(PROTONC_Proton, Decode) {
 //   ASSERT_EQ(PROTON_SpinOnce(&node), PROTON_READ_ERROR);
 // }
 
-
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

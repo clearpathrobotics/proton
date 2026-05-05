@@ -19,23 +19,24 @@
 #ifndef INC_PROTONCPP_SAFE_QUEUE_HPP_
 #define INC_PROTONCPP_SAFE_QUEUE_HPP_
 
+#include <stdint.h>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <queue>
-#include <stdint.h>
 
 namespace proton {
 
-template <typename T> class SafeQueue {
-public:
+template <typename T>
+class SafeQueue {
+ public:
   // Producer: Push item
   void push(T item) {
     {
       std::lock_guard<std::mutex> lock(mutex_);
       queue_.push(std::move(item));
     }
-    cv_.notify_one(); // Wake up consumer if waiting
+    cv_.notify_one();  // Wake up consumer if waiting
   }
 
   // Consumer: Pop item (blocking)
@@ -70,12 +71,12 @@ public:
     return queue_.size();
   }
 
-private:
+ private:
   std::queue<T> queue_;
   mutable std::mutex mutex_;
   std::condition_variable cv_;
 };
 
-} // namespace proton
+}  // namespace proton
 
-#endif // INC_PROTONCPP_COMMON_HPP_
+#endif  // INC_PROTONCPP_COMMON_HPP_

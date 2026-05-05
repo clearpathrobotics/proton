@@ -19,16 +19,16 @@
 #ifndef INC_PROTONCPP_BUNDLE_HPP_
 #define INC_PROTONCPP_BUNDLE_HPP_
 
-#include "protoncpp/signal.hpp"
-#include "protoncpp/bundle.pb.h"
-#include "protoncpp/config.hpp"
 #include <map>
 #include <memory>
+#include "protoncpp/bundle.pb.h"
+#include "protoncpp/config.hpp"
+#include "protoncpp/signal.hpp"
 
 namespace proton {
 
 class BundleHandle {
-public:
+ public:
   using BundleCallback = std::function<void(BundleHandle &)>;
 
   BundleHandle();
@@ -44,31 +44,67 @@ public:
 
   void registerCallback(BundleCallback callback);
 
-  std::string getName() { return name_; }
-  uint32_t getId() { return id_; }
-  std::vector<std::string> getProducers() { return producers_; }
-  std::vector<std::string> getConsumers() { return consumers_; }
-  std::shared_ptr<Bundle> getBundlePtr() { return bundle_; }
-  std::map<std::string, SignalHandle> getSignalMap() { return signals_; }
-  BundleCallback getCallback() { return callback_; }
+  std::string getName() {
+    return name_;
+  }
+  uint32_t getId() {
+    return id_;
+  }
+  std::vector<std::string> getProducers() {
+    return producers_;
+  }
+  std::vector<std::string> getConsumers() {
+    return consumers_;
+  }
+  std::shared_ptr<Bundle> getBundlePtr() {
+    return bundle_;
+  }
+  std::map<std::string, SignalHandle> getSignalMap() {
+    return signals_;
+  }
+  BundleCallback getCallback() {
+    return callback_;
+  }
 
-  void updateBundle(const Bundle &bundle) { *bundle_ = bundle; }
+  void updateBundle(const Bundle &bundle) {
+    *bundle_ = bundle;
+  }
 
-  void incrementRxCount() { rx_count_++; };
-  void resetRxCount() { rx_count_ = 0; };
-  uint32_t getRxCount() { return rx_count_; };
+  void incrementRxCount() {
+    rx_count_++;
+  };
+  void resetRxCount() {
+    rx_count_ = 0;
+  };
+  uint32_t getRxCount() {
+    return rx_count_;
+  };
 
-  void setRxps(uint32_t rxps) { rxps_ = rxps; }
-  uint32_t getRxps() { return rxps_; }
+  void setRxps(uint32_t rxps) {
+    rxps_ = rxps;
+  }
+  uint32_t getRxps() {
+    return rxps_;
+  }
 
-  void incrementTxCount() { tx_count_++; };
-  void resetTxCount() { tx_count_ = 0; };
-  uint32_t getTxCount() { return tx_count_; };
+  void incrementTxCount() {
+    tx_count_++;
+  };
+  void resetTxCount() {
+    tx_count_ = 0;
+  };
+  uint32_t getTxCount() {
+    return tx_count_;
+  };
 
-  void setTxps(uint32_t txps) { txps_ = txps; }
-  uint32_t getTxps() { return txps_; }
+  void setTxps(uint32_t txps) {
+    txps_ = txps;
+  }
+  uint32_t getTxps() {
+    return txps_;
+  }
 
-private:
+ private:
   std::string name_;
   uint32_t id_;
   std::vector<std::string> producers_;
@@ -80,6 +116,6 @@ private:
   uint32_t tx_count_, txps_;
 };
 
-} // namespace proton
+}  // namespace proton
 
-#endif // INC_PROTONCPP_BUNDLE_HPP_
+#endif  // INC_PROTONCPP_BUNDLE_HPP_

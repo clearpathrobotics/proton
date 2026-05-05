@@ -22,7 +22,7 @@
 #include <gtest/gtest.h>
 
 extern "C" {
-  #include "proton__test_producer.h"
+#include "proton__test_producer.h"
 }
 
 #endif  // PROTONCPP_TESTS_PROTONC_UTILS_H
