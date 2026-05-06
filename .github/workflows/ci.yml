@@ -93,9 +93,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Create proton_vendor repos file
+        run: |
+          cat > /tmp/proton_vendor.repos <<EOF
+          repositories:
+            proton_vendor:
+              type: git
+              url: https://github.com/clearpathrobotics/proton_vendor.git
+              version: main
+          EOF
+
       - uses: ros-tooling/action-ros-ci@v0.3
         id: action_ros_ci_step
         with:
           target-ros2-distro: jazzy
-          package-name: |
-            proton_vendor
+          package-name: proton_vendor
+          vcs-repo-file-url: file:///tmp/proton_vendor.repos
+          extra-cmake-args: -DPROTON_VENDOR_USE_LOCAL=ON
