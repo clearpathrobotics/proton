@@ -109,4 +109,3 @@ jobs:
           target-ros2-distro: jazzy
           package-name: proton_vendor
           vcs-repo-file-url: file:///tmp/proton_vendor.repos
-          extra-cmake-args: -DPROTON_VENDOR_USE_LOCAL=ON
