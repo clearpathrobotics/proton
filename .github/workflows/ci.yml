@@ -81,3 +81,21 @@ jobs:
       - name: Run tests
         run: |
           ctest --test-dir build/tests --output-on-failure
+
+  test-proton-vendor-jazzy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-noble-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ros-tooling/action-ros-ci@v0.3
+        id: action_ros_ci_step
+        with:
+          target-ros2-distro: jazzy
+          package-name: |
+            proton_vendor
