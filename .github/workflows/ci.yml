@@ -1,4 +1,4 @@
-name: CMake CI
+name: Proton CI
 
 on:
   push:
@@ -81,7 +81,7 @@ jobs:
         run: |
           ctest --test-dir build/tests --output-on-failure
 
-  test-proton-vendor-jazzy:
+  test-proton-vendor:
     runs-on: ubuntu-latest
 
     strategy:
