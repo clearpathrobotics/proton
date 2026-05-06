@@ -1,8 +1,7 @@
-name: CMake CI
+name: Proton CI
 
 on:
   push:
-    branches: [ main ]
   pull_request:
 
 jobs:
@@ -81,3 +80,32 @@ jobs:
       - name: Run tests
         run: |
           ctest --test-dir build/tests --output-on-failure
+
+  test-proton-vendor:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+    container:
+      image: rostooling/setup-ros-docker:ubuntu-noble-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create proton_vendor repos file
+        run: |
+          cat > /tmp/proton_vendor.repos <<EOF
+          repositories:
+            proton_vendor:
+              type: git
+              url: https://github.com/clearpathrobotics/proton_vendor.git
+              version: main
+          EOF
+
+      - uses: ros-tooling/action-ros-ci@v0.3
+        id: action_ros_ci_step
+        with:
+          target-ros2-distro: jazzy
+          package-name: proton_vendor
+          vcs-repo-file-url: file:///tmp/proton_vendor.repos
