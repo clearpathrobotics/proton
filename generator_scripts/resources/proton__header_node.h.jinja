@@ -104,7 +104,7 @@ typedef enum {{ heartbeat_name }} {
 {% if signal.type == "string" %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE "{{ signal.value }}"
 {% elif signal.type == "bytes" %}
-#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {{ signal.value }} }
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE { {{ signal.value | join(", ") }} }
 {% else %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__DEFAULT_VALUE {{ signal.value | lower }}
 {% endif %}
