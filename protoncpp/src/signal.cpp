@@ -25,7 +25,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
   name_ = config.name;
   bundle_name_ = bundle_name;
   capacity_ = config.capacity;
-  has_default_value_ = config.has_default_value;
+  const bool has_default_value = config.has_default_value;
 
   try
   {
@@ -42,7 +42,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
   {
     case Signal::SignalCase::kDoubleValue:
     {
-      if (has_default_value_)
+      if (has_default_value)
       {
         signal_->set_double_value(config.value.as<double>());
       }
@@ -55,7 +55,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
 
     case Signal::SignalCase::kFloatValue:
     {
-      if (has_default_value_)
+      if (has_default_value)
       {
         signal_->set_float_value(config.value.as<float>());
       }
@@ -68,7 +68,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
 
     case Signal::SignalCase::kInt32Value:
     {
-      if (has_default_value_)
+      if (has_default_value)
       {
         signal_->set_int32_value(config.value.as<int32_t>());
       }
@@ -81,7 +81,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
 
     case Signal::SignalCase::kInt64Value:
     {
-      if (has_default_value_)
+      if (has_default_value)
       {
         signal_->set_int64_value(config.value.as<int64_t>());
       }
@@ -94,7 +94,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
 
     case Signal::SignalCase::kUint32Value:
     {
-      if (has_default_value_)
+      if (has_default_value)
       {
         signal_->set_uint32_value(config.value.as<uint32_t>());
       }
@@ -107,7 +107,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
 
     case Signal::SignalCase::kUint64Value:
     {
-      if (has_default_value_)
+      if (has_default_value)
       {
         signal_->set_uint64_value(config.value.as<uint64_t>());
       }
@@ -120,7 +120,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
 
     case Signal::SignalCase::kBoolValue:
     {
-      if (has_default_value_)
+      if (has_default_value)
       {
         signal_->set_bool_value(config.value.as<bool>());
       }
@@ -134,7 +134,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
     case Signal::SignalCase::kStringValue:
     {
       auto str = signal_->mutable_string_value();
-      if (has_default_value_)
+      if (has_default_value)
       {
         str->assign(config.value.as<std::string>());
       }
@@ -149,7 +149,7 @@ SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name,
     {
       auto bytes = signal_->mutable_bytes_value();
       bytes->resize(capacity_);
-      if (has_default_value_)
+      if (has_default_value)
       {
         auto v = config.value.as<proton::bytes>();
         bytes->assign(v.begin(), v.end());

@@ -71,7 +71,6 @@ private:
   Signal::SignalCase type_;
   uint32_t capacity_;
   Signal * signal_;
-  bool has_default_value_;
 };
 
 }  // namespace proton
