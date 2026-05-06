@@ -59,7 +59,7 @@ def normalize_signals(bundle: dict):
             signal['has_default_value'] = has_default_value
 
             signal['internal_type'] = INTERNAL_TYPE_MAP[signal_type]
-            if signal_type in DEFAULT_VALUE_MAP:
+            if signal_type in DEFAULT_VALUE_MAP and not has_default_value:
                 signal['value'] = DEFAULT_VALUE_MAP[signal_type]
 
             # Special case for capacity types: they must have a capacity variable generated

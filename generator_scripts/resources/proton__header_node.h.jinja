@@ -71,7 +71,6 @@ typedef enum PROTON__BUNDLE {
 // Signal Enums
 {% for bundle in bundles %}
 {% set bundle_name = bundle.name | upper %}
-{# For whatever reason, signals with default values are "const" and must not be included in these enums #}
 {% if bundle.signals is defined %}
 typedef enum PROTON__BUNDLE__{{ bundle_name }}__SIGNAL {
 {% for signal in bundle.signals %}

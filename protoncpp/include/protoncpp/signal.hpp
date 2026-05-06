@@ -59,8 +59,8 @@ public:
   template <typename T>
   void setValue(uint16_t index, uint16_t subindex, const T value);
 
-  std::string & getName() const { return name_; }
-  std::string & getBundleName() const { return bundle_name_; }
+  std::string getName() const { return name_; }
+  std::string getBundleName() const { return bundle_name_; }
   Signal::SignalCase getType() { return type_; }
   uint32_t getCapacity() const { return capacity_; }
   Signal * getSignalPtr() { return signal_; }
