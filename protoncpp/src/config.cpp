@@ -38,10 +38,10 @@ struct convert<proton::SignalConfig>
     rhs.type_string = node[proton::keys::TYPE].as<std::string>();
 
     auto value_key = node[proton::keys::VALUE];
-    // Constant value defined
-    if (value_key.IsDefined() && !value_key.IsNull())
+    // Default value defined
+    rhs.has_default_value = value_key.IsDefined() && !value_key.IsNull();
+    if (rhs.has_default_value)
     {
-      rhs.has_default_value = true;
       rhs.value = value_key;
 
       if (value_key.IsScalar() && rhs.type_string == proton::value_types::STRING)
@@ -56,14 +56,14 @@ struct convert<proton::SignalConfig>
         }
         else
         {
-          rhs.length = value_key.size();
+          throw std::runtime_error(
+            "Error in signal " + rhs.name +
+            ": Only bytes type signals can have a sequence as a default value");
         }
       }
     }
     else
     {
-      rhs.has_default_value = false;
-
       auto capacity_key = node[proton::keys::CAPACITY];
       if (capacity_key.IsDefined())
       {
