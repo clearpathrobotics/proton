@@ -28,129 +28,129 @@ bundles:
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: level, type: uint32}
-      - {name: name, type: string, capacity: 64}
-      - {name: msg, type: string, capacity: 64}
-      - {name: file, type: string, capacity: 64}
-      - {name: function, type: string, capacity: 64}
-      - {name: line, type: uint32}
+      - {name: level, id: 0x1000, type: uint32}
+      - {name: name, id: 0x1001, type: string, capacity: 64}
+      - {name: msg, id: 0x1002, type: string, capacity: 64}
+      - {name: file, id: 0x1003, type: string, capacity: 64}
+      - {name: function, id: 0x1004, type: string, capacity: 64}
+      - {name: line, id: 0x1005, type: uint32}
   - name: status
     id: 0x101
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: hardware_id, type: string, capacity: 10}
-      - {name: firmware_version, type: string, capacity: 10}
-      - {name: mcu_uptime_sec, type: int32}
-      - {name: mcu_uptime_nanosec, type: uint32}
-      - {name: connection_uptime_sec, type: int32}
-      - {name: connection_uptime_nanosec, type: uint32}
+      - {name: header_frame_id, id: 0x1010, type: string, value: mcu_link}
+      - {name: hardware_id, id: 0x1011, type: string, capacity: 10}
+      - {name: firmware_version, id: 0x1012, type: string, capacity: 10}
+      - {name: mcu_uptime_sec, id: 0x1013, type: int32}
+      - {name: mcu_uptime_nanosec, id: 0x1014, type: uint32}
+      - {name: connection_uptime_sec, id: 0x1015, type: int32}
+      - {name: connection_uptime_nanosec, id: 0x1016, type: uint32}
   - name: power
     id: 0x102
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: shore_power_connected, type: int32, value: -1}
-      - {name: battery_connected, type: int32, value: 1}
-      - {name: power_12v_user_nominal, type: int32, value: -1}
-      - {name: charger_connected, type: int32, value: -1}
-      - {name: charging_complete, type: int32, value: -1}
-      - {name: measured_voltage, type: float}
-      - {name: measured_current, type: float}
+      - {name: header_frame_id, id: 0x1020, type: string, value: mcu_link}
+      - {name: shore_power_connected, id: 0x1021, type: int32, value: -1}
+      - {name: battery_connected, id: 0x1022, type: int32, value: 1}
+      - {name: power_12v_user_nominal, id: 0x1023, type: int32, value: -1}
+      - {name: charger_connected, id: 0x1024, type: int32, value: -1}
+      - {name: charging_complete, id: 0x1025, type: int32, value: -1}
+      - {name: measured_voltage, id: 0x1026, type: float}
+      - {name: measured_current, id: 0x1027, type: float}
   - name: emergency_stop
     id: 0x103
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: data, type: bool}
+      - {name: data, id: 0x1030, type: bool}
   - name: temperature
     id: 0x104
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: temperature, type: float}
+      - {name: header_frame_id, id: 0x1040, type: string, value: mcu_link}
+      - {name: temperature, id: 0x1041, type: float}
   - name: stop_status
     id: 0x105
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: stop_power_status, type: bool, value: True}
-      - {name: external_stop_present, type: bool, value: False}
-      - {name: needs_reset, type: bool}
+      - {name: header_frame_id, id: 0x1050, type: string, value: mcu_link}
+      - {name: stop_power_status, id: 0x1051, type: bool, value: True}
+      - {name: external_stop_present, id: 0x1052, type: bool, value: False}
+      - {name: needs_reset, id: 0x1053, type: bool}
   - name: pinout_state
     id: 0x106
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: header_frame_id, type: string, value: mcu_link}
-      - {name: rails, type: bool}
-      - {name: input_bitfield, type: uint32}
-      - {name: output_bitfield, type: uint32}
-      - {name: output_period_0, type: uint32}
-      - {name: output_period_1, type: uint32}
-      - {name: output_period_2, type: uint32}
-      - {name: output_period_3, type: uint32}
-      - {name: output_period_4, type: uint32}
-      - {name: output_period_5, type: uint32}
-      - {name: output_period_6, type: uint32}
+      - {name: header_frame_id, id: 0x1060, type: string, value: mcu_link}
+      - {name: rails, id: 0x1061, type: bool}
+      - {name: input_bitfield, id: 0x1062, type: uint32}
+      - {name: output_bitfield, id: 0x1063, type: uint32}
+      - {name: output_period_0, id: 0x1064, type: uint32}
+      - {name: output_period_1, id: 0x1065, type: uint32}
+      - {name: output_period_2, id: 0x1066, type: uint32}
+      - {name: output_period_3, id: 0x1067, type: uint32}
+      - {name: output_period_4, id: 0x1068, type: uint32}
+      - {name: output_period_5, id: 0x1069, type: uint32}
+      - {name: output_period_6, id: 0x106A, type: uint32}
   - name: alerts
     id: 0x107
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: data, type: string, capacity: 86}
+      - {name: data, id: 0x1070, type: string, capacity: 86}
   - name: cmd_fans
     id: 0x200
     producers: [pc]
     consumers: [mcu]
     signals:
-      - {name: fans, type: bytes, capacity: 8}
+      - {name: fans, id: 0x2000, type: bytes, capacity: 8}
   - name: display_status
     id: 0x201
     producers: [pc]
     consumers: [mcu]
     signals:
-      - {name: string1, type: string, capacity: 50}
-      - {name: string2, type: string, capacity: 50}
+      - {name: string1, id: 0x2010, type: string, capacity: 50}
+      - {name: string2, id: 0x2011, type: string, capacity: 50}
   - name: cmd_lights
     id: 0x202
     producers: [pc]
     consumers: [mcu]
     signals:
-      - {name: front_left_rgb, type: bytes, capacity: 4}
-      - {name: front_right_rgb, type: bytes, capacity: 4}
-      - {name: rear_left_rgb, type: bytes, capacity: 4}
-      - {name: rear_right_rgb, type: bytes, capacity: 4}
+      - {name: front_left_rgb, id: 0x2020, type: bytes, capacity: 4}
+      - {name: front_right_rgb, id: 0x2021, type: bytes, capacity: 4}
+      - {name: rear_left_rgb, id: 0x2022, type: bytes, capacity: 4}
+      - {name: rear_right_rgb, id: 0x2023, type: bytes, capacity: 4}
   - name: battery
     id: 0x203
     producers: [pc]
     consumers: [mcu]
     signals:
-      - {name: percentage, type: float}
+      - {name: percentage, id: 0x2030, type: float}
   - name: pinout_command
     id: 0x204
     producers: [pc]
     consumers: [mcu]
     signals:
-      - {name: rails, type: bool}
-      - {name: output, type: uint32}
+      - {name: rails, id: 0x2040, type: bool}
+      - {name: output, id: 0x2041, type: uint32}
   - name: cmd_shutdown
     id: 0x300
     producers: [pc]
     consumers: [mcu]
     signals:
-      - {name: data, type: bool}
+      - {name: data, id: 0x3000, type: bool}
   - name: cmd_shutdown_response
     id: 0x301
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: success, type: bool}
-      - {name: message, type: string, capacity: 64}
+      - {name: success, id: 0x3010, type: bool}
+      - {name: message, id: 0x3011, type: string, capacity: 64}
   - name: clear_needs_reset
     id: 0x302
     producers: [pc]
@@ -160,8 +160,8 @@ bundles:
     producers: [mcu]
     consumers: [pc]
     signals:
-      - {name: success, type: bool}
-      - {name: message, type: string, capacity: 64}
+      - {name: success, id: 0x3030, type: bool}
+      - {name: message, id: 0x3031, type: string, capacity: 64}
 
 ros2:
   topics:
