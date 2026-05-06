@@ -205,6 +205,23 @@ TEST(SignalValues, DefaultValue)
   AssertSignalValue(bytes_signal, expected_bytes);
 }
 
+TEST(SignalValues, MutableDefaultValue)
+{
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
+  auto & bundle = bundles.at("default_value_test");
+  auto & double_signal = bundle.getSignal("default_double");
+
+  // Check that the default value is correctly set
+  AssertSignalValue(double_signal, 3.14159);
+
+  // Change the default value
+  double_signal.setValue<double>(2.71828);
+
+  // Check that the value is correctly set
+  AssertSignalValue(double_signal, 2.71828);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
