@@ -31,3 +31,12 @@ bundles:
       - {name: bool_value,          type: bool}
       - {name: string_value,        type: string,       capacity: 8}
       - {name: bytes_value,         type: bytes,        capacity: 8}
+
+  - name: default_value_test
+    id: 0x101
+    producers: [producer]
+    consumers: [consumer]
+    signals:
+      - {name: default_double, type: double, value: 3.14159}
+      - {name: default_string, type: string, value: "foo"}
+      - {name: default_bytes, type: bytes, value: [0, 1, 2], capacity: 3}

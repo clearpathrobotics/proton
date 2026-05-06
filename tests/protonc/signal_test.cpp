@@ -152,6 +152,27 @@ TEST(PROTONC_Signal, DeprecatedType)
   EXPECT_EQ(proton_init_signal(&signal_handle, 11, &int32_value, 0), PROTON_ERROR);
 }
 
+TEST(PROTONC_Signal, DefaultValues)
+{
+  // This is more of a test for autogeneration of signal default values.
+  // If the autogen completed correctly, the default values of the default_value bundle
+  // should be set to the values in proton__test_producer.h
+  proton_bundle_default_value_test_t test_bundle =
+    PROTON__BUNDLE__DEFAULT_VALUE_TEST__DEFAULT_VALUE;
+
+  // Initialize bundle
+  proton_status_e status = proton_bundle_default_value_test_init(&test_bundle);
+  EXPECT_EQ(status, PROTON_OK);
+
+  const uint8_t bytes_value[PROTON__BUNDLE__DEFAULT_VALUE_TEST__SIGNAL__DEFAULT_BYTES__CAPACITY] = {
+    0, 1, 2};
+
+  // Check that default values are set correctly in the struct
+  EXPECT_EQ(test_bundle.default_double, 3.14159);
+  EXPECT_STREQ(test_bundle.default_string, "foo");
+  EXPECT_EQ(memcmp(test_bundle.default_bytes, bytes_value, sizeof(bytes_value)), 0);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
