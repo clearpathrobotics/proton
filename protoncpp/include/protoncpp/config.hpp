@@ -49,7 +49,6 @@ static const char * const CONNECTIONS = "connections";
 static const char * const FIRST = "first";
 static const char * const SECOND = "second";
 static const char * const NODE = "node";
-static const char * const LENGTH = "length";
 static const char * const CAPACITY = "capacity";
 static const char * const VALUE = "value";
 static const char * const ID = "id";
@@ -96,9 +95,8 @@ struct SignalConfig
 {
   std::string name;
   std::string type_string;
-  uint32_t length;
   uint32_t capacity;
-  bool is_const;
+  bool has_default_value;
   ::YAML::Node value;
 };
 

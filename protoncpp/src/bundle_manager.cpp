@@ -34,7 +34,7 @@ void BundleManager::addHeartbeat(std::string producer, std::vector<std::string> 
   SignalConfig signal_config = {
     .name = "heartbeat",
     .type_string = std::string(value_types::UINT32.begin(), value_types::UINT32.end()),
-    .is_const = false};
+    .has_default_value = false};
 
   BundleConfig config = {
     .name = producer,

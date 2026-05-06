@@ -18,10 +18,11 @@
 
 #include "protonc/utils.hpp"
 
+#define BUFFER_SIZE 1024
+
 TEST(PROTONC_Signal, Values)
 {
-// Buffer to encode/decode with
-#define BUFFER_SIZE 1024
+  // Buffer to encode/decode with
   uint8_t buffer_[BUFFER_SIZE];
   proton_buffer_t buffer = {buffer_, BUFFER_SIZE};
 
@@ -150,6 +151,110 @@ TEST(PROTONC_Signal, DeprecatedType)
 
   // Try to initialize signal with deprecated type (one of the old list_ types)
   EXPECT_EQ(proton_init_signal(&signal_handle, 11, &int32_value, 0), PROTON_ERROR);
+}
+
+TEST(PROTONC_Signal, InvalidParameters)
+{
+  proton_signal_handle_t signal_handle;
+  int32_t int32_value = -12;
+
+  // Try to initialize signal with null handle
+  EXPECT_EQ(
+    proton_init_signal(nullptr, proton_Signal_int32_value_tag, &int32_value, 0),
+    PROTON_NULL_PTR_ERROR);
+
+  // Try to initialize signal with null value pointer
+  EXPECT_EQ(
+    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, nullptr, 0),
+    PROTON_NULL_PTR_ERROR);
+}
+
+TEST(PROTONC_Signal, EncodeWithoutInitializingBundle)
+{
+  proton_signal_handle_t signal_handle;
+  int32_t int32_value = -12;
+
+  // Initialize signal
+  EXPECT_EQ(
+    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, &int32_value, 0), PROTON_OK);
+
+  // Try to encode without initializing bundle
+  uint8_t buffer_[BUFFER_SIZE];
+  proton_buffer_t producer_buffer = {buffer_, BUFFER_SIZE};
+  size_t bytes_encoded;
+  EXPECT_EQ(proton_encode(nullptr, producer_buffer, &bytes_encoded), PROTON_NULL_PTR_ERROR);
+}
+
+TEST(PROTONC_Signal, EncodeWithInvalidParameters)
+{
+  proton_signal_handle_t signal_handle;
+  proton_bundle_handle_t test_bundle_handle;
+  int32_t int32_value = -12;
+
+  // Initialize signal
+  EXPECT_EQ(
+    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, &int32_value, 0), PROTON_OK);
+
+  // Try to encode with null buffer
+  size_t bytes_encoded;
+  EXPECT_EQ(
+    proton_encode(&test_bundle_handle, {nullptr, BUFFER_SIZE}, &bytes_encoded),
+    PROTON_NULL_PTR_ERROR);
+
+  // Try to encode with null bytes_encoded pointer
+  uint8_t buffer_[BUFFER_SIZE];
+  proton_buffer_t producer_buffer = {buffer_, BUFFER_SIZE};
+  EXPECT_EQ(proton_encode(&test_bundle_handle, producer_buffer, nullptr), PROTON_NULL_PTR_ERROR);
+}
+
+TEST(PROTONC_Signal, EncodeWithInsufficientBuffer)
+{
+  proton_bundle_handle_t test_bundle_handle;
+  proton_signal_handle_t test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT];
+  proton_bundle_value_test_t test_bundle;
+
+  test_bundle.double_value = 1.234;
+
+  EXPECT_EQ(
+    proton_init_signal(
+      &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE],
+      proton_Signal_double_value_tag, &test_bundle.double_value, 0),
+    PROTON_OK);
+
+  proton_status_e status = proton_init_bundle(
+    &test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles,
+    PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT, 0, 0);
+  EXPECT_EQ(status, PROTON_OK);
+
+  // Try to encode with insufficient buffer size
+  uint8_t buffer_[1];
+  proton_buffer_t producer_buffer = {buffer_, 1};
+  size_t bytes_encoded;
+
+  status = proton_encode(&test_bundle_handle, producer_buffer, &bytes_encoded);
+
+  EXPECT_EQ(status, PROTON_SERIALIZATION_ERROR);
+}
+
+TEST(PROTONC_Signal, DefaultValues)
+{
+  // This is more of a test for autogeneration of signal default values.
+  // If the autogen completed correctly, the default values of the default_value bundle
+  // should be set to the values in proton__test_producer.h
+  proton_bundle_default_value_test_t test_bundle =
+    PROTON__BUNDLE__DEFAULT_VALUE_TEST__DEFAULT_VALUE;
+
+  // Initialize bundle
+  proton_status_e status = proton_bundle_default_value_test_init(&test_bundle);
+  EXPECT_EQ(status, PROTON_OK);
+
+  const uint8_t bytes_value[PROTON__BUNDLE__DEFAULT_VALUE_TEST__SIGNAL__DEFAULT_BYTES__CAPACITY] = {
+    0, 1, 2};
+
+  // Check that default values are set correctly in the struct
+  EXPECT_EQ(test_bundle.default_double, 3.14159);
+  EXPECT_STREQ(test_bundle.default_string, "foo");
+  EXPECT_EQ(memcmp(test_bundle.default_bytes, bytes_value, sizeof(bytes_value)), 0);
 }
 
 int main(int argc, char ** argv)

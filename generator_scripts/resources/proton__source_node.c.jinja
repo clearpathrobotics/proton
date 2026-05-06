@@ -46,7 +46,6 @@ proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is def
 {
 {% if bundle.signals is defined %}  proton_status_e status;{% endif %}
 {% for signal in bundle.signals %}
-{% if not signal.is_const %}
   status = proton_init_signal(
     &_{{ bundle.name }}_signal_handles[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}],
     proton_Signal_{{ signal.type }}_value_tag,
@@ -57,7 +56,6 @@ proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is def
   {
     return status;
   }
-{% endif %}
 {% endfor %}
   return proton_init_bundle(
     &_{{ bundle.name }}_bundle_handle,

@@ -189,6 +189,39 @@ TEST(SignalValues, BytesValue)
   AssertSignalValue(signal, value);
 }
 
+TEST(SignalValues, DefaultValue)
+{
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
+  auto & bundle = bundles.at("default_value_test");
+  auto & double_signal = bundle.getSignal("default_double");
+  auto & string_signal = bundle.getSignal("default_string");
+  auto & bytes_signal = bundle.getSignal("default_bytes");
+
+  // Check that the default values are correctly set
+  AssertSignalValue(double_signal, 3.14159);
+  AssertSignalValue(string_signal, std::string("foo"));
+  proton::bytes expected_bytes = {0, 1, 2};
+  AssertSignalValue(bytes_signal, expected_bytes);
+}
+
+TEST(SignalValues, MutableDefaultValue)
+{
+  std::map<std::string, BundleHandle> bundles;
+  bundles = getBundles(CONFIG_FILE);
+  auto & bundle = bundles.at("default_value_test");
+  auto & double_signal = bundle.getSignal("default_double");
+
+  // Check that the default value is correctly set
+  AssertSignalValue(double_signal, 3.14159);
+
+  // Change the default value
+  double_signal.setValue<double>(2.71828);
+
+  // Check that the value is correctly set
+  AssertSignalValue(double_signal, 2.71828);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
