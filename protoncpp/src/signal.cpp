@@ -20,12 +20,12 @@
 
 using namespace proton;
 
-SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal * signal)
+SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name, Signal * signal)
 {
   name_ = config.name;
   bundle_name_ = bundle_name;
   capacity_ = config.capacity;
-  const_ = config.is_const;
+  has_default_value_ = config.has_default_value;
 
   try
   {
@@ -42,7 +42,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
   {
     case Signal::SignalCase::kDoubleValue:
     {
-      if (const_)
+      if (has_default_value_)
       {
         signal_->set_double_value(config.value.as<double>());
       }
@@ -55,7 +55,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
 
     case Signal::SignalCase::kFloatValue:
     {
-      if (const_)
+      if (has_default_value_)
       {
         signal_->set_float_value(config.value.as<float>());
       }
@@ -68,7 +68,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
 
     case Signal::SignalCase::kInt32Value:
     {
-      if (const_)
+      if (has_default_value_)
       {
         signal_->set_int32_value(config.value.as<int32_t>());
       }
@@ -81,7 +81,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
 
     case Signal::SignalCase::kInt64Value:
     {
-      if (const_)
+      if (has_default_value_)
       {
         signal_->set_int64_value(config.value.as<int64_t>());
       }
@@ -94,7 +94,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
 
     case Signal::SignalCase::kUint32Value:
     {
-      if (const_)
+      if (has_default_value_)
       {
         signal_->set_uint32_value(config.value.as<uint32_t>());
       }
@@ -107,7 +107,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
 
     case Signal::SignalCase::kUint64Value:
     {
-      if (const_)
+      if (has_default_value_)
       {
         signal_->set_uint64_value(config.value.as<uint64_t>());
       }
@@ -120,7 +120,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
 
     case Signal::SignalCase::kBoolValue:
     {
-      if (const_)
+      if (has_default_value_)
       {
         signal_->set_bool_value(config.value.as<bool>());
       }
@@ -134,7 +134,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
     case Signal::SignalCase::kStringValue:
     {
       auto str = signal_->mutable_string_value();
-      if (const_)
+      if (has_default_value_)
       {
         str->assign(config.value.as<std::string>());
       }
@@ -149,7 +149,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
     {
       auto bytes = signal_->mutable_bytes_value();
       bytes->resize(capacity_);
-      if (const_)
+      if (has_default_value_)
       {
         auto v = config.value.as<proton::bytes>();
         bytes->assign(v.begin(), v.end());
@@ -162,14 +162,7 @@ SignalHandle::SignalHandle(SignalConfig config, std::string bundle_name, Signal 
   }
 }
 
-SignalHandle::~SignalHandle()
-{
-  if (const_)
-  {
-    // Const signals are created with new, rather than from a Bundle.
-    // delete signal_;
-  }
-}
+SignalHandle::~SignalHandle() {}
 
 template <>
 const double SignalHandle::getValue<double>() const
@@ -269,10 +262,6 @@ void SignalHandle::setValue<double>(const double value)
   {
     throw std::runtime_error("Signal " + name_ + " is not of double type");
   }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
-  }
   signal_->set_double_value(value);
 }
 
@@ -282,10 +271,6 @@ void SignalHandle::setValue<float>(const float value)
   if (type_ != proton::Signal::SignalCase::kFloatValue)
   {
     throw std::runtime_error("Signal " + name_ + " is not of float type");
-  }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
   }
   signal_->set_float_value(value);
 }
@@ -297,10 +282,6 @@ void SignalHandle::setValue<int32_t>(const int32_t value)
   {
     throw std::runtime_error("Signal " + name_ + " is not of int32_t type");
   }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
-  }
   signal_->set_int32_value(value);
 }
 
@@ -310,10 +291,6 @@ void SignalHandle::setValue<int64_t>(const int64_t value)
   if (type_ != proton::Signal::SignalCase::kInt64Value)
   {
     throw std::runtime_error("Signal " + name_ + " is not of int64_t type");
-  }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
   }
   signal_->set_int64_value(value);
 }
@@ -325,10 +302,6 @@ void SignalHandle::setValue<uint32_t>(const uint32_t value)
   {
     throw std::runtime_error("Signal " + name_ + " is not of uint32_t type");
   }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
-  }
   signal_->set_uint32_value(value);
 }
 
@@ -338,10 +311,6 @@ void SignalHandle::setValue<uint64_t>(const uint64_t value)
   if (type_ != proton::Signal::SignalCase::kUint64Value)
   {
     throw std::runtime_error("Signal " + name_ + " is not of uint64_t type");
-  }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
   }
   signal_->set_uint64_value(value);
 }
@@ -353,10 +322,6 @@ void SignalHandle::setValue<bool>(const bool value)
   {
     throw std::runtime_error("Signal " + name_ + " is not of bool type");
   }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
-  }
   signal_->set_bool_value(value);
 }
 
@@ -367,10 +332,6 @@ void SignalHandle::setValue<std::string>(const std::string value)
   {
     throw std::runtime_error("Signal " + name_ + " is not of std::string type");
   }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
-  }
   signal_->set_string_value(value);
 }
 
@@ -380,10 +341,6 @@ void SignalHandle::setValue<proton::bytes>(const proton::bytes value)
   if (type_ != proton::Signal::SignalCase::kBytesValue)
   {
     throw std::runtime_error("Signal " + name_ + " is not of proton::bytes type");
-  }
-  if (const_)
-  {
-    throw std::runtime_error("Signal " + name_ + " is constant and cannot be set");
   }
   signal_->mutable_bytes_value()->assign(value.begin(), value.end());
 }

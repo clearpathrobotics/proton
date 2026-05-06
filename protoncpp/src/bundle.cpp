@@ -100,17 +100,7 @@ void BundleHandle::printBundleVerbose()
 
 void BundleHandle::addSignal(SignalConfig config)
 {
-  Signal * signal;
-  // Non-constant signals are added to the bundle
-  if (!config.is_const)
-  {
-    signal = bundle_->add_signals();
-  }
-  // Constant signals exist just to store their value
-  else
-  {
-    signal = new Signal();
-  }
+  Signal * signal = bundle_->add_signals();
 
   signals_.emplace(config.name, SignalHandle(config, name_, signal));
 }

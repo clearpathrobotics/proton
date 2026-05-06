@@ -41,7 +41,7 @@ struct convert<proton::SignalConfig>
     // Constant value defined
     if (value_key.IsDefined() && !value_key.IsNull())
     {
-      rhs.is_const = true;
+      rhs.has_default_value = true;
       rhs.value = value_key;
 
       if (value_key.IsScalar() && rhs.type_string == proton::value_types::STRING)
@@ -62,7 +62,7 @@ struct convert<proton::SignalConfig>
     }
     else
     {
-      rhs.is_const = false;
+      rhs.has_default_value = false;
 
       auto capacity_key = node[proton::keys::CAPACITY];
       if (capacity_key.IsDefined())
