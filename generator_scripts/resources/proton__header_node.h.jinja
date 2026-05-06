@@ -75,7 +75,7 @@ typedef enum PROTON__BUNDLE {
 {% if bundle.signals is defined %}
 typedef enum PROTON__BUNDLE__{{ bundle_name }}__SIGNAL {
 {% for signal in bundle.signals %}
-{% if not signal.is_const %}  PROTON__BUNDLE__{{ bundle_name }}__SIGNAL__{{ signal.name | upper }},{% endif %}
+  PROTON__BUNDLE__{{ bundle_name }}__SIGNAL__{{ signal.name | upper }},
 {% endfor %}
   PROTON__BUNDLE__{{ bundle_name }}__SIGNAL__COUNT
 } PROTON__BUNDLE__{{ bundle_name }}__SIGNAL_e;
@@ -136,9 +136,9 @@ typedef enum {{ heartbeat_name }} {
 typedef struct {{ struct_name }} {
 {% for signal in bundle.signals %}
 {% if signal.capacity > 0 %}
-  {% if signal.is_const %}const {% endif %}{{ signal.internal_type }} {{ signal.name }}[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY];
+  {{ signal.internal_type }} {{ signal.name }}[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY];
 {% else %}
-  {% if signal.is_const %}const {% endif %}{{ signal.internal_type }} {{ signal.name }};
+  {{ signal.internal_type }} {{ signal.name }};
 {% endif %}
 {% endfor %}
 } {{ struct_name }}_t;

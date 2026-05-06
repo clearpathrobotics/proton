@@ -53,20 +53,18 @@ def normalize_signals(bundle: dict):
             signal_type = signal['type']
 
             is_capacity_type = 'bytes' in signal_type or 'string' in signal_type
-            # TODO CORE-37812 remote const-ness in signals
-            is_const = signal.get('value') is not None
+            has_default_value = signal.get('value') is not None
 
             signal['is_capacity_type'] = is_capacity_type
-            signal['is_const'] = is_const
+            signal['has_default_value'] = has_default_value
 
             signal['internal_type'] = INTERNAL_TYPE_MAP[signal_type]
             if signal_type in DEFAULT_VALUE_MAP:
                 signal['value'] = DEFAULT_VALUE_MAP[signal_type]
 
             # Special case for capacity types: they must have a capacity variable generated
-            # in the template, even if they're already defined as consts. The length is
-            # equal to the strlen + 1 for the null char in C
-            if is_const and is_capacity_type:
+            # in the template, The length is equal to the strlen + 1 for the null char in C
+            if has_default_value and is_capacity_type:
                 signal['capacity'] = len(signal['value']) + 1
 
 
