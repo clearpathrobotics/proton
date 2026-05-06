@@ -18,10 +18,11 @@
 
 #include "protonc/utils.hpp"
 
+#define BUFFER_SIZE 1024
+
 TEST(PROTONC_Signal, Values)
 {
-// Buffer to encode/decode with
-#define BUFFER_SIZE 1024
+  // Buffer to encode/decode with
   uint8_t buffer_[BUFFER_SIZE];
   proton_buffer_t buffer = {buffer_, BUFFER_SIZE};
 
@@ -208,21 +209,31 @@ TEST(PROTONC_Signal, EncodeWithInvalidParameters)
 
 TEST(PROTONC_Signal, EncodeWithInsufficientBuffer)
 {
-  proton_signal_handle_t signal_handle;
   proton_bundle_handle_t test_bundle_handle;
-  int32_t int32_value = -12;
+  proton_signal_handle_t test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT];
+  proton_bundle_value_test_t test_bundle;
 
-  // Initialize signal
+  test_bundle.double_value = 1.234;
+
   EXPECT_EQ(
-    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, &int32_value, 0), PROTON_OK);
+    proton_init_signal(
+      &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE],
+      proton_Signal_double_value_tag, &test_bundle.double_value, 0),
+    PROTON_OK);
+
+  proton_status_e status = proton_init_bundle(
+    &test_bundle_handle, PROTON__BUNDLE__VALUE_TEST, test_signal_handles,
+    PROTON__BUNDLE__VALUE_TEST__SIGNAL__COUNT, 0, 0);
+  EXPECT_EQ(status, PROTON_OK);
 
   // Try to encode with insufficient buffer size
-  uint8_t buffer_[1];  // Buffer too small to hold encoded data
-  proton_buffer_t producer_buffer = {buffer_, sizeof(buffer_)};
+  uint8_t buffer_[1];
+  proton_buffer_t producer_buffer = {buffer_, 1};
   size_t bytes_encoded;
-  EXPECT_EQ(
-    proton_encode(&test_bundle_handle, producer_buffer, &bytes_encoded),
-    PROTON_SERIALIZATION_ERROR);
+
+  status = proton_encode(&test_bundle_handle, producer_buffer, &bytes_encoded);
+
+  EXPECT_EQ(status, PROTON_SERIALIZATION_ERROR);
 }
 
 TEST(PROTONC_Signal, DefaultValues)
