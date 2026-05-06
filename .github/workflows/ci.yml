@@ -23,7 +23,7 @@ jobs:
             python3-pip
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Mark safe repository
         run: |
@@ -67,7 +67,7 @@ jobs:
             git
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configure CMake
         run: |
