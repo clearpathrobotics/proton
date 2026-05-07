@@ -557,7 +557,7 @@ void * stats(void * arg)
   {
     printf("\033[2J\033[1;1H");
     printf("--------- J100 MCU C --------\r\n");
-    printf("Node: %u\r\n", context->node->state);
+    printf("Node State: %u\r\n", context->node->state);
     printf("Peer: %s\r\n", PROTON__NODE__PC__NAME);
     printf(
       "  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__PC].state,

@@ -473,7 +473,7 @@ void * stats(void * arg)
   {
     printf("\033[2J\033[1;1H");
     printf("--------- Multi Node 1 C --------\r\n");
-    printf("Node: %u\r\n", context->node->state);
+    printf("Node State: %u\r\n", context->node->state);
     printf("Peer: %s (%s)\r\n", PROTON__NODE__NODE2__NAME, PROTON__NODE__NODE2__ENDPOINT__0__TYPE);
     printf(
       "  State: %u, Transport: %u\r\n", context->node->peers[PROTON__PEER__NODE2].state,
