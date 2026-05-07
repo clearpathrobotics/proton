@@ -105,8 +105,9 @@ def validate_ids(bundles: list):
 
     signal_ids = []
     for bundle in bundles:
-        for signal in bundle['signals']:
-            signal_ids.append(signal['id'])
+        if 'signals' in bundle:
+            for signal in bundle['signals']:
+                signal_ids.append(signal['id'])
 
     _count_duplicates(bundle_ids, 'bundle')
     _count_duplicates(signal_ids, 'signal')
