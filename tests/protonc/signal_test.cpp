@@ -59,49 +59,58 @@ TEST(PROTONC_Signal, Values)
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE],
-      proton_Signal_double_value_tag, &test_bundle.double_value, 0),
+      proton_Signal_double_value_tag, &test_bundle.double_value, 0,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE__ID),
     PROTON_OK);
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE],
-      proton_Signal_float_value_tag, &test_bundle.float_value, 0),
+      proton_Signal_float_value_tag, &test_bundle.float_value, 0,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__FLOAT_VALUE__ID),
     PROTON_OK);
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE],
-      proton_Signal_int32_value_tag, &test_bundle.int32_value, 0),
+      proton_Signal_int32_value_tag, &test_bundle.int32_value, 0,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT32_VALUE__ID),
     PROTON_OK);
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE],
-      proton_Signal_int64_value_tag, &test_bundle.int64_value, 0),
+      proton_Signal_int64_value_tag, &test_bundle.int64_value, 0,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__INT64_VALUE__ID),
     PROTON_OK);
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE],
-      proton_Signal_uint32_value_tag, &test_bundle.uint32_value, 0),
+      proton_Signal_uint32_value_tag, &test_bundle.uint32_value, 0,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT32_VALUE__ID),
     PROTON_OK);
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE],
-      proton_Signal_uint64_value_tag, &test_bundle.uint64_value, 0),
+      proton_Signal_uint64_value_tag, &test_bundle.uint64_value, 0,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__UINT64_VALUE__ID),
     PROTON_OK);
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE],
-      proton_Signal_bool_value_tag, &test_bundle.bool_value, 0),
+      proton_Signal_bool_value_tag, &test_bundle.bool_value, 0,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__BOOL_VALUE__ID),
     PROTON_OK);
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE],
       proton_Signal_string_value_tag, &test_bundle.string_value,
-      PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY),
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__CAPACITY,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__STRING_VALUE__ID),
     PROTON_OK);
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE],
       proton_Signal_bytes_value_tag, &test_bundle.bytes_value,
-      PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__CAPACITY),
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__CAPACITY,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__BYTES_VALUE__ID),
     PROTON_OK);
 
   // Initialise bundle
@@ -150,7 +159,7 @@ TEST(PROTONC_Signal, DeprecatedType)
   int32_t int32_value = -12;
 
   // Try to initialize signal with deprecated type (one of the old list_ types)
-  EXPECT_EQ(proton_init_signal(&signal_handle, 11, &int32_value, 0), PROTON_ERROR);
+  EXPECT_EQ(proton_init_signal(&signal_handle, 11, &int32_value, 0, 0), PROTON_ERROR);
 }
 
 TEST(PROTONC_Signal, InvalidParameters)
@@ -160,12 +169,12 @@ TEST(PROTONC_Signal, InvalidParameters)
 
   // Try to initialize signal with null handle
   EXPECT_EQ(
-    proton_init_signal(nullptr, proton_Signal_int32_value_tag, &int32_value, 0),
+    proton_init_signal(nullptr, proton_Signal_int32_value_tag, &int32_value, 0, 0),
     PROTON_NULL_PTR_ERROR);
 
   // Try to initialize signal with null value pointer
   EXPECT_EQ(
-    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, nullptr, 0),
+    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, nullptr, 0, 0),
     PROTON_NULL_PTR_ERROR);
 }
 
@@ -176,7 +185,8 @@ TEST(PROTONC_Signal, EncodeWithoutInitializingBundle)
 
   // Initialize signal
   EXPECT_EQ(
-    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, &int32_value, 0), PROTON_OK);
+    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, &int32_value, 0, 0),
+    PROTON_OK);
 
   // Try to encode without initializing bundle
   uint8_t buffer_[BUFFER_SIZE];
@@ -193,7 +203,8 @@ TEST(PROTONC_Signal, EncodeWithInvalidParameters)
 
   // Initialize signal
   EXPECT_EQ(
-    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, &int32_value, 0), PROTON_OK);
+    proton_init_signal(&signal_handle, proton_Signal_int32_value_tag, &int32_value, 0, 0),
+    PROTON_OK);
 
   // Try to encode with null buffer
   size_t bytes_encoded;
@@ -218,7 +229,8 @@ TEST(PROTONC_Signal, EncodeWithInsufficientBuffer)
   EXPECT_EQ(
     proton_init_signal(
       &test_signal_handles[PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE],
-      proton_Signal_double_value_tag, &test_bundle.double_value, 0),
+      proton_Signal_double_value_tag, &test_bundle.double_value, 0,
+      PROTON__BUNDLE__VALUE_TEST__SIGNAL__DOUBLE_VALUE__ID),
     PROTON_OK);
 
   proton_status_e status = proton_init_bundle(
