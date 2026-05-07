@@ -93,6 +93,7 @@ inline static const std::string SERIAL = "serial";
 
 struct SignalConfig
 {
+  uint32_t id;
   std::string name;
   std::string type_string;
   uint32_t capacity;

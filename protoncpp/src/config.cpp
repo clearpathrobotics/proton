@@ -34,6 +34,7 @@ struct convert<proton::SignalConfig>
       return false;
     }
 
+    rhs.id = node[proton::keys::ID].as<uint32_t>();
     rhs.name = node[proton::keys::NAME].as<std::string>();
     rhs.type_string = node[proton::keys::TYPE].as<std::string>();
 
