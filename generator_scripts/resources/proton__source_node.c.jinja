@@ -50,8 +50,7 @@ proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is def
     &_{{ bundle.name }}_signal_handles[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}],
     proton_Signal_{{ signal.type }}_value_tag,
     {% if not signal.type == "string" %}&{%endif %}bundle->{{ signal.name }},
-    PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY,
-    PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__ID
+    PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__{{ signal.name | upper }}__CAPACITY
   );
   if (status != PROTON_OK)
   {
@@ -78,7 +77,6 @@ proton_status_e proton_bundle_{{ node.name }}_heartbeat_init(proton_bundle_heart
     &_{{ node.name }}_heartbeat_signal_handles[PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__SIGNAL__HEARTBEAT],
     proton_Signal_uint32_value_tag,
     &bundle->heartbeat,
-    0,
     0
   );
   if (status != PROTON_OK)

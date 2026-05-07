@@ -20,10 +20,8 @@
 
 using namespace proton;
 
-SignalHandle::SignalHandle(
-  const SignalConfig & config, const std::string & bundle_name, Signal * signal)
+SignalHandle::SignalHandle(SignalConfig config, const std::string & bundle_name, Signal * signal)
 {
-  id_ = config.id;
   name_ = config.name;
   bundle_name_ = bundle_name;
   capacity_ = config.capacity;

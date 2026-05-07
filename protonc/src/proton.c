@@ -30,8 +30,7 @@
  * @return proton_status_e Status of the initialization
  */
 proton_status_e proton_init_signal(
-  proton_signal_handle_t * handle, pb_size_t which_signal, void * data, size_t capacity,
-  uint32_t id)
+  proton_signal_handle_t * handle, pb_size_t which_signal, void * data, size_t capacity)
 {
   if (!handle || !data)
   {
@@ -71,7 +70,6 @@ proton_status_e proton_init_signal(
   }
 
   handle->signal.which_signal = which_signal;
-  handle->signal.id = id;
   handle->value.length = 1;
   handle->value.data = data;
   handle->value.capacity = capacity;
@@ -145,10 +143,12 @@ proton_status_e proton_encode(
     return PROTON_NULL_PTR_ERROR;
   }
 
+  proton_signal_handle_t * signal_handle;
+
   // Copy non-list field values from struct to signal
   for (uint8_t i = 0; i < handle->signals.length; i++)
   {
-    proton_signal_handle_t * signal_handle = &((proton_signal_handle_t *)handle->signals.data)[i];
+    signal_handle = &((proton_signal_handle_t *)handle->signals.data)[i];
 
     switch (signal_handle->signal.which_signal)
     {

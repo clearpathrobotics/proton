@@ -141,6 +141,14 @@ def main():
         help='Target node for generation',
     )
 
+    parser.add_argument(
+        '-n',
+        '--node',
+        type=bool,
+        default=False,
+        help='Generate code for node and transport implementation',
+    )
+
     args = parser.parse_args()
 
     config_path = args.config

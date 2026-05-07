@@ -16,6 +16,4 @@ message Signal {
     string string_value = 8;
     bytes bytes_value = 9;
   }
-
-  uint32 id = 19;
 }

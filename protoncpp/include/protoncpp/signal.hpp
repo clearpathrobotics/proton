@@ -45,7 +45,7 @@ inline static const proton::bytes BYTES = {};
 class SignalHandle
 {
 public:
-  SignalHandle(const SignalConfig & config, const std::string & bundle_name, Signal * signal);
+  SignalHandle(SignalConfig config, const std::string & bundle_name, Signal * signal);
 
   ~SignalHandle();
 
@@ -59,7 +59,6 @@ public:
   template <typename T>
   void setValue(uint16_t index, uint16_t subindex, const T value);
 
-  uint32_t getId() const { return id_; }
   std::string getName() const { return name_; }
   std::string getBundleName() const { return bundle_name_; }
   Signal::SignalCase getType() { return type_; }
@@ -67,7 +66,6 @@ public:
   Signal * getSignalPtr() { return signal_; }
 
 private:
-  uint32_t id_;
   std::string name_;
   std::string bundle_name_;
   Signal::SignalCase type_;
