@@ -22,6 +22,7 @@
 import argparse
 from pathlib import Path
 
+from config import validate_ids
 from jinja2 import Template
 from normalize import (
     normalize_node_heartbeats,
@@ -158,7 +159,7 @@ def main():
     config = load_config(config_path)
 
     # validate node config here
-
+    validate_ids(config['bundles'])
     set_node_endpoint_address(config['nodes'])
     normalize_node_heartbeats(config['nodes'])
     set_heartbeat_producers_consumers(config['nodes'], config['connections'])

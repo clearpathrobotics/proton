@@ -16,6 +16,8 @@
 
 """Configuration validation."""
 
+from collections import Counter
+
 from internal_types import INTERNAL_TYPE_MAP
 
 
@@ -78,3 +80,34 @@ def validate_signal_elements(signal: dict):
     signal_type = signal['type']
     if signal_type not in INTERNAL_TYPE_MAP:
         raise RuntimeError(f'Signal type {signal_type} is not supported')
+
+
+def validate_ids(bundles: list):
+    """
+    Validate that there are no duplicate signal or bundle ID's.
+
+    Args:
+        bundles: list of bundles from the config
+    Raises:
+        KeyError: if signal or bundle ID is missing
+        RuntimeError: if there are duplicate ID's
+
+    """
+
+    def _count_duplicates(items: list, item_name: str):
+        counts = Counter(items)
+        duplicates = [item for item, count in counts.items() if count > 1]
+        if len(duplicates) > 0:
+            formatted = [f'0x{x:02X}' for x in duplicates]
+            raise RuntimeError(f'Found duplicate {item_name} IDs: {formatted}')
+
+    bundle_ids = [bundle['id'] for bundle in bundles]
+
+    signal_ids = []
+    for bundle in bundles:
+        if 'signals' in bundle:
+            for signal in bundle['signals']:
+                signal_ids.append(signal['id'])
+
+    _count_duplicates(bundle_ids, 'bundle')
+    _count_duplicates(signal_ids, 'signal')

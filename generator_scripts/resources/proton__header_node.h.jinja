@@ -99,6 +99,7 @@ typedef enum {{ heartbeat_name }} {
 {% for signal in bundle.signals %}
 {% set signal_name = signal.name | upper %}
 #define {{ bundle_name }}__SIGNAL__{{ signal_name }}__CAPACITY {{ signal.capacity }}
+#define {{ bundle_name }}__SIGNAL__{{ signal_name }}__ID {{ '%#x' % signal.id }}
 {# Strings are surrounded by quotes #}
 {# TODO Change this to char array of null chars, length of the string capacity #}
 {% if signal.type == "string" %}
