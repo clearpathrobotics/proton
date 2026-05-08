@@ -51,6 +51,15 @@ void update_motor_command()
   node->sendBundle("motor_command");
 }
 
+/**
+ * @brief Updates the PC heartbeat signal.
+ */
+void update_pc_heartbeat(uint32_t heartbeat_count)
+{
+  node->getBundle("pc_heartbeat").getSignal("heartbeat").setValue<uint32_t>(heartbeat_count);
+  node->sendBundle("pc_heartbeat");
+}
+
 void run_1hz_thread()
 {
   while (1)
@@ -58,6 +67,20 @@ void run_1hz_thread()
     update_wifi_connected();
     update_hmi();
     std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
+}
+
+/**
+ * @brief Runs the 10 Hz update thread for heartbeats
+ */
+void run_10hz_thread()
+{
+  uint32_t heartbeat_count = 0;
+  while (1)
+  {
+    update_pc_heartbeat(heartbeat_count);
+    heartbeat_count++;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 }
 
@@ -95,6 +118,23 @@ void logger_callback(proton::BundleHandle & bundle)
   logs.push_back(bundle.getSignal("msg").getValue<std::string>());
 }
 
+/**
+ * @brief Callback function to handle heartbeat bundle from mcu peer
+ *
+ * @param bundle the bundle containing the heartbeat signal
+ */
+void mcu_heartbeat_callback(proton::BundleHandle & bundle)
+{
+  auto last_heartbeat_time = std::chrono::steady_clock::now();
+  std::stringstream ss;
+  ss << "Received MCU Heartbeat at "
+     << std::chrono::duration_cast<std::chrono::seconds>(last_heartbeat_time.time_since_epoch())
+          .count()
+     << " seconds";
+  ss << " count: " << bundle.getSignal("heartbeat").getValue<uint32_t>();
+  logs.push_back(ss.str());
+}
+
 void print_callback(proton::BundleHandle & bundle) { bundle.printBundleVerbose(); }
 
 int main()
@@ -102,9 +142,11 @@ int main()
   node = std::make_unique<proton::Node>(CONFIG_FILE, "pc");
 
   node->registerCallback("log", logger_callback);
+  node->registerCallback("mcu_heartbeat", mcu_heartbeat_callback);
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);
+  std::thread send_10hz_thread(run_10hz_thread);
   std::thread send_50hz_thread(run_50hz_thread);
 
   node->startStatsThread();
@@ -113,6 +155,7 @@ int main()
 
   stats_thread.join();
   send_1hz_thread.join();
+  send_10hz_thread.join();
   send_50hz_thread.join();
 
   return 0;
