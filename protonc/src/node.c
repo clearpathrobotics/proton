@@ -25,7 +25,6 @@
  *
  * @param peer Peer to initialize
  * @param id Peer ID
- * @param heartbeat Heartbeat configuration
  * @param transport Transport configuration
  * @param receive_func Receive function
  * @param lock_func Lock function
@@ -34,19 +33,13 @@
  * @return proton_status_e Initialization status
  */
 proton_status_e proton_init_peer(
-  proton_peer_t * peer, proton_peer_id_t id, proton_heartbeat_t heartbeat,
-  proton_transport_t transport, proton_receive_t receive_func, proton_mutex_lock_t lock_func,
-  proton_mutex_unlock_t unlock_func, proton_buffer_t buffer)
+  proton_peer_t * peer, proton_peer_id_t id, proton_transport_t transport,
+  proton_receive_t receive_func, proton_mutex_lock_t lock_func, proton_mutex_unlock_t unlock_func,
+  proton_buffer_t buffer)
 {
   if (peer && TRANSPORT_VALID(transport) && receive_func && lock_func && unlock_func && buffer.data)
   {
-    if (heartbeat.enabled && heartbeat.period == 0)
-    {
-      return PROTON_ERROR;
-    }
-
     peer->id = id;
-    peer->heartbeat = heartbeat;
     peer->transport = transport;
     peer->receive = receive_func;
     peer->atomic_buffer.lock = lock_func;
@@ -64,7 +57,6 @@ proton_status_e proton_init_peer(
  * @brief Configure a Proton node.
  *
  * @param node Node to configure
- * @param heartbeat Heartbeat configuration
  * @param lock_func Lock function
  * @param unlock_func Unlock function
  * @param buffer Write buffer
@@ -74,15 +66,13 @@ proton_status_e proton_init_peer(
  * @return proton_status_e Configuration status
  */
 proton_status_e proton_configure(
-  proton_node_t * node, proton_heartbeat_t heartbeat, proton_mutex_lock_t lock_func,
-  proton_mutex_unlock_t unlock_func, proton_buffer_t buffer, proton_peer_t * peers,
-  uint16_t peer_count, void * context)
+  proton_node_t * node, proton_mutex_lock_t lock_func, proton_mutex_unlock_t unlock_func,
+  proton_buffer_t buffer, proton_peer_t * peers, uint16_t peer_count, void * context)
 {
   if (node && lock_func && unlock_func && buffer.data && peers && peer_count > 0)
   {
     node->peer_count = peer_count;
     node->peers = peers;
-    node->heartbeat = heartbeat;
     node->atomic_buffer.buffer = buffer;
     node->atomic_buffer.lock = lock_func;
     node->atomic_buffer.unlock = unlock_func;
