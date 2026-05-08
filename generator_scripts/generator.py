@@ -25,7 +25,6 @@ from pathlib import Path
 from config import validate_ids
 from jinja2 import Template
 from normalize import (
-    set_heartbeat_producers_consumers,
     set_node_endpoint_address,
     set_signal_properties,
 )
@@ -152,7 +151,6 @@ def main():
     # validate node config here
     validate_ids(config['bundles'])
     set_node_endpoint_address(config['nodes'])
-    set_heartbeat_producers_consumers(config['nodes'], config['connections'])
     set_signal_properties(config['bundles'])
 
     generate_header(dest_path, config, name, target)

@@ -103,27 +103,6 @@ def set_node_endpoint_address(nodes: list[dict]):
                 endpoint['ipnl'] = ip_nl
 
 
-def set_heartbeat_producers_consumers(nodes: list[dict], connections: list[dict]):
-    """
-    Determine which heartbeats go where.
-
-    Args:
-        nodes: "nodes" stanza in proton config
-        connections: "connections" stanza in proton config
-
-    """
-    for node in nodes:
-        if node.get('heartbeat') is not None and node['heartbeat']['enabled']:
-            node['heartbeat']['producers'] = node['name']
-            for connection in connections:
-                if node['heartbeat'].get('consumers') is None:
-                    node['heartbeat']['consumers'] = []
-                if connection['first']['node'] == node['name']:
-                    node['heartbeat']['consumers'].append(connection['second']['node'])
-                if connection['second']['node'] == node['name']:
-                    node['heartbeat']['consumers'].append(connection['first']['node'])
-
-
 def set_signal_properties(bundles: list[dict]):
     """
     Set properties for signals. Default values, repeated type lengths, const-ness.
