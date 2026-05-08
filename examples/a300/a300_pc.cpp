@@ -200,15 +200,15 @@ void logger_callback(proton::BundleHandle & bundle)
 }
 
 /**
- * @brief Callback function to handle heartbeat bundle from mcu peer
+ * @brief Callback function to handle heartbeat bundle from peer
  *
  * @param bundle the bundle containing the heartbeat signal
  */
-void mcu_heartbeat_callback(proton::BundleHandle & bundle)
+void heartbeat_callback(proton::BundleHandle & bundle)
 {
   auto last_heartbeat_time = std::chrono::steady_clock::now();
   std::stringstream ss;
-  ss << "Received MCU Heartbeat at "
+  ss << "Received " << bundle.getName() << " at "
      << std::chrono::duration_cast<std::chrono::seconds>(last_heartbeat_time.time_since_epoch())
           .count()
      << " seconds";
@@ -227,7 +227,7 @@ int main()
   node = std::make_unique<proton::Node>(CONFIG_FILE, "pc");
 
   node->registerCallback("log", logger_callback);
-  node->registerCallback("mcu_heartbeat", mcu_heartbeat_callback);
+  node->registerCallback("mcu_heartbeat", heartbeat_callback);
 
   std::thread stats_thread(run_stats_thread);
   std::thread send_1hz_thread(run_1hz_thread);

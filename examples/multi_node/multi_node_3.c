@@ -88,6 +88,17 @@ void send_node_name(context_t * context)
 }
 
 /**
+ * @brief Node heartbeat update
+ *
+ * @param context pointer to the context_t structure
+ */
+void send_heartbeat(context_t * context)
+{
+  context->bundles.node3_heartbeat_bundle.heartbeat++;
+  proton_bundle_send(context->node, PROTON__BUNDLE__NODE3_HEARTBEAT);
+}
+
+/**
  * @brief Send time bundle
  *
  * @param context Pointer to the context_t structure
@@ -389,19 +400,31 @@ void * timer_1hz(void * arg)
   while (1)
   {
     send_node_name(context);
-    proton_bundle_send(context->node, PROTON_HEARTBEAT_ID);
-    context->bundles.node3_heartbeat_bundle.heartbeat++;
-    if (time(NULL) - context->last_node2_heartbeat > PROTON__NODE__NODE2__HEARTBEAT__PERIOD / 1000)
+    if (time(NULL) - context->last_node2_heartbeat > 1)
     {
       context->node->peers[PROTON__PEER__NODE2].state = PROTON_NODE_INACTIVE;
     }
 
-    if (time(NULL) - context->last_node1_heartbeat > PROTON__NODE__NODE1__HEARTBEAT__PERIOD / 1000)
+    if (time(NULL) - context->last_node1_heartbeat > 1)
     {
       context->node->peers[PROTON__PEER__NODE1].state = PROTON_NODE_INACTIVE;
     }
 
     msleep(1000);
+  }
+
+  return NULL;
+}
+
+void * timer_10hz(void * arg)
+{
+  if (arg == NULL) return NULL;
+  context_t * context = (context_t *)arg;
+
+  while (1)
+  {
+    send_heartbeat(context);
+    msleep(100);
   }
 
   return NULL;
@@ -479,7 +502,7 @@ void * spin_node2(void * arg)
  */
 int main()
 {
-  pthread_t thread_1hz, thread_stats, thread_node2;
+  pthread_t thread_1hz, thread_10hz, thread_stats, thread_node2;
 
   proton_node_t node3_node = PROTON__NODE__NODE3__DEFAULT_VALUE;
   proton_peer_t node3_peers[PROTON__PEER__COUNT] = {
@@ -519,6 +542,7 @@ int main()
   proton_node_node3_init(&node3_node, node3_peers, proton_node3_buffer, &context);
 
   pthread_create(&thread_1hz, NULL, &timer_1hz, &context);
+  pthread_create(&thread_10hz, NULL, &timer_10hz, &context);
   pthread_create(&thread_stats, NULL, &stats, &context);
   pthread_create(&thread_node2, NULL, &spin_node2, &context);
 
@@ -526,6 +550,7 @@ int main()
 
   pthread_join(thread_node2, NULL);
   pthread_join(thread_1hz, NULL);
+  pthread_join(thread_10hz, NULL);
   pthread_join(thread_stats, NULL);
 
   return 0;

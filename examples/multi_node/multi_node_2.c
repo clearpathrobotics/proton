@@ -107,6 +107,17 @@ void send_time(context_t * context)
 }
 
 /**
+ * @brief Node heartbeat update
+ *
+ * @param context pointer to the context_t structure
+ */
+void send_heartbeat(context_t * context)
+{
+  context->bundles.node2_heartbeat_bundle.heartbeat++;
+  proton_bundle_send(context->node, PROTON__BUNDLE__NODE2_HEARTBEAT);
+}
+
+/**
  * @brief Log bundle callback handler
  *
  * @param context Pointer to the context_t structure
@@ -399,15 +410,12 @@ void * timer_1hz(void * arg)
   {
     send_node_name(context);
 
-    proton_bundle_send(context->node, PROTON_HEARTBEAT_ID);
-    context->bundles.node2_heartbeat_bundle.heartbeat++;
-
-    if (time(NULL) - context->last_node1_heartbeat > PROTON__NODE__NODE2__HEARTBEAT__PERIOD / 1000)
+    if (time(NULL) - context->last_node1_heartbeat > 1)
     {
       context->node->peers[PROTON__PEER__NODE1].state = PROTON_NODE_INACTIVE;
     }
 
-    if (time(NULL) - context->last_node3_heartbeat > PROTON__NODE__NODE3__HEARTBEAT__PERIOD / 1000)
+    if (time(NULL) - context->last_node3_heartbeat > 1)
     {
       context->node->peers[PROTON__PEER__NODE3].state = PROTON_NODE_INACTIVE;
     }
@@ -432,6 +440,7 @@ void * timer_10hz(void * arg)
   while (1)
   {
     send_time(context);
+    send_heartbeat(context);
     msleep(100);
   }
 
