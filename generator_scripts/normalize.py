@@ -21,20 +21,6 @@ from config import validate_signal_elements
 from internal_types import DEFAULT_VALUE_MAP, INTERNAL_TYPE_MAP
 
 
-def normalize_node_heartbeats(nodes: list[dict]):
-    """
-    Normalize the configuration for whether or not heartbeats are present.
-
-    Args:
-        nodes: "nodes" stanza in proton config
-
-    """
-    default_heartbeat = {'enabled': False, 'period': 0}
-
-    for node in nodes:
-        node.setdefault('heartbeat', default_heartbeat)
-
-
 def normalize_signals(bundle: dict):
     """
     Normalize signal configuration for optional node elements.
