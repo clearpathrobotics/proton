@@ -37,7 +37,6 @@ namespace keys
 static const char * const NODES = "nodes";
 static const char * const BUNDLES = "bundles";
 static const char * const NAME = "name";
-static const char * const HEARTBEAT = "heartbeat";
 static const char * const ENABLED = "enabled";
 static const char * const PERIOD = "period";
 static const char * const ENDPOINTS = "endpoints";
@@ -117,16 +116,9 @@ struct EndpointConfig
   uint32_t port;
 };
 
-struct HeartbeatConfig
-{
-  bool enabled;
-  uint32_t period;
-};
-
 struct NodeConfig
 {
   std::string name;
-  HeartbeatConfig heartbeat;
   std::map<uint32_t, EndpointConfig> endpoints;
 };
 

@@ -112,7 +112,6 @@ public:
     const ConnectionConfig & connection_config, ReadCompleteCallback callback);
 
   void run();
-  void heartbeat();
   NodeConfig getConfig() { return config_; }
   proton_node_state_e getNodeState() { return state_; }
   std::string getTransportType() { return transport_type_; }
@@ -122,15 +121,13 @@ public:
 
 private:
   void spin();
-  void checkHeartbeat();
   proton_status_e pollForBundle();
 
   NodeConfig config_;
   std::string transport_type_;
   ReadCompleteCallback callback_;
-  std::thread run_thread_, heartbeat_thread_;
+  std::thread run_thread_;
   proton_node_state_e state_;
-  int64_t last_heartbeat_ms_;
   double rx_kbps_, tx_kbps_;
 };
 
@@ -158,13 +155,9 @@ public:
 
   proton_status_e sendBundle(const std::string & bundle_name);
   proton_status_e sendBundle(BundleHandle & bundle_handle);
-  proton_status_e sendHeartbeat();
 
   proton_status_e registerCallback(
     const std::string & bundle_name, BundleHandle::BundleCallback callback);
-  proton_status_e registerHeartbeatCallback(
-    const std::string & producer, BundleHandle::BundleCallback callback);
-
   std::string getName() const { return name_; }
   NodeConfig getNodeConfig() const { return node_config_; }
   Config & getConfig() { return config_; }
@@ -175,7 +168,6 @@ public:
 
 private:
   void runStatsThread();
-  void runHeartbeatThread();
 
   Config config_;
   NodeConfig node_config_;
@@ -186,7 +178,7 @@ private:
   SafeQueue<ReceivedBundle> read_queue_;
 
   // Stats
-  std::thread stats_thread_, heartbeat_thread_;
+  std::thread stats_thread_;
 };
 
 }  // namespace proton

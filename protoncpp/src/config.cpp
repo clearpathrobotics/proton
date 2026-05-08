@@ -179,38 +179,6 @@ struct convert<proton::EndpointConfig>
 };
 
 template <>
-struct convert<proton::HeartbeatConfig>
-{
-  static bool decode(const Node & node, proton::HeartbeatConfig & rhs)
-  {
-    if (!node.IsDefined() || node.IsNull())
-    {
-      return false;
-    }
-
-    if (node[proton::keys::ENABLED])
-    {
-      rhs.enabled = node[proton::keys::ENABLED].as<bool>();
-    }
-    else
-    {
-      rhs.enabled = false;
-    }
-
-    if (node[proton::keys::PERIOD])
-    {
-      rhs.period = node[proton::keys::PERIOD].as<uint32_t>();
-    }
-    else
-    {
-      rhs.period = 1000;
-    }
-
-    return true;
-  }
-};
-
-template <>
 struct convert<proton::NodeConfig>
 {
   static bool decode(const Node & node, proton::NodeConfig & rhs)
@@ -234,16 +202,6 @@ struct convert<proton::NodeConfig>
 
         rhs.endpoints.emplace(id, endpoint.as<proton::EndpointConfig>());
       }
-    }
-
-    if (node[proton::keys::HEARTBEAT])
-    {
-      rhs.heartbeat = node[proton::keys::HEARTBEAT].as<proton::HeartbeatConfig>();
-    }
-    else
-    {
-      rhs.heartbeat.enabled = false;
-      rhs.heartbeat.period = 0;
     }
 
     return true;
