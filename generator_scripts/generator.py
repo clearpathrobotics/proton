@@ -58,20 +58,24 @@ def load_config(config_path: str) -> dict:
     return config
 
 
-def generate_header(dest_path: Path, config: dict, name: str, target: str):
+def generate(
+    dest_path: Path, dest_file: str, template_file: str, config: dict, name: str, target: str
+):
     """
-    Generate protonc file according to template.
+    Generate proton file according to template.
 
     Args:
         dest_path: path to destination folder
+        dest_file: output filename
+        template_file: the template file name
         config: proton config
         name: name of proton "project" (for lack of a better term)
         target: name of peer on the proton network
 
     """
-    template_file = Path(__file__).parent / 'resources' / 'proton__header_node.h.jinja'
+    template_path = Path(__file__).parent / 'resources' / template_file
 
-    with Path(template_file.resolve()).open('r', encoding='utf-8') as f:
+    with Path(template_path.resolve()).open('r', encoding='utf-8') as f:
         template_content = f.read()
 
     template = Template(template_content)
@@ -81,36 +85,7 @@ def generate_header(dest_path: Path, config: dict, name: str, target: str):
     )
 
     dest_path.mkdir(parents=True, exist_ok=True)
-    output_file = dest_path / f'proton__{name}_{target}.h'
-
-    with Path(output_file).open('w', encoding='utf-8') as f:
-        f.write(output)
-
-
-def generate_source(dest_path: Path, config: dict, name: str, target: str):
-    """
-    Generate protonc file according to template.
-
-    Args:
-        dest_path: path to destination folder
-        config: proton config
-        name: name of proton "project" (for lack of a better term)
-        target: name of peer on the proton network
-
-    """
-    template_file = Path(__file__).parent / 'resources' / 'proton__source_node.c.jinja'
-
-    with Path(template_file.resolve()).open('r', encoding='utf-8') as f:
-        template_content = f.read()
-
-    template = Template(template_content)
-
-    output = template.render(
-        name=name, target=target, nodes=config['nodes'], bundles=config['bundles']
-    )
-
-    dest_path.mkdir(parents=True, exist_ok=True)
-    output_file = dest_path / f'proton__{name}_{target}.c'
+    output_file = dest_path / dest_file
 
     with Path(output_file).open('w', encoding='utf-8') as f:
         f.write(output)
@@ -153,8 +128,22 @@ def main():
     set_node_endpoint_address(config['nodes'])
     set_signal_properties(config['bundles'])
 
-    generate_header(dest_path, config, name, target)
-    generate_source(dest_path, config, name, target)
+    generate(
+        dest_path,
+        f'proton__{name}_{target}.h',
+        'proton__header_node.h.jinja',
+        config,
+        name,
+        target,
+    )
+    generate(
+        dest_path,
+        f'proton__{name}_{target}.c',
+        'proton__source_node.c.jinja',
+        config,
+        name,
+        target,
+    )
 
 
 if __name__ == '__main__':
