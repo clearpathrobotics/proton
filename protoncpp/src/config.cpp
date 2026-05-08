@@ -124,10 +124,6 @@ struct convert<proton::BundleConfig>
     }
 
     rhs.id = node[proton::keys::ID].as<uint32_t>();
-    if (rhs.id == 0U)
-    {
-      throw std::runtime_error("Bundle ID cannot be 0");
-    }
 
     YAML::Node signals = node[proton::keys::SIGNALS];
 
