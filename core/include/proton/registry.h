@@ -29,6 +29,19 @@ extern "C"
 {
 #endif
 
+  typedef enum
+  {
+    PROTON_DOUBLE = proton_Signal_double_value_tag,
+    PROTON_FLOAT = proton_Signal_float_value_tag,
+    PROTON_INT32 = proton_Signal_int32_value_tag,
+    PROTON_INT64 = proton_Signal_int64_value_tag,
+    PROTON_UINT32 = proton_Signal_uint32_value_tag,
+    PROTON_UINT64 = proton_Signal_uint64_value_tag,
+    PROTON_BOOL = proton_Signal_bool_value_tag,
+    PROTON_STRING = proton_Signal_string_value_tag,
+    PROTON_BYTES = proton_Signal_bytes_value_tag,
+  } proton_signal_type_e;
+
   typedef struct proton_id_list
   {
     const uint32_t * ids;
@@ -44,7 +57,7 @@ extern "C"
   typedef struct signal_desc
   {
     uint32_t id;
-    proton_Signal_Type type;
+    proton_signal_type_e type;
     size_t capacity;  // For strings and bytes, capacity of the signal. For other types, this is 0.
   } signal_desc_t;
 

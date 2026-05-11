@@ -17,12 +17,13 @@
  */
 
 #include "proton/registry.h"
+#include "target_registry_sizes.h"
 
 #define PROTON_ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-extern const bundle_desc_t g_bundle_table[];
-extern const signal_id_to_index_t g_signal_id_lut[];
-extern proton_Signal g_signal_registry[];
+extern const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE];
+extern const signal_id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE];
+extern proton_Signal g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE];
 
 const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id)
 {

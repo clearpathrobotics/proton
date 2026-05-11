@@ -119,9 +119,14 @@ def main():
     config_path = args.config
     dest_path = Path(args.destination)
     target = args.target
-    name = Path(config_path).stem
+    name = ''
 
-    config = load_config(config_path)
+    config = {'nodes': [], 'bundles': [], 'signals': []}
+    if config_path is not None:
+        config = load_config(config_path)
+        config['bundles'] = sorted(config['bundles'], key=lambda x: x['id'])
+        config['signals'] = sorted(config['signals'], key=lambda x: x['id'])
+        name = Path(config_path).stem
 
     # validate node config here
     for bundle in config['bundles']:
@@ -132,8 +137,16 @@ def main():
 
     generate(
         dest_path,
-        'proton_{name}_{target}_ids.h',
+        f'proton_{name}_{target}_ids.h',
         'target_ids.h.jinja',
+        config,
+        name,
+        target,
+    )
+    generate(
+        dest_path,
+        'target_registry_sizes.h',
+        'target_registry_sizes.h.jinja',
         config,
         name,
         target,

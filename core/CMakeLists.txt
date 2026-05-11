@@ -34,11 +34,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nanopb)
 
-# FetchContent_GetProperties(nanopb)
-# if(NOT proton_POPULATED)
-#   FetchContent_Populate(nanopb)
-# endif()
-
 message(WARNING "finding protoc...")
 # Protobuf compiler
 find_program(PROTOC_EXECUTABLE protoc)
@@ -50,7 +45,28 @@ endif()
 
 set(PROTON_CORE_GENERATOR ${CMAKE_CURRENT_LIST_DIR}/generator_scripts/generator.py)
 
-function(proton_core_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARGET)
+function(proton_core_generator GENERATED_FILES GENERATED_FOLDER TARGET)
+  # CONFIG_FILE is optional - use PROTON_CORE_CONFIG_FILE if set by user
+  set(options "")
+  set(oneValueArgs CONFIG_FILE)
+  set(multiValueArgs "")
+  cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+  message(WARNING, "running core generator")
+
+  if(ARG_CONFIG_FILE)
+    set(CONFIG_FILE ${ARG_CONFIG_FILE})
+  elseif(PROTON_CORE_CONFIG_FILE)
+    set(CONFIG_FILE ${PROTON_CORE_CONFIG_FILE})
+  endif()
+
+  # Build optional config argument
+  set(CONFIG_ARG "")
+  set(CONFIG_DEPENDS "")
+  if(CONFIG_FILE)
+    set(CONFIG_ARG -c ${CONFIG_FILE})
+    set(CONFIG_DEPENDS ${CONFIG_FILE})
+  endif()
+
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   set(PROTON_CORE_GENERATOR ${CMAKE_CURRENT_LIST_DIR}/generator_scripts/generator.py)
   # Add a custom target to execute the script
@@ -60,12 +76,12 @@ function(proton_core_generator GENERATED_FILES CONFIG_FILE GENERATED_FOLDER TARG
       PYTHONPATH=${CMAKE_CURRENT_LIST_DIR}/proton_core
       ${Python3_EXECUTABLE}
       ${PROTON_CORE_GENERATOR}
-      -c ${CONFIG_FILE}
+      ${CONFIG_ARG}
       -d ${GENERATED_FOLDER}
       -t ${TARGET}
-    DEPENDS ${CONFIG_FILE} # Regenerate if config changes
+    DEPENDS ${CONFIG_DEPENDS}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Running Python script: ${Python3_EXECUTABLE} ${PROTON_CORE_GENERATOR} -c ${CONFIG_FILE} -d ${GENERATED_FOLDER} -t ${TARGET}"
+    COMMENT "Running Python script: ${Python3_EXECUTABLE} ${PROTON_CORE_GENERATOR} ${CONFIG_ARG} -d ${GENERATED_FOLDER} -t ${TARGET}"
   )
 endfunction()
 
@@ -159,6 +175,20 @@ add_custom_target(generate_protoc ALL
 )
 
 # -------------------------------
+# autogen signal registry
+# -------------------------------
+set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/generated)
+set(GENERATED_REGISTRY_FILES
+  "${GENERATED_FOLDER}/signal_registry.c"
+  "${GENERATED_FOLDER}/bundle_registry.c"
+  "${GENERATED_FOLDER}/target_ids.h"
+  "${GENERATED_FOLDER}/target_registry_sizes.h"
+)
+message(WARNING, "GENERATED_REGISTRY_FILES ${GENERATED_REGISTRY_FILES}")
+proton_core_generator("${GENERATED_REGISTRY_FILES}" ${GENERATED_FOLDER} "producer")
+
+
+# -------------------------------
 # proton_core library
 # -------------------------------
 option(PROTON_DEBUG "Enable PROTON_DEBUG preprocessor macro" OFF)
@@ -174,11 +204,14 @@ add_library(proton_core
     ${nanopb_SOURCE_DIR}/pb_encode.c
     ${GENERATED_SRCS}
     ${GENERATED_HEADERS}
+    ${GENERATED_REGISTRY_FILES}
 )
 
 if (PROTON_DEBUG)
   target_compile_definitions(proton_core PUBLIC PROTON_DEBUG)
 endif()
+
+target_include_directories(proton_core PUBLIC ${GENERATED_FOLDER})
 
 add_library(proton::proton_core ALIAS proton_core)
 
