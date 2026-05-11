@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "proto/signal.pb.h"
+#include "proton_core/signal.pb.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -55,6 +55,12 @@ extern "C"
     proton_id_list_t consumer_ids;
     proton_id_list_t signal_ids;
   } bundle_desc_t;
+
+  typedef struct signal_id_to_index
+  {
+    uint32_t s_id;
+    uint32_t idx;
+  } signal_id_to_index_t;
 
   const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id);
 

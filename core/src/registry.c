@@ -71,25 +71,25 @@ bool proton_signal_set_value(uint32_t signal_id, const void * value)
       switch (signal->which_signal)
       {
         case (proton_Signal_double_value_tag):
-          signal->double_value = *(double *)value;
+          signal->signal.double_value = *(double *)value;
           break;
         case (proton_Signal_float_value_tag):
-          signal->float_value = *(float *)value;
+          signal->signal.float_value = *(float *)value;
           break;
         case (proton_Signal_int32_value_tag):
-          signal->int32_value = *(int32_t *)value;
+          signal->signal.int32_value = *(int32_t *)value;
           break;
         case (proton_Signal_int64_value_tag):
-          signal->int64_value = *(int64_t *)value;
+          signal->signal.int64_value = *(int64_t *)value;
           break;
         case (proton_Signal_uint32_value_tag):
-          signal->uint32_value = *(uint32_t *)value;
+          signal->signal.uint32_value = *(uint32_t *)value;
           break;
         case (proton_Signal_uint64_value_tag):
-          signal->uint64_value = *(uint64_t *)value;
+          signal->signal.uint64_value = *(uint64_t *)value;
           break;
         case (proton_Signal_bool_value_tag):
-          signal->bool_value = *(bool *)value;
+          signal->signal.bool_value = *(bool *)value;
           break;
 
         default:
