@@ -51,7 +51,6 @@ function(proton_core_generator GENERATED_FILES GENERATED_FOLDER TARGET)
   set(oneValueArgs CONFIG_FILE)
   set(multiValueArgs "")
   cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-  message(WARNING, "running core generator")
 
   if(ARG_CONFIG_FILE)
     set(CONFIG_FILE ${ARG_CONFIG_FILE})
@@ -64,7 +63,9 @@ function(proton_core_generator GENERATED_FILES GENERATED_FOLDER TARGET)
   set(CONFIG_DEPENDS "")
   if(CONFIG_FILE)
     set(CONFIG_ARG -c ${CONFIG_FILE})
-    set(CONFIG_DEPENDS ${CONFIG_FILE})
+    if(EXISTS ${CONFIG_FILE})
+      set(CONFIG_DEPENDS ${CONFIG_FILE})
+    endif()
   endif()
 
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -184,8 +185,7 @@ set(GENERATED_REGISTRY_FILES
   "${GENERATED_FOLDER}/target_ids.h"
   "${GENERATED_FOLDER}/target_registry_sizes.h"
 )
-message(WARNING, "GENERATED_REGISTRY_FILES ${GENERATED_REGISTRY_FILES}")
-proton_core_generator("${GENERATED_REGISTRY_FILES}" ${GENERATED_FOLDER} "producer")
+proton_core_generator("${GENERATED_REGISTRY_FILES}" ${GENERATED_FOLDER} "producer" CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/test.yaml)
 
 
 # -------------------------------

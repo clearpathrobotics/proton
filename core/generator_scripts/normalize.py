@@ -100,3 +100,19 @@ def set_node_endpoint_address(nodes: list[dict]):
                     ip_nl |= int(octet) << 8 * i
                 endpoint['iphl'] = ip_hl
                 endpoint['ipnl'] = ip_nl
+
+
+def set_producer_consumer_ids(bundles: list[dict], nodes: list[dict]):
+    """
+    Set ids of producers and consumers for each bundle.
+
+    Args:
+        bundles: "bundles" stanza in proton config
+        nodes: "nodes" stanza in proton config
+
+    """
+    node_id_map = {node['name']: node['id'] for node in nodes}
+
+    for bundle in bundles:
+        bundle['producer_ids'] = [node_id_map[name] for name in bundle.get('producers', [])]
+        bundle['consumer_ids'] = [node_id_map[name] for name in bundle.get('consumers', [])]

@@ -1,11 +1,13 @@
 nodes:
   - name: producer
+    id: 0
     endpoints:
       - id: 0
         type: udp4
         ip: 127.0.0.1
         port: 11416
   - name: consumer
+    id: 1
     endpoints:
       - id: 0
         type: udp4

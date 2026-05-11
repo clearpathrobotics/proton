@@ -27,17 +27,17 @@ static const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% for bundle in bundles %}
 {% if target in bundle.producers or target in bundle.consumers %}
   {
-    .bundle_id = bundle.id,
+    .bundle_id = {{ bundle.id }},
     .producer_ids = {
-      .ids = { {{ bundle.producer_ids | join(",") }} },
+      .ids = (const uint32_t[]){ {{ bundle.producer_ids | join(", ") }} },
       .count = {{ bundle.producer_ids | length }}
     },
     .consumer_ids = {
-      .ids = { {{ bundle.consumer_ids | join(",") }} },
+      .ids = (const uint32_t[]){ {{ bundle.consumer_ids | join(", ") }} },
       .count = {{ bundle.consumer_ids | length }}
     },
     .signal_ids = {
-      .ids = { {{ bundle.signals | join(", ") }} }
+      .ids = (const uint32_t[]){ {{ bundle.signals | join(", ") }} },
       .count = {{ bundle.signals | length }}
     }
   },

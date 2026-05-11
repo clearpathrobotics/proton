@@ -27,6 +27,7 @@ from jinja2 import Template
 from normalize import (
     normalize_signals,
     set_node_endpoint_address,
+    set_producer_consumer_ids,
 )
 import yaml
 
@@ -129,11 +130,10 @@ def main():
         name = Path(config_path).stem
 
     # validate node config here
-    for bundle in config['bundles']:
-        validate_ids(bundle['ids'], 'bundle')
     validate_ids(config['signals'], 'signals')
     set_node_endpoint_address(config['nodes'])
     normalize_signals(config['signals'])
+    set_producer_consumer_ids(config['bundles'], config['nodes'])
 
     generate(
         dest_path,
