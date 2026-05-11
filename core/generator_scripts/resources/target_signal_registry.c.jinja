@@ -34,7 +34,13 @@ static proton_Signal g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
   {
     .which_signal = proton_Signal_{{ signal.type }}_value_tag,
+    {% if signal.type == "string" %}
+    .signal.{{ signal.type }}_value = "{{ signal.value }}",
+    {% elif signal.type == "bytes" %}
+    .signal.{{ signal.type }}_value = (uint8_t[]){ {{ signal.value | join(", ") }} },
+    {% else %}
     .signal.{{ signal.type }}_value = {{ signal.value }},
+    {% endif %}
   },
 {% endfor %}
 };

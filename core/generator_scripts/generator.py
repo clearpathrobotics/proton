@@ -82,7 +82,11 @@ def generate(
     template = Template(template_content)
 
     output = template.render(
-        name=name, target=target, nodes=config['nodes'], bundles=config['bundles']
+        name=name,
+        target=target,
+        nodes=config['nodes'],
+        bundles=config['bundles'],
+        signals=config['signals'],
     )
 
     dest_path.mkdir(parents=True, exist_ok=True)
