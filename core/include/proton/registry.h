@@ -48,17 +48,12 @@ extern "C"
     size_t count;
   } proton_id_list_t;
 
-  typedef struct signal_entry
-  {
-    uint32_t id;
-    proton_Signal signal;
-  } signal_entry_t;
-
   typedef struct signal_desc
   {
     uint32_t id;
     proton_signal_type_e type;
     size_t capacity;  // For strings and bytes, capacity of the signal. For other types, this is 0.
+    void * value;
   } signal_desc_t;
 
   typedef struct bundle_desc
@@ -76,9 +71,10 @@ extern "C"
   } signal_id_to_index_t;
 
   const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id);
+  const signal_desc_t proton_registry_get_signal(uint32_t signal_id);
 
-  bool proton_signal_set_value(uint32_t signal_id, const void * value);
-  bool proton_signal_get_value(uint32_t signal_id, void * value);
+  bool proton_signal_get_value(uint32_t signal_id, void * value, size_t * len);
+  bool proton_signal_set_value(uint32_t signal_id, const void * value, size_t len);
 
 #ifdef __cplusplus
 }

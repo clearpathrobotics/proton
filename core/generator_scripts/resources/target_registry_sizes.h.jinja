@@ -25,6 +25,12 @@ extern "C" {
 
 # define PROTON_SIGNAL_REGISTRY_SIZE {{ signals | length }}
 # define PROTON_BUNDLE_REGISTRY_SIZE {{ bundles | length }}
+# define PROTON_NODE_REGISTRY_SIZE {{ nodes | length}}
+
+// Capacities
+{% for signal in signals %}
+#define PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY {{ signal.capacity }}
+{% endfor %}
 
 #ifdef __cplusplus
 }

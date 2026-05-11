@@ -91,14 +91,14 @@ endfunction()
 # -------------------------------
 set(PROTO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
 set(PROTO_FILES
-    ${PROTO_PATH}/signal.proto
-    ${PROTO_PATH}/bundle.proto
-    ${PROTO_PATH}/proton.proto
+  ${PROTO_PATH}/signal.proto
+  ${PROTO_PATH}/bundle.proto
+  ${PROTO_PATH}/proton.proto
 )
 
 set(PROTO_OPTION_FILES
-    ${PROTO_PATH}/signal.options
-    ${PROTO_PATH}/bundle.options
+  ${PROTO_PATH}/signal.options
+  ${PROTO_PATH}/bundle.options
 )
 
 set(PROTO_DEPENDS ${PROTO_FILES} ${PROTO_OPTION_FILES})
@@ -114,7 +114,7 @@ file(MAKE_DIRECTORY ${GENERATED_SRC_DIR})
 # -------------------------------
 # Custom command to run protoc + nanopb generator
 # -------------------------------
-set(GENERATED_FILES
+set(NANOPB_GENERATED_FILES
   "${GENERATED_DIR}/signal.pb.c"
   "${GENERATED_DIR}/signal.pb.h"
   "${GENERATED_DIR}/bundle.pb.c"
@@ -123,56 +123,56 @@ set(GENERATED_FILES
   "${GENERATED_DIR}/proton.pb.h"
 )
 
-set(GENERATED_SRCS
+set(NANOPB_GENERATED_SRCS
   "${GENERATED_SRC_DIR}/signal.pb.c"
   "${GENERATED_SRC_DIR}/bundle.pb.c"
   "${GENERATED_SRC_DIR}/proton.pb.c"
 )
 
-set(GENERATED_HEADERS
+set(NANOPB_GENERATED_HEADERS
   "${GENERATED_INC_DIR}/signal.pb.h"
   "${GENERATED_INC_DIR}/bundle.pb.h"
   "${GENERATED_INC_DIR}/proton.pb.h"
 )
 
 add_custom_command(
-    OUTPUT ${GENERATED_FILES}
-    COMMAND protoc
-        --proto_path=${PROTO_PATH}
-        --plugin=protoc-gen-nanopb=${nanopb_SOURCE_DIR}/generator/protoc-gen-nanopb
-        --nanopb_out=${GENERATED_DIR} signal.proto bundle.proto proton.proto
-    DEPENDS ${PROTO_DEPENDS}
-    WORKING_DIRECTORY ${PROTO_PATH}
-    COMMENT "Generating nanopb files for ${PROTO_NAME}.proto"
+  OUTPUT ${NANOPB_GENERATED_FILES}
+  COMMAND protoc
+    --proto_path=${PROTO_PATH}
+    --plugin=protoc-gen-nanopb=${nanopb_SOURCE_DIR}/generator/protoc-gen-nanopb
+    --nanopb_out=${GENERATED_DIR} signal.proto bundle.proto proton.proto
+  DEPENDS ${PROTO_DEPENDS}
+  WORKING_DIRECTORY ${PROTO_PATH}
+  COMMENT "Generating nanopb files for ${PROTO_NAME}.proto"
 )
 
 add_custom_command(
-  OUTPUT ${GENERATED_SRCS}
+  OUTPUT ${NANOPB_GENERATED_SRCS}
   COMMAND sed -i 's|"bundle.pb.h"|"${PROJECT_NAME}/bundle.pb.h"|' ${GENERATED_DIR}/bundle.pb.c
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.c
   COMMAND sed -i 's|"proton.pb.h"|"${PROJECT_NAME}/proton.pb.h"|' ${GENERATED_DIR}/proton.pb.c
   COMMAND cp ${GENERATED_DIR}/signal.pb.c ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.c ${GENERATED_SRC_DIR}
   COMMAND cp ${GENERATED_DIR}/proton.pb.c ${GENERATED_SRC_DIR}
-  DEPENDS ${PROTO_DEPENDS} ${GENERATED_FILES}
+  DEPENDS ${PROTO_DEPENDS} ${NANOPB_GENERATED_FILES}
 )
 
 add_custom_command(
-  OUTPUT ${GENERATED_HEADERS}
+  OUTPUT ${NANOPB_GENERATED_HEADERS}
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
   COMMAND sed -i 's|"bundle.pb.h"|"${PROJECT_NAME}/bundle.pb.h"|' ${GENERATED_DIR}/proton.pb.h
   COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/proton.pb.h
   COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
   COMMAND cp ${GENERATED_DIR}/proton.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${PROTO_DEPENDS} ${GENERATED_FILES}
+  DEPENDS ${PROTO_DEPENDS} ${NANOPB_GENERATED_FILES}
 )
 
 add_custom_target(generate_protoc ALL
   DEPENDS
-  ${GENERATED_FILES}
-  ${GENERATED_SRCS}
-  ${GENERATED_HEADERS}
+  ${NANOPB_GENERATED_FILES}
+  ${NANOPB_GENERATED_SRCS}
+  ${NANOPB_GENERATED_HEADERS}
 )
 
 # -------------------------------
@@ -185,7 +185,13 @@ set(GENERATED_REGISTRY_FILES
   "${GENERATED_FOLDER}/target_ids.h"
   "${GENERATED_FOLDER}/target_registry_sizes.h"
 )
-proton_core_generator("${GENERATED_REGISTRY_FILES}" ${GENERATED_FOLDER} "producer" CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/test.yaml)
+
+proton_core_generator(
+  "${GENERATED_REGISTRY_FILES}"
+  ${GENERATED_FOLDER}
+  "producer"
+  CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/test.yaml
+)
 
 
 # -------------------------------
@@ -195,17 +201,17 @@ option(PROTON_DEBUG "Enable PROTON_DEBUG preprocessor macro" OFF)
 
 set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
-add_library(proton_core
-    src/node_manager.c
-    src/proton.c
-    src/registry.c
-    ${nanopb_SOURCE_DIR}/pb_common.c
-    ${nanopb_SOURCE_DIR}/pb_decode.c
-    ${nanopb_SOURCE_DIR}/pb_encode.c
-    ${GENERATED_SRCS}
-    ${GENERATED_HEADERS}
-    ${GENERATED_REGISTRY_FILES}
+add_library(${PROJECT_NAME}
+  src/node_manager.c
+  src/proton.c
+  src/registry.c
+  ${nanopb_SOURCE_DIR}/pb_common.c
+  ${nanopb_SOURCE_DIR}/pb_decode.c
+  ${nanopb_SOURCE_DIR}/pb_encode.c
+  ${GENERATED_REGISTRY_FILES}
 )
+
+add_dependencies(${PROJECT_NAME} generate_protoc)
 
 if (PROTON_DEBUG)
   target_compile_definitions(proton_core PUBLIC PROTON_DEBUG)
@@ -216,27 +222,29 @@ target_include_directories(proton_core PUBLIC ${GENERATED_FOLDER})
 add_library(proton::proton_core ALIAS proton_core)
 
 target_include_directories(${PROJECT_NAME}
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-        $<BUILD_INTERFACE:${nanopb_SOURCE_DIR}>
-        $<BUILD_INTERFACE:${PROTON_COMMON_INCLUDE_DIR}>
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+    $<BUILD_INTERFACE:${nanopb_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROTON_COMMON_INCLUDE_DIR}>
 )
 
 # Install
 if (PROTON_INSTALL)
   install(TARGETS proton_core
-      EXPORT ProtonTargets
-      LIBRARY DESTINATION lib
-      ARCHIVE DESTINATION lib
-      RUNTIME DESTINATION bin
+    EXPORT ProtonTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
   )
 
   install(DIRECTORY
-          include/
-          DESTINATION include)
+    include/
+    DESTINATION include
+  )
 
   install(DIRECTORY
-          ${GENERATED_INC_DIR}/
-          DESTINATION include/proton_core)
+    ${GENERATED_INC_DIR}/
+    DESTINATION include/proton_core
+  )
 endif()

@@ -22,11 +22,19 @@
 #include "proton/registry.h"
 #include "target_registry_sizes.h"
 
-// Signal ID's are not stored in the actual protobuf Signal message, so we use a lookup
-static const signal_id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {# this is the top-level signals array, already filtered by signals we care about and ordered by ID #}
+
+// Signal ID's are not contiguous, so use a lookup to find them in the registry
+static const signal_id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
   { .s_id = {{ signal.id }}, .idx = {{ loop.index0 }} },
+{% endfor %}
+};
+
+// Capacities of string/bytes types must be populated, the rest are 0
+static const size_t g_signal_capacities[PROTON_SIGNAL_REGISTRY_SIZE] = {
+{% for signal in signals %}
+  PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
 {% endfor %}
 };
 
