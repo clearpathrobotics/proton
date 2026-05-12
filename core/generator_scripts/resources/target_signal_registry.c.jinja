@@ -41,6 +41,17 @@ static uint8_t g_signal_{{ signal.name }}_buffer[PROTON_SIGNAL_{{ signal.name | 
 {% endif %}
 {% endfor %}
 
+// Capacities for signals that are repeated, such as strings and bytes
+static const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE] = {
+{% for signal in signals %}
+  {% if signal.type in ("string", "bytes") %}
+  PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
+  {% else %}
+  0,
+  {% endif %}
+{% endfor %}
+};
+
 static signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
   {
