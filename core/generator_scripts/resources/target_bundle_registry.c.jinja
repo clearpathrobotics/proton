@@ -23,7 +23,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-static const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
+const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% for bundle in bundles %}
 {% if target in bundle.producers or target in bundle.consumers %}
   {

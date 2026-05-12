@@ -26,7 +26,7 @@
 {# this is the top-level signals array, already filtered by signals we care about and ordered by ID #}
 
 // Signal ID's are not contiguous, so use a lookup to find them in the registry
-static const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE] = {
+const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
   { .id = {{ signal.id }}, .idx = {{ loop.index0 }} },
 {% endfor %}
@@ -42,7 +42,7 @@ static uint8_t g_signal_{{ signal.name }}_buffer[PROTON_SIGNAL_{{ signal.name | 
 {% endfor %}
 
 // Capacities for signals that are repeated, such as strings and bytes
-static const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE] = {
+const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
   {% if signal.type in ("string", "bytes") %}
   PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
@@ -52,7 +52,7 @@ static const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% endfor %}
 };
 
-static signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
+signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
   {
     .id = PROTON_SIGNAL_{{ signal.name | upper }}_ID,

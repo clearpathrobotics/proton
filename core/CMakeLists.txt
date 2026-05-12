@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(proton_core C)
+project(proton_core C CXX)
 
 # protobuf v*.23.0+ will fail to find Abseil, which is a required dependency.
 # Using pkg-config to find protobuf config information instead of direct find_package, to get correct dependencies
@@ -193,7 +193,6 @@ proton_core_generator(
   CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/test.yaml
 )
 
-
 # -------------------------------
 # proton_core library
 # -------------------------------
@@ -249,3 +248,38 @@ if (PROTON_INSTALL)
     DESTINATION include/proton_core
   )
 endif()
+
+# Testing
+find_package(GTest REQUIRED)
+
+add_executable(registry_test
+  tests/core/registry_test.cpp
+)
+
+target_link_libraries(registry_test PUBLIC
+  GTest::gtest_main
+  proton::proton_core
+)
+
+target_include_directories(registry_test PUBLIC
+  ${GENERATED_FOLDER}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+)
+
+add_executable(encode_decode_test
+  tests/core/encode_decode_test.cpp
+)
+
+target_link_libraries(encode_decode_test PUBLIC
+  GTest::gtest_main
+  proton::proton_core
+)
+
+target_include_directories(encode_decode_test PUBLIC
+  ${GENERATED_FOLDER}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+)
+
+include(GoogleTest)
+gtest_discover_tests(registry_test)
+gtest_discover_tests(encode_decode_test)

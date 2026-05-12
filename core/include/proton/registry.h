@@ -26,6 +26,9 @@
 #include "proton_core/proton.pb.h"
 #include "proton_core/signal.pb.h"
 
+#include "target_ids.h"
+#include "target_registry_sizes.h"
+
 #ifdef __cplusplus
 extern "C"
 {
