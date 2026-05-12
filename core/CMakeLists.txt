@@ -205,6 +205,7 @@ add_library(${PROJECT_NAME}
   src/node_manager.c
   src/proton.c
   src/registry.c
+  src/proton_field_callbacks.c
   ${nanopb_SOURCE_DIR}/pb_common.c
   ${nanopb_SOURCE_DIR}/pb_decode.c
   ${nanopb_SOURCE_DIR}/pb_encode.c

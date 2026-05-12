@@ -100,3 +100,58 @@ proton_status_e proton_encode_bundle(
 
   return PROTON_OK;
 }
+
+proton_status_e proton_decode_bundle(proton_buffer_t buffer)
+{
+  if (buffer.data == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer.data, buffer.len);
+  proton_Proton proton_message;
+  bool status = pb_decode(&stream, proton_Proton_fields, &proton_message);
+  if (!status)
+  {
+    return PROTON_SERIALIZATION_ERROR;
+  }
+
+  // No other operations are defined yet
+  if (proton_message.which_operation != proton_Proton_bundle_tag)
+  {
+    return PROTON_ERROR;
+  }
+
+  proton_Bundle bundle = proton_message.operation.bundle;
+  bundle_desc_t * bundle_desc = (bundle_desc_t *)proton_registry_get_bundle(bundle.id);
+  // This bundle doesn't exist
+  if (bundle_desc == NULL)
+  {
+    return PROTON_ERROR;
+  }
+
+  // Set signals in registry based on decoded values
+  for (size_t i = 0; i < bundle_desc->signal_ids.count; i++)
+  {
+    proton_Signal * signal_ptr = &((proton_Signal *)bundle.signals)[i];
+    uint32_t signal_id = bundle_desc->signal_ids.ids[i];
+    signal_desc_t signal_desc;
+    if (!proton_registry_get_signal(signal_id, &signal_desc))
+    {
+      return PROTON_ERROR;
+    }
+    if (!proton_signal_set_value(signal_id, &signal_ptr->signal, signal_desc.value_size))
+    {
+      return PROTON_ERROR;
+    }
+  }
+
+  if (stream.bytes_left == 0)
+  {
+    return PROTON_OK;
+  }
+  else
+  {
+    return PROTON_SERIALIZATION_ERROR;
+  }
+}

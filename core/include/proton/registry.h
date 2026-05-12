@@ -46,7 +46,7 @@ extern "C"
     PROTON_BYTES = proton_Signal_bytes_value_tag,
   } proton_signal_type_e;
 
-  typedef struct
+  typedef struct proton_buffer
   {
     uint8_t * data;
     size_t len;
