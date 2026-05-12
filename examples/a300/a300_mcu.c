@@ -58,6 +58,7 @@ typedef enum
   CALLBACK_PINOUT_COMMAND,
   CALLBACK_CMD_SHUTDOWN,
   CALLBACK_CLEAR_NEEDS_RESET,
+  CALLBACK_PC_HEARTBEAT,
   CALLBACK_COUNT
 } callback_e;
 
@@ -137,6 +138,7 @@ void proton_bundle_pc_heartbeat_callback(void * context)
 {
   context_t * c = (context_t *)context;
   printf("Heartbeat received %u\r\n", c->bundles.pc_heartbeat_bundle.heartbeat);
+  c->cb_counts[CALLBACK_PC_HEARTBEAT]++;
   c->node->peers[PROTON__PEER__PC].state = PROTON_NODE_ACTIVE;
   c->last_pc_heartbeat = time(NULL);
 }
@@ -337,6 +339,24 @@ void update_pinout_state(proton_node_t * node, proton_bundle_pinout_state_t * pi
 }
 
 /**
+ * @brief Updates and sends heartbeat bundle data
+ * @param node Pointer to proton_node_t structure
+ * @param heartbeat_bundle Pointer to heartbeat bundle to update
+ */
+void update_mcu_heartbeat(
+  proton_node_t * node, proton_bundle_mcu_heartbeat_t * mcu_heartbeat_bundle)
+{
+  if (!mcu_heartbeat_bundle)
+  {
+    return;
+  }
+
+  mcu_heartbeat_bundle->heartbeat += 1;
+
+  proton_bundle_send(node, PROTON__BUNDLE__MCU_HEARTBEAT);
+}
+
+/**
  * @brief Establishes PC transport connection.
  * @return PROTON_OK if connection successful, error code otherwise.
  */
@@ -511,8 +531,9 @@ void * timer_1hz(void * arg)
     update_alerts(context->node, &context->bundles.alerts_bundle);
     msleep(1000);
 
-    if (time(NULL) - context->last_pc_heartbeat > PROTON__NODE__PC__HEARTBEAT__PERIOD / 1000)
+    if (time(NULL) - context->last_pc_heartbeat > 1)
     {
+      printf("Lost PC heartbeat\r\n");
       context->node->peers[PROTON__PEER__PC].state = PROTON_NODE_INACTIVE;
     }
   }
@@ -541,9 +562,8 @@ void * timer_10hz(void * arg)
     update_power(context->node, &context->bundles.power_bundle);
     update_temperature(context->node, &context->bundles.temperature_bundle);
     update_pinout_state(context->node, &context->bundles.pinout_state_bundle);
+    update_mcu_heartbeat(context->node, &context->bundles.mcu_heartbeat_bundle);
 
-    context->bundles.mcu_heartbeat_bundle.heartbeat++;
-    proton_bundle_send(context->node, PROTON_HEARTBEAT_ID);
     msleep(100);
   }
 
@@ -583,6 +603,7 @@ void * stats(void * arg)
     printf("pinout_command: %d\r\n", context->cb_counts[CALLBACK_PINOUT_COMMAND]);
     printf("cmd_shutdown: %d\r\n", context->cb_counts[CALLBACK_CMD_SHUTDOWN]);
     printf("clear_needs_reset: %d\r\n", context->cb_counts[CALLBACK_CLEAR_NEEDS_RESET]);
+    printf("pc_heartbeat: %d\r\n", context->cb_counts[CALLBACK_PC_HEARTBEAT]);
     printf("-----------------------------\r\n");
 
     context->rx = 0.0;

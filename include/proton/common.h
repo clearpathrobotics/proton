@@ -29,9 +29,6 @@ extern "C"
 // Max message size
 #define PROTON_MAX_MESSAGE_SIZE UINT16_MAX
 
-// Heartbeat bundle ID
-#define PROTON_HEARTBEAT_ID 0
-
 // Serial Framing
 // [0x50][0x52][Length byte 0][Length byte 1][Payload][CRC16 byte 0][CRC16 byte 1]
 #define PROTON_FRAME_HEADER_MAGIC_BYTE_0 \

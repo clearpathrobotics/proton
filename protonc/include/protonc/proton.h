@@ -56,14 +56,8 @@ typedef struct
   size_t len;
 } proton_buffer_t;
 
-typedef struct proton_bundle_heartbeat
-{
-  uint32_t heartbeat;
-} proton_bundle_heartbeat_t;
-
 #define PROTON_LIST_ARG_DEFAULT_VALUE {NULL, 0, 0, 0}
 #define PROTON_BUFFER_DEFAULT_VALUE {NULL, 0}
-#define PROTON_HEARTBEAT_BUNDLE_DEFAULT_VALUE {0}
 
 proton_status_e proton_init_signal(
   proton_signal_handle_t * handle, pb_size_t which_signal, void * data, size_t capacity);

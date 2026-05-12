@@ -59,8 +59,6 @@ TEST(PROTONC_Proton, InitNode)
     PROTON_OK);
 
   ASSERT_STREQ(producer_node.name, PROTON__NODE__PRODUCER__NAME);
-  ASSERT_EQ(producer_node.heartbeat.enabled, PROTON__NODE__PRODUCER__HEARTBEAT__ENABLED);
-  ASSERT_EQ(producer_node.heartbeat.period, PROTON__NODE__PRODUCER__HEARTBEAT__PERIOD);
   ASSERT_EQ(
     producer_node.peers[PROTON__PEER__CONSUMER].transport.connect,
     proton_node_consumer_transport_connect);

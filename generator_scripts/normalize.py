@@ -21,20 +21,6 @@ from config import validate_signal_elements
 from internal_types import DEFAULT_VALUE_MAP, INTERNAL_TYPE_MAP
 
 
-def normalize_node_heartbeats(nodes: list[dict]):
-    """
-    Normalize the configuration for whether or not heartbeats are present.
-
-    Args:
-        nodes: "nodes" stanza in proton config
-
-    """
-    default_heartbeat = {'enabled': False, 'period': 0}
-
-    for node in nodes:
-        node.setdefault('heartbeat', default_heartbeat)
-
-
 def normalize_signals(bundle: dict):
     """
     Normalize signal configuration for optional node elements.
@@ -115,27 +101,6 @@ def set_node_endpoint_address(nodes: list[dict]):
                     ip_nl |= int(octet) << 8 * i
                 endpoint['iphl'] = ip_hl
                 endpoint['ipnl'] = ip_nl
-
-
-def set_heartbeat_producers_consumers(nodes: list[dict], connections: list[dict]):
-    """
-    Determine which heartbeats go where.
-
-    Args:
-        nodes: "nodes" stanza in proton config
-        connections: "connections" stanza in proton config
-
-    """
-    for node in nodes:
-        if node.get('heartbeat') is not None and node['heartbeat']['enabled']:
-            node['heartbeat']['producers'] = node['name']
-            for connection in connections:
-                if node['heartbeat'].get('consumers') is None:
-                    node['heartbeat']['consumers'] = []
-                if connection['first']['node'] == node['name']:
-                    node['heartbeat']['consumers'].append(connection['second']['node'])
-                if connection['second']['node'] == node['name']:
-                    node['heartbeat']['consumers'].append(connection['first']['node'])
 
 
 def set_signal_properties(bundles: list[dict]):

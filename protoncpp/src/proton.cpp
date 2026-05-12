@@ -99,21 +99,6 @@ proton_status_e Node::configure()
                 &Node::readCompleteCallback, this, std::placeholders::_1, std::placeholders::_2)));
   }
 
-  if (node_config_.heartbeat.enabled)
-  {
-    // Add a heartbeat bundle to send to each peer
-    addHeartbeat(name_, peers_);
-  }
-
-  for (auto & [peer_name, peer] : connections_)
-  {
-    // Add a heartbeat bundle to receive from each peer
-    if (peer.getConfig().heartbeat.enabled)
-    {
-      addHeartbeat(peer_name, {name_});
-    }
-  }
-
   state_ = PROTON_NODE_INACTIVE;
   return PROTON_OK;
 }
@@ -128,12 +113,6 @@ proton_status_e Node::activate()
   for (auto & [name, peer] : connections_)
   {
     peer.run();
-  }
-
-  // Start heartbeat thread
-  if (node_config_.heartbeat.enabled)
-  {
-    heartbeat_thread_ = std::thread(&Node::runHeartbeatThread, this);
   }
 
   state_ = PROTON_NODE_ACTIVE;
@@ -180,44 +159,10 @@ proton_status_e Node::sendBundle(BundleHandle & bundle_handle)
   return PROTON_SERIALIZATION_ERROR;
 }
 
-proton_status_e Node::sendHeartbeat()
-{
-  if (!node_config_.heartbeat.enabled)
-  {
-    return PROTON_ERROR;
-  }
-
-  auto & heartbeat = getHeartbeat(name_);
-  auto & signal = heartbeat.getSignal("heartbeat");
-  // Increment heartbeat
-  signal.setValue<uint32_t>(signal.getValue<uint32_t>() + 1);
-  return sendBundle(heartbeat);
-}
-
 proton_status_e Node::registerCallback(
   const std::string & bundle_name, BundleHandle::BundleCallback callback)
 {
   auto & bundle = getBundle(bundle_name);
-
-  if (callback != nullptr)
-  {
-    for (const auto & consumer : bundle.getConsumers())
-    {
-      if (consumer == name_)
-      {
-        bundle.registerCallback(callback);
-        return PROTON_OK;
-      }
-    }
-  }
-
-  return PROTON_ERROR;
-}
-
-proton_status_e Node::registerHeartbeatCallback(
-  const std::string & producer, BundleHandle::BundleCallback callback)
-{
-  auto & bundle = getHeartbeat(producer);
 
   if (callback != nullptr)
   {
@@ -300,26 +245,9 @@ void Node::runStatsThread()
         handle.resetRxCount();
         handle.resetTxCount();
       }
-
-      for (auto & [name, handle] : heartbeat_bundles_)
-      {
-        handle.setRxps(handle.getRxCount());
-        handle.setTxps(handle.getTxCount());
-        handle.resetRxCount();
-        handle.resetTxCount();
-      }
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
-}
-
-void Node::runHeartbeatThread()
-{
-  while (1)
-  {
-    sendHeartbeat();
-    std::this_thread::sleep_for(std::chrono::milliseconds(node_config_.heartbeat.period));
   }
 }
 
@@ -334,7 +262,6 @@ void Node::printStats()
   for (auto & [name, peer] : connections_)
   {
     std::cout << "  " << name << ":" << std::endl;
-    std::cout << "    Heartbeat: " << peer.getNodeState() << std::endl;
     std::cout << "    Transport (" << peer.getTransportType() << "): " << peer.getTransportState()
               << std::endl;
     std::cout << "    Rx: " << peer.getRxKbps() << " KB/s " << "Tx: " << peer.getTxKbps() << " KB/s"
@@ -354,17 +281,6 @@ void Node::printStats()
   }
   std::cout << "----- Consumed Bundles (hz) -----" << std::endl;
   for (auto & [name, handle] : bundles_)
-  {
-    for (auto & consumer : handle.getConsumers())
-    {
-      if (consumer == name_)
-      {
-        std::cout << name << ": " << handle.getRxps() << std::endl;
-      }
-    }
-  }
-  std::cout << "----- Heartbeats (hz) -----" << std::endl;
-  for (auto & [name, handle] : heartbeat_bundles_)
   {
     for (auto & consumer : handle.getConsumers())
     {
@@ -436,41 +352,7 @@ Connection::Connection(
   state_ = PROTON_NODE_INACTIVE;
 }
 
-void Connection::run()
-{
-  run_thread_ = std::thread(&Connection::spin, this);
-
-  if (config_.heartbeat.enabled)
-  {
-    heartbeat_thread_ = std::thread(&Connection::checkHeartbeat, this);
-  }
-}
-
-void Connection::checkHeartbeat()
-{
-  while (1)
-  {
-    std::this_thread::sleep_for(std::chrono::milliseconds(config_.heartbeat.period));
-
-    if (
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch())
-          .count() -
-        last_heartbeat_ms_ >
-      config_.heartbeat.period)
-    {
-      state_ = PROTON_NODE_INACTIVE;
-    }
-  }
-}
-
-void Connection::heartbeat()
-{
-  state_ = PROTON_NODE_ACTIVE;
-  last_heartbeat_ms_ = std::chrono::duration_cast<std::chrono::milliseconds>(
-                         std::chrono::system_clock::now().time_since_epoch())
-                         .count();
-}
+void Connection::run() { run_thread_ = std::thread(&Connection::spin, this); }
 
 void Connection::spin()
 {
@@ -549,11 +431,6 @@ proton_status_e Connection::pollForBundle()
     if (!bundle.ParseFromArray(read_buf, bytes_read))
     {
       return PROTON_SERIALIZATION_ERROR;
-    }
-
-    if (bundle.id() == 0)
-    {
-      heartbeat();
     }
 
     return callback_(bundle, config_.name);

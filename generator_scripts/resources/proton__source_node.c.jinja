@@ -23,20 +23,10 @@
 {% for bundle in bundles %}
 {% if bundle.signals is defined %}static proton_signal_handle_t _{{ bundle.name }}_signal_handles[PROTON__BUNDLE__{{ bundle.name | upper }}__SIGNAL__COUNT];{% endif %}
 {% endfor %}
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-static proton_signal_handle_t _{{ node.name }}_heartbeat_signal_handles[PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__SIGNAL__COUNT];
-{% endif %}
-{% endfor %}
 
 // Internal Bundles
 {% for bundle in bundles %}
 static proton_bundle_handle_t _{{ bundle.name }}_bundle_handle;
-{% endfor %}
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-static proton_bundle_handle_t _{{ node.name }}_heartbeat_bundle_handle;
-{% endif %}
 {% endfor %}
 
 // Bundle Init Functions
@@ -68,33 +58,6 @@ proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is def
 }
 {% endfor %}
 
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-proton_status_e proton_bundle_{{ node.name }}_heartbeat_init(proton_bundle_heartbeat_t * bundle)
-{
-  proton_status_e status;
-  status = proton_init_signal(
-    &_{{ node.name }}_heartbeat_signal_handles[PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__SIGNAL__HEARTBEAT],
-    proton_Signal_uint32_value_tag,
-    &bundle->heartbeat,
-    0
-  );
-  if (status != PROTON_OK)
-  {
-    return status;
-  }
-  return proton_init_bundle(
-    &_{{ node.name }}_heartbeat_bundle_handle,
-    PROTON_HEARTBEAT_ID,
-    _{{ node.name }}_heartbeat_signal_handles,
-    PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__SIGNAL__COUNT,
-    PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__PRODUCERS,
-    PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__CONSUMERS
-  );
-}
-{% endif %}
-{% endfor %}
-
 proton_status_e proton_bundles_{{ target }}_init(proton_bundles_{{ target }}_t * bundles)
 {
   proton_status_e status;
@@ -105,15 +68,6 @@ proton_status_e proton_bundles_{{ target }}_init(proton_bundles_{{ target }}_t *
   {
     return status;
   }
-{% endfor %}
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-  status = proton_bundle_{{ node.name }}_heartbeat_init(&bundles->{{ node.name }}_heartbeat_bundle);
-  if (status != PROTON_OK)
-  {
-    return status;
-  }
-{% endif %}
 {% endfor %}
 
   return PROTON_OK;
@@ -148,30 +102,6 @@ proton_status_e proton_bundle_decode(proton_buffer_t buffer, proton_producer_t p
       break;
     }
 {% endfor %}
-
-    case PROTON_HEARTBEAT_ID:
-    {
-      switch (producer)
-      {
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-        case PROTON__NODE__{{ node.name | upper }}__ID:
-        {
-          handle = &_{{ node.name }}_heartbeat_bundle_handle;
-          break;
-        }
-{% endif %}
-{% endfor %}
-
-        default:
-        {
-          return PROTON_ERROR;
-        }
-      }
-
-      break;
-    }
-
     default:
     {
       return PROTON_ERROR;
@@ -214,16 +144,6 @@ proton_status_e proton_bundle_encode(proton_buffer_t buffer, uint32_t id, size_t
     case PROTON__BUNDLE__{{ bundle.name | upper }}:
     {
       handle = &_{{ bundle.name }}_bundle_handle;
-      break;
-    }
-{% endif %}
-{% endfor %}
-
-{% for node in nodes %}
-{% if node.name == target and node.heartbeat.enabled %}
-    case PROTON_HEARTBEAT_ID:
-    {
-      handle = &_{{ target }}_heartbeat_bundle_handle;
       break;
     }
 {% endif %}
@@ -303,14 +223,6 @@ proton_status_e proton_node_{{ node.name }}_receive(proton_node_t * node, size_t
     }
 {% endif %}
 {% endfor %}
-
-{% if node.heartbeat.enabled %}
-    case PROTON_HEARTBEAT_ID:
-    {
-      callback = proton_bundle_{{ node.name }}_heartbeat_callback;
-      break;
-    }
-{% endif %}
     default:
     {
       return PROTON_ERROR;
@@ -370,16 +282,6 @@ proton_status_e proton_bundle_send(proton_node_t * node, uint32_t id)
     }
 {% endif %}
 {% endfor %}
-
-{% for node in nodes %}
-{% if node.name == target and node.heartbeat.enabled %}
-    case PROTON_HEARTBEAT_ID:
-    {
-      handle = &_{{ target }}_heartbeat_bundle_handle;
-      break;
-    }
-{% endif %}
-{% endfor %}
     default:
     {
       return PROTON_ERROR;
@@ -425,15 +327,6 @@ __attribute__((weak)) void proton_bundle_{{ bundle.name }}_callback(void * conte
 {% endif %}
 {% endfor %}
 
-{% for node in nodes %}
-{% if node.name != target and node.heartbeat.enabled %}
-__attribute__((weak)) void proton_bundle_{{ node.name }}_heartbeat_callback(void * context)
-{
-  (void)context;
-}
-{% endif %}
-{% endfor %}
-
 // Weak Mutex functions
 
 {% for node in nodes %}
@@ -455,7 +348,6 @@ proton_status_e proton_peer_{{ node.name }}_init(proton_peer_t * peer, proton_bu
   return proton_init_peer(
     peer,
     {{ node_name }}ID,
-    (proton_heartbeat_t){{ node_name }}HEARTBEAT__DEFAULT_VALUE,
     (proton_transport_t){{ node_name }}TRANSPORT__DEFAULT_VALUE,
     proton_node_{{ node.name }}_receive,
     proton_node_{{ node.name }}_lock,
@@ -479,7 +371,6 @@ proton_status_e proton_node_{{ target }}_init(proton_node_t * node, proton_peer_
 
   status = proton_configure(
     node,
-    (proton_heartbeat_t)PROTON__NODE__{{ target | upper }}__HEARTBEAT__DEFAULT_VALUE,
     proton_node_{{ target }}_lock,
     proton_node_{{ target }}_unlock,
     buffer,

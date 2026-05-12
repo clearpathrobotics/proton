@@ -1,17 +1,11 @@
 nodes:
   - name: pc
-    heartbeat:
-      enabled: true
-      period: 1000
     endpoints:
       - id: 0
         type: udp4
         ip: 127.0.0.1
         port: 11416
   - name: mcu
-    heartbeat:
-      enabled: true
-      period: 100
     endpoints:
       - id: 0
         type: udp4
@@ -23,6 +17,18 @@ connections:
     second: {node: pc, id: 0}
 
 bundles:
+  - name: mcu_heartbeat
+    id: 0x000
+    producers: [mcu]
+    consumers: [pc]
+    signals:
+      - {name: heartbeat, id: 0, type: uint32}
+  - name: pc_heartbeat
+    id: 0x001
+    producers: [pc]
+    consumers: [mcu]
+    signals:
+      - {name: heartbeat, id: 1, type: uint32}
   - name: log
     id: 0x100
     producers: [mcu]

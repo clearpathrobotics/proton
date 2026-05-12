@@ -99,7 +99,7 @@ This example consists of 3 nodes communicating with each other over both UDP and
 To simulate serial transport, create virtual serial ports with `socat`:
 
 ```
-socat PTY,link=/tmp/ttyPC,raw,echo=0 PTY,link=/tmp/ttyMCU,raw,echo=0
+socat PTY,link=/tmp/ttyNode1,raw,echo=0 PTY,link=/tmp/ttyNode3,raw,echo=0
 ```
 
 #### Terminal 2 - Node 1

@@ -43,9 +43,6 @@ extern "C" {
 {% else %}
 #define PROTON__NODE__{{ node_name }}__DEFAULT_VALUE PROTON_NODE_DEFAULT(PROTON__NODE__{{ node_name }}__NAME)
 {% endif %}
-#define PROTON__NODE__{{ node_name }}__HEARTBEAT__ENABLED {{ node.heartbeat.enabled | lower }}
-#define PROTON__NODE__{{ node_name }}__HEARTBEAT__PERIOD {{ node.heartbeat.period }}
-#define PROTON__NODE__{{ node_name }}__HEARTBEAT__DEFAULT_VALUE {PROTON__NODE__{{ node_name }}__HEARTBEAT__ENABLED, PROTON__NODE__{{ node_name }}__HEARTBEAT__PERIOD}
 {% for endpoint in node.endpoints %}
 #define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__ID {{ endpoint.id }}
 #define PROTON__NODE__{{ node_name }}__ENDPOINT__{{ endpoint_ns.count }}__TYPE "{{ endpoint.type }}"
@@ -81,16 +78,6 @@ typedef enum PROTON__BUNDLE__{{ bundle_name }}__SIGNAL {
 {% endif %}
 {% endfor %}
 
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-{% set heartbeat_name = "PROTON__BUNDLE__" + node.name | upper + "_HEARTBEAT__SIGNAL" %}
-typedef enum {{ heartbeat_name }} {
-  {{ heartbeat_name }}__HEARTBEAT,
-  {{ heartbeat_name }}__COUNT
-} {{ heartbeat_name }}_e;
-{% endif %}
-{% endfor %}
-
 // Constant definitions
 
 {% for bundle in bundles %}
@@ -117,17 +104,7 @@ typedef enum {{ heartbeat_name }} {
 #define {{ bundle_name }}__CONSUMERS ({% for consumer in bundle.consumers %}PROTON__NODE__{{ consumer | upper }}__ID{% if not loop.last %} | {% endif %}{% endfor %})
 {% endfor %}
 
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-{% set heartbeat_name = node.name | upper + "_HEARTBEAT"%}
-#define PROTON__BUNDLE__{{ heartbeat_name }}__SIGNAL__HEARTBEAT__DEFAULT_VALUE 0
-#define PROTON__BUNDLE__{{ heartbeat_name }}__DEFAULT_VALUE {PROTON__BUNDLE__{{ heartbeat_name }}__SIGNAL__HEARTBEAT__DEFAULT_VALUE}
-#define PROTON__BUNDLE__{{ heartbeat_name }}__PRODUCERS (PROTON__NODE__{{ node.name | upper }}__ID)
-#define PROTON__BUNDLE__{{ heartbeat_name }}__CONSUMERS ({% for consumer in node.heartbeat.consumers %}PROTON__NODE__{{ consumer | upper }}__ID{% if not loop.last %} | {% endif %}{% endfor %})
-{% endif %}
-{% endfor %}
-
-#define PROTON__BUNDLES__{{ target | upper }}__DEFAULT_VALUE { {% for bundle in bundles %}{% if bundle.signals is defined %}PROTON__BUNDLE__{{ bundle.name | upper }}__DEFAULT_VALUE, {% endif %}{% endfor %}{% for node in nodes %}{% if node.heartbeat.enabled %}PROTON__BUNDLE__{{ node.name | upper }}_HEARTBEAT__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endif %} {% endfor %} }
+#define PROTON__BUNDLES__{{ target | upper }}__DEFAULT_VALUE { {% for bundle in bundles %}{% if bundle.signals is defined %}PROTON__BUNDLE__{{ bundle.name | upper }}__DEFAULT_VALUE{% if not loop.last %}, {% endif %}{% endif %}{% endfor %} }
 
 // Bundle Structure Definitions
 {% for bundle in bundles %}
@@ -150,21 +127,11 @@ typedef struct proton_bundles_{{ target }} {
 {% for bundle in bundles %}
 {% if bundle.signals is defined %}  proton_bundle_{{ bundle.name }}_t {{ bundle.name}}_bundle;{% endif %}
 {% endfor %}
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-  proton_bundle_heartbeat_t {{ node.name }}_heartbeat_bundle;
-{% endif %}
-{% endfor %}
 } proton_bundles_{{ target }}_t;
 
 // Bundle Init Prototype
 {% for bundle in bundles %}
 proton_status_e proton_bundle_{{ bundle.name }}_init({% if bundle.signals is defined %}proton_bundle_{{ bundle.name }}_t * bundle{% endif %});
-{% endfor %}
-{% for node in nodes %}
-{% if node.heartbeat.enabled %}
-proton_status_e proton_bundle_{{ node.name }}_heartbeat_init(proton_bundle_heartbeat_t * bundle);
-{% endif %}
 {% endfor %}
 
 proton_status_e proton_bundles_{{ target }}_init(proton_bundles_{{ target }}_t * bundles);
@@ -209,10 +176,6 @@ proton_status_e proton_bundle_send(proton_node_t * node, uint32_t id);
 
 {% for bundle in bundles %}
 {% if target in bundle.consumers %}void proton_bundle_{{ bundle.name }}_callback(void * context);{% endif %}
-{% endfor %}
-
-{% for node in nodes %}
-{% if node.name != target and node.heartbeat.enabled %}void proton_bundle_{{ node.name }}_heartbeat_callback(void * context);{% endif %}
 {% endfor %}
 
 // Transport Prototypes

@@ -1,8 +1,5 @@
 nodes:
   - name: node1
-    heartbeat:
-      enabled: true
-      period: 100
     endpoints:
       - id: 0
         type: udp4
@@ -12,9 +9,6 @@ nodes:
         type: serial
         device: /tmp/ttyNode1
   - name: node2
-    heartbeat:
-      enabled: true
-      period: 1000
     endpoints:
       - id: 0
         type: udp4
@@ -25,9 +19,6 @@ nodes:
         ip: 127.0.0.1
         port: 11418
   - name: node3
-    heartbeat:
-      enabled: true
-      period: 1000
     endpoints:
       - id: 0
         type: serial
@@ -46,6 +37,24 @@ connections:
     second: {node: node3, id: 1}
 
 bundles:
+  - name: node1_heartbeat
+    id: 0x001
+    producers: [node1]
+    consumers: [node2, node3]
+    signals:
+      - {name: heartbeat, id: 1, type: uint32}
+  - name: node2_heartbeat
+    id: 0x002
+    producers: [node2]
+    consumers: [node1, node3]
+    signals:
+      - {name: heartbeat, id: 2, type: uint32}
+  - name: node3_heartbeat
+    id: 0x003
+    producers: [node3]
+    consumers: [node1, node2]
+    signals:
+      - {name: heartbeat, id: 3, type: uint32}
   - name: log
     id: 0x100
     producers: [node1]

@@ -55,6 +55,7 @@ typedef enum
   CALLBACK_WIFI_CONNECTED,
   CALLBACK_HMI,
   CALLBACK_MOTOR_COMMAND,
+  CALLBACK_PC_HEARTBEAT,
   CALLBACK_COUNT
 } callback_e;
 
@@ -119,6 +120,7 @@ void proton_bundle_pc_heartbeat_callback(void * context)
 {
   context_t * c = (context_t *)context;
   printf("Heartbeat received %u\r\n", c->bundles.pc_heartbeat_bundle.heartbeat);
+  c->cb_counts[CALLBACK_PC_HEARTBEAT]++;
   c->node->peers[PROTON__PEER__PC].state = PROTON_NODE_ACTIVE;
   c->last_pc_heartbeat = time(NULL);
 }
@@ -312,6 +314,17 @@ void update_motor_feedback(void * context)
 }
 
 /**
+ * @brief Updates and sends mcu heartbeat bundle
+ * @param context Pointer to context_t structure
+ */
+void update_mcu_heartbeat(void * context)
+{
+  context_t * c = (context_t *)context;
+  c->bundles.mcu_heartbeat_bundle.heartbeat++;
+  proton_bundle_send(c->node, PROTON__BUNDLE__MCU_HEARTBEAT);
+}
+
+/**
  * @brief Connects PC transport
  * @return PROTON_OK if connection successful, error code otherwise.
  */
@@ -474,7 +487,7 @@ void * timer_1hz(void * arg)
     update_stop_status(context);
     msleep(1000);
 
-    if (time(NULL) - context->last_pc_heartbeat > PROTON__NODE__PC__HEARTBEAT__PERIOD / 1000)
+    if (time(NULL) - context->last_pc_heartbeat > 1)
     {
       context->node->peers[PROTON__PEER__PC].state = PROTON_NODE_INACTIVE;
     }
@@ -503,9 +516,8 @@ void * timer_10hz(void * arg)
     LOG_INFO(context, "10hz timer %ld", i++);
     update_power(context);
     update_temperature(context);
+    update_mcu_heartbeat(context);
 
-    context->bundles.mcu_heartbeat_bundle.heartbeat++;
-    proton_bundle_send(context->node, PROTON_HEARTBEAT_ID);
     msleep(100);
   }
 
@@ -567,6 +579,7 @@ void * stats(void * arg)
     printf("wifi_connected: %d\r\n", context->cb_counts[CALLBACK_WIFI_CONNECTED]);
     printf("hmi: %d\r\n", context->cb_counts[CALLBACK_HMI]);
     printf("motor_command: %d\r\n", context->cb_counts[CALLBACK_MOTOR_COMMAND]);
+    printf("pc_heartbeat: %d\r\n", context->cb_counts[CALLBACK_PC_HEARTBEAT]);
     printf("-----------------------------\r\n");
 
     context->rx = 0.0;
