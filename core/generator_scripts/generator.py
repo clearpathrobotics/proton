@@ -141,7 +141,7 @@ def main():
 
     generate(
         dest_path,
-        f'proton_{name}_{target}_ids.h',
+        'target_ids.h',
         'target_ids.h.jinja',
         config,
         name,

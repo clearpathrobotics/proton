@@ -217,7 +217,7 @@ if (PROTON_DEBUG)
   target_compile_definitions(proton_core PUBLIC PROTON_DEBUG)
 endif()
 
-target_include_directories(proton_core PUBLIC ${GENERATED_FOLDER})
+target_include_directories(proton_core PUBLIC ${GENERATED_FOLDER} ../include)
 
 add_library(proton::proton_core ALIAS proton_core)
 

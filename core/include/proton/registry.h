@@ -22,12 +22,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "proton_core/bundle.pb.h"
+#include "proton_core/proton.pb.h"
 #include "proton_core/signal.pb.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+#define PROTON_ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
   typedef enum
   {
@@ -42,6 +46,12 @@ extern "C"
     PROTON_BYTES = proton_Signal_bytes_value_tag,
   } proton_signal_type_e;
 
+  typedef struct
+  {
+    uint8_t * data;
+    size_t len;
+  } proton_buffer_t;
+
   typedef struct proton_id_list
   {
     const uint32_t * ids;
@@ -52,8 +62,9 @@ extern "C"
   {
     uint32_t id;
     proton_signal_type_e type;
-    size_t capacity;  // For strings and bytes, capacity of the signal. For other types, this is 0.
-    void * value;
+    size_t
+      value_size;  // For strings and bytes, capacity of the signal. For other types, this is the size of the internal type.
+    proton_Signal signal;
   } signal_desc_t;
 
   typedef struct bundle_desc
@@ -66,14 +77,15 @@ extern "C"
 
   typedef struct signal_id_to_index
   {
-    uint32_t s_id;
+    uint32_t id;
     uint32_t idx;
-  } signal_id_to_index_t;
+  } id_to_index_t;
 
   const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id);
-  const signal_desc_t proton_registry_get_signal(uint32_t signal_id);
+  bool proton_registry_get_signal(uint32_t signal_id, signal_desc_t * desc);
 
-  bool proton_signal_get_value(uint32_t signal_id, void * value, size_t * len);
+  bool proton_signal_get_value(
+    uint32_t signal_id, void * value, size_t * len, proton_signal_type_e * type);
   bool proton_signal_set_value(uint32_t signal_id, const void * value, size_t len);
 
 #ifdef __cplusplus

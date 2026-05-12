@@ -19,12 +19,10 @@
 #include "proton/registry.h"
 #include "target_registry_sizes.h"
 
-#define PROTON_ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-
 extern const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE];
-extern const signal_id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE];
+extern const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE];
 extern const size_t g_signal_capacities[PROTON_SIGNAL_REGISTRY_SIZE];
-extern proton_Signal g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE];
+extern signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE];
 
 static proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
 {
@@ -66,37 +64,41 @@ const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id)
   return NULL;
 }
 
-const signal_desc_t proton_registry_get_signal(uint32_t signal_id)
+bool proton_registry_get_signal(uint32_t signal_id, signal_desc_t * desc)
 {
-  signal_desc_t desc = {0};
-  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_signal_id_lut); i++)
-  {
-    if (g_signal_id_lut[i].s_id == signal_id)
-    {
-      desc.id = signal_id;
-      desc.type = proton_get_type_from_tag(g_signal_registry[g_signal_id_lut[i].idx].which_signal);
-      desc.capacity = g_signal_capacities[g_signal_id_lut[i].idx];
-      desc.value = (void *)&g_signal_registry[g_signal_id_lut[i].idx].signal;
-      return desc;
-    }
-  }
-
-  return desc;
-}
-
-bool proton_signal_get_value(uint32_t signal_id, void * value, size_t * len)
-{
-  if (value == NULL || len == NULL)
+  if (desc == NULL)
   {
     return false;
   }
 
   for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_signal_id_lut); i++)
   {
-    if (g_signal_id_lut[i].s_id == signal_id)
+    if (g_signal_id_lut[i].id == signal_id)
     {
-      value = (void *)&g_signal_registry[g_signal_id_lut[i].idx].signal;
-      *len = g_signal_capacities[g_signal_id_lut[i].idx];
+      desc = &g_signal_registry[g_signal_id_lut[i].idx];
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool proton_signal_get_value(
+  uint32_t signal_id, void * value, size_t * len, proton_signal_type_e * type)
+{
+  if (value == NULL || len == NULL || type == NULL)
+  {
+    return false;
+  }
+
+  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_signal_id_lut); i++)
+  {
+    if (g_signal_id_lut[i].id == signal_id)
+    {
+      value = (void *)&g_signal_registry[g_signal_id_lut[i].idx].signal.signal;
+      *len = g_signal_registry[g_signal_id_lut[i].idx].value_size;
+      *type =
+        proton_get_type_from_tag(g_signal_registry[g_signal_id_lut[i].idx].signal.which_signal);
       return true;
     }
   }
@@ -113,9 +115,10 @@ bool proton_signal_set_value(uint32_t signal_id, const void * value, size_t len)
 
   for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_signal_id_lut); i++)
   {
-    if (g_signal_id_lut[i].s_id == signal_id)
+    if (g_signal_id_lut[i].id == signal_id)
     {
-      proton_Signal * signal = &g_signal_registry[g_signal_id_lut[i].idx];
+      signal_desc_t * signal_desc = &g_signal_registry[g_signal_id_lut[i].idx];
+      proton_Signal * signal = (proton_Signal *)&signal_desc->signal;
       switch (signal->which_signal)
       {
         case (proton_Signal_double_value_tag):
