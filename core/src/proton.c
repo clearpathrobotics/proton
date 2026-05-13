@@ -114,6 +114,15 @@ proton_status_e proton_decode_bundle(proton_buffer_t buffer)
     return PROTON_ERROR;
   }
 
+  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_id_lut); i++)
+  {
+    if (g_bundle_id_lut[i].id == bundle.id)
+    {
+      bundle.signals = g_bundle_signal_ptrs[g_bundle_id_lut[i].idx];
+      break;
+    }
+  }
+
   // Set signals in registry based on decoded values
   for (size_t i = 0; i < bundle_desc->signal_ids.count; i++)
   {
@@ -128,7 +137,12 @@ proton_status_e proton_decode_bundle(proton_buffer_t buffer)
     {
       return PROTON_ERROR;
     }
-    if (!proton_signal_set_value(signal_id, &signal_ptr->signal, signal_desc.value_size))
+    void * value_ptr = &signal_ptr->signal;
+    if (signal_desc.type == PROTON_STRING || signal_desc.type == PROTON_BYTES)
+    {
+      value_ptr = signal_ptr->signal.string_value;  // covers bytes_value too (same union slot)
+    }
+    if (!proton_signal_set_value(signal_id, value_ptr, signal_desc.value_size))
     {
       return PROTON_ERROR;
     }

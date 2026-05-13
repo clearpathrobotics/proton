@@ -16,15 +16,23 @@
  * @author Roni Kreinin (roni.kreinin@rockwellautomation.com)
  */
 
+#include <stddef.h>
+#include <string.h>
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
+#include "proton/common.h"
 #include "proton/registry.h"
 
 extern proton_Signal * g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE];
 extern const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE];
 extern const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE];
 extern uint8_t * g_signal_decode_buffers[PROTON_SIGNAL_REGISTRY_SIZE];
+
+extern const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE];
+
+// Scratch buffer used as a temporary decode target for string/bytes signals
+static uint8_t g_signal_decode_scratch[PROTON_MAX_MESSAGE_SIZE];
 
 bool proton_Bundle_callback(
   pb_istream_t * istream, pb_ostream_t * ostream, const pb_field_t * field)
@@ -54,74 +62,106 @@ bool proton_Bundle_callback(
   // Decode
   if (istream)
   {
+    // Find the bundle's slot index in g_bundle_signal_ptrs
+    size_t bundle_slot = SIZE_MAX;
     for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_id_lut); i++)
     {
       if (g_bundle_id_lut[i].id == bundle_id)
       {
-        msg->signals = g_bundle_signal_ptrs[g_bundle_id_lut[i].idx];
+        bundle_slot = g_bundle_id_lut[i].idx;
         break;
       }
     }
 
-    proton_Signal * signal_list = (proton_Signal *)msg->signals;
+    if (bundle_slot == SIZE_MAX)
+    {
+      return false;
+    }
+
+    proton_Signal * bundle_signals = g_bundle_signal_ptrs[bundle_slot];
+
     if (field->tag == proton_Bundle_signals_tag)
     {
+      // Decode into a temporary with the scratch buffer pre-set for string/bytes,
+      // so proton_Signal_callback has a valid destination without knowing the type yet.
+      proton_Signal incoming = proton_Signal_init_zero;
+      incoming.signal.string_value =
+        g_signal_decode_scratch;  // covers bytes_value too (same union slot)
+      if (!pb_decode_ex(istream, proton_Signal_fields, &incoming, PB_DECODE_NOINIT))
+      {
+        return false;
+      }
+      uint32_t incoming_id = incoming.id;
+
+      // Validate: the incoming signal ID must belong to this bundle's definition
+      bool id_in_bundle = false;
+      size_t bundle_signal_slot = SIZE_MAX;
       for (size_t i = 0; i < signal_count; i++)
       {
-        proton_Signal * signal = &signal_list[i];
-        uint32_t signal_id = bundle_desc->signal_ids.ids[i];
-        signal_desc_t signal_desc;
-        if (!proton_registry_get_signal(signal_id, &signal_desc))
+        if (bundle_desc->signal_ids.ids[i] == incoming_id)
         {
-          return false;
+          id_in_bundle = true;
+          bundle_signal_slot = i;
+          break;
         }
+      }
 
-        signal->id = signal_id;
-        signal->which_signal = signal_desc.signal.which_signal;
+      if (!id_in_bundle)
+      {
+        return false;
+      }
 
-        switch (signal->which_signal)
+      // Find the signal in the LUT to get its registry index (for decode buffers)
+      size_t signal_registry_idx = SIZE_MAX;
+      for (size_t j = 0; j < PROTON_ARRAY_SIZE(g_signal_id_lut); j++)
+      {
+        if (g_signal_id_lut[j].id == incoming_id)
         {
-          // Set the decode buffer to something that is large enough for the signal, so that pb_decode
-          // can write to it without modifying the actual registry
-          case proton_Signal_bytes_value_tag:
-          case proton_Signal_string_value_tag:
-          {
-            for (size_t j = 0; j < PROTON_ARRAY_SIZE(g_signal_id_lut); j++)
-            {
-              if (g_signal_id_lut[j].id == signal->id)
-              {
-                if (g_signal_decode_buffers[g_signal_id_lut[j].idx] == NULL)
-                {
-                  return false;
-                }
-                if (signal->which_signal == proton_Signal_string_value_tag)
-                {
-                  signal->signal.string_value =
-                    (char *)g_signal_decode_buffers[g_signal_id_lut[j].idx];
-                }
-                else
-                {
-                  signal->signal.bytes_value = g_signal_decode_buffers[g_signal_id_lut[j].idx];
-                }
-                break;
-              }
-            }
-            // Do not initialise void * fields
-            if (!pb_decode_ex(istream, proton_Signal_fields, signal, PB_DECODE_NOINIT))
-            {
-              return false;
-            }
-            break;
-          }
+          signal_registry_idx = g_signal_id_lut[j].idx;
+          break;
+        }
+      }
 
-          default:
+      if (signal_registry_idx == SIZE_MAX)
+      {
+        return false;
+      }
+
+      // Route the decoded value to the correct slot in the bundle signal array
+      proton_Signal * signal = &bundle_signals[bundle_signal_slot];
+      signal->id = incoming.id;
+      signal->which_signal = incoming.which_signal;
+
+      switch (incoming.which_signal)
+      {
+        case proton_Signal_string_value_tag:
+        {
+          char * decode_buf = (char *)g_signal_decode_buffers[signal_registry_idx];
+          if (decode_buf == NULL)
           {
-            if (!pb_decode(istream, proton_Signal_fields, signal))
-            {
-              return false;
-            }
-            break;
+            return false;
           }
+          size_t capacity = g_signal_max_capacity[signal_registry_idx];
+          memcpy(decode_buf, g_signal_decode_scratch, capacity);
+          signal->signal.string_value = decode_buf;
+          break;
+        }
+        case proton_Signal_bytes_value_tag:
+        {
+          uint8_t * decode_buf = g_signal_decode_buffers[signal_registry_idx];
+          if (decode_buf == NULL)
+          {
+            return false;
+          }
+          size_t capacity = g_signal_max_capacity[signal_registry_idx];
+          memcpy(decode_buf, g_signal_decode_scratch, capacity);
+          signal->signal.bytes_value = decode_buf;
+          break;
+        }
+        default:
+        {
+          memcpy(&signal->signal, &incoming.signal, sizeof(incoming.signal));
+          break;
         }
       }
     }
@@ -178,6 +218,7 @@ bool proton_Signal_callback(
 
     if (field->tag == proton_Signal_string_value_tag)
     {
+      signal->which_signal = proton_Signal_string_value_tag;
       size_t max_capacity = PROTON_ARRAY_SIZE(signal->signal.string_value);
       // Check that string is not larger than buffer
       if (len > max_capacity - 1)
@@ -192,6 +233,7 @@ bool proton_Signal_callback(
     }
     else if (field->tag == proton_Signal_bytes_value_tag)
     {
+      signal->which_signal = proton_Signal_bytes_value_tag;
       size_t max_capacity = PROTON_ARRAY_SIZE(signal->signal.bytes_value);
       // Check that bytes array is not larger than buffer
       if (len > max_capacity)
