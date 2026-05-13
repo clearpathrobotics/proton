@@ -62,22 +62,6 @@ proton_status_e proton_encode_bundle(
     }
   }
 
-  for (size_t i = 0; i < bundle_desc->signal_ids.count; i++)
-  {
-    uint32_t signal_id = bundle_desc->signal_ids.ids[i];
-    proton_Signal * signal_ptr = &g_bundle_signal_ptrs[signal_buffer_idx][i];
-
-    // Populate signal info and value from registry
-    signal_desc_t signal_desc;
-    if (!proton_registry_get_signal(signal_id, &signal_desc))
-    {
-      return PROTON_ERROR;
-    }
-
-    signal_ptr->which_signal = (pb_size_t)signal_desc.type;
-    memcpy(&signal_ptr->signal, &signal_desc.signal.signal, signal_desc.value_size);
-  }
-
   // Encode bundle as part of Proton message
   proton_Proton proton_message = {
     .which_operation = proton_Proton_bundle_tag,
@@ -137,6 +121,10 @@ proton_status_e proton_decode_bundle(proton_buffer_t buffer)
     uint32_t signal_id = bundle_desc->signal_ids.ids[i];
     signal_desc_t signal_desc;
     if (!proton_registry_get_signal(signal_id, &signal_desc))
+    {
+      return PROTON_ERROR;
+    }
+    if (signal_desc.type != proton_get_type_from_tag(signal_ptr->which_signal))
     {
       return PROTON_ERROR;
     }

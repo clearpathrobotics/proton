@@ -21,19 +21,10 @@
 #include "pb_encode.h"
 #include "proton/registry.h"
 
-typedef struct
-{
-  size_t length;    // Length of list
-  size_t capacity;  // Capacity of data buffer (strings and bytes only)
-  size_t size;      // Current size of list (for decoding only)
-  void * data;      // Pointer to start of data buffer
-} proton_list_t;
-
-typedef struct
-{
-  proton_Signal signal;
-  proton_list_t value;
-} proton_signal_handle_t;
+extern proton_Signal * g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE];
+extern const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE];
+extern const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE];
+extern uint8_t * g_signal_decode_buffers[PROTON_SIGNAL_REGISTRY_SIZE];
 
 bool proton_Bundle_callback(
   pb_istream_t * istream, pb_ostream_t * ostream, const pb_field_t * field)
@@ -50,47 +41,87 @@ bool proton_Bundle_callback(
     return false;
   }
 
-  proton_list_t * signal_list = (proton_list_t *)msg->signals;
-  proton_signal_handle_t * signal_handles = (proton_signal_handle_t *)signal_list->data;
+  uint32_t bundle_id = msg->id;
+  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(msg->id);
 
-  if (!signal_list || !signal_handles)
+  if (!bundle_desc)
   {
     return false;
   }
 
+  size_t signal_count = bundle_desc->signal_ids.count;
+
   // Decode
   if (istream)
   {
+    for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_id_lut); i++)
+    {
+      if (g_bundle_id_lut[i].id == bundle_id)
+      {
+        msg->signals = g_bundle_signal_ptrs[g_bundle_id_lut[i].idx];
+        break;
+      }
+    }
+
+    proton_Signal * signal_list = (proton_Signal *)msg->signals;
     if (field->tag == proton_Bundle_signals_tag)
     {
-      proton_Signal * signal = &(signal_handles[signal_list->size++].signal);
-
-      // This is the last signal in the list, reset size counter
-      if (signal_list->size == signal_list->length)
+      for (size_t i = 0; i < signal_count; i++)
       {
-        signal_list->size = 0;
-      }
-
-      switch (signal->which_signal)
-      {
-        case proton_Signal_string_value_tag:
-        case proton_Signal_bytes_value_tag:
+        proton_Signal * signal = &signal_list[i];
+        uint32_t signal_id = bundle_desc->signal_ids.ids[i];
+        signal_desc_t signal_desc;
+        if (!proton_registry_get_signal(signal_id, &signal_desc))
         {
-          // Do not initialise void * fields
-          if (!pb_decode_ex(istream, proton_Signal_fields, signal, PB_DECODE_NOINIT))
-          {
-            return false;
-          }
-          break;
+          return false;
         }
 
-        default:
+        signal->id = signal_id;
+        signal->which_signal = signal_desc.signal.which_signal;
+
+        switch (signal->which_signal)
         {
-          if (!pb_decode(istream, proton_Signal_fields, signal))
+          // Set the decode buffer to something that is large enough for the signal, so that pb_decode
+          // can write to it without modifying the actual registry
+          case proton_Signal_bytes_value_tag:
+          case proton_Signal_string_value_tag:
           {
-            return false;
+            for (size_t j = 0; j < PROTON_ARRAY_SIZE(g_signal_id_lut); j++)
+            {
+              if (g_signal_id_lut[j].id == signal->id)
+              {
+                if (g_signal_decode_buffers[g_signal_id_lut[j].idx] == NULL)
+                {
+                  return false;
+                }
+                if (signal->which_signal == proton_Signal_string_value_tag)
+                {
+                  signal->signal.string_value =
+                    (char *)g_signal_decode_buffers[g_signal_id_lut[j].idx];
+                }
+                else
+                {
+                  signal->signal.bytes_value = g_signal_decode_buffers[g_signal_id_lut[j].idx];
+                }
+                break;
+              }
+            }
+            // Do not initialise void * fields
+            if (!pb_decode_ex(istream, proton_Signal_fields, signal, PB_DECODE_NOINIT))
+            {
+              return false;
+            }
+            break;
           }
-          break;
+
+          default:
+          {
+            if (!pb_decode(istream, proton_Signal_fields, signal))
+            {
+              return false;
+            }
+            break;
+          }
         }
       }
     }
@@ -101,13 +132,20 @@ bool proton_Bundle_callback(
   {
     if (field->tag == proton_Bundle_signals_tag)
     {
-      for (size_t i = 0; i < signal_list->length; i++)
+      for (size_t i = 0; i < signal_count; i++)
       {
+        uint32_t signal_id = bundle_desc->signal_ids.ids[i];
+        signal_desc_t signal_desc;
+        if (!proton_registry_get_signal(signal_id, &signal_desc))
+        {
+          return false;
+        }
+        proton_Signal * signal = &signal_desc.signal;
         if (!pb_encode_tag_for_field(ostream, field))
         {
           return false;
         }
-        if (!pb_encode_submessage(ostream, proton_Signal_fields, &(signal_handles[i].signal)))
+        if (!pb_encode_submessage(ostream, proton_Signal_fields, signal))
         {
           return false;
         }
@@ -127,9 +165,8 @@ bool proton_Signal_callback(
     return false;
   }
 
-  proton_Signal * msg = (proton_Signal *)field->message;
-
-  if (!msg)
+  proton_Signal * signal = (proton_Signal *)field->message;
+  if (!signal)
   {
     return false;
   }
@@ -137,53 +174,35 @@ bool proton_Signal_callback(
   // Decode
   if (istream)
   {
+    size_t len = istream->bytes_left;
+
     if (field->tag == proton_Signal_string_value_tag)
     {
-      proton_list_t * arg = (proton_list_t *)msg->signal.string_value;
-
-      if (!arg)
-      {
-        return false;
-      }
-
-      size_t len = istream->bytes_left;
-
+      size_t max_capacity = PROTON_ARRAY_SIZE(signal->signal.string_value);
       // Check that string is not larger than buffer
-      if (len > arg->capacity - 1)
+      if (len > max_capacity - 1)
       {
         return false;
       }
 
-      if (!pb_read(istream, (pb_byte_t *)arg->data, len))
+      if (!pb_read(istream, (pb_byte_t *)signal->signal.string_value, len))
       {
         return false;
       }
-
-      arg->size = len;
     }
     else if (field->tag == proton_Signal_bytes_value_tag)
     {
-      proton_list_t * arg = (proton_list_t *)msg->signal.bytes_value;
-
-      if (!arg)
-      {
-        return false;
-      }
-
-      size_t len = istream->bytes_left;
-
+      size_t max_capacity = PROTON_ARRAY_SIZE(signal->signal.bytes_value);
       // Check that bytes array is not larger than buffer
-      if (len > arg->capacity)
+      if (len > max_capacity)
       {
         return false;
       }
 
-      if (!pb_read(istream, (uint8_t *)arg->data, len))
+      if (!pb_read(istream, (uint8_t *)signal->signal.bytes_value, len))
       {
         return false;
       }
-
-      arg->size = len;
     }
   }
   // Encode
@@ -191,40 +210,29 @@ bool proton_Signal_callback(
   {
     if (field->tag == proton_Signal_string_value_tag)
     {
-      proton_list_t * arg = (proton_list_t *)msg->signal.string_value;
-
-      if (!arg)
-      {
-        return false;
-      }
-
-      char * string = (char *)arg->data;
+      size_t max_capacity = PROTON_ARRAY_SIZE(signal->signal.string_value);
+      char * string = (char *)signal->signal.string_value;
 
       if (!pb_encode_tag_for_field(ostream, field))
       {
         return false;
       }
 
-      if (!pb_encode_string(ostream, (pb_byte_t *)string, strlen(string)))
+      if (!pb_encode_string(ostream, (pb_byte_t *)string, strnlen(string, max_capacity)))
       {
         return false;
       }
     }
     else if (field->tag == proton_Signal_bytes_value_tag)
     {
-      proton_list_t * arg = (proton_list_t *)msg->signal.bytes_value;
-
-      if (!arg)
-      {
-        return false;
-      }
+      size_t max_capacity = PROTON_ARRAY_SIZE(signal->signal.bytes_value);
 
       if (!pb_encode_tag_for_field(ostream, field))
       {
         return false;
       }
 
-      if (!pb_encode_string(ostream, (uint8_t *)arg->data, arg->capacity))
+      if (!pb_encode_string(ostream, (uint8_t *)signal->signal.bytes_value, max_capacity))
       {
         return false;
       }

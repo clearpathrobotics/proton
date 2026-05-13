@@ -20,11 +20,13 @@
 #include "target_registry_sizes.h"
 
 extern const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE];
+extern proton_Signal * g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE];
+extern const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE];
 extern const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE];
 extern const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE];
 extern signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE];
 
-static proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
+proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
 {
   switch (tag)
   {

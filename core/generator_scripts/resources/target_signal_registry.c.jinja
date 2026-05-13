@@ -41,6 +41,24 @@ static uint8_t g_signal_{{ signal.name }}_buffer[PROTON_SIGNAL_{{ signal.name | 
 {% endif %}
 {% endfor %}
 
+// Buffers to act as a decode space for repeated-type signals
+{% for signal in signals %}
+{% if signal.type in ("string", "bytes") %}
+static uint8_t g_signal_{{ signal.name }}_decode_buffer[PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY] = { 0 };
+{% endif %}
+{% endfor %}
+
+// Lookup for these decode space buffers
+uint8_t * g_signal_decode_buffers[PROTON_SIGNAL_REGISTRY_SIZE] = {
+{% for signal in signals %}
+{% if signal.type in ("string", "bytes") %}
+  g_signal_{{ signal.name }}_decode_buffer,
+{% else %}
+  NULL,
+{% endif %}
+{% endfor %}
+};
+
 // Capacities for signals that are repeated, such as strings and bytes
 const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
@@ -57,6 +75,7 @@ signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
   {
     .id = PROTON_SIGNAL_{{ signal.name | upper }}_ID,
     .type = PROTON_{{ signal.type | upper }},
+    .signal.id = PROTON_SIGNAL_{{ signal.name | upper }}_ID,
     .signal.which_signal = proton_Signal_{{ signal.type }}_value_tag,
     {% if signal.type in ("string", "bytes") %}
     .signal.signal.{{ signal.type }}_value = g_signal_{{ signal.name }}_buffer,

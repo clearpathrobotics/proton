@@ -131,6 +131,8 @@ def main():
         config = load_config(config_path)
         config['bundles'] = sorted(config['bundles'], key=lambda x: x['id'])
         config['signals'] = sorted(config['signals'], key=lambda x: x['id'])
+        for i, signal in enumerate(config['signals']):
+            signal['registry_index'] = i
         name = Path(config_path).stem
 
     # validate node config here

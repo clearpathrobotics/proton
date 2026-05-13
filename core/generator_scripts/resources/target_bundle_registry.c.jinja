@@ -23,6 +23,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+extern signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE];
+
 const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% for bundle in bundles %}
 {% if target in bundle.producers or target in bundle.consumers %}
@@ -46,7 +48,7 @@ const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
 };
 
 // Bundle ID's are not contiguous, so use a lookup to find them in the registry
-static const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE] = {
+const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% for bundle in bundles %}
 {% if target in bundle.producers or target in bundle.consumers %}
   { .id = {{ bundle.id }}, .idx = {{ loop.index0 }} },
@@ -54,14 +56,14 @@ static const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% endfor %}
 };
 
-// Arrays of signals for encoding
+// Per-bundle arrays of signals for encode/decode
 {% for bundle in bundles %}
 {% if bundle.signals | length > 0 %}
-static proton_Signal g_bundle_{{ bundle.name }}_signals[{{ bundle.signals | length }}];
+static proton_Signal g_bundle_{{ bundle.name }}_signals[{{ bundle.signals | length }}] = {};
 {% endif %}
 {% endfor %}
 
-static proton_Signal* g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE] = {
+proton_Signal* g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% for bundle in bundles %}
 {% if bundle.signals | length > 0 %}
   g_bundle_{{ bundle.name }}_signals,

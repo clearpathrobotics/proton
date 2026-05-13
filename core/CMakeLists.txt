@@ -209,6 +209,7 @@ add_library(${PROJECT_NAME}
   ${nanopb_SOURCE_DIR}/pb_decode.c
   ${nanopb_SOURCE_DIR}/pb_encode.c
   ${GENERATED_REGISTRY_FILES}
+  ${NANOPB_GENERATED_SRCS}
 )
 
 add_dependencies(${PROJECT_NAME} generate_protoc)

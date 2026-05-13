@@ -65,8 +65,8 @@ extern "C"
   {
     uint32_t id;
     proton_signal_type_e type;
-    size_t
-      value_size;  // For strings and bytes, capacity of the signal. For other types, this is the size of the internal type.
+    // For strings and bytes, capacity of the signal. For other types, this is the size of the internal type.
+    size_t value_size;
     proton_Signal signal;
   } signal_desc_t;
 
@@ -86,6 +86,7 @@ extern "C"
 
   const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id);
   bool proton_registry_get_signal(uint32_t signal_id, signal_desc_t * desc);
+  proton_signal_type_e proton_get_type_from_tag(pb_size_t tag);
 
   bool proton_signal_get_value(
     uint32_t signal_id, void * value, size_t * len, proton_signal_type_e * type);

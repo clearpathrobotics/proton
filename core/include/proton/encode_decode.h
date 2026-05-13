@@ -16,13 +16,27 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
+#ifndef PROTON_ENCODE_DECODE_H
+#define PROTON_ENCODE_DECODE_H
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "proton/common.h"
 #include "proton/registry.h"
 
-proton_status_e proton_encode_bundle(
-  uint32_t bundle_id, proton_buffer_t buffer, size_t * bytes_encoded);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-proton_status_e proton_decode_bundle(proton_buffer_t buffer);
+  proton_status_e proton_encode_bundle(
+    uint32_t bundle_id, proton_buffer_t buffer, size_t * bytes_encoded);
+
+  proton_status_e proton_decode_bundle(proton_buffer_t buffer);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // PROTON_ENCODE_DECODE_H
