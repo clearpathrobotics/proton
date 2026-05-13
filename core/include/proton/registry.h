@@ -84,8 +84,9 @@ extern "C"
     uint32_t idx;
   } id_to_index_t;
 
-  const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id);
-  bool proton_registry_get_signal(uint32_t signal_id, signal_desc_t * desc);
+  const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id, size_t * slot_idx);
+  proton_Signal * proton_registry_get_bundle_signals(uint32_t bundle_id);
+  signal_desc_t * proton_registry_get_signal(uint32_t signal_id, size_t * registry_idx);
   proton_signal_type_e proton_get_type_from_tag(pb_size_t tag);
 
   bool proton_signal_get_value(

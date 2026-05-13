@@ -53,36 +53,53 @@ proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
   }
 }
 
-const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id)
+const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id, size_t * slot_idx)
 {
-  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_table); i++)
+  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_id_lut); i++)
   {
-    if (g_bundle_table[i].bundle_id == bundle_id)
+    if (g_bundle_id_lut[i].id == bundle_id)
     {
-      return &g_bundle_table[i];
+      size_t idx = g_bundle_id_lut[i].idx;
+      if (slot_idx)
+      {
+        *slot_idx = idx;
+      }
+      return &g_bundle_table[idx];
     }
   }
 
   return NULL;
 }
 
-bool proton_registry_get_signal(uint32_t signal_id, signal_desc_t * desc)
+proton_Signal * proton_registry_get_bundle_signals(uint32_t bundle_id)
 {
-  if (desc == NULL)
+  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_id_lut); i++)
   {
-    return false;
+    if (g_bundle_id_lut[i].id == bundle_id)
+    {
+      return g_bundle_signal_ptrs[g_bundle_id_lut[i].idx];
+    }
   }
 
+  return NULL;
+}
+
+signal_desc_t * proton_registry_get_signal(uint32_t signal_id, size_t * registry_idx)
+{
   for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_signal_id_lut); i++)
   {
     if (g_signal_id_lut[i].id == signal_id)
     {
-      *desc = g_signal_registry[g_signal_id_lut[i].idx];
-      return true;
+      size_t idx = g_signal_id_lut[i].idx;
+      if (registry_idx)
+      {
+        *registry_idx = idx;
+      }
+      return &g_signal_registry[idx];
     }
   }
 
-  return false;
+  return NULL;
 }
 
 bool proton_signal_get_value(

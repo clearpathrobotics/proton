@@ -24,11 +24,7 @@
 #include "proton/common.h"
 #include "proton/registry.h"
 
-extern proton_Signal * g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE];
-extern const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE];
-extern const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE];
 extern uint8_t * g_signal_decode_buffers[PROTON_SIGNAL_REGISTRY_SIZE];
-
 extern const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE];
 
 // Scratch buffer used as a temporary decode target for string/bytes signals
@@ -50,7 +46,7 @@ bool proton_Bundle_callback(
   }
 
   uint32_t bundle_id = msg->id;
-  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(msg->id);
+  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(bundle_id, NULL);
 
   if (!bundle_desc)
   {
@@ -62,23 +58,11 @@ bool proton_Bundle_callback(
   // Decode
   if (istream)
   {
-    // Find the bundle's slot index in g_bundle_signal_ptrs
-    size_t bundle_slot = SIZE_MAX;
-    for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_id_lut); i++)
-    {
-      if (g_bundle_id_lut[i].id == bundle_id)
-      {
-        bundle_slot = g_bundle_id_lut[i].idx;
-        break;
-      }
-    }
-
-    if (bundle_slot == SIZE_MAX)
+    proton_Signal * bundle_signals = proton_registry_get_bundle_signals(bundle_id);
+    if (bundle_signals == NULL)
     {
       return false;
     }
-
-    proton_Signal * bundle_signals = g_bundle_signal_ptrs[bundle_slot];
 
     if (field->tag == proton_Bundle_signals_tag)
     {
@@ -111,18 +95,9 @@ bool proton_Bundle_callback(
         return false;
       }
 
-      // Find the signal in the LUT to get its registry index (for decode buffers)
+      // One lookup: get signal registry index for decode buffers
       size_t signal_registry_idx = SIZE_MAX;
-      for (size_t j = 0; j < PROTON_ARRAY_SIZE(g_signal_id_lut); j++)
-      {
-        if (g_signal_id_lut[j].id == incoming_id)
-        {
-          signal_registry_idx = g_signal_id_lut[j].idx;
-          break;
-        }
-      }
-
-      if (signal_registry_idx == SIZE_MAX)
+      if (proton_registry_get_signal(incoming_id, &signal_registry_idx) == NULL)
       {
         return false;
       }
@@ -175,17 +150,16 @@ bool proton_Bundle_callback(
       for (size_t i = 0; i < signal_count; i++)
       {
         uint32_t signal_id = bundle_desc->signal_ids.ids[i];
-        signal_desc_t signal_desc;
-        if (!proton_registry_get_signal(signal_id, &signal_desc))
+        signal_desc_t * desc = proton_registry_get_signal(signal_id, NULL);
+        if (desc == NULL)
         {
           return false;
         }
-        proton_Signal * signal = &signal_desc.signal;
         if (!pb_encode_tag_for_field(ostream, field))
         {
           return false;
         }
-        if (!pb_encode_submessage(ostream, proton_Signal_fields, signal))
+        if (!pb_encode_submessage(ostream, proton_Signal_fields, &desc->signal))
         {
           return false;
         }

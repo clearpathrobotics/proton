@@ -21,40 +21,33 @@
 
 TEST(BundleRegistry, GetBundle)
 {
-  const bundle_desc_t * desc = proton_registry_get_bundle(PROTON_BUNDLE_VALUE_TEST_ID);
+  const bundle_desc_t * desc = proton_registry_get_bundle(PROTON_BUNDLE_VALUE_TEST_ID, NULL);
   EXPECT_NE(desc, nullptr);
   EXPECT_EQ(desc->bundle_id, PROTON_BUNDLE_VALUE_TEST_ID);
   EXPECT_EQ(desc->producer_ids.count, 1);
-  // EXPECT_EQ(desc->producer_ids.ids[0], PROTON_TEST_PRODUCER_ID);
   EXPECT_EQ(desc->consumer_ids.count, 1);
   EXPECT_EQ(desc->signal_ids.count, 9);
 }
 
 TEST(BundleRegistry, GetBundleInvalidId)
 {
-  const bundle_desc_t * desc = proton_registry_get_bundle(9999);
+  const bundle_desc_t * desc = proton_registry_get_bundle(9999, NULL);
   EXPECT_EQ(desc, nullptr);
 }
 
 TEST(SignalRegistry, GetSignal)
 {
-  signal_desc_t desc;
-  bool found = proton_registry_get_signal(PROTON_SIGNAL_DOUBLE_VALUE_ID, &desc);
+  signal_desc_t * desc = proton_registry_get_signal(PROTON_SIGNAL_DOUBLE_VALUE_ID, NULL);
+  bool found = desc != nullptr;
   EXPECT_TRUE(found);
-  EXPECT_EQ(desc.id, PROTON_SIGNAL_DOUBLE_VALUE_ID);
-  EXPECT_EQ(desc.type, PROTON_DOUBLE);
+  EXPECT_EQ(desc->id, PROTON_SIGNAL_DOUBLE_VALUE_ID);
+  EXPECT_EQ(desc->type, PROTON_DOUBLE);
 }
 
 TEST(SignalRegistry, GetSignalInvalidId)
 {
-  signal_desc_t desc;
-  bool found = proton_registry_get_signal(9999, &desc);
-  EXPECT_FALSE(found);
-}
-
-TEST(SignalRegistry, GetSignalNullPtr)
-{
-  bool found = proton_registry_get_signal(PROTON_SIGNAL_DOUBLE_VALUE_ID, nullptr);
+  signal_desc_t * desc = proton_registry_get_signal(9999, NULL);
+  bool found = desc != nullptr;
   EXPECT_FALSE(found);
 }
 
