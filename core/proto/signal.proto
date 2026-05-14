@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package proton;
+
+message Signal {
+  reserved 10 to 18;
+
+  oneof signal {
+    double double_value = 1;
+    float float_value = 2;
+    int32 int32_value = 3;
+    int64 int64_value = 4;
+    uint32 uint32_value = 5;
+    uint64 uint64_value = 6;
+    bool bool_value = 7;
+    string string_value = 8;
+    bytes bytes_value = 9;
+  }
+
+  uint32 id = 19;
+}

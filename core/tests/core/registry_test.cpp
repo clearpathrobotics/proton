@@ -18,10 +18,15 @@
 
 #include "proton/registry.h"
 #include <gtest/gtest.h>
+#include "target_registry_ids.h"
+#include "target_registry_sizes.h"
+
+extern proton_registry_t g_proton_registry;
 
 TEST(BundleRegistry, GetBundle)
 {
-  const bundle_desc_t * desc = proton_registry_get_bundle(PROTON_BUNDLE_VALUE_TEST_ID, NULL);
+  const bundle_desc_t * desc =
+    proton_registry_get_bundle(&g_proton_registry, PROTON_BUNDLE_VALUE_TEST_ID, NULL);
   EXPECT_NE(desc, nullptr);
   EXPECT_EQ(desc->bundle_id, PROTON_BUNDLE_VALUE_TEST_ID);
   EXPECT_EQ(desc->producer_ids.count, 1);
@@ -31,13 +36,14 @@ TEST(BundleRegistry, GetBundle)
 
 TEST(BundleRegistry, GetBundleInvalidId)
 {
-  const bundle_desc_t * desc = proton_registry_get_bundle(9999, NULL);
+  const bundle_desc_t * desc = proton_registry_get_bundle(&g_proton_registry, 9999, NULL);
   EXPECT_EQ(desc, nullptr);
 }
 
 TEST(SignalRegistry, GetSignal)
 {
-  signal_desc_t * desc = proton_registry_get_signal(PROTON_SIGNAL_DOUBLE_VALUE_ID, NULL);
+  signal_desc_t * desc =
+    proton_registry_get_signal(&g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, NULL);
   bool found = desc != nullptr;
   EXPECT_TRUE(found);
   EXPECT_EQ(desc->id, PROTON_SIGNAL_DOUBLE_VALUE_ID);
@@ -46,7 +52,7 @@ TEST(SignalRegistry, GetSignal)
 
 TEST(SignalRegistry, GetSignalInvalidId)
 {
-  signal_desc_t * desc = proton_registry_get_signal(9999, NULL);
+  signal_desc_t * desc = proton_registry_get_signal(&g_proton_registry, 9999, NULL);
   bool found = desc != nullptr;
   EXPECT_FALSE(found);
 }
@@ -57,9 +63,9 @@ TEST(SignalRegistry, GetScalarSignalValue)
   double value;
   size_t len;
   proton_signal_type_e type;
-  bool found =
-    proton_signal_get_value(PROTON_SIGNAL_DEFAULT_DOUBLE_ID, (void *)&value, &len, &type);
-  EXPECT_TRUE(found);
+  proton_status_e status = proton_signal_get_value(
+    &g_proton_registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, (void *)&value, &len, &type);
+  ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(type, PROTON_DOUBLE);
   EXPECT_EQ(len, sizeof(double));
   EXPECT_EQ(value, 3.14159);
@@ -70,8 +76,9 @@ TEST(SignalRegistry, GetStringSignalValue)
   char value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY];
   size_t len;
   proton_signal_type_e type;
-  bool found = proton_signal_get_value(PROTON_SIGNAL_DEFAULT_STRING_ID, (void *)value, &len, &type);
-  EXPECT_TRUE(found);
+  proton_status_e status = proton_signal_get_value(
+    &g_proton_registry, PROTON_SIGNAL_DEFAULT_STRING_ID, (void *)value, &len, &type);
+  ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(type, PROTON_STRING);
   EXPECT_EQ(len, PROTON_SIGNAL_DEFAULT_STRING_CAPACITY);
   EXPECT_STREQ(value, "foo");
@@ -82,8 +89,9 @@ TEST(SignalRegistry, GetBytesSignalValue)
   uint8_t value[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY];
   size_t len;
   proton_signal_type_e type;
-  bool found = proton_signal_get_value(PROTON_SIGNAL_DEFAULT_BYTES_ID, (void *)value, &len, &type);
-  EXPECT_TRUE(found);
+  proton_status_e status = proton_signal_get_value(
+    &g_proton_registry, PROTON_SIGNAL_DEFAULT_BYTES_ID, (void *)value, &len, &type);
+  ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(type, PROTON_BYTES);
   EXPECT_EQ(len, PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY);
   const uint8_t expected_value[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY] = {0, 1, 2};
@@ -93,16 +101,17 @@ TEST(SignalRegistry, GetBytesSignalValue)
 TEST(SignalRegistry, SetScalarSignalValue)
 {
   double new_value = 2.71828;
-  bool success =
-    proton_signal_set_value(PROTON_SIGNAL_DOUBLE_VALUE_ID, (void *)&new_value, sizeof(new_value));
-  EXPECT_TRUE(success);
+  proton_status_e status = proton_signal_set_value(
+    &g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, (void *)&new_value, sizeof(new_value));
+  ASSERT_EQ(status, PROTON_OK);
 
   // Read the value back to verify it was set
   double value;
   size_t len;
   proton_signal_type_e type;
-  bool found = proton_signal_get_value(PROTON_SIGNAL_DOUBLE_VALUE_ID, (void *)&value, &len, &type);
-  EXPECT_TRUE(found);
+  status = proton_signal_get_value(
+    &g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, (void *)&value, &len, &type);
+  ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(type, PROTON_DOUBLE);
   EXPECT_EQ(len, sizeof(double));
   EXPECT_EQ(value, new_value);
@@ -111,16 +120,17 @@ TEST(SignalRegistry, SetScalarSignalValue)
 TEST(SignalRegistry, SetStringSignalValue)
 {
   const char * new_value = "bar";
-  bool success = proton_signal_set_value(
-    PROTON_SIGNAL_STRING_VALUE_ID, (void *)new_value, strlen(new_value) + 1);
-  EXPECT_TRUE(success);
+  proton_status_e status = proton_signal_set_value(
+    &g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, (void *)new_value, strlen(new_value) + 1);
+  ASSERT_EQ(status, PROTON_OK);
 
   // Read the value back to verify it was set
   char value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY];
   size_t len;
   proton_signal_type_e type;
-  bool found = proton_signal_get_value(PROTON_SIGNAL_STRING_VALUE_ID, (void *)value, &len, &type);
-  EXPECT_TRUE(found);
+  status = proton_signal_get_value(
+    &g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, (void *)value, &len, &type);
+  ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(type, PROTON_STRING);
   EXPECT_EQ(len, PROTON_SIGNAL_DEFAULT_STRING_CAPACITY);
   EXPECT_STREQ(value, new_value);
@@ -129,14 +139,16 @@ TEST(SignalRegistry, SetStringSignalValue)
 TEST(SignalRegistry, SetInvalidId)
 {
   double new_value = 2.71828;
-  bool success = proton_signal_set_value(9999, (void *)&new_value, sizeof(new_value));
-  EXPECT_FALSE(success);
+  proton_status_e status =
+    proton_signal_set_value(&g_proton_registry, 9999, (void *)&new_value, sizeof(new_value));
+  EXPECT_EQ(status, PROTON_ERROR);
 }
 
 TEST(SignalRegistry, SetNullPtr)
 {
-  bool success = proton_signal_set_value(PROTON_SIGNAL_DOUBLE_VALUE_ID, nullptr, sizeof(double));
-  EXPECT_FALSE(success);
+  proton_status_e status = proton_signal_set_value(
+    &g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, nullptr, sizeof(double));
+  EXPECT_EQ(status, PROTON_NULL_PTR_ERROR);
 }
 
 TEST(SignalRegistry, SetStringExcessiveLength)
@@ -145,8 +157,9 @@ TEST(SignalRegistry, SetStringExcessiveLength)
   memset(
     new_value, 'a',
     PROTON_SIGNAL_DEFAULT_STRING_CAPACITY);  // Fill with 'a's to ensure it's not just a shorter string
-  bool success = proton_signal_set_value(PROTON_SIGNAL_STRING_VALUE_ID, (void *)new_value, 999);
-  EXPECT_FALSE(success);
+  proton_status_e status = proton_signal_set_value(
+    &g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, (void *)new_value, 999);
+  EXPECT_EQ(status, PROTON_ERROR);
 }
 
 TEST(SignalRegistry, SetBytesExcessiveLength)
@@ -155,8 +168,9 @@ TEST(SignalRegistry, SetBytesExcessiveLength)
   memset(
     new_value, 0xFF,
     PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY);  // Fill with 0xFF to ensure it's not just a shorter array
-  bool success = proton_signal_set_value(PROTON_SIGNAL_BYTES_VALUE_ID, (void *)new_value, 999);
-  EXPECT_FALSE(success);
+  proton_status_e status = proton_signal_set_value(
+    &g_proton_registry, PROTON_SIGNAL_BYTES_VALUE_ID, (void *)new_value, 999);
+  EXPECT_EQ(status, PROTON_ERROR);
 }
 
 int main(int argc, char ** argv)

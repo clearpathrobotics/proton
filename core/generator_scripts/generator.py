@@ -143,8 +143,8 @@ def main():
 
     generate(
         dest_path,
-        'target_ids.h',
-        'target_ids.h.jinja',
+        'target_registry_ids.h',
+        'target_registry_ids.h.jinja',
         config,
         name,
         target,
@@ -159,16 +159,8 @@ def main():
     )
     generate(
         dest_path,
-        'signal_registry.c',
-        'target_signal_registry.c.jinja',
-        config,
-        name,
-        target,
-    )
-    generate(
-        dest_path,
-        'bundle_registry.c',
-        'target_bundle_registry.c.jinja',
+        'target_registry.c',
+        'target_registry.c.jinja',
         config,
         name,
         target,

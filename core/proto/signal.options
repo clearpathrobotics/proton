@@ -1,0 +1,2 @@
+proton.Signal.string_value callback_datatype:"void *"
+proton.Signal.bytes_value callback_datatype:"void *"

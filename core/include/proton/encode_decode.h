@@ -16,6 +16,7 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
+// TODO rename this file to proton.h or similar to prevent naming issues with the other proton.h in protonc
 #ifndef PROTON_ENCODE_DECODE_H
 #define PROTON_ENCODE_DECODE_H
 
@@ -31,9 +32,10 @@ extern "C"
 #endif
 
   proton_status_e proton_encode_bundle(
-    uint32_t bundle_id, proton_buffer_t buffer, size_t * bytes_encoded);
+    proton_registry_t * registry, uint32_t bundle_id, proton_buffer_t buffer,
+    size_t * bytes_encoded);
 
-  proton_status_e proton_decode_bundle(proton_buffer_t buffer);
+  proton_status_e proton_decode(proton_registry_t * registry, proton_buffer_t buffer);
 
 #ifdef __cplusplus
 }

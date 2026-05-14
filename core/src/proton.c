@@ -21,22 +21,229 @@
 #include <string.h>
 #include "proton/common.h"
 #include "proton/registry.h"
-#include "target_registry_sizes.h"
 
 #include "pb.h"
 #include "pb_decode.h"
 #include "pb_encode.h"
 
-proton_status_e proton_encode_bundle(
-  uint32_t bundle_id, proton_buffer_t buffer, size_t * bytes_encoded)
+// Scratch buffer used as a temporary decode target for string/bytes signals
+// TODO manage the size of this buffer at build time
+static uint8_t g_signal_decode_scratch[PROTON_MAX_MESSAGE_SIZE];
+
+/**
+ * Callback for encoding a bundle, passing the registry as arg to access bundle ID and signals
+ * @param ostream protobuf output stream
+ * @param field protobuf field being encoded, used to get the bundle ID
+ * @param arg pointer to the proton registry, used to look up the bundle definition and signals
+ * @return true if successful, false if error
+ */
+static bool proton_encode_bundle_cb(
+  pb_ostream_t * ostream, const pb_field_t * field, void * const * arg)
 {
-  if (buffer.data == NULL || bytes_encoded == NULL)
+  if (!field || !arg)
+  {
+    return false;
+  }
+
+  proton_Bundle * msg = (proton_Bundle *)field->message;
+  if (!msg)
+  {
+    return false;
+  }
+
+  const proton_registry_t * registry = (const proton_registry_t *)*arg;
+  uint32_t bundle_id = msg->id;
+
+  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(registry, bundle_id, NULL);
+  if (!bundle_desc)
+  {
+    return false;
+  }
+
+  for (size_t i = 0; i < bundle_desc->signal_ids.count; i++)
+  {
+    uint32_t signal_id = bundle_desc->signal_ids.ids[i];
+    signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, NULL);
+    if (desc == NULL)
+    {
+      return false;
+    }
+    if (!pb_encode_tag_for_field(ostream, field))
+    {
+      return false;
+    }
+    if (!pb_encode_submessage(ostream, proton_Signal_fields, &desc->signal))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Callback for decoding a bundle, passing the registry as arg to access bundle definition and route decoded signals
+ * @param istream protobuf input stream
+ * @param field protobuf field being decoded, used to get the bundle ID from the message
+ * @param arg pointer to the proton registry, used to look up the bundle definition and signals
+ * @return true if successful, false if error
+ */
+static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * field, void ** arg)
+{
+  if (!field || !arg)
+  {
+    return false;
+  }
+
+  proton_Bundle * msg = (proton_Bundle *)field->message;
+  if (!msg)
+  {
+    return false;
+  }
+
+  uint32_t bundle_id = msg->id;
+  const proton_registry_t * registry = *(const proton_registry_t **)arg;
+  if (!registry)
+  {
+    return false;
+  }
+
+  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(registry, bundle_id, NULL);
+
+  if (!bundle_desc)
+  {
+    return false;
+  }
+
+  size_t signal_count = bundle_desc->signal_ids.count;
+  proton_Signal * bundle_signals =
+    proton_registry_get_bundle_encode_decode_buffer(registry, bundle_id);
+
+  if (bundle_signals == NULL)
+  {
+    return false;
+  }
+
+  if (field->tag == proton_Bundle_signals_tag)
+  {
+    // Decode into a temporary with the scratch buffer pre-set for string/bytes,
+    // so proton_Signal_callback has a valid destination without knowing the type yet.
+    proton_Signal incoming = proton_Signal_init_zero;
+    incoming.signal.string_value = g_signal_decode_scratch;
+    if (!pb_decode_ex(istream, proton_Signal_fields, &incoming, PB_DECODE_NOINIT))
+    {
+      return false;
+    }
+    uint32_t incoming_id = incoming.id;
+
+    // Validate: the incoming signal ID must belong to this bundle
+    bool id_in_bundle = false;
+    size_t bundle_signal_slot = SIZE_MAX;
+    for (size_t i = 0; i < signal_count; i++)
+    {
+      if (bundle_desc->signal_ids.ids[i] == incoming_id)
+      {
+        id_in_bundle = true;
+        bundle_signal_slot = i;
+        break;
+      }
+    }
+
+    if (!id_in_bundle)
+    {
+      return false;
+    }
+
+    // get signal registry index for decode buffers
+    size_t signal_registry_idx = SIZE_MAX;
+    if (proton_registry_get_signal(registry, incoming_id, &signal_registry_idx) == NULL)
+    {
+      return false;
+    }
+
+    // Route the decoded value to the correct slot in the bundle signal array
+    proton_Signal * signal = &bundle_signals[bundle_signal_slot];
+    signal->id = incoming.id;
+    signal->which_signal = incoming.which_signal;
+
+    switch (incoming.which_signal)
+    {
+      case proton_Signal_string_value_tag:
+      {
+        char * decode_buf = (char *)registry->signal_decode_buffers[signal_registry_idx];
+        if (decode_buf == NULL)
+        {
+          return false;
+        }
+        size_t capacity = registry->signal_max_capacity[signal_registry_idx];
+        memcpy(decode_buf, g_signal_decode_scratch, capacity);
+        signal->signal.string_value = decode_buf;
+        break;
+      }
+      case proton_Signal_bytes_value_tag:
+      {
+        uint8_t * decode_buf = registry->signal_decode_buffers[signal_registry_idx];
+        if (decode_buf == NULL)
+        {
+          return false;
+        }
+        size_t capacity = registry->signal_max_capacity[signal_registry_idx];
+        memcpy(decode_buf, g_signal_decode_scratch, capacity);
+        signal->signal.bytes_value = decode_buf;
+        break;
+      }
+      default:
+      {
+        memcpy(&signal->signal, &incoming.signal, sizeof(incoming.signal));
+        break;
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Callback for decoding the oneof field in a Proton message, used to pass args to the various different operations
+ */
+static bool proton_operation_decode_cb(
+  pb_istream_t * istream, const pb_field_t * field, void ** arg)
+{
+  if (!field || !arg)
+  {
+    return false;
+  }
+
+  proton_Proton * msg = (proton_Proton *)field->message;
+  if (!msg)
+  {
+    return false;
+  }
+
+  switch (field->tag)
+  {
+    case proton_Proton_bundle_tag:
+      msg->operation.bundle.signals.funcs.decode = proton_decode_bundle_cb;
+      msg->operation.bundle.signals.arg = *arg;
+      return true;
+    default:
+      return false;
+  }
+
+  return false;
+}
+
+/**
+ * Encode a bundle from the registry into a Proton top-level message
+ */
+proton_status_e proton_encode_bundle(
+  proton_registry_t * registry, uint32_t bundle_id, proton_buffer_t buffer, size_t * bytes_encoded)
+{
+  if (registry == NULL || buffer.data == NULL || bytes_encoded == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
 
   // Find bundle in registry and get its slot index in one search
-  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(bundle_id, NULL);
+  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(registry, bundle_id, NULL);
   if (bundle_desc == NULL)
   {
     return PROTON_ERROR;
@@ -45,7 +252,9 @@ proton_status_e proton_encode_bundle(
   // Get a bundle
   proton_Bundle bundle = {
     .id = bundle_desc->bundle_id,
-    .signals = proton_registry_get_bundle_signals(bundle_id),
+    // Place registry at the signals pointer so it can be accessed in the callback
+    .signals.funcs.encode = proton_encode_bundle_cb,
+    .signals.arg = registry,
   };
 
   // Encode bundle as part of Proton message
@@ -71,15 +280,23 @@ proton_status_e proton_encode_bundle(
   return PROTON_OK;
 }
 
-proton_status_e proton_decode_bundle(proton_buffer_t buffer)
+/**
+ * Decode a Proton message from a buffer
+ * If the message is a bundle, the registry will be updated with the decoded signals
+ */
+proton_status_e proton_decode(proton_registry_t * registry, proton_buffer_t buffer)
 {
-  if (buffer.data == NULL)
+  if (registry == NULL || buffer.data == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
 
   pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer.data, buffer.len);
-  proton_Proton proton_message;
+  proton_Proton proton_message = proton_Proton_init_zero;
+  // Place registry at the signals pointer so it can be accessed in the callback
+  proton_message.cb_operation.funcs.decode = proton_operation_decode_cb;
+  proton_message.cb_operation.arg = registry;
+
   bool status = pb_decode(&stream, proton_Proton_fields, &proton_message);
   if (!status)
   {
@@ -94,7 +311,7 @@ proton_status_e proton_decode_bundle(proton_buffer_t buffer)
 
   proton_Bundle bundle = proton_message.operation.bundle;
   size_t bundle_slot = 0;
-  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(bundle.id, &bundle_slot);
+  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(registry, bundle.id, &bundle_slot);
   // This bundle doesn't exist
   if (bundle_desc == NULL)
   {
@@ -102,12 +319,13 @@ proton_status_e proton_decode_bundle(proton_buffer_t buffer)
   }
 
   // Set signals in registry based on decoded values
-  proton_Signal * bundle_signals = proton_registry_get_bundle_signals(bundle.id);
+  proton_Signal * bundle_signals =
+    proton_registry_get_bundle_encode_decode_buffer(registry, bundle.id);
   for (size_t i = 0; i < bundle_desc->signal_ids.count; i++)
   {
     proton_Signal * signal_ptr = &bundle_signals[i];
     uint32_t signal_id = bundle_desc->signal_ids.ids[i];
-    signal_desc_t * desc = proton_registry_get_signal(signal_id, NULL);
+    signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, NULL);
     if (desc == NULL)
     {
       return PROTON_ERROR;

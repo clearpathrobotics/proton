@@ -17,14 +17,6 @@
  */
 
 #include "proton/registry.h"
-#include "target_registry_sizes.h"
-
-extern const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE];
-extern proton_Signal * g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE];
-extern const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE];
-extern const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE];
-extern const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE];
-extern signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE];
 
 proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
 {
@@ -49,73 +41,78 @@ proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
     case proton_Signal_bytes_value_tag:
       return PROTON_BYTES;
     default:
-      return -1;  // Invalid type
+      return PROTON_INVALID_TYPE;
   }
 }
 
-const bundle_desc_t * proton_registry_get_bundle(uint32_t bundle_id, size_t * slot_idx)
+const bundle_desc_t * proton_registry_get_bundle(
+  const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx)
 {
-  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_id_lut); i++)
+  for (size_t i = 0; i < registry->bundle_count; i++)
   {
-    if (g_bundle_id_lut[i].id == bundle_id)
+    if (registry->bundle_id_lut[i].id == bundle_id)
     {
-      size_t idx = g_bundle_id_lut[i].idx;
+      size_t idx = registry->bundle_id_lut[i].idx;
       if (slot_idx)
       {
         *slot_idx = idx;
       }
-      return &g_bundle_table[idx];
+      return &registry->bundle_table[idx];
     }
   }
 
   return NULL;
 }
 
-proton_Signal * proton_registry_get_bundle_signals(uint32_t bundle_id)
+proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
+  const proton_registry_t * registry, uint32_t bundle_id)
 {
-  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_bundle_id_lut); i++)
+  for (size_t i = 0; i < registry->bundle_count; i++)
   {
-    if (g_bundle_id_lut[i].id == bundle_id)
+    if (registry->bundle_id_lut[i].id == bundle_id)
     {
-      return g_bundle_signal_ptrs[g_bundle_id_lut[i].idx];
+      return registry->bundle_signal_ptrs[registry->bundle_id_lut[i].idx];
     }
   }
 
   return NULL;
 }
 
-signal_desc_t * proton_registry_get_signal(uint32_t signal_id, size_t * registry_idx)
+signal_desc_t * proton_registry_get_signal(
+  const proton_registry_t * registry, uint32_t signal_id, size_t * registry_idx)
 {
-  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_signal_id_lut); i++)
+  for (size_t i = 0; i < registry->signal_count; i++)
   {
-    if (g_signal_id_lut[i].id == signal_id)
+    if (registry->signal_id_lut[i].id == signal_id)
     {
-      size_t idx = g_signal_id_lut[i].idx;
+      size_t idx = registry->signal_id_lut[i].idx;
       if (registry_idx)
       {
         *registry_idx = idx;
       }
-      return &g_signal_registry[idx];
+      return &registry->signal_registry[idx];
     }
   }
 
   return NULL;
 }
 
-bool proton_signal_get_value(
-  uint32_t signal_id, void * value, size_t * len, proton_signal_type_e * type)
+proton_status_e proton_signal_get_value(
+  const proton_registry_t * registry, uint32_t signal_id, void * value, size_t * len,
+  proton_signal_type_e * type)
 {
-  if (value == NULL || len == NULL || type == NULL)
+  if (registry == NULL || value == NULL || len == NULL || type == NULL)
   {
-    return false;
+    return PROTON_NULL_PTR_ERROR;
   }
 
-  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_signal_id_lut); i++)
+  for (size_t i = 0; i < registry->signal_count; i++)
   {
-    if (g_signal_id_lut[i].id == signal_id)
+    if (registry->signal_id_lut[i].id == signal_id)
     {
-      *len = g_signal_registry[g_signal_id_lut[i].idx].value_size;
-      proton_Signal * signal = (proton_Signal *)&g_signal_registry[g_signal_id_lut[i].idx].signal;
+      *len = registry->signal_registry[registry->signal_id_lut[i].idx].value_size;
+      proton_Signal * signal =
+        (proton_Signal *)&registry->signal_registry[registry->signal_id_lut[i].idx].signal;
       *type = proton_get_type_from_tag(signal->which_signal);
       switch (*type)
       {
@@ -147,31 +144,32 @@ bool proton_signal_get_value(
           memcpy((uint8_t *)value, signal->signal.bytes_value, *len);
           break;
         default:
-          return false;
+          return PROTON_INVALID_TYPE;
       }
-      return true;
+      return PROTON_OK;
     }
   }
 
-  return false;
+  return PROTON_ERROR;
 }
 
-bool proton_signal_set_value(uint32_t signal_id, const void * value, size_t len)
+proton_status_e proton_signal_set_value(
+  const proton_registry_t * registry, uint32_t signal_id, const void * value, size_t len)
 {
-  if (value == NULL)
+  if (value == NULL || registry == NULL)
   {
-    return false;
+    return PROTON_NULL_PTR_ERROR;
   }
 
-  bool ret = false;
+  proton_status_e ret = PROTON_ERROR;
 
-  for (size_t i = 0; i < PROTON_ARRAY_SIZE(g_signal_id_lut); i++)
+  for (size_t i = 0; i < registry->signal_count; i++)
   {
-    if (g_signal_id_lut[i].id == signal_id)
+    if (registry->signal_id_lut[i].id == signal_id)
     {
-      signal_desc_t * signal_desc = &g_signal_registry[g_signal_id_lut[i].idx];
+      signal_desc_t * signal_desc = &registry->signal_registry[registry->signal_id_lut[i].idx];
       proton_Signal * signal = (proton_Signal *)&signal_desc->signal;
-      ret = true;
+      ret = PROTON_OK;
       switch (signal->which_signal)
       {
         case (proton_Signal_double_value_tag):
@@ -197,33 +195,33 @@ bool proton_signal_set_value(uint32_t signal_id, const void * value, size_t len)
           break;
         case (proton_Signal_string_value_tag):
         {
-          if (g_signal_max_capacity[g_signal_id_lut[i].idx] >= len)
+          if (registry->signal_max_capacity[registry->signal_id_lut[i].idx] >= len)
           {
             memcpy(signal->signal.string_value, (char *)value, len);
             signal_desc->value_size = len;
           }
           else
           {
-            ret = false;
+            ret = PROTON_ERROR;
           }
           break;
         }
         case (proton_Signal_bytes_value_tag):
         {
-          if (g_signal_max_capacity[g_signal_id_lut[i].idx] >= len)
+          if (registry->signal_max_capacity[registry->signal_id_lut[i].idx] >= len)
           {
             memcpy(signal->signal.bytes_value, (uint8_t *)value, len);
             signal_desc->value_size = len;
           }
           else
           {
-            ret = false;
+            ret = PROTON_ERROR;
           }
           break;
         }
 
         default:
-          ret = false;
+          ret = PROTON_ERROR;
       }
     }
   }

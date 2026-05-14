@@ -89,7 +89,7 @@ endfunction()
 # -------------------------------
 # Proto files
 # -------------------------------
-set(PROTO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
+set(PROTO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/proto)
 set(PROTO_FILES
   ${PROTO_PATH}/signal.proto
   ${PROTO_PATH}/bundle.proto
@@ -141,6 +141,7 @@ add_custom_command(
     --proto_path=${PROTO_PATH}
     --plugin=protoc-gen-nanopb=${nanopb_SOURCE_DIR}/generator/protoc-gen-nanopb
     --nanopb_out=${GENERATED_DIR} signal.proto bundle.proto proton.proto
+    -I${nanopb_SOURCE_DIR}/generator/proto
   DEPENDS ${PROTO_DEPENDS}
   WORKING_DIRECTORY ${PROTO_PATH}
   COMMENT "Generating nanopb files for ${PROTO_NAME}.proto"
@@ -179,19 +180,7 @@ add_custom_target(generate_protoc ALL
 # autogen signal registry
 # -------------------------------
 set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/generated)
-set(GENERATED_REGISTRY_FILES
-  "${GENERATED_FOLDER}/signal_registry.c"
-  "${GENERATED_FOLDER}/bundle_registry.c"
-  "${GENERATED_FOLDER}/target_ids.h"
-  "${GENERATED_FOLDER}/target_registry_sizes.h"
-)
 
-proton_core_generator(
-  "${GENERATED_REGISTRY_FILES}"
-  ${GENERATED_FOLDER}
-  "producer"
-  CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/test.yaml
-)
 
 # -------------------------------
 # proton_core library
@@ -208,7 +197,6 @@ add_library(${PROJECT_NAME}
   ${nanopb_SOURCE_DIR}/pb_common.c
   ${nanopb_SOURCE_DIR}/pb_decode.c
   ${nanopb_SOURCE_DIR}/pb_encode.c
-  ${GENERATED_REGISTRY_FILES}
   ${NANOPB_GENERATED_SRCS}
 )
 
@@ -253,8 +241,23 @@ endif()
 # Testing
 find_package(GTest REQUIRED)
 
+# autogen registry for tests
+set(GENERATED_REGISTRY_FILES
+  "${GENERATED_FOLDER}/target_registry.c"
+  "${GENERATED_FOLDER}/target_ids.h"
+  "${GENERATED_FOLDER}/target_registry_sizes.h"
+)
+
+proton_core_generator(
+  "${GENERATED_REGISTRY_FILES}"
+  ${GENERATED_FOLDER}
+  "producer"
+  CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/test.yaml
+)
+
 add_executable(registry_test
   tests/core/registry_test.cpp
+  ${GENERATED_REGISTRY_FILES}
 )
 
 target_link_libraries(registry_test PUBLIC
@@ -269,6 +272,7 @@ target_include_directories(registry_test PUBLIC
 
 add_executable(encode_decode_test
   tests/core/encode_decode_test.cpp
+  ${GENERATED_REGISTRY_FILES}
 )
 
 target_link_libraries(encode_decode_test PUBLIC
