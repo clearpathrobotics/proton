@@ -24,7 +24,6 @@ include(FetchContent)
 # -------------------------------
 # Fetch nanopb (runtime + generator)
 # -------------------------------
-message(WARNING "finding nanopb...")
 set(nanopb_BUILD_GENERATOR ON CACHE BOOL "Build nanopb generator" FORCE)
 FetchContent_Declare(
   nanopb
@@ -34,7 +33,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nanopb)
 
-message(WARNING "finding protoc...")
 # Protobuf compiler
 find_program(PROTOC_EXECUTABLE protoc)
 if(NOT PROTOC_EXECUTABLE)
@@ -238,6 +236,7 @@ if (PROTON_INSTALL)
 endif()
 
 # Testing
+enable_testing()
 find_package(GTest REQUIRED)
 
 # autogen registry for tests

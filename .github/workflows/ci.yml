@@ -81,6 +81,46 @@ jobs:
         run: |
           ctest --test-dir build/tests --output-on-failure
 
+  test-proton-core:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ubuntu:24.04
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential \
+            cmake \
+            pkg-config \
+            python3 \
+            python3-pip \
+            python3-jinja2 \
+            python3-yaml \
+            python3-protobuf \
+            protobuf-compiler \
+            libboost-all-dev \
+            libyaml-cpp-dev \
+            libgtest-dev \
+            git
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure CMake
+        run: |
+          cmake -S ./core -B build_core -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: |
+          cmake --build build_core --parallel
+
+      - name: Run tests
+        run: |
+          ctest --test-dir build_core --output-on-failure
+
   test-proton-vendor:
     runs-on: ubuntu-latest
 
