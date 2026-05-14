@@ -17,6 +17,7 @@
  */
 
 #include "proton/registry.h"
+#include <string.h>
 
 proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
 {
@@ -97,134 +98,142 @@ signal_desc_t * proton_registry_get_signal(
   return NULL;
 }
 
-proton_status_e proton_signal_get_value(
-  const proton_registry_t * registry, uint32_t signal_id, void * value, size_t * len,
-  proton_signal_type_e * type)
+/*
+ * Typed scalar accessors. Each pair validates that the signal exists and that
+ * its stored type matches the requested type before reading or writing.
+ */
+#define PROTON_DEFINE_SCALAR_ACCESSORS(NAME, CTYPE, ENUM_TAG, UNION_FIELD)        \
+  proton_status_e proton_signal_get_##NAME(                                       \
+    const proton_registry_t * registry, uint32_t signal_id, CTYPE * value)        \
+  {                                                                               \
+    if (registry == NULL || value == NULL)                                        \
+    {                                                                             \
+      return PROTON_NULL_PTR_ERROR;                                               \
+    }                                                                             \
+    signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, NULL); \
+    if (desc == NULL)                                                             \
+    {                                                                             \
+      return PROTON_ERROR;                                                        \
+    }                                                                             \
+    if (desc->signal.which_signal != (ENUM_TAG))                                  \
+    {                                                                             \
+      return PROTON_ERROR;                                                        \
+    }                                                                             \
+    *value = desc->signal.signal.UNION_FIELD;                                     \
+    return PROTON_OK;                                                             \
+  }                                                                               \
+  proton_status_e proton_signal_set_##NAME(                                       \
+    const proton_registry_t * registry, uint32_t signal_id, CTYPE value)          \
+  {                                                                               \
+    if (registry == NULL)                                                         \
+    {                                                                             \
+      return PROTON_NULL_PTR_ERROR;                                               \
+    }                                                                             \
+    signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, NULL); \
+    if (desc == NULL)                                                             \
+    {                                                                             \
+      return PROTON_ERROR;                                                        \
+    }                                                                             \
+    if (desc->signal.which_signal != (ENUM_TAG))                                  \
+    {                                                                             \
+      return PROTON_ERROR;                                                        \
+    }                                                                             \
+    desc->signal.signal.UNION_FIELD = value;                                      \
+    return PROTON_OK;                                                             \
+  }
+
+PROTON_DEFINE_SCALAR_ACCESSORS(double, double, proton_Signal_double_value_tag, double_value)
+PROTON_DEFINE_SCALAR_ACCESSORS(float, float, proton_Signal_float_value_tag, float_value)
+PROTON_DEFINE_SCALAR_ACCESSORS(int32, int32_t, proton_Signal_int32_value_tag, int32_value)
+PROTON_DEFINE_SCALAR_ACCESSORS(int64, int64_t, proton_Signal_int64_value_tag, int64_value)
+PROTON_DEFINE_SCALAR_ACCESSORS(uint32, uint32_t, proton_Signal_uint32_value_tag, uint32_value)
+PROTON_DEFINE_SCALAR_ACCESSORS(uint64, uint64_t, proton_Signal_uint64_value_tag, uint64_value)
+PROTON_DEFINE_SCALAR_ACCESSORS(bool, bool, proton_Signal_bool_value_tag, bool_value)
+
+#undef PROTON_DEFINE_SCALAR_ACCESSORS
+
+/*
+ * Internal helper for string/bytes get. The two only differ in which union slot
+ * is read from, but the pointer occupies the same union storage, so we use
+ * string_value as the access path.
+ */
+static proton_status_e proton_signal_get_buffer(
+  const proton_registry_t * registry, uint32_t signal_id, pb_size_t expected_tag, void * buf,
+  size_t capacity, size_t * out_len)
 {
-  if (registry == NULL || value == NULL || len == NULL || type == NULL)
+  if (registry == NULL || buf == NULL || out_len == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
-
-  for (size_t i = 0; i < registry->signal_count; i++)
+  signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, NULL);
+  if (desc == NULL)
   {
-    if (registry->signal_id_lut[i].id == signal_id)
-    {
-      *len = registry->signal_registry[registry->signal_id_lut[i].idx].value_size;
-      proton_Signal * signal =
-        (proton_Signal *)&registry->signal_registry[registry->signal_id_lut[i].idx].signal;
-      *type = proton_get_type_from_tag(signal->which_signal);
-      switch (*type)
-      {
-        case (PROTON_DOUBLE):
-          *(double *)value = signal->signal.double_value;
-          break;
-        case (PROTON_FLOAT):
-          *(float *)value = signal->signal.float_value;
-          break;
-        case (PROTON_INT32):
-          *(int32_t *)value = signal->signal.int32_value;
-          break;
-        case (PROTON_INT64):
-          *(int64_t *)value = signal->signal.int64_value;
-          break;
-        case (PROTON_UINT32):
-          *(uint32_t *)value = signal->signal.uint32_value;
-          break;
-        case (PROTON_UINT64):
-          *(uint64_t *)value = signal->signal.uint64_value;
-          break;
-        case (PROTON_BOOL):
-          *(bool *)value = signal->signal.bool_value;
-          break;
-        case (PROTON_STRING):
-          memcpy((char *)value, signal->signal.string_value, *len);
-          break;
-        case (PROTON_BYTES):
-          memcpy((uint8_t *)value, signal->signal.bytes_value, *len);
-          break;
-        default:
-          return PROTON_INVALID_TYPE;
-      }
-      return PROTON_OK;
-    }
+    return PROTON_ERROR;
   }
-
-  return PROTON_ERROR;
+  if (desc->signal.which_signal != expected_tag)
+  {
+    return PROTON_ERROR;
+  }
+  if (capacity < desc->value_size)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+  memcpy(buf, desc->signal.signal.string_value, desc->value_size);
+  *out_len = desc->value_size;
+  return PROTON_OK;
 }
 
-proton_status_e proton_signal_set_value(
-  const proton_registry_t * registry, uint32_t signal_id, const void * value, size_t len)
+static proton_status_e proton_signal_set_buffer(
+  const proton_registry_t * registry, uint32_t signal_id, pb_size_t expected_tag, const void * data,
+  size_t len)
 {
-  if (value == NULL || registry == NULL)
+  if (registry == NULL || data == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
-
-  proton_status_e ret = PROTON_ERROR;
-
-  for (size_t i = 0; i < registry->signal_count; i++)
+  size_t idx = 0;
+  signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, &idx);
+  if (desc == NULL)
   {
-    if (registry->signal_id_lut[i].id == signal_id)
-    {
-      signal_desc_t * signal_desc = &registry->signal_registry[registry->signal_id_lut[i].idx];
-      proton_Signal * signal = (proton_Signal *)&signal_desc->signal;
-      ret = PROTON_OK;
-      switch (signal->which_signal)
-      {
-        case (proton_Signal_double_value_tag):
-          signal->signal.double_value = *(double *)value;
-          break;
-        case (proton_Signal_float_value_tag):
-          signal->signal.float_value = *(float *)value;
-          break;
-        case (proton_Signal_int32_value_tag):
-          signal->signal.int32_value = *(int32_t *)value;
-          break;
-        case (proton_Signal_int64_value_tag):
-          signal->signal.int64_value = *(int64_t *)value;
-          break;
-        case (proton_Signal_uint32_value_tag):
-          signal->signal.uint32_value = *(uint32_t *)value;
-          break;
-        case (proton_Signal_uint64_value_tag):
-          signal->signal.uint64_value = *(uint64_t *)value;
-          break;
-        case (proton_Signal_bool_value_tag):
-          signal->signal.bool_value = *(bool *)value;
-          break;
-        case (proton_Signal_string_value_tag):
-        {
-          if (registry->signal_max_capacity[registry->signal_id_lut[i].idx] >= len)
-          {
-            memcpy(signal->signal.string_value, (char *)value, len);
-            signal_desc->value_size = len;
-          }
-          else
-          {
-            ret = PROTON_ERROR;
-          }
-          break;
-        }
-        case (proton_Signal_bytes_value_tag):
-        {
-          if (registry->signal_max_capacity[registry->signal_id_lut[i].idx] >= len)
-          {
-            memcpy(signal->signal.bytes_value, (uint8_t *)value, len);
-            signal_desc->value_size = len;
-          }
-          else
-          {
-            ret = PROTON_ERROR;
-          }
-          break;
-        }
-
-        default:
-          ret = PROTON_ERROR;
-      }
-    }
+    return PROTON_ERROR;
   }
+  if (desc->signal.which_signal != expected_tag)
+  {
+    return PROTON_ERROR;
+  }
+  if (registry->signal_max_capacity[idx] < len)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+  memcpy(desc->signal.signal.string_value, data, len);
+  desc->value_size = len;
+  return PROTON_OK;
+}
 
-  return ret;
+proton_status_e proton_signal_get_string(
+  const proton_registry_t * registry, uint32_t signal_id, char * buf, size_t capacity,
+  size_t * out_len)
+{
+  return proton_signal_get_buffer(
+    registry, signal_id, proton_Signal_string_value_tag, buf, capacity, out_len);
+}
+
+proton_status_e proton_signal_set_string(
+  const proton_registry_t * registry, uint32_t signal_id, const char * str, size_t len)
+{
+  return proton_signal_set_buffer(registry, signal_id, proton_Signal_string_value_tag, str, len);
+}
+
+proton_status_e proton_signal_get_bytes(
+  const proton_registry_t * registry, uint32_t signal_id, uint8_t * buf, size_t capacity,
+  size_t * out_len)
+{
+  return proton_signal_get_buffer(
+    registry, signal_id, proton_Signal_bytes_value_tag, buf, capacity, out_len);
+}
+
+proton_status_e proton_signal_set_bytes(
+  const proton_registry_t * registry, uint32_t signal_id, const uint8_t * data, size_t len)
+{
+  return proton_signal_set_buffer(registry, signal_id, proton_Signal_bytes_value_tag, data, len);
 }

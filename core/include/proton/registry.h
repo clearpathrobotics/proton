@@ -19,6 +19,7 @@
 #ifndef PROTON_REGISTRY_H
 #define PROTON_REGISTRY_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -160,20 +161,68 @@ extern "C"
    */
   proton_signal_type_e proton_get_type_from_tag(pb_size_t tag);
 
-  /**
-   * Get the value of a signal from the registry
-   * @return status of the operation
+  /*
+   * Typed signal accessors.
+   *
+   * Each accessor returns:
+   *   PROTON_OK                         on success
+   *   PROTON_NULL_PTR_ERROR             if a required pointer is NULL
+   *   PROTON_ERROR                      if signal_id is not found, or the signal's
+   *                                     stored type does not match the accessor type
+   *   PROTON_INSUFFICIENT_BUFFER_ERROR  (string/bytes only) when the destination
+   *                                     buffer is smaller than the stored value, or
+   *                                     when set() is called with len exceeding the
+   *                                     registered capacity for the signal
+   *
+   * For string/bytes getters, *out_len receives the number of bytes copied.
    */
-  proton_status_e proton_signal_get_value(
-    const proton_registry_t * registry, uint32_t signal_id, void * value, size_t * len,
-    proton_signal_type_e * type);
 
-  /**
-   * Set the value of a signal in the registry
-   * @return status of the operation
-   */
-  proton_status_e proton_signal_set_value(
-    const proton_registry_t * registry, uint32_t signal_id, const void * value, size_t len);
+  proton_status_e proton_signal_get_double(
+    const proton_registry_t * registry, uint32_t signal_id, double * value);
+  proton_status_e proton_signal_set_double(
+    const proton_registry_t * registry, uint32_t signal_id, double value);
+
+  proton_status_e proton_signal_get_float(
+    const proton_registry_t * registry, uint32_t signal_id, float * value);
+  proton_status_e proton_signal_set_float(
+    const proton_registry_t * registry, uint32_t signal_id, float value);
+
+  proton_status_e proton_signal_get_int32(
+    const proton_registry_t * registry, uint32_t signal_id, int32_t * value);
+  proton_status_e proton_signal_set_int32(
+    const proton_registry_t * registry, uint32_t signal_id, int32_t value);
+
+  proton_status_e proton_signal_get_int64(
+    const proton_registry_t * registry, uint32_t signal_id, int64_t * value);
+  proton_status_e proton_signal_set_int64(
+    const proton_registry_t * registry, uint32_t signal_id, int64_t value);
+
+  proton_status_e proton_signal_get_uint32(
+    const proton_registry_t * registry, uint32_t signal_id, uint32_t * value);
+  proton_status_e proton_signal_set_uint32(
+    const proton_registry_t * registry, uint32_t signal_id, uint32_t value);
+
+  proton_status_e proton_signal_get_uint64(
+    const proton_registry_t * registry, uint32_t signal_id, uint64_t * value);
+  proton_status_e proton_signal_set_uint64(
+    const proton_registry_t * registry, uint32_t signal_id, uint64_t value);
+
+  proton_status_e proton_signal_get_bool(
+    const proton_registry_t * registry, uint32_t signal_id, bool * value);
+  proton_status_e proton_signal_set_bool(
+    const proton_registry_t * registry, uint32_t signal_id, bool value);
+
+  proton_status_e proton_signal_get_string(
+    const proton_registry_t * registry, uint32_t signal_id, char * buf, size_t capacity,
+    size_t * out_len);
+  proton_status_e proton_signal_set_string(
+    const proton_registry_t * registry, uint32_t signal_id, const char * str, size_t len);
+
+  proton_status_e proton_signal_get_bytes(
+    const proton_registry_t * registry, uint32_t signal_id, uint8_t * buf, size_t capacity,
+    size_t * out_len);
+  proton_status_e proton_signal_set_bytes(
+    const proton_registry_t * registry, uint32_t signal_id, const uint8_t * data, size_t len);
 
 #ifdef __cplusplus
 }

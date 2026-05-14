@@ -35,14 +35,14 @@ extern "C"
  * Encode a bundle from the registry into a Proton top-level message
  */
   proton_status_e proton_encode_bundle(
-    proton_registry_t * registry, uint32_t bundle_id, proton_buffer_t buffer,
+    proton_registry_t * registry, uint32_t bundle_id, uint8_t * buffer, size_t buffer_len,
     size_t * bytes_encoded);
 
   /**
  * Decode a Proton message from a buffer
  * If the message is a bundle, the registry will be updated with the decoded signals
  */
-  proton_status_e proton_decode(proton_registry_t * registry, proton_buffer_t buffer);
+  proton_status_e proton_decode(proton_registry_t * registry, uint8_t * buffer, size_t buffer_len);
 
 #ifdef __cplusplus
 }

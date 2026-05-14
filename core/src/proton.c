@@ -232,9 +232,10 @@ static bool proton_operation_decode_cb(
 }
 
 proton_status_e proton_encode_bundle(
-  proton_registry_t * registry, uint32_t bundle_id, proton_buffer_t buffer, size_t * bytes_encoded)
+  proton_registry_t * registry, uint32_t bundle_id, uint8_t * buffer, size_t buffer_len,
+  size_t * bytes_encoded)
 {
-  if (registry == NULL || buffer.data == NULL || bytes_encoded == NULL)
+  if (registry == NULL || buffer == NULL || bytes_encoded == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
@@ -260,7 +261,7 @@ proton_status_e proton_encode_bundle(
     .operation.bundle = bundle,
   };
 
-  pb_ostream_t stream = pb_ostream_from_buffer((pb_byte_t *)buffer.data, buffer.len);
+  pb_ostream_t stream = pb_ostream_from_buffer((pb_byte_t *)buffer, buffer_len);
 
   bool status = pb_encode(&stream, proton_Proton_fields, &proton_message);
 
@@ -277,14 +278,14 @@ proton_status_e proton_encode_bundle(
   return PROTON_OK;
 }
 
-proton_status_e proton_decode(proton_registry_t * registry, proton_buffer_t buffer)
+proton_status_e proton_decode(proton_registry_t * registry, uint8_t * buffer, size_t buffer_len)
 {
-  if (registry == NULL || buffer.data == NULL)
+  if (registry == NULL || buffer == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
 
-  pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer.data, buffer.len);
+  pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer, buffer_len);
   proton_Proton proton_message = proton_Proton_init_zero;
   // Place registry at the signals pointer so it can be accessed in the callback
   proton_message.cb_operation.funcs.decode = proton_operation_decode_cb;

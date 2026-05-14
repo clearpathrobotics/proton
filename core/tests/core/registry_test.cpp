@@ -60,117 +60,106 @@ TEST(SignalRegistry, GetSignalInvalidId)
 TEST(SignalRegistry, GetScalarSignalValue)
 {
   // Using the default_double signal since we know it has a value set in the registry
-  double value;
-  size_t len;
-  proton_signal_type_e type;
-  proton_status_e status = proton_signal_get_value(
-    &g_proton_registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, (void *)&value, &len, &type);
+  double value = 0.0;
+  proton_status_e status =
+    proton_signal_get_double(&g_proton_registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, &value);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(type, PROTON_DOUBLE);
-  EXPECT_EQ(len, sizeof(double));
   EXPECT_EQ(value, 3.14159);
 }
 
 TEST(SignalRegistry, GetStringSignalValue)
 {
-  char value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY];
-  size_t len;
-  proton_signal_type_e type;
-  proton_status_e status = proton_signal_get_value(
-    &g_proton_registry, PROTON_SIGNAL_DEFAULT_STRING_ID, (void *)value, &len, &type);
+  char value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY] = {0};
+  size_t len = 0;
+  proton_status_e status = proton_signal_get_string(
+    &g_proton_registry, PROTON_SIGNAL_DEFAULT_STRING_ID, value, sizeof(value), &len);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(type, PROTON_STRING);
-  EXPECT_EQ(len, PROTON_SIGNAL_DEFAULT_STRING_CAPACITY);
   EXPECT_STREQ(value, "foo");
 }
 
 TEST(SignalRegistry, GetBytesSignalValue)
 {
-  uint8_t value[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY];
-  size_t len;
-  proton_signal_type_e type;
-  proton_status_e status = proton_signal_get_value(
-    &g_proton_registry, PROTON_SIGNAL_DEFAULT_BYTES_ID, (void *)value, &len, &type);
+  uint8_t value[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY] = {0};
+  size_t len = 0;
+  proton_status_e status = proton_signal_get_bytes(
+    &g_proton_registry, PROTON_SIGNAL_DEFAULT_BYTES_ID, value, sizeof(value), &len);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(type, PROTON_BYTES);
-  EXPECT_EQ(len, PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY);
+  ASSERT_EQ(len, PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY);
   const uint8_t expected_value[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY] = {0, 1, 2};
-  EXPECT_EQ(memcmp(value, expected_value, PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY), 0);
+  EXPECT_EQ(memcmp(value, expected_value, len), 0);
+}
+
+TEST(SignalRegistry, GetSignalTypeMismatch)
+{
+  // The double-typed signal cannot be read as a uint32
+  uint32_t value = 0;
+  proton_status_e status =
+    proton_signal_get_uint32(&g_proton_registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, &value);
+  EXPECT_EQ(status, PROTON_ERROR);
 }
 
 TEST(SignalRegistry, SetScalarSignalValue)
 {
   double new_value = 2.71828;
-  proton_status_e status = proton_signal_set_value(
-    &g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, (void *)&new_value, sizeof(new_value));
+  proton_status_e status =
+    proton_signal_set_double(&g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, new_value);
   ASSERT_EQ(status, PROTON_OK);
 
   // Read the value back to verify it was set
-  double value;
-  size_t len;
-  proton_signal_type_e type;
-  status = proton_signal_get_value(
-    &g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, (void *)&value, &len, &type);
+  double value = 0.0;
+  status = proton_signal_get_double(&g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, &value);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(type, PROTON_DOUBLE);
-  EXPECT_EQ(len, sizeof(double));
   EXPECT_EQ(value, new_value);
 }
 
 TEST(SignalRegistry, SetStringSignalValue)
 {
   const char * new_value = "bar";
-  proton_status_e status = proton_signal_set_value(
-    &g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, (void *)new_value, strlen(new_value) + 1);
+  size_t new_len = strlen(new_value) + 1;
+  proton_status_e status =
+    proton_signal_set_string(&g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, new_value, new_len);
   ASSERT_EQ(status, PROTON_OK);
 
   // Read the value back to verify it was set
-  char value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY];
-  size_t len;
-  proton_signal_type_e type;
-  status = proton_signal_get_value(
-    &g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, (void *)value, &len, &type);
+  char value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY] = {0};
+  size_t len = 0;
+  status = proton_signal_get_string(
+    &g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, value, sizeof(value), &len);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(type, PROTON_STRING);
-  EXPECT_EQ(len, PROTON_SIGNAL_DEFAULT_STRING_CAPACITY);
+  EXPECT_EQ(len, new_len);
   EXPECT_STREQ(value, new_value);
 }
 
 TEST(SignalRegistry, SetInvalidId)
 {
-  double new_value = 2.71828;
-  proton_status_e status =
-    proton_signal_set_value(&g_proton_registry, 9999, (void *)&new_value, sizeof(new_value));
+  proton_status_e status = proton_signal_set_double(&g_proton_registry, 9999, 2.71828);
   EXPECT_EQ(status, PROTON_ERROR);
 }
 
 TEST(SignalRegistry, SetNullPtr)
 {
-  proton_status_e status = proton_signal_set_value(
-    &g_proton_registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, nullptr, sizeof(double));
+  // String/bytes setters take a pointer; null data should be rejected
+  proton_status_e status =
+    proton_signal_set_string(&g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, nullptr, 4);
   EXPECT_EQ(status, PROTON_NULL_PTR_ERROR);
 }
 
 TEST(SignalRegistry, SetStringExcessiveLength)
 {
   char new_value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY + 1] = {0};
-  memset(
-    new_value, 'a',
-    PROTON_SIGNAL_DEFAULT_STRING_CAPACITY);  // Fill with 'a's to ensure it's not just a shorter string
-  proton_status_e status = proton_signal_set_value(
-    &g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, (void *)new_value, 999);
-  EXPECT_EQ(status, PROTON_ERROR);
+  memset(new_value, 'a', PROTON_SIGNAL_DEFAULT_STRING_CAPACITY);
+  proton_status_e status =
+    proton_signal_set_string(&g_proton_registry, PROTON_SIGNAL_STRING_VALUE_ID, new_value, 999);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
 }
 
 TEST(SignalRegistry, SetBytesExcessiveLength)
 {
   uint8_t new_value[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY + 1] = {0};
-  memset(
-    new_value, 0xFF,
-    PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY);  // Fill with 0xFF to ensure it's not just a shorter array
-  proton_status_e status = proton_signal_set_value(
-    &g_proton_registry, PROTON_SIGNAL_BYTES_VALUE_ID, (void *)new_value, 999);
-  EXPECT_EQ(status, PROTON_ERROR);
+  memset(new_value, 0xFF, PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY);
+  proton_status_e status =
+    proton_signal_set_bytes(&g_proton_registry, PROTON_SIGNAL_BYTES_VALUE_ID, new_value, 999);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
 }
 
 int main(int argc, char ** argv)
