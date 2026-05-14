@@ -98,7 +98,6 @@ set(PROTO_FILES
 
 set(PROTO_OPTION_FILES
   ${PROTO_PATH}/signal.options
-  ${PROTO_PATH}/bundle.options
 )
 
 set(PROTO_DEPENDS ${PROTO_FILES} ${PROTO_OPTION_FILES})
