@@ -22,6 +22,7 @@
 #include "proton/registry.h"
 #include "target_registry_ids.h"
 #include "target_registry_sizes.h"
+#include "utils.hpp"
 
 static constexpr size_t BUFFER_SIZE = 1024;
 
@@ -36,11 +37,14 @@ TEST(EncodeDecode, EncodeDefaultValueTestBundle)
   uint8_t raw[BUFFER_SIZE];
   size_t bytes_encoded = 0;
 
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
   proton_status_e status = proton_encode_bundle(
-    &g_proton_registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded);
+    &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded);
 
   EXPECT_EQ(status, PROTON_OK);
   EXPECT_GT(bytes_encoded, 0);
+  free(registry.signal_registry);
 }
 
 TEST(EncodeDecode, EncodeNullBufferReturnsError)
@@ -48,20 +52,25 @@ TEST(EncodeDecode, EncodeNullBufferReturnsError)
   uint8_t * buf = nullptr;
   size_t bytes_encoded = 0;
 
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
   EXPECT_EQ(
     proton_encode_bundle(
-      &g_proton_registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, buf, BUFFER_SIZE, &bytes_encoded),
+      &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, buf, BUFFER_SIZE, &bytes_encoded),
     PROTON_NULL_PTR_ERROR);
+  free(registry.signal_registry);
 }
 
 TEST(EncodeDecode, EncodeNullBytesEncodedReturnsError)
 {
   uint8_t raw[BUFFER_SIZE];
 
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
   EXPECT_EQ(
-    proton_encode_bundle(
-      &g_proton_registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, BUFFER_SIZE, nullptr),
+    proton_encode_bundle(&registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, BUFFER_SIZE, nullptr),
     PROTON_NULL_PTR_ERROR);
+  free(registry.signal_registry);
 }
 
 TEST(EncodeDecode, EncodeInvalidBundleIdReturnsError)
@@ -69,9 +78,11 @@ TEST(EncodeDecode, EncodeInvalidBundleIdReturnsError)
   uint8_t raw[BUFFER_SIZE];
   size_t bytes_encoded = 0;
 
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
   EXPECT_EQ(
-    proton_encode_bundle(&g_proton_registry, 0xDEAD, raw, BUFFER_SIZE, &bytes_encoded),
-    PROTON_ERROR);
+    proton_encode_bundle(&registry, 0xDEAD, raw, BUFFER_SIZE, &bytes_encoded), PROTON_ERROR);
+  free(registry.signal_registry);
 }
 
 // -----------------------------------------------------------------------
@@ -80,15 +91,19 @@ TEST(EncodeDecode, EncodeInvalidBundleIdReturnsError)
 
 TEST(EncodeDecode, DecodeNullBufferReturnsError)
 {
-  EXPECT_EQ(proton_decode(&g_proton_registry, nullptr, BUFFER_SIZE), PROTON_NULL_PTR_ERROR);
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  EXPECT_EQ(proton_decode(&registry, nullptr, BUFFER_SIZE), PROTON_NULL_PTR_ERROR);
+  free(registry.signal_registry);
 }
 
 TEST(EncodeDecode, DecodeGarbageReturnsError)
 {
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
   uint8_t raw[BUFFER_SIZE];
   memset(raw, 0xFF, sizeof(raw));
 
-  EXPECT_EQ(proton_decode(&g_proton_registry, raw, sizeof(raw)), PROTON_SERIALIZATION_ERROR);
+  EXPECT_EQ(proton_decode(&registry, raw, sizeof(raw)), PROTON_SERIALIZATION_ERROR);
+  free(registry.signal_registry);
 }
 
 // -----------------------------------------------------------------------
@@ -97,50 +112,53 @@ TEST(EncodeDecode, DecodeGarbageReturnsError)
 
 TEST(EncodeDecode, RoundTripDefaultValues)
 {
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
   uint8_t raw[BUFFER_SIZE];
   size_t bytes_encoded = 0;
 
   // Encode using values already in registry
   ASSERT_EQ(
     proton_encode_bundle(
-      &g_proton_registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
+      &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
     PROTON_OK);
   ASSERT_GT(bytes_encoded, 0);
 
-  ASSERT_EQ(proton_decode(&g_proton_registry, raw, bytes_encoded), PROTON_OK);
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
 
   // Verify registry values stayed default
   double decoded_double = 0.0;
   size_t len = sizeof(decoded_double);
   proton_status_e status =
-    proton_signal_get_double(&g_proton_registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, &decoded_double);
+    proton_signal_get_double(&registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, &decoded_double);
   ASSERT_EQ(status, PROTON_OK);
   EXPECT_DOUBLE_EQ(decoded_double, 3.14159);
 
   char decoded_string[16] = {'\0'};
   len = sizeof(decoded_string);
   status = proton_signal_get_string(
-    &g_proton_registry, PROTON_SIGNAL_DEFAULT_STRING_ID, decoded_string, sizeof(decoded_string),
-    &len);
+    &registry, PROTON_SIGNAL_DEFAULT_STRING_ID, decoded_string, sizeof(decoded_string), &len);
   ASSERT_EQ(status, PROTON_OK);
   EXPECT_STREQ(decoded_string, "foo");
 
   uint8_t decoded_bytes[3] = {};
   len = sizeof(decoded_bytes);
   status = proton_signal_get_bytes(
-    &g_proton_registry, PROTON_SIGNAL_DEFAULT_BYTES_ID, decoded_bytes, sizeof(decoded_bytes), &len);
+    &registry, PROTON_SIGNAL_DEFAULT_BYTES_ID, decoded_bytes, sizeof(decoded_bytes), &len);
   ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(decoded_bytes[0], 0);
   EXPECT_EQ(decoded_bytes[1], 1);
   EXPECT_EQ(decoded_bytes[2], 2);
+  free(registry.signal_registry);
 }
 
 TEST(EncodeDecode, RoundTripMutatedDoubleValue)
 {
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
   // Mutate the double signal
   double new_value = 2.71828;
   proton_status_e status =
-    proton_signal_set_double(&g_proton_registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, new_value);
+    proton_signal_set_double(&registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, new_value);
   ASSERT_EQ(status, PROTON_OK);
 
   uint8_t raw[BUFFER_SIZE];
@@ -148,23 +166,24 @@ TEST(EncodeDecode, RoundTripMutatedDoubleValue)
 
   ASSERT_EQ(
     proton_encode_bundle(
-      &g_proton_registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, BUFFER_SIZE, &bytes_encoded),
+      &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, BUFFER_SIZE, &bytes_encoded),
     PROTON_OK);
   ASSERT_GT(bytes_encoded, 0u);
 
   // Zero out the signal in the registry before decoding to confirm decode actually writes it
   double zero = 0.0;
-  status = proton_signal_set_double(&g_proton_registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, zero);
+  status = proton_signal_set_double(&registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, zero);
   ASSERT_EQ(status, PROTON_OK);
 
-  ASSERT_EQ(proton_decode(&g_proton_registry, raw, bytes_encoded), PROTON_OK);
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
 
   double decoded = 0.0;
   size_t len = sizeof(decoded);
   proton_signal_type_e type;
-  status = proton_signal_get_double(&g_proton_registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, &decoded);
+  status = proton_signal_get_double(&registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, &decoded);
   ASSERT_EQ(status, PROTON_OK);
   EXPECT_DOUBLE_EQ(decoded, new_value);
+  free(registry.signal_registry);
 }
 
 int main(int argc, char ** argv)
