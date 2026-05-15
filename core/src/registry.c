@@ -183,33 +183,6 @@ static proton_status_e proton_signal_get_buffer(
   return PROTON_OK;
 }
 
-static proton_status_e proton_signal_set_buffer(
-  const proton_registry_t * registry, uint32_t signal_id, pb_size_t expected_tag, const void * data,
-  size_t len)
-{
-  if (registry == NULL || data == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-  size_t idx = 0;
-  signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, &idx);
-  if (desc == NULL)
-  {
-    return PROTON_ERROR;
-  }
-  if (desc->signal.which_signal != expected_tag)
-  {
-    return PROTON_ERROR;
-  }
-  if (registry->signal_max_capacity[idx] < len)
-  {
-    return PROTON_INSUFFICIENT_BUFFER_ERROR;
-  }
-  memcpy(desc->signal.signal.string_value, data, len);
-  desc->value_size = len;
-  return PROTON_OK;
-}
-
 proton_status_e proton_signal_get_string(
   const proton_registry_t * registry, uint32_t signal_id, char * buf, size_t capacity,
   size_t * out_len)
@@ -221,7 +194,27 @@ proton_status_e proton_signal_get_string(
 proton_status_e proton_signal_set_string(
   const proton_registry_t * registry, uint32_t signal_id, const char * str, size_t len)
 {
-  return proton_signal_set_buffer(registry, signal_id, proton_Signal_string_value_tag, str, len);
+  if (registry == NULL || str == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+  size_t idx = 0;
+  signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, &idx);
+  if (desc == NULL)
+  {
+    return PROTON_ERROR;
+  }
+  if (desc->signal.which_signal != proton_Signal_string_value_tag)
+  {
+    return PROTON_ERROR;
+  }
+  if (registry->signal_max_capacity[idx] < len)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+  memcpy(desc->signal.signal.string_value, str, strnlen(str, len));
+  desc->value_size = len;
+  return PROTON_OK;
 }
 
 proton_status_e proton_signal_get_bytes(
@@ -235,5 +228,25 @@ proton_status_e proton_signal_get_bytes(
 proton_status_e proton_signal_set_bytes(
   const proton_registry_t * registry, uint32_t signal_id, const uint8_t * data, size_t len)
 {
-  return proton_signal_set_buffer(registry, signal_id, proton_Signal_bytes_value_tag, data, len);
+  if (registry == NULL || data == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+  size_t idx = 0;
+  signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, &idx);
+  if (desc == NULL)
+  {
+    return PROTON_ERROR;
+  }
+  if (desc->signal.which_signal != proton_Signal_bytes_value_tag)
+  {
+    return PROTON_ERROR;
+  }
+  if (registry->signal_max_capacity[idx] < len)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+  memcpy(desc->signal.signal.string_value, data, len);
+  desc->value_size = len;
+  return PROTON_OK;
 }
