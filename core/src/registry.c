@@ -246,7 +246,7 @@ proton_status_e proton_signal_set_bytes(
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
-  memcpy(desc->signal.signal.string_value, data, len);
+  memcpy(desc->signal.signal.bytes_value, data, len);
   desc->value_size = len;
   return PROTON_OK;
 }

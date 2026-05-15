@@ -55,6 +55,10 @@ bool proton_Signal_callback(
     {
       signal->which_signal = proton_Signal_string_value_tag;
       proton_buffer_t * string_buf = (proton_buffer_t *)signal->signal.string_value;
+      if (string_buf == NULL)
+      {
+        return false;
+      }
       size_t max_capacity = string_buf->len;
       // Check that string is not larger than buffer
       if (len > max_capacity - 1)
@@ -74,6 +78,10 @@ bool proton_Signal_callback(
     {
       signal->which_signal = proton_Signal_bytes_value_tag;
       proton_buffer_t * bytes_buf = (proton_buffer_t *)signal->signal.bytes_value;
+      if (bytes_buf == NULL)
+      {
+        return false;
+      }
       size_t max_capacity = bytes_buf->len;
       // Check that bytes array is not larger than buffer
       if (len > max_capacity)
@@ -94,6 +102,10 @@ bool proton_Signal_callback(
     if (field->tag == proton_Signal_string_value_tag)
     {
       proton_buffer_t * string_buf = (proton_buffer_t *)signal->signal.string_value;
+      if (string_buf == NULL)
+      {
+        return false;
+      }
 
       if (!pb_encode_tag_for_field(ostream, field))
       {
@@ -108,6 +120,11 @@ bool proton_Signal_callback(
     else if (field->tag == proton_Signal_bytes_value_tag)
     {
       proton_buffer_t * bytes_buf = (proton_buffer_t *)signal->signal.bytes_value;
+      if (bytes_buf == NULL)
+      {
+        return false;
+      }
+
       if (!pb_encode_tag_for_field(ostream, field))
       {
         return false;

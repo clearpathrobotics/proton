@@ -26,10 +26,6 @@
 #include "pb_decode.h"
 #include "pb_encode.h"
 
-// Scratch buffer used as a temporary decode target for string/bytes signals
-// TODO manage the size of this buffer at build time
-static uint8_t g_signal_decode_scratch[PROTON_MAX_MESSAGE_SIZE];
-
 /**
  * Callback for encoding a bundle, passing the registry as arg to access bundle ID and signals
  * @param ostream protobuf output stream
@@ -145,8 +141,8 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
     // Decode into a temporary with the scratch buffer pre-set for string/bytes,
     // so proton_Signal_callback has a valid destination without knowing the type yet.
     proton_buffer_t scratch_buf = {
-      .data = g_signal_decode_scratch,
-      .len = sizeof(g_signal_decode_scratch),
+      .data = registry->signal_scratch_buffer,
+      .len = registry->signal_scratch_buffer_size,
     };
     proton_Signal incoming = proton_Signal_init_zero;
     incoming.signal.string_value = &scratch_buf;
@@ -196,7 +192,11 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
           return false;
         }
         size_t capacity = registry->signal_max_capacity[signal_registry_idx];
-        memcpy(decode_buf, g_signal_decode_scratch, capacity);
+        if (scratch_buf.len > capacity)
+        {
+          return false;
+        }
+        memcpy(decode_buf, scratch_buf.data, scratch_buf.len);
         signal->signal.string_value = decode_buf;
         break;
       }
@@ -208,7 +208,11 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
           return false;
         }
         size_t capacity = registry->signal_max_capacity[signal_registry_idx];
-        memcpy(decode_buf, g_signal_decode_scratch, capacity);
+        if (scratch_buf.len > capacity)
+        {
+          return false;
+        }
+        memcpy(decode_buf, scratch_buf.data, scratch_buf.len);
         signal->signal.bytes_value = decode_buf;
         break;
       }

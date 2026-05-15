@@ -128,6 +128,9 @@ extern "C"
     // Space for string/bytes signals
     uint8_t ** signal_decode_buffers;
     size_t signal_count;
+    // Scratch-pad buffer for encoding/decoding string/bytes signals
+    uint8_t * signal_scratch_buffer;
+    size_t signal_scratch_buffer_size;
   } proton_registry_t;
 
   /**

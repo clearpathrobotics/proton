@@ -137,6 +137,10 @@ proton_Signal* g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% endfor %}
 };
 
+// Scratch buffer used as a temporary decode target for string/bytes signals
+// TODO manage the size of this buffer at build time
+static uint8_t g_signal_decode_scratch[1024];
+
 proton_registry_t g_proton_registry = {
   .bundle_table = g_bundle_table,
   .bundle_id_lut = g_bundle_id_lut,
@@ -147,4 +151,6 @@ proton_registry_t g_proton_registry = {
   .signal_max_capacity = g_signal_max_capacity,
   .signal_decode_buffers = g_signal_decode_buffers,
   .signal_count = PROTON_SIGNAL_REGISTRY_SIZE,
+  .signal_scratch_buffer = g_signal_decode_scratch,
+  .signal_scratch_buffer_size = 1024,
 };
