@@ -64,6 +64,23 @@ static bool proton_encode_bundle_cb(
   {
     uint32_t signal_id = bundle_desc->signal_ids.ids[i];
     signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, NULL);
+    proton_Signal signal_msg = proton_Signal_init_zero;
+    signal_msg.id = signal_id;
+    signal_msg.which_signal = desc->signal.which_signal;
+    proton_buffer_t string_buf;
+    if (
+      signal_msg.which_signal == proton_Signal_string_value_tag ||
+      signal_msg.which_signal == proton_Signal_bytes_value_tag)
+    {
+      string_buf.data = (uint8_t *)desc->signal.signal.string_value;
+      string_buf.len = desc->value_size;
+      signal_msg.signal.string_value = &string_buf;
+    }
+    else
+    {
+      memcpy(&signal_msg.signal, &desc->signal.signal, desc->value_size);
+    }
+
     if (desc == NULL)
     {
       return false;
@@ -72,7 +89,7 @@ static bool proton_encode_bundle_cb(
     {
       return false;
     }
-    if (!pb_encode_submessage(ostream, proton_Signal_fields, &desc->signal))
+    if (!pb_encode_submessage(ostream, proton_Signal_fields, &signal_msg))
     {
       return false;
     }
@@ -127,8 +144,12 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
   {
     // Decode into a temporary with the scratch buffer pre-set for string/bytes,
     // so proton_Signal_callback has a valid destination without knowing the type yet.
+    proton_buffer_t scratch_buf = {
+      .data = g_signal_decode_scratch,
+      .len = sizeof(g_signal_decode_scratch),
+    };
     proton_Signal incoming = proton_Signal_init_zero;
-    incoming.signal.string_value = g_signal_decode_scratch;
+    incoming.signal.string_value = &scratch_buf;
     if (!pb_decode_ex(istream, proton_Signal_fields, &incoming, PB_DECODE_NOINIT))
     {
       return false;

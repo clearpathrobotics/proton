@@ -34,8 +34,6 @@ extern "C"
 {
 #endif
 
-#define PROTON_ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-
   typedef enum
   {
     PROTON_INVALID_TYPE = 0,
