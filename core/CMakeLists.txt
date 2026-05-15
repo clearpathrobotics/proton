@@ -72,7 +72,7 @@ function(proton_core_generator GENERATED_FILES GENERATED_FOLDER TARGET)
   add_custom_command(
     OUTPUT ${GENERATED_FILES}
     COMMAND ${CMAKE_COMMAND} -E env
-      PYTHONPATH=${CMAKE_CURRENT_LIST_DIR}/proton_core
+      PYTHONPATH=${CMAKE_CURRENT_LIST_DIR}/generator_scripts
       ${Python3_EXECUTABLE}
       ${PROTON_CORE_GENERATOR}
       ${CONFIG_ARG}
@@ -242,7 +242,7 @@ find_package(GTest REQUIRED)
 # autogen registry for tests
 set(GENERATED_REGISTRY_FILES
   "${GENERATED_FOLDER}/target_registry.c"
-  "${GENERATED_FOLDER}/target_ids.h"
+  "${GENERATED_FOLDER}/target_registry_ids.h"
   "${GENERATED_FOLDER}/target_registry_sizes.h"
 )
 
