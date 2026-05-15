@@ -188,7 +188,7 @@ set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
 add_library(${PROJECT_NAME}
   src/node_manager.c
-  src/proton.c
+  src/encode_decode.c
   src/registry.c
   src/proton_field_callbacks.c
   ${nanopb_SOURCE_DIR}/pb_common.c

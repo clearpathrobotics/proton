@@ -16,7 +16,6 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
-// TODO rename this file to proton.h or similar to prevent naming issues with the other proton.h in protonc
 #ifndef PROTON_ENCODE_DECODE_H
 #define PROTON_ENCODE_DECODE_H
 
@@ -32,16 +31,16 @@ extern "C"
 #endif
 
   /**
- * Encode a bundle from the registry into a Proton top-level message
- */
+   * Encode a bundle from the registry into a Proton top-level message
+   */
   proton_status_e proton_encode_bundle(
     proton_registry_t * registry, uint32_t bundle_id, uint8_t * buffer, size_t buffer_len,
     size_t * bytes_encoded);
 
   /**
- * Decode a Proton message from a buffer
- * If the message is a bundle, the registry will be updated with the decoded signals
- */
+   * Decode a Proton message from a buffer
+   * If the message is a bundle, the registry will be updated with the decoded signals
+   */
   proton_status_e proton_decode(proton_registry_t * registry, uint8_t * buffer, size_t buffer_len);
 
 #ifdef __cplusplus
