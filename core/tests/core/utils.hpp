@@ -41,7 +41,7 @@ extern "C"
 
     // Deep copy bundle callbacks
     proton_bundle_cb_t * bundle_cb_copy =
-      (proton_bundle_cb_t *)malloc(sizeof(proton_bundle_cb_t *) * copy.bundle_count);
+      (proton_bundle_cb_t *)malloc(sizeof(proton_bundle_cb_t) * copy.bundle_count);
     memcpy(
       bundle_cb_copy, original_registry->bundle_callbacks,
       sizeof(proton_bundle_cb_t) * copy.bundle_count);
