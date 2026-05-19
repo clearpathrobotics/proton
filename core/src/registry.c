@@ -179,18 +179,18 @@ static proton_status_e proton_signal_get_buffer(
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
 
-  size_t capacity = desc->value_size;
+  size_t string_capacity = desc->value_size;
   if (expected_tag == proton_Signal_string_value_tag)
   {
-    capacity = strnlen(desc->signal.signal.string_value, desc->value_size);
-    if (capacity < desc->value_size)
+    string_capacity = strnlen(desc->signal.signal.string_value, desc->value_size);
+    if (string_capacity < desc->value_size)
     {
-      capacity += 1;  // Account for null terminator if not present
+      string_capacity += 1;  // Account for null terminator if not present
     }
   }
 
-  memcpy(buf, desc->signal.signal.string_value, capacity);
-  *out_len = capacity;
+  memcpy(buf, desc->signal.signal.string_value, string_capacity);
+  *out_len = string_capacity;
   return PROTON_OK;
 }
 

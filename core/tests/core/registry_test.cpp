@@ -190,6 +190,73 @@ TEST(SignalRegistry, SetBytesExcessiveLength)
   free(registry.signal_registry);
 }
 
+TEST(SignalRegistry, SetStringNotNullTerminated)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  char new_value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY] = {0};
+  memset(new_value, 'a', PROTON_SIGNAL_DEFAULT_STRING_CAPACITY);  // No null terminator
+  proton_status_e status = proton_signal_set_string(
+    &registry, PROTON_SIGNAL_STRING_VALUE_ID, new_value, sizeof(new_value));
+  EXPECT_EQ(status, PROTON_ERROR);
+  free(registry.signal_registry);
+}
+
+TEST(SignalRegistry, SetStringNullTerminatorAtCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  char new_value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY] = {0};
+  memset(new_value, 'a', PROTON_SIGNAL_DEFAULT_STRING_CAPACITY - 1);
+  new_value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY - 1] = '\0';  // Null terminator at capacity
+  proton_status_e status = proton_signal_set_string(
+    &registry, PROTON_SIGNAL_STRING_VALUE_ID, new_value, sizeof(new_value));
+  EXPECT_EQ(status, PROTON_OK);
+  free(registry.signal_registry);
+}
+
+TEST(SignalRegistry, SetGetLongString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  const char * new_value = "ipsumsedolorsitametconsecteturadipiscingeaaa";
+  size_t new_len = strlen(new_value) + 1;
+  proton_status_e status =
+    proton_signal_set_string(&registry, PROTON_SIGNAL_REALLY_LONG_STRING_ID, new_value, new_len);
+  ASSERT_EQ(status, PROTON_OK);
+
+  // Read the value back to verify it was set
+  char value[PROTON_SIGNAL_REALLY_LONG_STRING_CAPACITY] = {0};
+  size_t len = 0;
+  status = proton_signal_get_string(
+    &registry, PROTON_SIGNAL_REALLY_LONG_STRING_ID, value, sizeof(value), &len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, new_len);
+  EXPECT_STREQ(value, new_value);
+  free(registry.signal_registry);
+}
+
+TEST(SignalRegistry, SetGetLongBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  uint8_t new_value[PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY] = {0};
+  for (size_t i = 0; i < PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY; i++)
+  {
+    new_value[i] = (uint8_t)i;
+  }
+  size_t new_len = sizeof(new_value);
+  proton_status_e status =
+    proton_signal_set_bytes(&registry, PROTON_SIGNAL_REALLY_LONG_BYTES_ID, new_value, new_len);
+  ASSERT_EQ(status, PROTON_OK);
+
+  // Read the value back to verify it was set
+  uint8_t value[PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY] = {0};
+  size_t len = 0;
+  status = proton_signal_get_bytes(
+    &registry, PROTON_SIGNAL_REALLY_LONG_BYTES_ID, value, sizeof(value), &len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, new_len);
+  EXPECT_EQ(memcmp(value, new_value, len), 0);
+  free(registry.signal_registry);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);

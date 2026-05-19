@@ -68,7 +68,7 @@ def normalize_signals(signals: list[dict]):
                             f'is less than default value: {len(signal["value"])}'
                         )
                 elif 'string' in signal_type:
-                    if capacity == 0:
+                    if capacity == 0 or capacity == len(signal['value']):
                         signal['capacity'] = len(signal['value']) + 1
                     elif capacity < len(signal['value']):
                         raise RuntimeError(
