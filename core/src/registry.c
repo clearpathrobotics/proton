@@ -178,8 +178,19 @@ static proton_status_e proton_signal_get_buffer(
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
-  memcpy(buf, desc->signal.signal.string_value, desc->value_size);
-  *out_len = desc->value_size;
+
+  size_t capacity = desc->value_size;
+  if (expected_tag == proton_Signal_string_value_tag)
+  {
+    capacity = strnlen(desc->signal.signal.string_value, desc->value_size);
+    if (capacity < desc->value_size)
+    {
+      capacity += 1;  // Account for null terminator if not present
+    }
+  }
+
+  memcpy(buf, desc->signal.signal.string_value, capacity);
+  *out_len = capacity;
   return PROTON_OK;
 }
 
@@ -212,7 +223,18 @@ proton_status_e proton_signal_set_string(
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
-  memcpy(desc->signal.signal.string_value, str, strnlen(str, len));
+
+  size_t capacity = strnlen(str, len);
+  if (capacity == len)
+  {
+    return PROTON_ERROR;  // Input string is not null-terminated within the specified length
+  }
+  else
+  {
+    capacity += 1;  // Account for null terminator
+  }
+
+  memcpy(desc->signal.signal.string_value, str, capacity);
   desc->value_size = len;
   return PROTON_OK;
 }
