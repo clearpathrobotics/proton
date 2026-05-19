@@ -257,6 +257,27 @@ TEST(SignalRegistry, SetGetLongBytes)
   free(registry.signal_registry);
 }
 
+TEST(SignalRegistry, SetGetStringWithDifferentLength)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  const char * new_value = "b";
+  size_t new_len = strlen(new_value) + 1;
+  // Set the string with the correct length
+  proton_status_e status =
+    proton_signal_set_string(&registry, PROTON_SIGNAL_STRING_VALUE_ID, new_value, new_len);
+  ASSERT_EQ(status, PROTON_OK);
+
+  // Read the value back with a smaller buffer and length to verify it is properly truncated
+  char value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY] = {0};
+  size_t len = 0;
+  status =
+    proton_signal_get_string(&registry, PROTON_SIGNAL_STRING_VALUE_ID, value, sizeof(value), &len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, new_len);
+  EXPECT_STREQ(value, new_value);
+  free(registry.signal_registry);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
