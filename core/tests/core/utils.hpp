@@ -40,16 +40,24 @@ extern "C"
     copy.signal_registry = signal_registry_copy;
     return copy;
   }
-
-  void test_bundle_callback(
-    uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids, void * context)
-  {
-    bool * user_arg = (bool *)context;
-    *user_arg = true;
-  }
-
 #ifdef __cplusplus
 }
 #endif
+
+class BundleCallback
+{
+public:
+  BundleCallback() = default;
+  virtual ~BundleCallback() = default;
+
+  virtual void callback(uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids) = 0;
+
+protected:
+  static void bundle_cb(
+    uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids, void * context)
+  {
+    reinterpret_cast<BundleCallback *>(context)->callback(bundle_id, signal_ids, num_ids);
+  }
+};
 
 #endif  // PROTON_CORE_TESTS_CORE_UTILS_HPP
