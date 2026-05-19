@@ -39,8 +39,8 @@ extern "C"
 #define PROTON_CURRENT_UDP_VERSION ((uint8_t)UDP4_VERSION_2)
 
   /**
- * @struct proton_udp4_header_t scaffolding for any future protocol changes that may impact how we encode/decode
- */
+   * @struct proton_udp4_header_t scaffolding for any future protocol changes that may impact how we encode/decode
+   */
   typedef struct proton_udp4_header
   {
     // Use the proton_udp4_version_e enum

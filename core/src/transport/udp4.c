@@ -57,7 +57,7 @@ proton_status_e proton_udp4_check_payload(
     return PROTON_NULL_PTR_ERROR;
   }
 
-  if (payload_len < 4)
+  if (payload_len < sizeof(proton_udp4_header_t))
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
