@@ -237,6 +237,27 @@ TEST(EncodeDecode, SignalSharedBetweenBundles)
   free(registry.signal_registry);
 }
 
+TEST(EncodeDecode, BundleDecodeCallback)
+{
+  bool cb_called = false;
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_registry_set_bundle_callback(
+    &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, test_bundle_callback, (void *)&cb_called);
+
+  uint8_t raw[BUFFER_SIZE];
+  size_t bytes_encoded = 0;
+
+  ASSERT_EQ(
+    proton_encode_bundle(
+      &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
+    PROTON_OK);
+  ASSERT_GT(bytes_encoded, 0);
+
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
+
+  EXPECT_TRUE(cb_called);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);

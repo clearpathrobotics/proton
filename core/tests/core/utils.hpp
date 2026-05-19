@@ -23,17 +23,33 @@
 #include <cstring>
 #include "proton/registry.h"
 
-proton_registry_t copy_default_registry(proton_registry_t * original_registry)
+#ifdef __cplusplus
+extern "C"
 {
-  proton_registry_t copy = *original_registry;
-  // Deep copy the signal registry since we will be modifying signal values in some tests
-  signal_desc_t * signal_registry_copy =
-    (signal_desc_t *)malloc(sizeof(signal_desc_t) * copy.signal_count);
-  memcpy(
-    signal_registry_copy, original_registry->signal_registry,
-    sizeof(signal_desc_t) * copy.signal_count);
-  copy.signal_registry = signal_registry_copy;
-  return copy;
+#endif
+
+  proton_registry_t copy_default_registry(proton_registry_t * original_registry)
+  {
+    proton_registry_t copy = *original_registry;
+    // Deep copy the signal registry since we will be modifying signal values in some tests
+    signal_desc_t * signal_registry_copy =
+      (signal_desc_t *)malloc(sizeof(signal_desc_t) * copy.signal_count);
+    memcpy(
+      signal_registry_copy, original_registry->signal_registry,
+      sizeof(signal_desc_t) * copy.signal_count);
+    copy.signal_registry = signal_registry_copy;
+    return copy;
+  }
+
+  void test_bundle_callback(
+    uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids, void * context)
+  {
+    bool * user_arg = (bool *)context;
+    *user_arg = true;
+  }
+
+#ifdef __cplusplus
 }
+#endif
 
 #endif  // PROTON_CORE_TESTS_CORE_UTILS_HPP
