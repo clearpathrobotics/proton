@@ -124,7 +124,6 @@ extern "C"
     const bundle_desc_t * bundle_table;
     const id_to_index_t * bundle_id_lut;
     proton_bundle_cb_t * bundle_callbacks;
-    void ** bundle_callback_args;
     size_t bundle_count;
 
     // Buffers for encoding/decoding signals per bundle.

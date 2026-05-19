@@ -137,13 +137,9 @@ proton_Signal* g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% endfor %}
 };
 
-void proton_dummy_bundle_callback(uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids, void * context)
-{
-}
-
 proton_bundle_cb_t g_bundle_callbacks[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% for bundle in bundles %}
-  { proton_dummy_bundle_callback, NULL },
+  { NULL, NULL },
 {% endfor %}
 };
 

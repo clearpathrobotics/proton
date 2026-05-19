@@ -38,6 +38,15 @@ extern "C"
       signal_registry_copy, original_registry->signal_registry,
       sizeof(signal_desc_t) * copy.signal_count);
     copy.signal_registry = signal_registry_copy;
+
+    // Deep copy bundle callbacks
+    proton_bundle_cb_t * bundle_cb_copy =
+      (proton_bundle_cb_t *)malloc(sizeof(proton_bundle_cb_t *) * copy.bundle_count);
+    memcpy(
+      bundle_cb_copy, original_registry->bundle_callbacks,
+      sizeof(proton_bundle_cb_t) * copy.bundle_count);
+    copy.bundle_callbacks = bundle_cb_copy;
+
     return copy;
   }
 #ifdef __cplusplus

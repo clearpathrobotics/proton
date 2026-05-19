@@ -31,13 +31,12 @@ extern proton_registry_t g_proton_registry;
 /**
  * @class CheckSignalsInBundleCallback utility class for testing bundle callbacks
  */
-class CheckSignalsInBundleCallback : BundleCallback
+class CheckSignalsInBundleCallback : public BundleCallback
 {
 public:
   CheckSignalsInBundleCallback(uint32_t id, proton_registry * registry) : id_(id), reg_(registry)
   {
-    proton_registry_set_bundle_callback(
-      registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, bundle_cb, this);
+    proton_registry_set_bundle_callback(registry, id, bundle_cb, this);
   }
 
   void callback(uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids) override

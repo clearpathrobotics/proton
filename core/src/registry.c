@@ -89,6 +89,8 @@ proton_bundle_cb_t * proton_registry_get_bundle_callback(
       return &registry->bundle_callbacks[registry->bundle_id_lut[i].idx];
     }
   }
+
+  return NULL;
 }
 
 void proton_registry_set_bundle_callback(
