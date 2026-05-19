@@ -191,6 +191,7 @@ add_library(${PROJECT_NAME}
   src/encode_decode.c
   src/registry.c
   src/proton_field_callbacks.c
+  src/transport/serial.c
   ${nanopb_SOURCE_DIR}/pb_common.c
   ${nanopb_SOURCE_DIR}/pb_decode.c
   ${nanopb_SOURCE_DIR}/pb_encode.c
