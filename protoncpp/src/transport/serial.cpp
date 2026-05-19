@@ -21,6 +21,7 @@
 #include <string.h>
 #include <array>
 #include <vector>
+#include "proton/transport/serial.h"
 
 using namespace proton;
 

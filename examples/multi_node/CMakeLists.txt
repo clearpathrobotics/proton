@@ -62,6 +62,7 @@ add_executable(multi_node_1_c
   multi_node_1.c
   ${GENERATED_FOLDER}/proton__multi_node_node1.c
   ${UTILS_FOLDER}/utils.c
+  ${CMAKE_CURRENT_LIST_DIR}/../../core/src/transport/serial.c
 )
 
 target_link_libraries(multi_node_1_c
@@ -75,6 +76,7 @@ target_include_directories(multi_node_1_c
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
         ${UTILS_FOLDER}
+        ${CMAKE_CURRENT_LIST_DIR}/../../core/include
 )
 
 ## Node 2
@@ -90,6 +92,7 @@ add_executable(multi_node_2_c
   multi_node_2.c
   ${GENERATED_FOLDER}/proton__multi_node_node2.c
   ${UTILS_FOLDER}/utils.c
+  ${CMAKE_CURRENT_LIST_DIR}/../../core/src/transport/serial.c
 )
 
 target_link_libraries(multi_node_2_c
@@ -103,6 +106,7 @@ target_include_directories(multi_node_2_c
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
         ${UTILS_FOLDER}
+        ${CMAKE_CURRENT_LIST_DIR}/../../core/include
 )
 
 ## Node 3
@@ -118,6 +122,7 @@ add_executable(multi_node_3_c
   multi_node_3.c
   ${GENERATED_FOLDER}/proton__multi_node_node3.c
   ${UTILS_FOLDER}/utils.c
+  ${CMAKE_CURRENT_LIST_DIR}/../../core/src/transport/serial.c
 )
 
 target_link_libraries(multi_node_3_c
@@ -131,6 +136,7 @@ target_include_directories(multi_node_3_c
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
         ${UTILS_FOLDER}
+        ${CMAKE_CURRENT_LIST_DIR}/../../core/include
 )
 
 # Install

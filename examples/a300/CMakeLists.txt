@@ -35,6 +35,7 @@ add_executable(a300_mcu_c
   a300_mcu.c
   ${GENERATED_FOLDER}/proton__a300_mcu.c
   ${UTILS_FOLDER}/utils.c
+  ${CMAKE_CURRENT_LIST_DIR}/../../core/src/transport/serial.c
 )
 
 target_link_libraries(a300_mcu_c
@@ -48,6 +49,7 @@ target_include_directories(a300_mcu_c
         ${CMAKE_SOURCE_DIR}/nanopb
         ${GENERATED_FOLDER}
         ${UTILS_FOLDER}
+        ${CMAKE_CURRENT_LIST_DIR}/../../core/include
 )
 
 # Install

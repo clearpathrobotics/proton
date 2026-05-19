@@ -18,6 +18,7 @@
 
 #include "utils.h"
 
+#include "proton/transport/serial.h"
 #include "protonc/proton.h"
 
 /**
