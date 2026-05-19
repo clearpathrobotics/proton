@@ -186,6 +186,57 @@ TEST(EncodeDecode, RoundTripMutatedDoubleValue)
   free(registry.signal_registry);
 }
 
+TEST(EncodeDecode, SignalSharedBetweenBundles)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
+  // Mutate the shared signal
+  int32_t first_value = 42;
+  int32_t second_value = 84;
+  proton_status_e status =
+    proton_signal_set_int32(&registry, PROTON_SIGNAL_SHARED_SIGNAL_ID, first_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  uint8_t raw[BUFFER_SIZE];
+  size_t bytes_encoded = 0;
+
+  // Encode the first bundle that contains the shared signal
+  ASSERT_EQ(
+    proton_encode_bundle(&registry, PROTON_BUNDLE_SHARED_1_ID, raw, BUFFER_SIZE, &bytes_encoded),
+    PROTON_OK);
+  ASSERT_GT(bytes_encoded, 0u);
+
+  // Mutate the shared signal again, so that encoding a second bundle with the same signal will have a different value
+  status = proton_signal_set_int32(&registry, PROTON_SIGNAL_SHARED_SIGNAL_ID, second_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  // Encode a second bundle that contains the second value of the shared signal
+  uint8_t raw2[BUFFER_SIZE];
+  size_t bytes_encoded2 = 0;
+  ASSERT_EQ(
+    proton_encode_bundle(&registry, PROTON_BUNDLE_SHARED_2_ID, raw2, BUFFER_SIZE, &bytes_encoded2),
+    PROTON_OK);
+  ASSERT_GT(bytes_encoded2, 0u);
+
+  // Decode the first bundle and verify that the shared signal is the first value
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
+
+  int32_t decoded = 0;
+  size_t len = sizeof(decoded);
+  status = proton_signal_get_int32(&registry, PROTON_SIGNAL_SHARED_SIGNAL_ID, &decoded);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(decoded, first_value);
+
+  // Decode the second bundle and verify that the shared signal is the second value
+  ASSERT_EQ(proton_decode(&registry, raw2, bytes_encoded2), PROTON_OK);
+
+  status = proton_signal_get_int32(&registry, PROTON_SIGNAL_SHARED_SIGNAL_ID, &decoded);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(decoded, second_value);
+
+  free(registry.signal_registry);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
