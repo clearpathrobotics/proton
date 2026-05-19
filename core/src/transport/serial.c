@@ -50,7 +50,7 @@ static inline proton_status_e proton_crc16(const uint8_t * data, uint16_t len, u
   return PROTON_OK;
 }
 
-proton_status_e proton_fill_frame_header(uint8_t * header, const uint16_t payload_len)
+proton_status_e proton_serial_fill_frame_header(uint8_t * header, const uint16_t payload_len)
 {
   if (!header)
   {
@@ -65,7 +65,7 @@ proton_status_e proton_fill_frame_header(uint8_t * header, const uint16_t payloa
   return PROTON_OK;
 }
 
-proton_status_e proton_fill_crc16(
+proton_status_e proton_serial_fill_crc16(
   const uint8_t * payload, const uint16_t payload_len, uint8_t * crc)
 {
   if (!payload || !crc)
@@ -85,7 +85,7 @@ proton_status_e proton_fill_crc16(
   return status;
 }
 
-proton_status_e proton_check_framed_payload(
+proton_status_e proton_serial_check_framed_payload(
   const uint8_t * payload, const uint16_t payload_len, const uint16_t frame_crc)
 {
   if (!payload)
@@ -105,7 +105,8 @@ proton_status_e proton_check_framed_payload(
   return status;
 }
 
-proton_status_e proton_get_framed_payload_length(const uint8_t * framed_buf, uint16_t * length)
+proton_status_e proton_serial_get_framed_payload_length(
+  const uint8_t * framed_buf, uint16_t * length)
 {
   if (!framed_buf || !length)
   {

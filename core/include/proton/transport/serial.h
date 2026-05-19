@@ -50,7 +50,7 @@ extern "C"
    * @param payload_len Payload length
    * @return proton_status_e return status
    */
-  proton_status_e proton_fill_frame_header(uint8_t * header, const uint16_t payload_len);
+  proton_status_e proton_serial_fill_frame_header(uint8_t * header, const uint16_t payload_len);
 
   /**
    * @brief Fill CRC16 bytes of a serial frame
@@ -60,7 +60,7 @@ extern "C"
    * @param crc Pointer to start of CRC16
    * @return proton_status_e return status
    */
-  proton_status_e proton_fill_crc16(
+  proton_status_e proton_serial_fill_crc16(
     const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
 
   /**
@@ -71,7 +71,7 @@ extern "C"
    * @param frame_crc Received CRC16
    * @return proton_status_e return status
    */
-  proton_status_e proton_check_framed_payload(
+  proton_status_e proton_serial_check_framed_payload(
     const uint8_t * payload, const uint16_t payload_len, const uint16_t frame_crc);
 
   /**
@@ -81,7 +81,8 @@ extern "C"
    * @param length Output length
    * @return proton_status_e return status
    */
-  proton_status_e proton_get_framed_payload_length(const uint8_t * framed_buf, uint16_t * length);
+  proton_status_e proton_serial_get_framed_payload_length(
+    const uint8_t * framed_buf, uint16_t * length);
 
 #ifdef __cplusplus
 }
