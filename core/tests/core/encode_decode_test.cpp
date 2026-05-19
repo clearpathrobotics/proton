@@ -287,6 +287,7 @@ TEST(EncodeDecode, BundleDecodeCallback)
   ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
 
   EXPECT_TRUE(check_cb.cb_called_);
+  free(registry.signal_registry);
 }
 
 TEST(EncodeDecode, NoCallbackForBadDecode)
@@ -306,6 +307,7 @@ TEST(EncodeDecode, NoCallbackForBadDecode)
 
   EXPECT_EQ(proton_decode(&registry, raw, bytes_encoded / 2), PROTON_SERIALIZATION_ERROR);
   EXPECT_FALSE(check_cb.cb_called_);
+  free(registry.signal_registry);
 }
 
 int main(int argc, char ** argv)
