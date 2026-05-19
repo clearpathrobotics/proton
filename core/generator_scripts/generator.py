@@ -25,8 +25,9 @@ from pathlib import Path
 from config import validate_ids
 from jinja2 import Template
 from normalize import (
+    normalize_signals,
     set_node_endpoint_address,
-    set_signal_properties,
+    set_producer_consumer_ids,
 )
 import yaml
 
@@ -81,7 +82,11 @@ def generate(
     template = Template(template_content)
 
     output = template.render(
-        name=name, target=target, nodes=config['nodes'], bundles=config['bundles']
+        name=name,
+        target=target,
+        nodes=config['nodes'],
+        bundles=config['bundles'],
+        signals=config['signals'],
     )
 
     dest_path.mkdir(parents=True, exist_ok=True)
@@ -119,27 +124,43 @@ def main():
     config_path = args.config
     dest_path = Path(args.destination)
     target = args.target
-    name = Path(config_path).stem
+    name = ''
 
-    config = load_config(config_path)
+    config = {'nodes': [], 'bundles': [], 'signals': []}
+    if config_path is not None:
+        config = load_config(config_path)
+        config['bundles'] = sorted(config['bundles'], key=lambda x: x['id'])
+        config['signals'] = sorted(config['signals'], key=lambda x: x['id'])
+        for i, signal in enumerate(config['signals']):
+            signal['registry_index'] = i
+        name = Path(config_path).stem
 
     # validate node config here
-    validate_ids(config['bundles'])
+    validate_ids(config['signals'], 'signals')
     set_node_endpoint_address(config['nodes'])
-    set_signal_properties(config['bundles'])
+    normalize_signals(config['signals'])
+    set_producer_consumer_ids(config['bundles'], config['nodes'])
 
     generate(
         dest_path,
-        f'proton__{name}_{target}.h',
-        'proton__header_node.h.jinja',
+        'target_registry_ids.h',
+        'target_registry_ids.h.jinja',
         config,
         name,
         target,
     )
     generate(
         dest_path,
-        f'proton__{name}_{target}.c',
-        'proton__source_node.c.jinja',
+        'target_registry_sizes.h',
+        'target_registry_sizes.h.jinja',
+        config,
+        name,
+        target,
+    )
+    generate(
+        dest_path,
+        'target_registry.c',
+        'target_registry.c.jinja',
         config,
         name,
         target,

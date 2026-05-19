@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package proton;
+
+import "bundle.proto";
+import "nanopb.proto";
+
+// Top level proton message, all possible proton functionalities are contained in here.
+message Proton {
+  option (nanopb_msgopt).submsg_callback = true;
+  oneof operation {
+    Bundle bundle = 1;
+    // Reserved for future operation types
+  }
+}
