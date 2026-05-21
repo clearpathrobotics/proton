@@ -16,4 +16,22 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
-#include "proton/node_manager.h"
+#ifndef PROTON_NODE_MANAGER_H
+#define PROTON_NODE_MANAGER_H
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "proton/common.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // PROTON_NODE_MANAGER_H
