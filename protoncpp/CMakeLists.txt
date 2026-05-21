@@ -96,6 +96,7 @@ add_library(protoncpp
   src/bundle_manager.cpp
   src/transport/udp4.cpp
   src/transport/serial.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/../core/src/transport/serial.c
   ${GENERATED_SRCS}
   ${GENERATED_HEADERS}
 )
@@ -107,6 +108,7 @@ target_include_directories(protoncpp
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${PROTON_INCLUDE_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/../core/include>
       ${PROTOBUF_INCLUDE_DIRS}
       $<INSTALL_INTERFACE:include>
 )

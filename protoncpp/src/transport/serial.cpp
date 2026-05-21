@@ -21,6 +21,7 @@
 #include <string.h>
 #include <array>
 #include <vector>
+#include "proton/transport/serial.h"
 
 using namespace proton;
 
@@ -68,14 +69,14 @@ std::optional<std::vector<uint8_t>> SerialTransport::buildPacket(
 
   std::vector<uint8_t> packet(len + FRAME_OVERHEAD);
   // Fill header
-  if (proton_fill_frame_header(packet.data(), len) != PROTON_OK)
+  if (proton_serial_fill_frame_header(packet.data(), len) != PROTON_OK)
   {
     return std::nullopt;
   }
   // Insert payload
   std::copy(buf, buf + len, packet.data() + HEADER_OVERHEAD);
   // Fill CRC16
-  if (proton_fill_crc16(buf, len, packet.data() + HEADER_OVERHEAD + len) != PROTON_OK)
+  if (proton_serial_fill_crc16(buf, len, packet.data() + HEADER_OVERHEAD + len) != PROTON_OK)
   {
     return std::nullopt;
   }
@@ -154,7 +155,7 @@ proton_status_e SerialTransport::read(uint8_t * buf, const size_t & len, size_t 
 
   bytes_read += HEADER_OVERHEAD;
 
-  if (proton_get_framed_payload_length(header.data(), &payload_len) != PROTON_OK)
+  if (proton_serial_get_framed_payload_length(header.data(), &payload_len) != PROTON_OK)
   {
     return PROTON_INVALID_HEADER_ERROR;
   }
@@ -195,6 +196,6 @@ proton_status_e SerialTransport::read(uint8_t * buf, const size_t & len, size_t 
   bytes_read += CRC16_OVERHEAD;
 
   // Check that CRC16 matches
-  return proton_check_framed_payload(
+  return proton_serial_check_framed_payload(
     buf, payload_len, static_cast<uint16_t>(crc[0] | (crc[1] << 8)));
 }

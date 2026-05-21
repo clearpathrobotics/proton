@@ -18,6 +18,7 @@
 
 #include "utils.h"
 
+#include "proton/transport/serial.h"
 #include "protonc/proton.h"
 
 /**
@@ -140,7 +141,7 @@ size_t serial_read(int serial_port, uint8_t * buf, size_t len)
 
   // Get payload length from header
   uint16_t payload_len;
-  if (proton_get_framed_payload_length(buf, &payload_len) != PROTON_OK)
+  if (proton_serial_get_framed_payload_length(buf, &payload_len) != PROTON_OK)
   {
     return 0;
   }
@@ -166,7 +167,8 @@ size_t serial_read(int serial_port, uint8_t * buf, size_t len)
   // Check for valid CRC16
   if (
     ret != PROTON_FRAME_CRC_OVERHEAD ||
-    proton_check_framed_payload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))) != PROTON_OK)
+    proton_serial_check_framed_payload(buf, payload_len, (uint16_t)(crc[0] | (crc[1] << 8))) !=
+      PROTON_OK)
   {
     return 0;
   }
@@ -179,12 +181,12 @@ size_t serial_write(int serial_port, const uint8_t * buf, size_t len)
   uint8_t header[4];
   uint8_t crc[2];
 
-  if (proton_fill_frame_header(header, len) != PROTON_OK)
+  if (proton_serial_fill_frame_header(header, len) != PROTON_OK)
   {
     return 0;
   }
 
-  if (proton_fill_crc16(buf, len, crc) != PROTON_OK)
+  if (proton_serial_fill_crc16(buf, len, crc) != PROTON_OK)
   {
     return 0;
   }
