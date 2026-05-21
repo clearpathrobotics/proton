@@ -63,7 +63,58 @@ proton_status_e proton_node_receive(proton_core_node_t * node, const uint8_t * b
 }
 
 proton_status_e proton_node_update(
-  proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t * out_len,
-  proton_endpoint_t * dest_peers, size_t num_dest_peers, size_t * num_selected_peers)
+  proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,
+  size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
+  size_t * num_selected_peers)
 {
+  if (
+    node == NULL || node->registry == NULL || buffer == NULL || out_len == NULL ||
+    dest_peers == NULL || num_dest_peers == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  uint32_t bundle_to_send = 0;
+  uint64_t oldest_timestamp = UINT64_MAX;
+  bool send_now_flag = false;
+  size_t slot_id = 0;
+  for (size_t i = 0; i < node->registry->bundle_count; i++)
+  {
+    // Prioritize in the following manner:
+    // 1. Bundles marked to be sent now, prioritize the oldest send time
+    // 2. If no send-now flags, send the oldest bundle
+    bundle_desc_t * bundle_desc = &node->registry->bundle_table[i];
+    // If this is our first send-now flag, the priority timestamp becomes the send-now timestamp
+    if (bundle_desc->send_now)
+    {
+      if (!send_now_flag)
+      {
+        send_now_flag = true;
+        bundle_to_send = bundle_desc->bundle_id;
+        oldest_timestamp = bundle_desc->last_send_ms;
+        slot_id = i;
+      }
+      else if (bundle_desc->last_send_ms <= oldest_timestamp)
+      {
+        bundle_to_send = bundle_desc->bundle_id;
+        oldest_timestamp = bundle_desc->last_send_ms;
+        slot_id = i;
+      }
+    }
+    else if (!send_now_flag)
+    {
+      if (bundle_desc->last_send_ms <= oldest_timestamp)
+      {
+        bundle_to_send = bundle_desc->bundle_id;
+        oldest_timestamp = bundle_desc->last_send_ms;
+        slot_id = i;
+      }
+    }
+  }
+
+  // We have our priority bundle, encode it
+  bundle_desc_t * priority_bundle = &node->registry->bundle_table[slot_id];
+  // Need to edit bundle_desc to support endpoint ID's
+
+  return proton_encode_bundle(node->registry, bundle_to_send, buffer, buffer_len, out_len);
 }

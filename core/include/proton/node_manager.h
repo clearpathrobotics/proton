@@ -56,8 +56,9 @@ extern "C"
 
   // Output buffer here is also non-framed, but does specify which peers to send the buffer to
   proton_status_e proton_node_update(
-    proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t * out_len,
-    proton_endpoint_t * dest_peers, size_t num_dest_peers, size_t * num_selected_peers);
+    proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,
+    size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
+    size_t * num_selected_peers);
 
 #ifdef __cplusplus
 }
