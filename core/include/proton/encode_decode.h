@@ -41,7 +41,9 @@ extern "C"
    * Decode a Proton message from a buffer
    * If the message is a bundle, the registry will be updated with the decoded signals
    */
-  proton_status_e proton_decode(proton_registry_t * registry, uint8_t * buffer, size_t buffer_len);
+  proton_status_e proton_decode(
+    proton_registry_t * registry, const uint8_t * buffer, size_t buffer_len,
+    proton_Proton * decoded_msg);
 
 #ifdef __cplusplus
 }

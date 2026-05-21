@@ -47,15 +47,16 @@ extern "C"
     proton_endpoint_t * destination_peers;
     size_t num_peers;
     proton_registry_t * registry;
-  } proton_node_t;
+  } proton_core_node_t;  // TODO change to proton_node_t as part of protonc deprecation
 
   // Buffer here is post-transport-de-payloading. Presumably the user is handling where the data comes from, and
   // can de-payload it themselves using proton's framing API
-  proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buf, size_t len);
+  proton_status_e proton_node_receive(
+    proton_core_node_t * node, const uint8_t * buffer, size_t len);
 
   // Output buffer here is also non-framed, but does specify which peers to send the buffer to
   proton_status_e proton_node_update(
-    proton_node_t * node, uint64_t uptime_ms, uint8_t * buf, size_t * out_len,
+    proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t * out_len,
     proton_endpoint_t * dest_peers, size_t num_dest_peers, size_t * num_selected_peers);
 
 #ifdef __cplusplus
