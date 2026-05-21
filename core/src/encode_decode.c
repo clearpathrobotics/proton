@@ -367,6 +367,15 @@ proton_status_e proton_decode(proton_registry_t * registry, uint8_t * buffer, si
 
   if (stream.bytes_left == 0)
   {
+    proton_bundle_cb_t * callback =
+      proton_registry_get_bundle_callback(registry, bundle_desc->bundle_id);
+
+    if (callback != NULL && callback->cb != NULL)
+    {
+      callback->cb(
+        bundle_desc->bundle_id, bundle_desc->signal_ids.ids, bundle_desc->signal_ids.count,
+        callback->arg);
+    }
     return PROTON_OK;
   }
   else

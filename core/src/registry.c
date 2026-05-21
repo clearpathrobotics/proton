@@ -79,6 +79,33 @@ proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
   return NULL;
 }
 
+proton_bundle_cb_t * proton_registry_get_bundle_callback(
+  const proton_registry_t * registry, uint32_t bundle_id)
+{
+  for (size_t i = 0; i < registry->bundle_count; i++)
+  {
+    if (registry->bundle_id_lut[i].id == bundle_id)
+    {
+      return &registry->bundle_callbacks[registry->bundle_id_lut[i].idx];
+    }
+  }
+
+  return NULL;
+}
+
+void proton_registry_set_bundle_callback(
+  proton_registry_t * registry, uint32_t bundle_id, proton_bundle_cb_f bundle_cb, void * context)
+{
+  for (size_t i = 0; i < registry->bundle_count; i++)
+  {
+    if (registry->bundle_id_lut[i].id == bundle_id)
+    {
+      registry->bundle_callbacks[registry->bundle_id_lut[i].idx].cb = bundle_cb;
+      registry->bundle_callbacks[registry->bundle_id_lut[i].idx].arg = context;
+    }
+  }
+}
+
 signal_desc_t * proton_registry_get_signal(
   const proton_registry_t * registry, uint32_t signal_id, size_t * registry_idx)
 {

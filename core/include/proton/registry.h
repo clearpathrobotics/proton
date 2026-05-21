@@ -34,6 +34,18 @@ extern "C"
 {
 #endif
 
+  /**
+   * @typedef proton bundle callback, called when a bundle is successfully decoded
+   * parameters are: bundle ID, array of signal ID's associated with bundle, void* for user context
+   */
+  typedef void (*proton_bundle_cb_f)(uint32_t, const uint32_t *, size_t, void *);
+
+  typedef struct proton_bundle_cb
+  {
+    proton_bundle_cb_f cb;
+    void * arg;
+  } proton_bundle_cb_t;
+
   typedef enum
   {
     PROTON_INVALID_TYPE = 0,
@@ -111,6 +123,7 @@ extern "C"
     // Since the bundle IDs are not contiguous, the bundle_id_lut is used to find the index of a bundle descriptor
     const bundle_desc_t * bundle_table;
     const id_to_index_t * bundle_id_lut;
+    proton_bundle_cb_t * bundle_callbacks;
     size_t bundle_count;
 
     // Buffers for encoding/decoding signals per bundle.
@@ -147,6 +160,18 @@ extern "C"
    */
   proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
     const proton_registry_t * registry, uint32_t bundle_id);
+
+  /**
+   * Get the callback for a bundle
+   */
+  proton_bundle_cb_t * proton_registry_get_bundle_callback(
+    const proton_registry_t * registry, uint32_t bundle_id);
+
+  /**
+   * Set the callback for a successful bundle decode
+   */
+  void proton_registry_set_bundle_callback(
+    proton_registry_t * registry, uint32_t bundle_id, proton_bundle_cb_f bundle_cb, void * context);
 
   /**
    * Get the signal from a registry by ID

@@ -28,6 +28,37 @@ static constexpr size_t BUFFER_SIZE = 1024;
 
 extern proton_registry_t g_proton_registry;
 
+/**
+ * @class CheckSignalsInBundleCallback utility class for testing bundle callbacks
+ */
+class CheckSignalsInBundleCallback : public BundleCallback
+{
+public:
+  CheckSignalsInBundleCallback(uint32_t id, proton_registry * registry) : id_(id), reg_(registry)
+  {
+    proton_registry_set_bundle_callback(registry, id, bundle_cb, this);
+  }
+
+  void callback(uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids) override
+  {
+    EXPECT_EQ(bundle_id, id_);
+    cb_called_ = true;
+
+    const bundle_desc_t * desc = proton_registry_get_bundle(reg_, id_, NULL);
+
+    for (size_t i = 0; i < num_ids; i++)
+    {
+      EXPECT_EQ(signal_ids[i], desc->signal_ids.ids[i]);
+    }
+  }
+
+  bool cb_called_{false};
+
+private:
+  uint32_t id_;
+  proton_registry * reg_;
+};
+
 // -----------------------------------------------------------------------
 // Encode
 // -----------------------------------------------------------------------
@@ -234,6 +265,47 @@ TEST(EncodeDecode, SignalSharedBetweenBundles)
   ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(decoded, second_value);
 
+  free(registry.signal_registry);
+}
+
+TEST(EncodeDecode, BundleDecodeCallback)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
+  auto check_cb = CheckSignalsInBundleCallback(PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, &registry);
+
+  uint8_t raw[BUFFER_SIZE];
+  size_t bytes_encoded = 0;
+
+  ASSERT_EQ(
+    proton_encode_bundle(
+      &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
+    PROTON_OK);
+  ASSERT_GT(bytes_encoded, 0);
+
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
+
+  EXPECT_TRUE(check_cb.cb_called_);
+  free(registry.signal_registry);
+}
+
+TEST(EncodeDecode, NoCallbackForBadDecode)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
+  auto check_cb = CheckSignalsInBundleCallback(PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, &registry);
+
+  uint8_t raw[BUFFER_SIZE];
+  size_t bytes_encoded = 0;
+
+  ASSERT_EQ(
+    proton_encode_bundle(
+      &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
+    PROTON_OK);
+  ASSERT_GT(bytes_encoded, 0);
+
+  EXPECT_EQ(proton_decode(&registry, raw, bytes_encoded / 2), PROTON_SERIALIZATION_ERROR);
+  EXPECT_FALSE(check_cb.cb_called_);
   free(registry.signal_registry);
 }
 

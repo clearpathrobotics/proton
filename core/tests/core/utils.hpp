@@ -23,17 +23,50 @@
 #include <cstring>
 #include "proton/registry.h"
 
-proton_registry_t copy_default_registry(proton_registry_t * original_registry)
+#ifdef __cplusplus
+extern "C"
 {
-  proton_registry_t copy = *original_registry;
-  // Deep copy the signal registry since we will be modifying signal values in some tests
-  signal_desc_t * signal_registry_copy =
-    (signal_desc_t *)malloc(sizeof(signal_desc_t) * copy.signal_count);
-  memcpy(
-    signal_registry_copy, original_registry->signal_registry,
-    sizeof(signal_desc_t) * copy.signal_count);
-  copy.signal_registry = signal_registry_copy;
-  return copy;
+#endif
+
+  proton_registry_t copy_default_registry(proton_registry_t * original_registry)
+  {
+    proton_registry_t copy = *original_registry;
+    // Deep copy the signal registry since we will be modifying signal values in some tests
+    signal_desc_t * signal_registry_copy =
+      (signal_desc_t *)malloc(sizeof(signal_desc_t) * copy.signal_count);
+    memcpy(
+      signal_registry_copy, original_registry->signal_registry,
+      sizeof(signal_desc_t) * copy.signal_count);
+    copy.signal_registry = signal_registry_copy;
+
+    // Deep copy bundle callbacks
+    proton_bundle_cb_t * bundle_cb_copy =
+      (proton_bundle_cb_t *)malloc(sizeof(proton_bundle_cb_t) * copy.bundle_count);
+    memcpy(
+      bundle_cb_copy, original_registry->bundle_callbacks,
+      sizeof(proton_bundle_cb_t) * copy.bundle_count);
+    copy.bundle_callbacks = bundle_cb_copy;
+
+    return copy;
+  }
+#ifdef __cplusplus
 }
+#endif
+
+class BundleCallback
+{
+public:
+  BundleCallback() = default;
+  virtual ~BundleCallback() = default;
+
+  virtual void callback(uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids) = 0;
+
+protected:
+  static void bundle_cb(
+    uint32_t bundle_id, const uint32_t * signal_ids, size_t num_ids, void * context)
+  {
+    reinterpret_cast<BundleCallback *>(context)->callback(bundle_id, signal_ids, num_ids);
+  }
+};
 
 #endif  // PROTON_CORE_TESTS_CORE_UTILS_HPP
