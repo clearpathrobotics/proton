@@ -32,24 +32,31 @@ extern "C"
 {
 #endif
 
-  typedef struct proton_peer
+  typedef struct proton_endpoint
   {
     uint32_t id;
     proton_transport_type_e transport_type;
-  } proton_peer_t;
+    // It appears that nodes don't have ID's but their endpoints do
+    // the endpoint ID's are not globally unique
+    const char * node_name;
+  } proton_endpoint_t;
 
   typedef struct proton_node
   {
     uint32_t id;
-    proton_peer_t * peers;
+    proton_endpoint_t * destination_peers;
     size_t num_peers;
     proton_registry_t * registry;
   } proton_node_t;
 
+  // Buffer here is post-transport-de-payloading. Presumably the user is handling where the data comes from, and
+  // can de-payload it themselves using proton's framing API
   proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buf, size_t len);
+
+  // Output buffer here is also non-framed, but does specify which peers to send the buffer to
   proton_status_e proton_node_update(
     proton_node_t * node, uint64_t uptime_ms, uint8_t * buf, size_t * out_len,
-    proton_peer_t * dest_peer);
+    proton_endpoint_t * dest_peers, size_t num_dest_peers, size_t * num_selected_peers);
 
 #ifdef __cplusplus
 }
