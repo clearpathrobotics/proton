@@ -97,6 +97,7 @@ extern "C"
     proton_id_list_t producer_ids;
     proton_id_list_t consumer_ids;
     proton_id_list_t signal_ids;
+    bool send_now;
   } bundle_desc_t;
 
   /**
@@ -121,7 +122,7 @@ extern "C"
     // Bundle metadata and state
     // bundle_table is the table of all bundle descriptors
     // Since the bundle IDs are not contiguous, the bundle_id_lut is used to find the index of a bundle descriptor
-    const bundle_desc_t * bundle_table;
+    bundle_desc_t * bundle_table;
     const id_to_index_t * bundle_id_lut;
     proton_bundle_cb_t * bundle_callbacks;
     size_t bundle_count;
@@ -172,6 +173,11 @@ extern "C"
    */
   void proton_registry_set_bundle_callback(
     proton_registry_t * registry, uint32_t bundle_id, proton_bundle_cb_f bundle_cb, void * context);
+
+  /**
+   * Set a bundle to be sent at next node update
+   */
+  void proton_registry_trigger_bundle(proton_registry_t * registry, uint32_t bundle_id);
 
   /**
    * Get the signal from a registry by ID
