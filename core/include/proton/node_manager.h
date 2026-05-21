@@ -24,11 +24,32 @@
 #include <stdint.h>
 
 #include "proton/common.h"
+#include "proton/registry.h"
+#include "proton/transport.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+  typedef struct proton_peer
+  {
+    uint32_t id;
+    proton_transport_type_e transport_type;
+  } proton_peer_t;
+
+  typedef struct proton_node
+  {
+    uint32_t id;
+    proton_peer_t * peers;
+    size_t num_peers;
+    proton_registry_t * registry;
+  } proton_node_t;
+
+  proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buf, size_t len);
+  proton_status_e proton_node_update(
+    proton_node_t * node, uint64_t uptime_ms, uint8_t * buf, size_t * out_len,
+    proton_peer_t * dest_peer);
 
 #ifdef __cplusplus
 }
