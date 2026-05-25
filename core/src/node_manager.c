@@ -74,6 +74,8 @@ proton_status_e proton_node_update(
     return PROTON_NULL_PTR_ERROR;
   }
 
+  bool something_to_send = false;
+
   uint32_t bundle_to_send = 0;
   uint64_t oldest_timestamp = UINT64_MAX;
   bool send_now_flag = false;
@@ -93,12 +95,14 @@ proton_status_e proton_node_update(
         bundle_to_send = bundle_desc->bundle_id;
         oldest_timestamp = bundle_desc->last_send_ms;
         slot_id = i;
+        something_to_send = true;
       }
       else if (bundle_desc->last_send_ms <= oldest_timestamp)
       {
         bundle_to_send = bundle_desc->bundle_id;
         oldest_timestamp = bundle_desc->last_send_ms;
         slot_id = i;
+        something_to_send = true;
       }
     }
     else if (!send_now_flag)
@@ -108,37 +112,45 @@ proton_status_e proton_node_update(
         bundle_to_send = bundle_desc->bundle_id;
         oldest_timestamp = bundle_desc->last_send_ms;
         slot_id = i;
+        something_to_send = true;
       }
     }
   }
 
-  // We have our priority bundle, encode it
-  bundle_desc_t * priority_bundle = &node->registry->bundle_table[slot_id];
-  // Need to edit bundle_desc to support endpoint ID's
-  priority_bundle->send_now = false;
-  priority_bundle->last_send_ms = uptime_ms;
-
-  // Check the target endpoint buffer is big enough for the endpoints for this bundle
-  if (priority_bundle->consumer_ids.count > num_dest_peers)
+  if (something_to_send)
   {
-    return PROTON_INSUFFICIENT_BUFFER_ERROR;
-  }
+    // We have our priority bundle, encode it
+    bundle_desc_t * priority_bundle = &node->registry->bundle_table[slot_id];
+    // Need to edit bundle_desc to support endpoint ID's
+    priority_bundle->send_now = false;
+    priority_bundle->last_send_ms = uptime_ms;
 
-  for (size_t i = 0; i < priority_bundle->consumer_ids.count; i++)
-  {
-    proton_endpoint_t * ep = &dest_peers[i];
-    for (size_t j = 0; j < node->num_peers; j++)
+    // Check the target endpoint buffer is big enough for the endpoints for this bundle
+    if (priority_bundle->consumer_ids.count > num_dest_peers)
     {
-      if (priority_bundle->consumer_ids.ids[i] == node->destination_peers[j].node_id)
+      return PROTON_INSUFFICIENT_BUFFER_ERROR;
+    }
+
+    size_t dest_idx = 0;
+    for (size_t i = 0; i < priority_bundle->consumer_ids.count; i++)
+    {
+      for (size_t j = 0; j < node->num_peers; j++)
       {
-        ep->node_id = priority_bundle->consumer_ids.ids[i];
-        ep->transport_type = node->destination_peers[j].transport_type;
-        ep->endpoint_id = node->destination_peers[j].endpoint_id;
-        break;
+        if (priority_bundle->consumer_ids.ids[i] == node->destination_peers[j].node_id)
+        {
+          proton_endpoint_t * ep = &dest_peers[dest_idx];
+          ep->node_id = priority_bundle->consumer_ids.ids[i];
+          ep->transport_type = node->destination_peers[j].transport_type;
+          ep->endpoint_id = node->destination_peers[j].endpoint_id;
+          dest_idx++;
+          break;
+        }
       }
     }
-  }
-  *num_selected_peers = priority_bundle->consumer_ids.count;
+    *num_selected_peers = priority_bundle->consumer_ids.count;
 
-  return proton_encode_bundle(node->registry, bundle_to_send, buffer, buffer_len, out_len);
+    return proton_encode_bundle(node->registry, bundle_to_send, buffer, buffer_len, out_len);
+  }
+
+  return PROTON_OK;
 }

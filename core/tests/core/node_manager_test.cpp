@@ -28,6 +28,7 @@
 static constexpr size_t BUFFER_SIZE = 1024;
 
 extern proton_registry_t g_proton_registry;
+extern proton_core_node_t g_target_node;
 
 // -----------------------------------------------------------------------
 // Test fixture
@@ -47,12 +48,8 @@ protected:
       g_proton_registry.bundle_table[i].send_now = false;
     }
     registry_ = copy_default_registry(&g_proton_registry);
-    node_ = {
-      .id = PROTON_NODE_PRODUCER_ID,
-      .destination_peers = nullptr,
-      .num_peers = 0,
-      .registry = &registry_,
-    };
+    node_ = copy_default_node(&g_target_node);
+    node_.registry = &registry_;
   }
 
   void TearDown() override
@@ -253,6 +250,8 @@ TEST_F(NodeManagerTest, Update_EncodesBundle_PopulatesOutputs)
   size_t out_len = 0;
   proton_endpoint_t dest[1];
   size_t num_peers = 0;
+
+  proton_registry_trigger_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID);
 
   ASSERT_EQ(
     proton_node_update(&node_, 1000, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);

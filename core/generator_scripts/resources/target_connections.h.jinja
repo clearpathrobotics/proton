@@ -31,7 +31,7 @@ extern "C" {
 {% for node in nodes %}
 #define PROTON_NODE_{{ node.name | upper }}_NAME "{{ node.name }}"
 #define PROTON_NODE_{{ node.name | upper }}_NAME_LEN {{ node.name | length }}
-#define PROTON_NODE_{{ node.name | upper }}_ID {{ loop.index0 }}
+#define PROTON_NODE_{{ node.name | upper }}_ID {{ node.id }}
 #define PROTON_NODE_{{ node.name | upper }}_NUM_CONNECTIONS {{ node.connections | length }}
 {% for ep in node.endpoints %}
 #define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_ID {{ ep.id }}

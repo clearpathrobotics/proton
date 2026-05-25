@@ -43,7 +43,7 @@ TEST(NodeManagerTest, BundleForMultipleNodes)
 
   ASSERT_EQ(
     proton_node_update(
-      &g_target_node, BUFFER_SIZE, buf, sizeof(buf), &out_len, dest, num_endpoints, &num_peers),
+      &g_target_node, 1000, buf, sizeof(buf), &out_len, dest, num_endpoints, &num_peers),
     PROTON_OK);
 
   EXPECT_GT(out_len, 0);
