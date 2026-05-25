@@ -318,8 +318,24 @@ target_include_directories(udp4_transport_test PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
 )
 
+add_executable(node_manager_test
+  tests/core/node_manager_test.cpp
+  ${GENERATED_REGISTRY_FILES}
+)
+
+target_link_libraries(node_manager_test PUBLIC
+  GTest::gtest_main
+  proton::proton_core
+)
+
+target_include_directories(node_manager_test PUBLIC
+  ${GENERATED_FOLDER}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+)
+
 include(GoogleTest)
 gtest_discover_tests(registry_test)
 gtest_discover_tests(encode_decode_test)
 gtest_discover_tests(serial_transport_test)
 gtest_discover_tests(udp4_transport_test)
+gtest_discover_tests(node_manager_test)
