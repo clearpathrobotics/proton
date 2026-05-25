@@ -34,11 +34,12 @@ extern "C"
 
   typedef struct proton_endpoint
   {
-    uint32_t id;
-    proton_transport_type_e transport_type;
     // It appears that nodes don't have ID's but their endpoints do
     // the endpoint ID's are not globally unique
-    const char * node_name;
+    // To create a unique identifier for the node/endpoint combination, this is done with an
+    // ID that is the index of the node in the nodes stanza, with the LSB being set with the endpoint ID
+    uint32_t id;
+    proton_transport_type_e transport_type;
   } proton_endpoint_t;
 
   typedef struct proton_node

@@ -115,6 +115,29 @@ proton_status_e proton_node_update(
   // We have our priority bundle, encode it
   bundle_desc_t * priority_bundle = &node->registry->bundle_table[slot_id];
   // Need to edit bundle_desc to support endpoint ID's
+  priority_bundle->send_now = false;
+  priority_bundle->last_send_ms = uptime_ms;
+
+  // Check the target endpoint buffer is big enough for the endpoints for this bundle
+  if (priority_bundle->consumer_ids.count > num_dest_peers)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+
+  for (size_t i = 0; i < priority_bundle->consumer_ids.count; i++)
+  {
+    proton_endpoint_t * ep = &dest_peers[i];
+    ep->id = priority_bundle->consumer_ids.ids[i];
+    for (size_t j = 0; j < node->num_peers; j++)
+    {
+      if (priority_bundle->consumer_ids.ids[i] == node->destination_peers[j].id)
+      {
+        ep->transport_type = node->destination_peers[j].transport_type;
+        break;
+      }
+    }
+  }
+  *num_selected_peers = priority_bundle->consumer_ids.count;
 
   return proton_encode_bundle(node->registry, bundle_to_send, buffer, buffer_len, out_len);
 }
