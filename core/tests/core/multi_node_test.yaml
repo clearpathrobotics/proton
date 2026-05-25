@@ -1,0 +1,62 @@
+nodes:
+  - name: node1
+    id: 1
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11417
+      - id: 1
+        type: serial
+        device: /tmp/ttyNode1
+  - name: node2
+    id: 2
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11416
+      - id: 1
+        type: udp4
+        ip: 127.0.0.1
+        port: 11418
+  - name: node3
+    id: 3
+    endpoints:
+      - id: 0
+        type: serial
+        device: /tmp/ttyNode3
+      - id: 1
+        type: udp4
+        ip: 127.0.0.1
+        port: 11419
+
+connections:
+  - first: {node: node1, id: 0}
+    second: {node: node2, id: 0}
+  - first: {node: node1, id: 1}
+    second: {node: node3, id: 0}
+  - first: {node: node2, id: 1}
+    second: {node: node3, id: 1}
+
+signals:
+  - {name: heartbeat_1, id: 1, type: uint32}
+  - {name: heartbeat_2, id: 2, type: uint32}
+  - {name: heartbeat_3, id: 3, type: uint32}
+
+bundles:
+  - name: node1_heartbeat
+    id: 0x001
+    producers: [node1]
+    consumers: [node2, node3]
+    signals: [1]
+  - name: node2_heartbeat
+    id: 0x002
+    producers: [node2]
+    consumers: [node1, node3]
+    signals: [2]
+  - name: node3_heartbeat
+    id: 0x003
+    producers: [node3]
+    consumers: [node1, node2]
+    signals: [3]

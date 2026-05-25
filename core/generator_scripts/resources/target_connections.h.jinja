@@ -34,7 +34,7 @@ extern "C" {
 #define PROTON_NODE_{{ node.name | upper }}_ID {{ loop.index0 }}
 #define PROTON_NODE_{{ node.name | upper }}_NUM_CONNECTIONS {{ node.connections | length }}
 {% for ep in node.endpoints %}
-#define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_ID ((PROTON_NODE_{{ node.name | upper }}_ID << 16) + {{ ep.id }})
+#define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_ID {{ ep.id }}
 #define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT TRANSPORT_TYPE_{{ ep.type | upper }}
 {% if ep.type == "serial" %}
 #define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT_DEVICE "{{ ep.device }}"

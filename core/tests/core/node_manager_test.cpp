@@ -260,7 +260,8 @@ TEST_F(NodeManagerTest, Update_EncodesBundle_PopulatesOutputs)
   EXPECT_GT(out_len, 0);
   EXPECT_EQ(num_peers, 1);
   // dest_peers[0].id is set from the bundle's consumer_ids entry (node ID 1)
-  EXPECT_EQ(dest[0].id, static_cast<uint32_t>(PROTON_NODE_CONSUMER_ID));
+  EXPECT_EQ(dest[0].node_id, static_cast<uint32_t>(PROTON_NODE_CONSUMER_ID));
+  EXPECT_EQ(dest[0].endpoint_id, static_cast<uint32_t>(PROTON_NODE_CONSUMER_ENDPOINT_0_ID));
 }
 
 TEST_F(NodeManagerTest, Update_SetsLastSendMs)

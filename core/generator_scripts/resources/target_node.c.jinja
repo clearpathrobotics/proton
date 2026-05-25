@@ -25,17 +25,31 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-extern proton_registry_t g_proton_registry;
-
 static const proton_endpoint_t g_target_connections[] = {
 {% for conn in connections %}
-{% if conn.second.node == target %}
+{% if conn.first.node == target %}
+{% for node in nodes %}
+{% if node.name == conn.second.node %}
+{% for ep in node.endpoints %}
+{% if ep.id == conn.second.id %}
+{
+  .node_id = PROTON_NODE_{{ node.name | upper }}_ID,
+  .endpoint_id = PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_ID,
+  .transport_type = PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT
+},
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% elif conn.second.node == target %}
 {% for node in nodes %}
 {% if node.name == conn.first.node %}
 {% for ep in node.endpoints %}
 {% if ep.id == conn.first.id %}
 {
-  .id = PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_ID,
+  .node_id = PROTON_NODE_{{ node.name | upper }}_ID,
+  .endpoint_id = PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_ID,
   .transport_type = PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT
 },
 {% endif %}
@@ -46,9 +60,8 @@ static const proton_endpoint_t g_target_connections[] = {
 {% endfor %}
 };
 
-static proton_core_node_t g_target_node = {
+proton_core_node_t g_target_node = {
   .id = PROTON_NODE_{{ target | upper }}_ID,
   .destination_peers = g_target_connections,
   .num_peers = (sizeof(g_target_connections) / sizeof(g_target_connections[0])),
-  .registry = &g_proton_registry
 };

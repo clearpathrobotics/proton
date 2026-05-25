@@ -127,12 +127,13 @@ proton_status_e proton_node_update(
   for (size_t i = 0; i < priority_bundle->consumer_ids.count; i++)
   {
     proton_endpoint_t * ep = &dest_peers[i];
-    ep->id = priority_bundle->consumer_ids.ids[i];
     for (size_t j = 0; j < node->num_peers; j++)
     {
-      if (priority_bundle->consumer_ids.ids[i] == node->destination_peers[j].id)
+      if (priority_bundle->consumer_ids.ids[i] == node->destination_peers[j].node_id)
       {
+        ep->node_id = priority_bundle->consumer_ids.ids[i];
         ep->transport_type = node->destination_peers[j].transport_type;
+        ep->endpoint_id = node->destination_peers[j].endpoint_id;
         break;
       }
     }
