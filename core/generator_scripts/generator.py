@@ -87,6 +87,7 @@ def generate(
         nodes=config['nodes'],
         bundles=config['bundles'],
         signals=config['signals'],
+        connections=config['connections'],
     )
 
     dest_path.mkdir(parents=True, exist_ok=True)
@@ -159,8 +160,24 @@ def main():
     )
     generate(
         dest_path,
+        'target_connections.h',
+        'target_connections.h.jinja',
+        config,
+        name,
+        target,
+    )
+    generate(
+        dest_path,
         'target_registry.c',
         'target_registry.c.jinja',
+        config,
+        name,
+        target,
+    )
+    generate(
+        dest_path,
+        'target_node.c',
+        'target_node.c.jinja',
         config,
         name,
         target,

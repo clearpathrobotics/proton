@@ -69,7 +69,7 @@ proton_status_e proton_node_update(
 {
   if (
     node == NULL || node->registry == NULL || buffer == NULL || out_len == NULL ||
-    dest_peers == NULL || num_dest_peers == NULL)
+    dest_peers == NULL || num_selected_peers == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }

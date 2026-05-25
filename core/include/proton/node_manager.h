@@ -42,10 +42,10 @@ extern "C"
     proton_transport_type_e transport_type;
   } proton_endpoint_t;
 
-  typedef struct proton_node
+  typedef struct proton_core_node
   {
     uint32_t id;
-    proton_endpoint_t * destination_peers;
+    const proton_endpoint_t * destination_peers;
     size_t num_peers;
     proton_registry_t * registry;
   } proton_core_node_t;  // TODO change to proton_node_t as part of protonc deprecation

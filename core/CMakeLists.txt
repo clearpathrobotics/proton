@@ -245,8 +245,10 @@ find_package(GTest REQUIRED)
 # autogen registry for tests
 set(GENERATED_REGISTRY_FILES
   "${GENERATED_FOLDER}/target_registry.c"
+  "${GENERATED_FOLDER}/target_node.c"
   "${GENERATED_FOLDER}/target_registry_ids.h"
   "${GENERATED_FOLDER}/target_registry_sizes.h"
+  "${GENERATED_FOLDER}/target_connections.h"
 )
 
 proton_core_generator(
