@@ -36,17 +36,24 @@ extern "C"
 {
 #endif
 
+  /**
+   * Description of a peer endpoint to send messages to
+   * This is because the node manager is transport agnostic, but it needs to instruct
+   * the user which bundle to send to which peer, and the transport information is
+   * defined at the node level since it's a property of the peer, not the bundle
+   */
   typedef struct proton_endpoint
   {
-    // It appears that nodes don't have ID's but their endpoints do
-    // the endpoint ID's are not globally unique
-    // To create a unique identifier for the node/endpoint combination, this is done with an
-    // ID that is the index of the node in the nodes stanza, with the LSB being set with the endpoint ID
     uint32_t node_id;
     uint32_t endpoint_id;
     proton_transport_type_e transport_type;
   } proton_endpoint_t;
 
+  /**
+   * Top-level struct for proton interaction, this is the main struct that users will interact with
+   * to send and receive bundles. It contains a pointer to the registry, as well as information about
+   * each peer this node can send messages to.
+   */
   typedef struct proton_core_node
   {
     uint32_t id;
@@ -58,20 +65,42 @@ extern "C"
     size_t trigger_tail;
   } proton_core_node_t;  // TODO change to proton_node_t as part of protonc deprecation
 
-  // Buffer here is post-transport-de-payloading. Presumably the user is handling where the data comes from, and
-  // can de-payload it themselves using proton's framing API
+  /**
+   * Receive a message for a node, decode it, and update the registry and bundle callbacks as necessary
+   * The input buffer is expected to be a non-framed protobuf message, since framing is
+   * transport-specific and the node manager is transport-agnostic. The user is expected to handle any framing
+   * based on the transport API.
+   *
+   * This function will decode the message, update the signal registry with new information,
+   * and call the relevant bundle callback if a bundle is successfully decoded.
+   */
   proton_status_e proton_node_receive(
     proton_core_node_t * node, const uint8_t * buffer, size_t len);
 
-  // Output buffer here is also non-framed, but does specify which peers to send the buffer to
+  /**
+   * Update function to be called periodically by the user to check if there are any messages to send
+   * This function will encode bundles by a priority scheme:
+   *   - "triggered" bundles (see proton_node_trigger_bundle) are prioritized over non-triggered bundles
+   *   - bundles with older last-send timestamps are prioritized over newer ones.
+   * The priority order is essentially as follows:
+   *   - triggered bundles with oldest last send time
+   *   - triggered bundles with newer last send time
+   *   - non-triggered bundles with oldest last send time
+   *   - non-triggered bundles with newer last send time
+   */
   proton_status_e proton_node_update(
     proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,
     size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
     size_t * num_selected_peers);
 
-  // Set a bundle to be sent on the next update
+  /**
+   * Set a bundle ID to be sent at the next available node update, according to priority rules.
+   */
   proton_status_e proton_node_trigger_bundle(proton_core_node_t * node, uint32_t bundle_id);
 
+  /**
+   * Encode a bundle by ID and write it to the provided buffer
+   */
   proton_status_e proton_node_encode_bundle(
     proton_core_node_t * node, uint32_t bundle_id, uint64_t uptime_ms, uint8_t * buffer,
     size_t buffer_len, size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,

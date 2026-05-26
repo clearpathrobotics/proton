@@ -176,7 +176,7 @@ add_custom_target(generate_protoc ALL
 # -------------------------------
 # autogen signal registry
 # -------------------------------
-set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/generated)
+set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/tests/generated)
 
 
 # -------------------------------
@@ -332,7 +332,7 @@ target_include_directories(node_manager_test PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
 )
 
-set(MULTI_NODE_GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/multi_node_generated)
+set(MULTI_NODE_GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/tests/multi_node_generated)
 
 set(MULTI_NODE_GENERATED_REGISTRY_FILES
   "${MULTI_NODE_GENERATED_FOLDER}/target_registry.c"

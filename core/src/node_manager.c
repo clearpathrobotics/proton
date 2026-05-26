@@ -24,7 +24,8 @@
  * @NOTE the bundle ID should be set for this bundle in the registry before calling the function
  * Parameters:
  * - node: the node sending the bundle, used to access the registry and destination peer information
- * - slot_id: the index of the bundle in the registry, used to update the bundle metadata. This is looked up from the bundle ID for efficiency, since we already have the bundle descriptor from the registry lookup
+ * - slot_id: the index of the bundle in the registry, used to update the bundle metadata. This is looked up
+ *   from the bundle ID for efficiency, since we already have the bundle descriptor from the registry lookup
  * - uptime_ms: the current uptime in milliseconds, used to update the bundle metadata for prioritization
  * - buffer: the buffer to encode the bundle into
  * - buffer_len: the length of the buffer
