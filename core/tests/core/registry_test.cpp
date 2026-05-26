@@ -287,6 +287,21 @@ TEST(SignalRegistry, CheckBundlePeriodPopulated)
   EXPECT_NE(periodic_bundle, nullptr);
 
   EXPECT_EQ(periodic_bundle->period_ms, 100);
+  free(registry.signal_registry);
+}
+
+TEST(SignalRegistry, SetBundlePeriod)
+{
+  const uint32_t new_period = 200;
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_registry_set_bundle_period(&registry, PROTON_BUNDLE_PERIODIC_BUNDLE_ID, new_period);
+  const bundle_desc_t * periodic_bundle =
+    proton_registry_get_bundle(&registry, PROTON_BUNDLE_PERIODIC_BUNDLE_ID, NULL);
+  EXPECT_NE(periodic_bundle, nullptr);
+
+  EXPECT_EQ(periodic_bundle->period_ms, new_period);
+
+  free(registry.signal_registry);
 }
 
 int main(int argc, char ** argv)

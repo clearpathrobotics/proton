@@ -106,6 +106,18 @@ void proton_registry_set_bundle_callback(
   }
 }
 
+void proton_registry_set_bundle_period(
+  proton_registry_t * registry, uint32_t bundle_id, uint32_t period_ms)
+{
+  for (size_t i = 0; i < registry->bundle_count; i++)
+  {
+    if (registry->bundle_id_lut[i].id == bundle_id)
+    {
+      registry->bundle_table[registry->bundle_id_lut[i].idx].period_ms = period_ms;
+    }
+  }
+}
+
 signal_desc_t * proton_registry_get_signal(
   const proton_registry_t * registry, uint32_t signal_id, size_t * registry_idx)
 {

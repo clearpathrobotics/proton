@@ -177,6 +177,12 @@ extern "C"
     proton_registry_t * registry, uint32_t bundle_id, proton_bundle_cb_f bundle_cb, void * context);
 
   /**
+   * Set bundle period for a bundle in the registry
+   */
+  void proton_registry_set_bundle_period(
+    proton_registry_t * registry, uint32_t bundle_id, uint32_t period_ms);
+
+  /**
    * Get the signal from a registry by ID
    * registry_idx is optional output parameter for the index of the signal in the registry
    * @return pointer to the signal descriptor, or NULL if not found
