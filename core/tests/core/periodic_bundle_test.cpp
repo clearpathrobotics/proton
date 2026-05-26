@@ -263,6 +263,125 @@ TEST_F(PeriodicBundleTest, SendMostOverdueTriggeredBundle)
   EXPECT_EQ(bundle_120_ms->last_send_ms, 0);
 }
 
+// -----------------------------------------------------------------------
+// Integer wraparound tests
+//
+// These tests verify that the unsigned subtraction (uptime_ms - last_send_ms)
+// in proton_bundle_overdue_ms handles uint64_t rollover correctly, and that
+// triggered bundles fired before their period elapses do not corrupt the
+// overdue prioritization through underflow.
+// -----------------------------------------------------------------------
+
+// A periodic bundle whose last_send_ms is just before UINT64_MAX should still
+// be sent once uptime_ms wraps past the due point.
+TEST_F(PeriodicBundleTest, Wraparound_PeriodicBundle_SentAfterThreshold)
+{
+  size_t slot;
+  bundle_desc_t * b = const_cast<bundle_desc_t *>(
+    proton_registry_get_bundle(node_.registry, PROTON_BUNDLE_100_MS_ID, &slot));
+  ASSERT_NE(b, nullptr);
+
+  // Place last_send_ms 50 ms before UINT64_MAX. Due point wraps to uptime_ms == 50.
+  b->last_send_ms = UINT64_MAX - 50;
+
+  // uptime_ms = 51 → elapsed = 51 - (UINT64_MAX - 50) = 102 ms via unsigned modular arithmetic.
+  // 102 >= 100 → bundle is due.
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  ASSERT_EQ(
+    proton_node_update(&node_, 51, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);
+
+  EXPECT_GT(out_len, 0);
+  EXPECT_EQ(b->last_send_ms, 51ULL);
+}
+
+// The same bundle must NOT be sent one millisecond before its due point crosses
+// the UINT64_MAX boundary.
+TEST_F(PeriodicBundleTest, Wraparound_PeriodicBundle_NotSentBeforeThreshold)
+{
+  size_t slot;
+  bundle_desc_t * b = const_cast<bundle_desc_t *>(
+    proton_registry_get_bundle(node_.registry, PROTON_BUNDLE_100_MS_ID, &slot));
+  ASSERT_NE(b, nullptr);
+
+  b->last_send_ms = UINT64_MAX - 50;
+
+  // uptime_ms = 48 → elapsed = 48 + 51 = 99 ms < 100 ms period → not yet due.
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  ASSERT_EQ(
+    proton_node_update(&node_, 48, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);
+
+  EXPECT_EQ(out_len, 0);
+  EXPECT_EQ(b->last_send_ms, UINT64_MAX - 50);  // unchanged
+}
+
+// A triggered bundle that has not yet reached its period should still be sent
+// immediately. This test has no wraparound on
+// uptime_ms, isolating the early-trigger underflow case.
+TEST_F(PeriodicBundleTest, Wraparound_TriggeredEarly_StillSent)
+{
+  size_t slot;
+  bundle_desc_t * b = const_cast<bundle_desc_t *>(
+    proton_registry_get_bundle(node_.registry, PROTON_BUNDLE_100_MS_ID, &slot));
+  ASSERT_NE(b, nullptr);
+
+  // 50 ms elapsed, period is 100 ms → triggered before due.
+  b->last_send_ms = 900;
+
+  proton_node_trigger_bundle(&node_, PROTON_BUNDLE_100_MS_ID);
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  ASSERT_EQ(
+    proton_node_update(&node_, 950, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);
+
+  EXPECT_GT(out_len, 0);
+  EXPECT_EQ(b->last_send_ms, 950ULL);
+}
+
+// Two triggered bundles where one was last sent just before UINT64_MAX and one
+// was last sent much earlier. The bundle with genuinely more elapsed time
+// (and therefore higher overdue value) must win the priority contest.
+TEST_F(PeriodicBundleTest, Wraparound_TwoTriggeredBundles_MostOverdueWins)
+{
+  size_t slot_100, slot_120;
+  bundle_desc_t * b100 = const_cast<bundle_desc_t *>(
+    proton_registry_get_bundle(node_.registry, PROTON_BUNDLE_100_MS_ID, &slot_100));
+  bundle_desc_t * b120 = const_cast<bundle_desc_t *>(
+    proton_registry_get_bundle(node_.registry, PROTON_BUNDLE_120_MS_ID, &slot_120));
+  ASSERT_NE(b100, nullptr);
+  ASSERT_NE(b120, nullptr);
+
+  // b100: last_send = UINT64_MAX - 200. At uptime=10: elapsed = 211 ms, overdue = 111 ms.
+  b100->last_send_ms = UINT64_MAX - 200;
+  // b120: last_send = UINT64_MAX - 50.  At uptime=10: elapsed = 61 ms < 120 ms, overdue = 0.
+  // Old code: overdue = 61 - 120 = UINT64_MAX - 58  → b120 would wrongly win.
+  // Fixed:    overdue = 0                            → b100 wins correctly.
+  b120->last_send_ms = UINT64_MAX - 50;
+
+  ASSERT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_100_MS_ID), PROTON_OK);
+  ASSERT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_120_MS_ID), PROTON_OK);
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  ASSERT_EQ(
+    proton_node_update(&node_, 10, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);
+
+  EXPECT_GT(out_len, 0);
+  // b100 has overdue = 111 ms; b120 has overdue = 0 → b100 must be selected.
+  EXPECT_EQ(b100->last_send_ms, 10ULL);
+  EXPECT_NE(b120->last_send_ms, 10ULL);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);

@@ -20,6 +20,20 @@
 #include "proton/encode_decode.h"
 
 /**
+ * Returns how many milliseconds a bundle is overdue for sending.
+ * Returns 0 if the bundle is not yet due (elapsed < period), avoiding unsigned wraparound
+ * when a bundle is triggered before its period has elapsed.
+ * Unsigned subtraction (uptime_ms - last_send_ms) is intentional: it handles uptime_ms
+ * counter wraparound correctly on any architecture where uint64_t arithmetic wraps modulo 2^64.
+ */
+static uint64_t proton_bundle_overdue_ms(
+  uint64_t uptime_ms, uint64_t last_send_ms, uint32_t period_ms)
+{
+  uint64_t elapsed = uptime_ms - last_send_ms;
+  return (elapsed >= (uint64_t)period_ms) ? (elapsed - (uint64_t)period_ms) : 0u;
+}
+
+/**
  * Encode a bundle for sending from a node. Updates the bundle metadata in the registry
  * @NOTE the bundle ID should be set for this bundle in the registry before calling the function
  * Parameters:
@@ -154,19 +168,21 @@ proton_status_e proton_node_update(
     if (bundle_desc->send_now)
     {
       // If this is our first triggered bundle, we will skip looking at non-triggered bundles (via send_now_flag)
+      uint64_t candidate_overdue =
+        proton_bundle_overdue_ms(uptime_ms, bundle_desc->last_send_ms, bundle_desc->period_ms);
       if (!send_now_flag)
       {
         send_now_flag = true;
         bundle_to_send = bundle_desc->bundle_id;
-        most_overdue_ms = (uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms;
+        most_overdue_ms = candidate_overdue;
         slot_id = i;
         something_to_send = true;
       }
       // Check if this triggered bundle is more overdue than our current candidate triggered bundle
-      else if ((uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms >= most_overdue_ms)
+      else if (candidate_overdue >= most_overdue_ms)
       {
         bundle_to_send = bundle_desc->bundle_id;
-        most_overdue_ms = (uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms;
+        most_overdue_ms = candidate_overdue;
         slot_id = i;
         something_to_send = true;
       }
@@ -174,16 +190,24 @@ proton_status_e proton_node_update(
     // No triggered bundles, check non-triggered bundles for the most overdue bundle to send
     else if (!send_now_flag)
     {
-      if (
-        bundle_desc->period_ms != 0 &&
-        uptime_ms - bundle_desc->last_send_ms >= bundle_desc->period_ms)
+      if (bundle_desc->period_ms != 0)
       {
-        if ((uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms >= most_overdue_ms)
+        // Explicitly handle wraparound
+        uint64_t elapsed = uptime_ms - bundle_desc->last_send_ms;
+        if (bundle_desc->last_send_ms > uptime_ms)
         {
-          bundle_to_send = bundle_desc->bundle_id;
-          most_overdue_ms = (uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms;
-          slot_id = i;
-          something_to_send = true;
+          elapsed = uptime_ms + (UINT64_MAX - bundle_desc->last_send_ms + 1);
+        }
+        if (elapsed >= (uint64_t)bundle_desc->period_ms)
+        {
+          uint64_t candidate_overdue = elapsed - (uint64_t)bundle_desc->period_ms;
+          if (candidate_overdue >= most_overdue_ms)
+          {
+            bundle_to_send = bundle_desc->bundle_id;
+            most_overdue_ms = candidate_overdue;
+            slot_id = i;
+            something_to_send = true;
+          }
         }
       }
     }
