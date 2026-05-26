@@ -116,3 +116,15 @@ def set_producer_consumer_ids(bundles: list[dict], nodes: list[dict]):
     for bundle in bundles:
         bundle['producer_ids'] = [node_id_map[name] for name in bundle.get('producers', [])]
         bundle['consumer_ids'] = [node_id_map[name] for name in bundle.get('consumers', [])]
+
+
+def set_bundle_periods(bundles: list[dict]):
+    """
+    Set the transmission period of each bundle, defaulting to 0.
+
+    Args:
+        bundles: "bundles" stanza in proton config
+
+    """
+    for bundle in bundles:
+        bundle.setdefault('period_ms', 0)

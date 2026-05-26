@@ -98,6 +98,7 @@ extern "C"
     proton_id_list_t consumer_ids;
     proton_id_list_t signal_ids;
     uint64_t last_send_ms;
+    uint32_t period_ms;
     bool send_now;
   } bundle_desc_t;
 
