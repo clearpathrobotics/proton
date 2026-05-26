@@ -114,6 +114,7 @@ void proton_registry_set_bundle_period(
     if (registry->bundle_id_lut[i].id == bundle_id)
     {
       registry->bundle_table[registry->bundle_id_lut[i].idx].period_ms = period_ms;
+      return;
     }
   }
 }

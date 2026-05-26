@@ -377,6 +377,7 @@ TEST_F(PeriodicBundleTest, Wraparound_TwoTriggeredBundles_MostOverdueWins)
     proton_node_update(&node_, 10, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);
 
   EXPECT_GT(out_len, 0);
+  EXPECT_EQ(num_peers, 1);
   // b100 has overdue = 111 ms; b120 has overdue = 0 → b100 must be selected.
   EXPECT_EQ(b100->last_send_ms, 10ULL);
   EXPECT_NE(b120->last_send_ms, 10ULL);

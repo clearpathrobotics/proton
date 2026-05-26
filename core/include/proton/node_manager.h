@@ -85,8 +85,6 @@ extern "C"
    *   - in the event of no overdue bundles, bundles with older last-send timestamps are prioritized over newer ones.
    * The priority order is essentially as follows:
    *   - "most overdue" triggered bundles
-   *   - triggered bundles with oldest last send time
-   *   - triggered bundles with newer last send time
    *   - "most overdue" non-triggered bundles
    */
   proton_status_e proton_node_update(

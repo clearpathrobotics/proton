@@ -26,11 +26,17 @@
  * Unsigned subtraction (uptime_ms - last_send_ms) is intentional: it handles uptime_ms
  * counter wraparound correctly on any architecture where uint64_t arithmetic wraps modulo 2^64.
  */
-static uint64_t proton_bundle_overdue_ms(
-  uint64_t uptime_ms, uint64_t last_send_ms, uint32_t period_ms)
+static bool proton_bundle_overdue_ms(
+  uint64_t uptime_ms, uint64_t last_send_ms, uint32_t period_ms, uint64_t * overdue_ms)
 {
   uint64_t elapsed = uptime_ms - last_send_ms;
-  return (elapsed >= (uint64_t)period_ms) ? (elapsed - (uint64_t)period_ms) : 0u;
+  bool overdue = elapsed >= (uint64_t)period_ms;
+  if (overdue && overdue_ms)
+  {
+    *overdue_ms = elapsed - (uint64_t)period_ms;
+  }
+
+  return overdue;
 }
 
 /**
@@ -168,8 +174,10 @@ proton_status_e proton_node_update(
     if (bundle_desc->send_now)
     {
       // If this is our first triggered bundle, we will skip looking at non-triggered bundles (via send_now_flag)
-      uint64_t candidate_overdue =
-        proton_bundle_overdue_ms(uptime_ms, bundle_desc->last_send_ms, bundle_desc->period_ms);
+      uint64_t candidate_overdue;
+      // We also don't care about whether the triggered bundle is overdue, just how overdue it is.
+      proton_bundle_overdue_ms(
+        uptime_ms, bundle_desc->last_send_ms, bundle_desc->period_ms, &candidate_overdue);
       if (!send_now_flag)
       {
         send_now_flag = true;
@@ -179,7 +187,7 @@ proton_status_e proton_node_update(
         something_to_send = true;
       }
       // Check if this triggered bundle is more overdue than our current candidate triggered bundle
-      else if (candidate_overdue >= most_overdue_ms)
+      else if (candidate_overdue > most_overdue_ms)
       {
         bundle_to_send = bundle_desc->bundle_id;
         most_overdue_ms = candidate_overdue;
@@ -192,16 +200,12 @@ proton_status_e proton_node_update(
     {
       if (bundle_desc->period_ms != 0)
       {
-        // Explicitly handle wraparound
-        uint64_t elapsed = uptime_ms - bundle_desc->last_send_ms;
-        if (bundle_desc->last_send_ms > uptime_ms)
+        uint64_t candidate_overdue;
+        if (
+          proton_bundle_overdue_ms(
+            uptime_ms, bundle_desc->last_send_ms, bundle_desc->period_ms, &candidate_overdue))
         {
-          elapsed = uptime_ms + (UINT64_MAX - bundle_desc->last_send_ms + 1);
-        }
-        if (elapsed >= (uint64_t)bundle_desc->period_ms)
-        {
-          uint64_t candidate_overdue = elapsed - (uint64_t)bundle_desc->period_ms;
-          if (candidate_overdue >= most_overdue_ms)
+          if (candidate_overdue > most_overdue_ms)
           {
             bundle_to_send = bundle_desc->bundle_id;
             most_overdue_ms = candidate_overdue;
