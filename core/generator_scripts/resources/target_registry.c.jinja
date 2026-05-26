@@ -89,7 +89,7 @@ signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% endfor %}
 };
 
-const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
+bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% for bundle in bundles %}
 {% if target in bundle.producers or target in bundle.consumers %}
   {
@@ -105,7 +105,9 @@ const bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
     .signal_ids = {
       .ids = (const uint32_t[]){ {{ bundle.signals | join(", ") }} },
       .count = {{ bundle.signals | length }}
-    }
+    },
+    .last_send_ms = 0,
+    .send_now = false,
   },
 {% endif %}
 {% endfor %}

@@ -123,7 +123,8 @@ TEST(EncodeDecode, EncodeInvalidBundleIdReturnsError)
 TEST(EncodeDecode, DecodeNullBufferReturnsError)
 {
   proton_registry_t registry = copy_default_registry(&g_proton_registry);
-  EXPECT_EQ(proton_decode(&registry, nullptr, BUFFER_SIZE), PROTON_NULL_PTR_ERROR);
+  proton_Proton decoded_msg = proton_Proton_init_zero;
+  EXPECT_EQ(proton_decode(&registry, nullptr, BUFFER_SIZE, &decoded_msg), PROTON_NULL_PTR_ERROR);
   free(registry.signal_registry);
 }
 
@@ -133,7 +134,8 @@ TEST(EncodeDecode, DecodeGarbageReturnsError)
   uint8_t raw[BUFFER_SIZE];
   memset(raw, 0xFF, sizeof(raw));
 
-  EXPECT_EQ(proton_decode(&registry, raw, sizeof(raw)), PROTON_SERIALIZATION_ERROR);
+  proton_Proton decoded_msg = proton_Proton_init_zero;
+  EXPECT_EQ(proton_decode(&registry, raw, sizeof(raw), &decoded_msg), PROTON_SERIALIZATION_ERROR);
   free(registry.signal_registry);
 }
 
@@ -154,7 +156,8 @@ TEST(EncodeDecode, RoundTripDefaultValues)
     PROTON_OK);
   ASSERT_GT(bytes_encoded, 0);
 
-  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
+  proton_Proton decoded_msg = proton_Proton_init_zero;
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded, &decoded_msg), PROTON_OK);
 
   // Verify registry values stayed default
   double decoded_double = 0.0;
@@ -206,7 +209,8 @@ TEST(EncodeDecode, RoundTripMutatedDoubleValue)
   status = proton_signal_set_double(&registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, zero);
   ASSERT_EQ(status, PROTON_OK);
 
-  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
+  proton_Proton decoded_msg = proton_Proton_init_zero;
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded, &decoded_msg), PROTON_OK);
 
   double decoded = 0.0;
   size_t len = sizeof(decoded);
@@ -250,7 +254,8 @@ TEST(EncodeDecode, SignalSharedBetweenBundles)
   ASSERT_GT(bytes_encoded2, 0u);
 
   // Decode the first bundle and verify that the shared signal is the first value
-  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
+  proton_Proton decoded_msg = proton_Proton_init_zero;
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded, &decoded_msg), PROTON_OK);
 
   int32_t decoded = 0;
   size_t len = sizeof(decoded);
@@ -259,53 +264,13 @@ TEST(EncodeDecode, SignalSharedBetweenBundles)
   EXPECT_EQ(decoded, first_value);
 
   // Decode the second bundle and verify that the shared signal is the second value
-  ASSERT_EQ(proton_decode(&registry, raw2, bytes_encoded2), PROTON_OK);
+  proton_Proton decoded_msg2 = proton_Proton_init_zero;
+  ASSERT_EQ(proton_decode(&registry, raw2, bytes_encoded2, &decoded_msg2), PROTON_OK);
 
   status = proton_signal_get_int32(&registry, PROTON_SIGNAL_SHARED_SIGNAL_ID, &decoded);
   ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(decoded, second_value);
 
-  free(registry.signal_registry);
-}
-
-TEST(EncodeDecode, BundleDecodeCallback)
-{
-  proton_registry_t registry = copy_default_registry(&g_proton_registry);
-
-  auto check_cb = CheckSignalsInBundleCallback(PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, &registry);
-
-  uint8_t raw[BUFFER_SIZE];
-  size_t bytes_encoded = 0;
-
-  ASSERT_EQ(
-    proton_encode_bundle(
-      &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
-    PROTON_OK);
-  ASSERT_GT(bytes_encoded, 0);
-
-  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded), PROTON_OK);
-
-  EXPECT_TRUE(check_cb.cb_called_);
-  free(registry.signal_registry);
-}
-
-TEST(EncodeDecode, NoCallbackForBadDecode)
-{
-  proton_registry_t registry = copy_default_registry(&g_proton_registry);
-
-  auto check_cb = CheckSignalsInBundleCallback(PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, &registry);
-
-  uint8_t raw[BUFFER_SIZE];
-  size_t bytes_encoded = 0;
-
-  ASSERT_EQ(
-    proton_encode_bundle(
-      &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
-    PROTON_OK);
-  ASSERT_GT(bytes_encoded, 0);
-
-  EXPECT_EQ(proton_decode(&registry, raw, bytes_encoded / 2), PROTON_SERIALIZATION_ERROR);
-  EXPECT_FALSE(check_cb.cb_called_);
   free(registry.signal_registry);
 }
 

@@ -97,6 +97,8 @@ extern "C"
     proton_id_list_t producer_ids;
     proton_id_list_t consumer_ids;
     proton_id_list_t signal_ids;
+    uint64_t last_send_ms;
+    bool send_now;
   } bundle_desc_t;
 
   /**
@@ -121,7 +123,7 @@ extern "C"
     // Bundle metadata and state
     // bundle_table is the table of all bundle descriptors
     // Since the bundle IDs are not contiguous, the bundle_id_lut is used to find the index of a bundle descriptor
-    const bundle_desc_t * bundle_table;
+    bundle_desc_t * bundle_table;
     const id_to_index_t * bundle_id_lut;
     proton_bundle_cb_t * bundle_callbacks;
     size_t bundle_count;

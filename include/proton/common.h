@@ -63,6 +63,8 @@ extern "C"
     PROTON_CRC16_ERROR,                     // CRC16 mismatch
     PROTON_MUTEX_ERROR,                     // Failed to lock or unlock mutex
     PROTON_INSUFFICIENT_BUFFER_ERROR,       // Buffer is too small to fit required data
+    PROTON_INCORRECT_TARGET_ERROR,          // Message has been sent to the wrong target
+    PROTON_UNSUPPORTED_OPERATION_ERROR,     // Message is not a supported operation
   } proton_status_e;
 
   /**

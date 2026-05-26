@@ -16,37 +16,25 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
-#ifndef PROTON_ENCODE_DECODE_H
-#define PROTON_ENCODE_DECODE_H
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include "proton/common.h"
-#include "proton/registry.h"
+#ifndef PROTON_TRANSPORT_H
+#define PROTON_TRANSPORT_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-  /**
-   * Encode a bundle from the registry into a Proton top-level message
-   */
-  proton_status_e proton_encode_bundle(
-    proton_registry_t * registry, uint32_t bundle_id, uint8_t * buffer, size_t buffer_len,
-    size_t * bytes_encoded);
+#include "proton/transport/serial.h"
+#include "proton/transport/udp4.h"
 
-  /**
-   * Decode a Proton message from a buffer
-   * If the message is a bundle, the registry will be updated with the decoded signals
-   */
-  proton_status_e proton_decode(
-    proton_registry_t * registry, const uint8_t * buffer, size_t buffer_len,
-    proton_Proton * decoded_msg);
+  typedef enum
+  {
+    TRANSPORT_TYPE_SERIAL,
+    TRANSPORT_TYPE_UDP4,
+  } proton_transport_type_e;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // PROTON_ENCODE_DECODE_H
+#endif  // PROTON_TRANSPORT_H

@@ -256,6 +256,61 @@ static bool proton_operation_decode_cb(
   return false;
 }
 
+static proton_status_e check_stream_bytes_left(const pb_istream_t * stream)
+{
+  if (stream->bytes_left == 0)
+  {
+    return PROTON_OK;
+  }
+  else
+  {
+    return PROTON_SERIALIZATION_ERROR;
+  }
+}
+
+static proton_status_e proton_decode_bundle(
+  proton_registry_t * registry, proton_Bundle * bundle, const pb_istream_t * stream)
+{
+  size_t bundle_slot = 0;
+  const bundle_desc_t * bundle_desc =
+    proton_registry_get_bundle(registry, bundle->id, &bundle_slot);
+  // This bundle doesn't exist
+  if (bundle_desc == NULL)
+  {
+    return PROTON_ERROR;
+  }
+
+  // Set signals in registry based on decoded values
+  proton_Signal * bundle_signals =
+    proton_registry_get_bundle_encode_decode_buffer(registry, bundle->id);
+  for (size_t i = 0; i < bundle_desc->signal_ids.count; i++)
+  {
+    proton_Signal * signal_ptr = &bundle_signals[i];
+    uint32_t signal_id = bundle_desc->signal_ids.ids[i];
+    signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, NULL);
+    if (desc == NULL)
+    {
+      return PROTON_ERROR;
+    }
+    if (desc->type != proton_get_type_from_tag(signal_ptr->which_signal))
+    {
+      return PROTON_ERROR;
+    }
+    if (desc->type == PROTON_STRING || desc->type == PROTON_BYTES)
+    {
+      // value pointer in union points to the decode buffer — copy content into registry
+      const void * src = signal_ptr->signal.string_value;  // same union slot as bytes_value
+      memcpy(desc->signal.signal.string_value, src, desc->value_size);
+    }
+    else
+    {
+      memcpy(&desc->signal.signal, &signal_ptr->signal, desc->value_size);
+    }
+  }
+
+  return check_stream_bytes_left(stream);
+}
+
 proton_status_e proton_encode_bundle(
   proton_registry_t * registry, uint32_t bundle_id, uint8_t * buffer, size_t buffer_len,
   size_t * bytes_encoded)
@@ -303,83 +358,34 @@ proton_status_e proton_encode_bundle(
   return PROTON_OK;
 }
 
-proton_status_e proton_decode(proton_registry_t * registry, uint8_t * buffer, size_t buffer_len)
+proton_status_e proton_decode(
+  proton_registry_t * registry, const uint8_t * buffer, size_t buffer_len,
+  proton_Proton * decoded_msg)
 {
-  if (registry == NULL || buffer == NULL)
+  if (registry == NULL || buffer == NULL || decoded_msg == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
   }
 
   pb_istream_t stream = pb_istream_from_buffer((const pb_byte_t *)buffer, buffer_len);
-  proton_Proton proton_message = proton_Proton_init_zero;
   // Place registry at the signals pointer so it can be accessed in the callback
-  proton_message.cb_operation.funcs.decode = proton_operation_decode_cb;
-  proton_message.cb_operation.arg = registry;
+  decoded_msg->cb_operation.funcs.decode = proton_operation_decode_cb;
+  decoded_msg->cb_operation.arg = registry;
 
-  bool status = pb_decode(&stream, proton_Proton_fields, &proton_message);
+  bool status = pb_decode(&stream, proton_Proton_fields, decoded_msg);
   if (!status)
   {
     return PROTON_SERIALIZATION_ERROR;
   }
 
   // No other operations are defined yet
-  if (proton_message.which_operation != proton_Proton_bundle_tag)
+  if (decoded_msg->which_operation == proton_Proton_bundle_tag)
   {
-    return PROTON_ERROR;
-  }
-
-  proton_Bundle bundle = proton_message.operation.bundle;
-  size_t bundle_slot = 0;
-  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(registry, bundle.id, &bundle_slot);
-  // This bundle doesn't exist
-  if (bundle_desc == NULL)
-  {
-    return PROTON_ERROR;
-  }
-
-  // Set signals in registry based on decoded values
-  proton_Signal * bundle_signals =
-    proton_registry_get_bundle_encode_decode_buffer(registry, bundle.id);
-  for (size_t i = 0; i < bundle_desc->signal_ids.count; i++)
-  {
-    proton_Signal * signal_ptr = &bundle_signals[i];
-    uint32_t signal_id = bundle_desc->signal_ids.ids[i];
-    signal_desc_t * desc = proton_registry_get_signal(registry, signal_id, NULL);
-    if (desc == NULL)
-    {
-      return PROTON_ERROR;
-    }
-    if (desc->type != proton_get_type_from_tag(signal_ptr->which_signal))
-    {
-      return PROTON_ERROR;
-    }
-    if (desc->type == PROTON_STRING || desc->type == PROTON_BYTES)
-    {
-      // value pointer in union points to the decode buffer — copy content into registry
-      const void * src = signal_ptr->signal.string_value;  // same union slot as bytes_value
-      memcpy(desc->signal.signal.string_value, src, desc->value_size);
-    }
-    else
-    {
-      memcpy(&desc->signal.signal, &signal_ptr->signal, desc->value_size);
-    }
-  }
-
-  if (stream.bytes_left == 0)
-  {
-    proton_bundle_cb_t * callback =
-      proton_registry_get_bundle_callback(registry, bundle_desc->bundle_id);
-
-    if (callback != NULL && callback->cb != NULL)
-    {
-      callback->cb(
-        bundle_desc->bundle_id, bundle_desc->signal_ids.ids, bundle_desc->signal_ids.count,
-        callback->arg);
-    }
-    return PROTON_OK;
+    proton_Bundle bundle = decoded_msg->operation.bundle;
+    return proton_decode_bundle(registry, &bundle, &stream);
   }
   else
   {
-    return PROTON_SERIALIZATION_ERROR;
+    return PROTON_UNSUPPORTED_OPERATION_ERROR;
   }
 }

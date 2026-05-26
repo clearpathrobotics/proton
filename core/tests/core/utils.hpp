@@ -21,6 +21,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include "proton/node_manager.h"
 #include "proton/registry.h"
 
 #ifdef __cplusplus
@@ -49,6 +50,22 @@ extern "C"
 
     return copy;
   }
+
+  proton_core_node_t copy_default_node(proton_core_node_t * original_node)
+  {
+    proton_core_node_t copy = *original_node;
+    if (original_node->num_peers > 0)
+    {
+      proton_endpoint_t * peers_copy =
+        (proton_endpoint_t *)malloc(sizeof(proton_endpoint_t) * original_node->num_peers);
+      memcpy(
+        peers_copy, original_node->destination_peers,
+        sizeof(proton_endpoint_t) * original_node->num_peers);
+      copy.destination_peers = peers_copy;
+    }
+    return copy;
+  }
+
 #ifdef __cplusplus
 }
 #endif
