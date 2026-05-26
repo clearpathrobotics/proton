@@ -81,12 +81,13 @@ extern "C"
    * Update function to be called periodically by the user to check if there are any messages to send
    * This function will encode bundles by a priority scheme:
    *   - "triggered" bundles (see proton_node_trigger_bundle) are prioritized over non-triggered bundles
-   *   - bundles with older last-send timestamps are prioritized over newer ones.
+   *   - "most overdue" bundles are prioritized over less overdue bundles
+   *   - in the event of no overdue bundles, bundles with older last-send timestamps are prioritized over newer ones.
    * The priority order is essentially as follows:
+   *   - "most overdue" triggered bundles
    *   - triggered bundles with oldest last send time
    *   - triggered bundles with newer last send time
-   *   - non-triggered bundles with oldest last send time
-   *   - non-triggered bundles with newer last send time
+   *   - "most overdue" non-triggered bundles
    */
   proton_status_e proton_node_update(
     proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,

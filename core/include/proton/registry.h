@@ -98,6 +98,7 @@ extern "C"
     proton_id_list_t consumer_ids;
     proton_id_list_t signal_ids;
     uint64_t last_send_ms;
+    // NOTE: 0 means no period, and will only be sent if triggered or directly requested in the node manager API
     uint32_t period_ms;
     bool send_now;
   } bundle_desc_t;

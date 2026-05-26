@@ -128,10 +128,15 @@ proton_status_e proton_node_update(
     return PROTON_NULL_PTR_ERROR;
   }
 
+  if (num_dest_peers == 0)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+
   bool something_to_send = false;
 
   uint32_t bundle_to_send = 0;
-  uint64_t oldest_timestamp = UINT64_MAX;
+  uint64_t most_overdue_ms = 0;
   bool send_now_flag = false;
   size_t slot_id = 0;
 
@@ -144,37 +149,42 @@ proton_status_e proton_node_update(
 
   for (size_t i = 0; i < node->registry->bundle_count; i++)
   {
-    // Prioritize in the following manner:
-    // 1. Bundles marked to be sent now, prioritize the oldest send time
-    // 2. If no send-now flags, send the oldest bundle
     bundle_desc_t * bundle_desc = &node->registry->bundle_table[i];
-    // If this is our first send-now flag, the priority timestamp becomes the send-now timestamp
+    // Check triggered bundles
     if (bundle_desc->send_now)
     {
+      // If this is our first triggered bundle, we will skip looking at non-triggered bundles (via send_now_flag)
       if (!send_now_flag)
       {
         send_now_flag = true;
         bundle_to_send = bundle_desc->bundle_id;
-        oldest_timestamp = bundle_desc->last_send_ms;
+        most_overdue_ms = (uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms;
         slot_id = i;
         something_to_send = true;
       }
-      else if (bundle_desc->last_send_ms <= oldest_timestamp)
+      // Check if this triggered bundle is more overdue than our current candidate triggered bundle
+      else if ((uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms >= most_overdue_ms)
       {
         bundle_to_send = bundle_desc->bundle_id;
-        oldest_timestamp = bundle_desc->last_send_ms;
+        most_overdue_ms = (uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms;
         slot_id = i;
         something_to_send = true;
       }
     }
+    // No triggered bundles, check non-triggered bundles for the most overdue bundle to send
     else if (!send_now_flag)
     {
-      if (bundle_desc->last_send_ms <= oldest_timestamp)
+      if (
+        bundle_desc->period_ms != 0 &&
+        uptime_ms - bundle_desc->last_send_ms >= bundle_desc->period_ms)
       {
-        bundle_to_send = bundle_desc->bundle_id;
-        oldest_timestamp = bundle_desc->last_send_ms;
-        slot_id = i;
-        something_to_send = true;
+        if ((uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms >= most_overdue_ms)
+        {
+          bundle_to_send = bundle_desc->bundle_id;
+          most_overdue_ms = (uptime_ms - bundle_desc->last_send_ms) - bundle_desc->period_ms;
+          slot_id = i;
+          something_to_send = true;
+        }
       }
     }
   }
@@ -228,6 +238,11 @@ proton_status_e proton_node_encode_bundle(
     dest_peers == NULL || num_selected_peers == NULL)
   {
     return PROTON_NULL_PTR_ERROR;
+  }
+
+  if (num_dest_peers == 0)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
 
   size_t slot_id;
