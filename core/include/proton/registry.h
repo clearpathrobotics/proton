@@ -176,11 +176,6 @@ extern "C"
     proton_registry_t * registry, uint32_t bundle_id, proton_bundle_cb_f bundle_cb, void * context);
 
   /**
-   * Set a bundle to be sent at next node update
-   */
-  void proton_registry_trigger_bundle(proton_registry_t * registry, uint32_t bundle_id);
-
-  /**
    * Get the signal from a registry by ID
    * registry_idx is optional output parameter for the index of the signal in the registry
    * @return pointer to the signal descriptor, or NULL if not found

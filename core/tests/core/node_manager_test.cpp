@@ -251,7 +251,7 @@ TEST_F(NodeManagerTest, Update_EncodesBundle_PopulatesOutputs)
   proton_endpoint_t dest[1];
   size_t num_peers = 0;
 
-  proton_registry_trigger_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID);
+  proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID);
 
   ASSERT_EQ(
     proton_node_update(&node_, 1000, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);
@@ -293,7 +293,7 @@ TEST_F(NodeManagerTest, Update_TriggeredBundleIsPrioritized)
   // Trigger value_test (index 0). Without a trigger, the algorithm selects the last
   // bundle in the table (all timestamps start at 0 and ties favour later indices).
   // A send_now flag overrides that ordering.
-  proton_registry_trigger_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID);
+  proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID);
 
   constexpr uint64_t UPTIME_MS = 1000;
   uint8_t buf[BUFFER_SIZE];
@@ -315,6 +315,255 @@ TEST_F(NodeManagerTest, Update_TriggeredBundleIsPrioritized)
 }
 
 // -----------------------------------------------------------------------
+// proton_node_encode_bundle — null-pointer guards
+// -----------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, EncodeBundle_NullNode_ReturnsNullPtrError)
+{
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      nullptr, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_NULL_PTR_ERROR);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_NullRegistry_ReturnsNullPtrError)
+{
+  node_.registry = nullptr;
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_NULL_PTR_ERROR);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_NullBuffer_ReturnsNullPtrError)
+{
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, nullptr, BUFFER_SIZE, &out_len, dest, 1, &num_peers),
+    PROTON_NULL_PTR_ERROR);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_NullOutLen_ReturnsNullPtrError)
+{
+  uint8_t buf[BUFFER_SIZE];
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), nullptr, dest, 1, &num_peers),
+    PROTON_NULL_PTR_ERROR);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_NullDestPeers_ReturnsNullPtrError)
+{
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  size_t num_peers = 0;
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, nullptr, 1, &num_peers),
+    PROTON_NULL_PTR_ERROR);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_NullNumSelectedPeers_ReturnsNullPtrError)
+{
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, nullptr),
+    PROTON_NULL_PTR_ERROR);
+}
+
+// -----------------------------------------------------------------------
+// proton_node_encode_bundle — error cases
+// -----------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, EncodeBundle_UnknownBundleId_ReturnsIncorrectTargetError)
+{
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, 0xDEADBEEFu, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_INCORRECT_TARGET_ERROR);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_InsufficientDestPeerBuffer_ReturnsError)
+{
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 0, &num_peers),
+    PROTON_INSUFFICIENT_BUFFER_ERROR);
+}
+
+// -----------------------------------------------------------------------
+// proton_node_encode_bundle — functional tests
+// -----------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, EncodeBundle_ValidBundle_PopulatesOutputsAndUpdatesTimestamp)
+{
+  constexpr uint64_t UPTIME_MS = 4242;
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  ASSERT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, UPTIME_MS, buf, sizeof(buf), &out_len, dest, 1,
+      &num_peers),
+    PROTON_OK);
+
+  EXPECT_GT(out_len, 0);
+  EXPECT_EQ(num_peers, 1);
+  EXPECT_EQ(dest[0].node_id, static_cast<uint32_t>(PROTON_NODE_CONSUMER_ID));
+  EXPECT_EQ(dest[0].endpoint_id, static_cast<uint32_t>(PROTON_NODE_CONSUMER_ENDPOINT_0_ID));
+  // bundle_table is shared; verify last_send_ms was updated on the value_test slot (index 0)
+  EXPECT_EQ(g_proton_registry.bundle_table[0].last_send_ms, UPTIME_MS);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_RoundTrip_WithReceive_SignalValuePreserved)
+{
+  constexpr float SENT_VALUE = 3.14f;
+  ASSERT_EQ(
+    proton_signal_set_float(&registry_, PROTON_SIGNAL_FLOAT_VALUE_ID, SENT_VALUE), PROTON_OK);
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  ASSERT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_OK);
+  ASSERT_GT(out_len, 0);
+
+  ASSERT_EQ(proton_signal_set_float(&registry_, PROTON_SIGNAL_FLOAT_VALUE_ID, 0.0f), PROTON_OK);
+
+  ASSERT_EQ(proton_node_receive(&node_, buf, out_len), PROTON_OK);
+
+  float received = 0.0f;
+  ASSERT_EQ(
+    proton_signal_get_float(&registry_, PROTON_SIGNAL_FLOAT_VALUE_ID, &received), PROTON_OK);
+  EXPECT_FLOAT_EQ(received, SENT_VALUE);
+}
+
+// -----------------------------------------------------------------------
+// proton_node_trigger_bundle — null-pointer guards
+// -----------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, Trigger_NullNode_ReturnsNullPtrError)
+{
+  EXPECT_EQ(
+    proton_node_trigger_bundle(nullptr, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_NULL_PTR_ERROR);
+}
+
+TEST_F(NodeManagerTest, Trigger_NullRegistry_ReturnsNullPtrError)
+{
+  node_.registry = nullptr;
+  EXPECT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_NULL_PTR_ERROR);
+}
+
+TEST_F(NodeManagerTest, Trigger_UnknownBundleId_ReturnsIncorrectTargetError)
+{
+  EXPECT_EQ(proton_node_trigger_bundle(&node_, 0xDEADBEEFu), PROTON_INCORRECT_TARGET_ERROR);
+}
+
+// -----------------------------------------------------------------------
+// proton_node_trigger_bundle — ring buffer behaviour
+// -----------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, Trigger_Single_AdvancesHeadByOne)
+{
+  ASSERT_EQ(node_.trigger_head, 0u);
+  ASSERT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_OK);
+  EXPECT_EQ(node_.trigger_head, 1u);
+}
+
+TEST_F(NodeManagerTest, Trigger_Single_SlotResolvesToCorrectBundle)
+{
+  ASSERT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_OK);
+  // pending_triggers[0] holds a bundle_table slot index; resolve it back to a bundle ID
+  EXPECT_EQ(
+    registry_.bundle_table[node_.pending_triggers[0]].bundle_id,
+    static_cast<uint32_t>(PROTON_BUNDLE_VALUE_TEST_ID));
+}
+
+TEST_F(NodeManagerTest, Trigger_QueueFull_ReturnsInsufficientBufferError)
+{
+  // Ring buffer holds PROTON_MAX_PENDING_TRIGGERS - 1 items before the head+1 == tail full check
+  for (size_t i = 0; i < PROTON_MAX_PENDING_TRIGGERS - 1; i++)
+  {
+    ASSERT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_OK)
+      << "Expected PROTON_OK on push " << i;
+  }
+  EXPECT_EQ(
+    proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID),
+    PROTON_INSUFFICIENT_BUFFER_ERROR);
+}
+
+// -----------------------------------------------------------------------
+// proton_node_update — pending_triggers drain
+// -----------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, Update_DrainsPendingTriggers_QueueEmptyAfterUpdate)
+{
+  ASSERT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_OK);
+  ASSERT_NE(node_.trigger_head, node_.trigger_tail);
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  ASSERT_EQ(
+    proton_node_update(&node_, 100, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);
+
+  EXPECT_EQ(node_.trigger_head, node_.trigger_tail);
+}
+
+TEST_F(NodeManagerTest, Update_QueueTriggeredBundle_IsPrioritizedOverDefault)
+{
+  // Trigger value_test (slot 0) via the ring buffer only — do not touch send_now directly
+  ASSERT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_OK);
+
+  constexpr uint64_t UPTIME_MS = 1000;
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+  ASSERT_EQ(
+    proton_node_update(&node_, UPTIME_MS, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_OK);
+
+  EXPECT_GT(out_len, 0);
+  // value_test (slot 0) was the triggered bundle — its timestamp must be updated
+  EXPECT_EQ(g_proton_registry.bundle_table[0].last_send_ms, UPTIME_MS);
+  // The fallback bundle (shared_2, slot 3) must NOT have been sent
+  EXPECT_EQ(g_proton_registry.bundle_table[3].last_send_ms, 0ULL);
+  // send_now must be cleared after sending
+  EXPECT_FALSE(g_proton_registry.bundle_table[0].send_now);
+}
+
+// -----------------------------------------------------------------------
 // Round-trip: proton_node_update → proton_node_receive
 // -----------------------------------------------------------------------
 
@@ -326,7 +575,7 @@ TEST_F(NodeManagerTest, RoundTrip_UpdateThenReceive_SignalValuePreserved)
     proton_signal_set_int32(&registry_, PROTON_SIGNAL_INT32_VALUE_ID, SENT_VALUE), PROTON_OK);
 
   // Trigger value_test so it is selected by update regardless of timestamp ordering
-  proton_registry_trigger_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID);
+  proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID);
 
   uint8_t buf[BUFFER_SIZE];
   size_t out_len = 0;

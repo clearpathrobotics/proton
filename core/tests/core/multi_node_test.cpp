@@ -39,7 +39,7 @@ TEST(NodeManagerTest, BundleForMultipleNodes)
   proton_endpoint_t dest[num_endpoints];
   size_t num_peers = 0;
 
-  proton_registry_trigger_bundle(&g_proton_registry, PROTON_BUNDLE_NODE1_HEARTBEAT_ID);
+  proton_node_trigger_bundle(&g_target_node, PROTON_BUNDLE_NODE1_HEARTBEAT_ID);
 
   ASSERT_EQ(
     proton_node_update(

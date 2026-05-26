@@ -27,6 +27,10 @@
 #include "proton/registry.h"
 #include "proton/transport.h"
 
+#ifndef PROTON_MAX_PENDING_TRIGGERS
+#define PROTON_MAX_PENDING_TRIGGERS 4
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -49,6 +53,9 @@ extern "C"
     const proton_endpoint_t * destination_peers;
     size_t num_peers;
     proton_registry_t * registry;
+    uint32_t pending_triggers[PROTON_MAX_PENDING_TRIGGERS];
+    size_t trigger_head;
+    size_t trigger_tail;
   } proton_core_node_t;  // TODO change to proton_node_t as part of protonc deprecation
 
   // Buffer here is post-transport-de-payloading. Presumably the user is handling where the data comes from, and
@@ -60,6 +67,14 @@ extern "C"
   proton_status_e proton_node_update(
     proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,
     size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
+    size_t * num_selected_peers);
+
+  // Set a bundle to be sent on the next update
+  proton_status_e proton_node_trigger_bundle(proton_core_node_t * node, uint32_t bundle_id);
+
+  proton_status_e proton_node_encode_bundle(
+    proton_core_node_t * node, uint32_t bundle_id, uint64_t uptime_ms, uint8_t * buffer,
+    size_t buffer_len, size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
     size_t * num_selected_peers);
 
 #ifdef __cplusplus
