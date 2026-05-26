@@ -174,7 +174,7 @@ proton_status_e proton_node_update(
     if (bundle_desc->send_now)
     {
       // If this is our first triggered bundle, we will skip looking at non-triggered bundles (via send_now_flag)
-      uint64_t candidate_overdue;
+      uint64_t candidate_overdue = 0;
       // We also don't care about whether the triggered bundle is overdue, just how overdue it is.
       proton_bundle_overdue_ms(
         uptime_ms, bundle_desc->last_send_ms, bundle_desc->period_ms, &candidate_overdue);
@@ -200,7 +200,7 @@ proton_status_e proton_node_update(
     {
       if (bundle_desc->period_ms != 0)
       {
-        uint64_t candidate_overdue;
+        uint64_t candidate_overdue = 0;
         if (
           proton_bundle_overdue_ms(
             uptime_ms, bundle_desc->last_send_ms, bundle_desc->period_ms, &candidate_overdue))
