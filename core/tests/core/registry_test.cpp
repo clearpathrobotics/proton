@@ -278,6 +278,17 @@ TEST(SignalRegistry, SetGetStringWithDifferentLength)
   free(registry.signal_registry);
 }
 
+TEST(SignalRegistry, CheckBundlePeriodPopulated)
+{
+  // This is a simple test to ensure that the autogeneration for a specific bundle has a period
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  const bundle_desc_t * periodic_bundle =
+    proton_registry_get_bundle(&registry, PROTON_BUNDLE_PERIODIC_BUNDLE_ID, NULL);
+  EXPECT_NE(periodic_bundle, nullptr);
+
+  EXPECT_EQ(periodic_bundle->period_ms, 100);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
