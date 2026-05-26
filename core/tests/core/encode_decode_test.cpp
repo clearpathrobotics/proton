@@ -274,50 +274,6 @@ TEST(EncodeDecode, SignalSharedBetweenBundles)
   free(registry.signal_registry);
 }
 
-// NOTE callbacks are moved to node_manager, no longer handled directly by encode_decode
-// TEST(EncodeDecode, BundleDecodeCallback)
-// {
-//   proton_registry_t registry = copy_default_registry(&g_proton_registry);
-
-//   auto check_cb = CheckSignalsInBundleCallback(PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, &registry);
-
-//   uint8_t raw[BUFFER_SIZE];
-//   size_t bytes_encoded = 0;
-
-//   ASSERT_EQ(
-//     proton_encode_bundle(
-//       &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
-//     PROTON_OK);
-//   ASSERT_GT(bytes_encoded, 0);
-
-//   proton_Proton decoded_msg = proton_Proton_init_zero;
-//   ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded, &decoded_msg), PROTON_OK);
-
-//   EXPECT_TRUE(check_cb.cb_called_);
-//   free(registry.signal_registry);
-// }
-
-// TEST(EncodeDecode, NoCallbackForBadDecode)
-// {
-//   proton_registry_t registry = copy_default_registry(&g_proton_registry);
-
-//   auto check_cb = CheckSignalsInBundleCallback(PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, &registry);
-
-//   uint8_t raw[BUFFER_SIZE];
-//   size_t bytes_encoded = 0;
-
-//   ASSERT_EQ(
-//     proton_encode_bundle(
-//       &registry, PROTON_BUNDLE_DEFAULT_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
-//     PROTON_OK);
-//   ASSERT_GT(bytes_encoded, 0);
-
-//   proton_Proton decoded_msg = proton_Proton_init_zero;
-//   EXPECT_EQ(proton_decode(&registry, raw, bytes_encoded / 2, &decoded_msg), PROTON_SERIALIZATION_ERROR);
-//   EXPECT_FALSE(check_cb.cb_called_);
-//   free(registry.signal_registry);
-// }
-
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
