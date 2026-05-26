@@ -190,7 +190,6 @@ add_library(${PROJECT_NAME}
   src/node_manager.c
   src/encode_decode.c
   src/registry.c
-  src/node_manager.c
   src/proton_field_callbacks.c
   src/transport/serial.c
   src/transport/udp4.c
