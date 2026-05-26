@@ -187,7 +187,7 @@ proton_status_e proton_node_update(
         something_to_send = true;
       }
       // Check if this triggered bundle is more overdue than our current candidate triggered bundle
-      else if (candidate_overdue > most_overdue_ms)
+      else if (candidate_overdue >= most_overdue_ms)
       {
         bundle_to_send = bundle_desc->bundle_id;
         most_overdue_ms = candidate_overdue;
@@ -205,7 +205,7 @@ proton_status_e proton_node_update(
           proton_bundle_overdue_ms(
             uptime_ms, bundle_desc->last_send_ms, bundle_desc->period_ms, &candidate_overdue))
         {
-          if (candidate_overdue > most_overdue_ms)
+          if (candidate_overdue >= most_overdue_ms)
           {
             bundle_to_send = bundle_desc->bundle_id;
             most_overdue_ms = candidate_overdue;
