@@ -1,10 +1,13 @@
-name: Auto Assign PR
+name: Auto Assign
 on:
   pull_request:
     types: [opened, reopened]
+  issues:
+    types: [opened, reopened]
 
 jobs:
-  assign:
+  assign-pr:
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -20,5 +23,18 @@ jobs:
             echo "${AUTHOR} is not a member of ${ORG}, assigning code owners"
             gh pr edit ${{ github.event.pull_request.number }} --repo "${REPO}" --add-assignee jtwallis-cpr,tonybaltovski
           fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  assign-issue:
+    if: ${{ github.event_name == 'issues' }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Assign issue to code owners
+        run: |
+          REPO="${{ github.repository }}"
+          gh issue edit ${{ github.event.issue.number }} --repo "${REPO}" --add-assignee jtwallis-cpr,tonybaltovski
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
