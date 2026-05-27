@@ -67,6 +67,8 @@
     "endfunction",
     "endverbatim",
     "fakeroot",
+    "fprofile",
+    "ftest",
     "hosmar",
     "ifdef",
     "ifndef",

@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.14)
 project(proton_core C CXX)
 
+# Code coverage instrumentation option
+option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
+
+if(PROTON_ENABLE_TEST_COVERAGE)
+  message(STATUS "Code coverage instrumentation enabled for proton_core")
+  add_compile_options(-fprofile-arcs -ftest-coverage)
+  add_link_options(--coverage)
+endif()
+
 # protobuf v*.23.0+ will fail to find Abseil, which is a required dependency.
 # Using pkg-config to find protobuf config information instead of direct find_package, to get correct dependencies
 find_package(PkgConfig REQUIRED)

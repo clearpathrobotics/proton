@@ -104,14 +104,17 @@ jobs:
             libboost-all-dev \
             libyaml-cpp-dev \
             libgtest-dev \
-            git
+            git \
+            lcov
 
       - name: Checkout repository
         uses: actions/checkout@v6
 
       - name: Configure CMake
         run: |
-          cmake -S ./core -B build_core -DCMAKE_BUILD_TYPE=Release
+          cmake -S ./core -B build_core \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DPROTON_ENABLE_TEST_COVERAGE=ON
 
       - name: Build
         run: |
@@ -120,6 +123,19 @@ jobs:
       - name: Run tests
         run: |
           ctest --test-dir build_core --output-on-failure
+
+      - name: Generate coverage report
+        run: |
+          lcov --directory build_core --capture --output-file coverage.info --ignore-errors mismatch
+          lcov --remove coverage.info "*tests/*" "*/test*" "/usr/include/*" "*/_deps/*" --output-file coverage.info
+          genhtml coverage.info --output-directory coverage_report --title "Proton Core Code Coverage"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage_report/
+          retention-days: 30
 
   test-proton-vendor:
     runs-on: ubuntu-latest

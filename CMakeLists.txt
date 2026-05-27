@@ -27,6 +27,14 @@ option(PROTON_BUILD_PROTONCPP "Build protoncpp library" ON)
 option(PROTON_BUILD_EXAMPLES "Build proton examples" ON)
 option(PROTON_BUILD_TESTS "Build proton tests" ON)
 option(PROTON_INSTALL "Install proton" ON)
+option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
+
+# Add coverage compiler and linker flags
+if(PROTON_ENABLE_TEST_COVERAGE)
+  message(STATUS "Code coverage instrumentation enabled")
+  add_compile_options(-fprofile-arcs -ftest-coverage)
+  add_link_options(--coverage)
+endif()
 
 if (PROTON_BUILD_PROTONC)
   add_subdirectory(protonc)
