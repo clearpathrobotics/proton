@@ -3,3 +3,5 @@ build*/
 *.egg-info/
 venv/
 .venv/
+*coverage.info
+*coverage_report/

@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -63,7 +67,8 @@ jobs:
             libboost-all-dev \
             libyaml-cpp-dev \
             libgtest-dev \
-            git
+            git \
+            lcov
 
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -71,7 +76,8 @@ jobs:
       - name: Configure CMake
         run: |
           cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DPROTON_ENABLE_TEST_COVERAGE=ON
 
       - name: Build
         run: |
@@ -80,6 +86,30 @@ jobs:
       - name: Run tests
         run: |
           ctest --test-dir build/tests --output-on-failure
+
+      - name: Generate tests coverage report
+        run: |
+          lcov --directory build --capture --output-file tests_coverage.info --ignore-errors mismatch
+          lcov --remove tests_coverage.info "*tests/*" "examples/*" "core/*" "/usr/include/*" "*/_deps/*" --output-file tests_coverage.info --ignore-errors unused
+          genhtml tests_coverage.info --output-directory tests_coverage_report --title "Proton Tests Code Coverage"
+
+      - name: Generate tests coverage summary
+        run: |
+          lcov --summary tests_coverage.info > tests_coverage_summary.txt
+
+      - name: Upload tests coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-coverage-report
+          path: tests_coverage_report/
+          retention-days: 30
+
+      - name: Upload tests coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-coverage-summary
+          path: tests_coverage_summary.txt
+          retention-days: 30
 
   test-proton-core:
     runs-on: ubuntu-latest
@@ -104,14 +134,17 @@ jobs:
             libboost-all-dev \
             libyaml-cpp-dev \
             libgtest-dev \
-            git
+            git \
+            lcov
 
       - name: Checkout repository
         uses: actions/checkout@v6
 
       - name: Configure CMake
         run: |
-          cmake -S ./core -B build_core -DCMAKE_BUILD_TYPE=Release
+          cmake -S ./core -B build_core \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DPROTON_ENABLE_TEST_COVERAGE=ON
 
       - name: Build
         run: |
@@ -120,6 +153,103 @@ jobs:
       - name: Run tests
         run: |
           ctest --test-dir build_core --output-on-failure
+
+      - name: Generate core coverage report
+        run: |
+          lcov --directory build_core --capture --output-file core_coverage.info --ignore-errors mismatch
+          lcov --remove core_coverage.info "*tests/*" "/usr/include/*" "*/_deps/*" --output-file core_coverage.info --ignore-errors unused
+          genhtml core_coverage.info --output-directory core_coverage_report --title "Proton Core Code Coverage"
+
+      - name: Generate core coverage summary
+        run: |
+          lcov --summary core_coverage.info > core_coverage_summary.txt
+
+      - name: Upload core coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-coverage-report
+          path: core_coverage_report/
+          retention-days: 30
+
+      - name: Upload core coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-coverage-summary
+          path: core_coverage_summary.txt
+          retention-days: 30
+
+  comment-coverage-on-pr:
+    if: github.event_name == 'pull_request'
+    needs: [build-and-test, test-proton-core]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download tests coverage summary
+        uses: actions/download-artifact@v5
+        with:
+          name: tests-coverage-summary
+          path: coverage_summaries
+
+      - name: Download core coverage summary
+        uses: actions/download-artifact@v5
+        with:
+          name: core-coverage-summary
+          path: coverage_summaries
+
+      - name: Build PR coverage comment body
+        run: |
+          tests_lines=$(grep -E "lines\.+:" coverage_summaries/tests_coverage_summary.txt | sed -E 's/.*: *//' | xargs)
+          tests_funcs=$(grep -E "functions\.+:" coverage_summaries/tests_coverage_summary.txt | sed -E 's/.*: *//' | xargs)
+          core_lines=$(grep -E "lines\.+:" coverage_summaries/core_coverage_summary.txt | sed -E 's/.*: *//' | xargs)
+          core_funcs=$(grep -E "functions\.+:" coverage_summaries/core_coverage_summary.txt | sed -E 's/.*: *//' | xargs)
+
+          {
+            echo "<!-- proton-coverage-comment -->"
+            echo "## Coverage Summary"
+            echo
+            echo "| Scope | Lines | Functions |"
+            echo "|---|---:|---:|"
+            echo "| protonc/protoncpp | ${tests_lines} | ${tests_funcs} |"
+            echo "| core | ${core_lines} | ${core_funcs} |"
+            echo
+            echo "Detailed HTML reports are available in the workflow artifacts:"
+            echo "- tests-coverage-report"
+            echo "- core-coverage-report"
+          } > coverage_comment.md
+
+      - name: Create or update PR coverage comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('coverage_comment.md', 'utf8');
+            const marker = '<!-- proton-coverage-comment -->';
+            const issue_number = context.issue.number;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                body,
+              });
+            }
 
   test-proton-vendor:
     runs-on: ubuntu-latest
