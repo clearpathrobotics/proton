@@ -1,0 +1,24 @@
+name: Auto Assign PR
+on:
+  pull_request:
+    types: [opened, reopened]
+
+jobs:
+  assign:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Assign PR to author or code owners
+        run: |
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          ORG="${{ github.repository_owner }}"
+          REPO="${{ github.repository }}"
+          if gh api "orgs/${ORG}/members/${AUTHOR}" --silent 2>/dev/null; then
+            gh pr edit ${{ github.event.pull_request.number }} --repo "${REPO}" --add-assignee "${AUTHOR}"
+          else
+            echo "${AUTHOR} is not a member of ${ORG}, assigning code owners"
+            gh pr edit ${{ github.event.pull_request.number }} --repo "${REPO}" --add-assignee jtwallis-cpr,tonybaltovski
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
