@@ -5,6 +5,7 @@ on:
   pull_request:
 
 permissions:
+  actions: read
   contents: read
   pull-requests: write
 
@@ -184,34 +185,140 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download tests coverage summary
-        uses: actions/download-artifact@v5
+      - name: Download PR head tests coverage summary
+        uses: actions/download-artifact@v8
         with:
           name: tests-coverage-summary
-          path: coverage_summaries
+          path: coverage_summaries/head
 
-      - name: Download core coverage summary
-        uses: actions/download-artifact@v5
+      - name: Download PR head core coverage summary
+        uses: actions/download-artifact@v8
         with:
           name: core-coverage-summary
-          path: coverage_summaries
+          path: coverage_summaries/head
+
+      - name: Find base workflow run id
+        id: find_base_run
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const baseBranch = context.payload.pull_request.base.ref;
+            const baseSha = context.payload.pull_request.base.sha;
+
+            let page = 1;
+            let runId = '';
+
+            while (true) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: 'ci.yml',
+                event: 'push',
+                branch: baseBranch,
+                per_page: 100,
+                page,
+              });
+
+              const match = data.workflow_runs.find((run) => run.head_sha === baseSha);
+              if (match) {
+                runId = String(match.id);
+                break;
+              }
+
+              if (data.workflow_runs.length < 100) {
+                break;
+              }
+              page += 1;
+            }
+
+            core.info(`Base branch: ${baseBranch}`);
+            core.info(`Base SHA: ${baseSha}`);
+            core.info(`Resolved run ID: ${runId || 'not found'}`);
+            core.setOutput('run_id', runId);
+
+      - name: Download base tests coverage summary artifact
+        if: steps.find_base_run.outputs.run_id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: tests-coverage-summary
+          path: coverage_summaries/base
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.find_base_run.outputs.run_id }}
+
+      - name: Download base core coverage summary artifact
+        if: steps.find_base_run.outputs.run_id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: core-coverage-summary
+          path: coverage_summaries/base
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.find_base_run.outputs.run_id }}
 
       - name: Build PR coverage comment body
         run: |
-          tests_lines=$(grep -E "lines\.+:" coverage_summaries/tests_coverage_summary.txt | sed -E 's/.*: *//' | xargs)
-          tests_funcs=$(grep -E "functions\.+:" coverage_summaries/tests_coverage_summary.txt | sed -E 's/.*: *//' | xargs)
-          core_lines=$(grep -E "lines\.+:" coverage_summaries/core_coverage_summary.txt | sed -E 's/.*: *//' | xargs)
-          core_funcs=$(grep -E "functions\.+:" coverage_summaries/core_coverage_summary.txt | sed -E 's/.*: *//' | xargs)
+          extract_rate() {
+            local metric="$1"
+            local file="$2"
+            if [[ -f "$file" ]]; then
+              grep -E "^ *${metric}\\.+:" "$file" | sed -E 's/.*: *([0-9]+(\\.[0-9]+)?)%.*/\1/' | head -1
+            else
+              echo ""
+            fi
+          }
+
+          format_percent() {
+            local value="$1"
+            if [[ -n "$value" ]]; then
+              echo "${value}%"
+            else
+              echo "N/A"
+            fi
+          }
+
+          format_delta() {
+            local head_rate="$1"
+            local base_rate="$2"
+            if [[ -z "$head_rate" || -z "$base_rate" ]]; then
+              echo "N/A"
+            else
+              awk -v h="$head_rate" -v b="$base_rate" 'BEGIN { d = h - b; if (d > 0) printf("+%.2f", d); else printf("%.2f", d); }'
+            fi
+          }
+
+          head_tests_lines=$(extract_rate lines coverage_summaries/head/tests_coverage_summary.txt)
+          head_tests_funcs=$(extract_rate functions coverage_summaries/head/tests_coverage_summary.txt)
+          head_core_lines=$(extract_rate lines coverage_summaries/head/core_coverage_summary.txt)
+          head_core_funcs=$(extract_rate functions coverage_summaries/head/core_coverage_summary.txt)
+
+          base_tests_lines=$(extract_rate lines coverage_summaries/base/tests_coverage_summary.txt)
+          base_tests_funcs=$(extract_rate functions coverage_summaries/base/tests_coverage_summary.txt)
+          base_core_lines=$(extract_rate lines coverage_summaries/base/core_coverage_summary.txt)
+          base_core_funcs=$(extract_rate functions coverage_summaries/base/core_coverage_summary.txt)
+
+          delta_tests_lines=$(format_delta "$head_tests_lines" "$base_tests_lines")
+          delta_tests_funcs=$(format_delta "$head_tests_funcs" "$base_tests_funcs")
+          delta_core_lines=$(format_delta "$head_core_lines" "$base_core_lines")
+          delta_core_funcs=$(format_delta "$head_core_funcs" "$base_core_funcs")
 
           {
             echo "<!-- proton-coverage-comment -->"
             echo "## Coverage Summary"
             echo
-            echo "| Scope | Lines | Functions |"
-            echo "|---|---:|---:|"
-            echo "| protonc/protoncpp | ${tests_lines} | ${tests_funcs} |"
-            echo "| core | ${core_lines} | ${core_funcs} |"
+            echo "| Scope | Base Lines | PR Lines | Delta (pp) | Base Functions | PR Functions | Delta (pp) |"
+            echo "|---|---:|---:|---:|---:|---:|---:|"
+            echo "| protonc/protoncpp | $(format_percent "$base_tests_lines") | $(format_percent "$head_tests_lines") | ${delta_tests_lines} | $(format_percent "$base_tests_funcs") | $(format_percent "$head_tests_funcs") | ${delta_tests_funcs} |"
+            echo "| core | $(format_percent "$base_core_lines") | $(format_percent "$head_core_lines") | ${delta_core_lines} | $(format_percent "$base_core_funcs") | $(format_percent "$head_core_funcs") | ${delta_core_funcs} |"
             echo
+            echo "Coverage deltas are computed as: PR source branch minus target branch (base commit)."
+            echo
+            if [[ ! -f coverage_summaries/base/tests_coverage_summary.txt || ! -f coverage_summaries/base/core_coverage_summary.txt ]]; then
+              echo "Baseline artifact for the target branch commit was not found, so one or more deltas may be shown as N/A."
+              echo
+            fi
             echo "Detailed HTML reports are available in the workflow artifacts:"
             echo "- tests-coverage-report"
             echo "- core-coverage-report"
