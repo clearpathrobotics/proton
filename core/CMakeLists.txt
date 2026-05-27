@@ -364,6 +364,38 @@ target_include_directories(multi_node_test PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
 )
 
+set(PERIODIC_BUNDLE_TEST ${CMAKE_CURRENT_BINARY_DIR}/tests/periodic_bundle_generated)
+
+set(PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES
+  "${PERIODIC_BUNDLE_TEST}/target_registry.c"
+  "${PERIODIC_BUNDLE_TEST}/target_node.c"
+  "${PERIODIC_BUNDLE_TEST}/target_registry_ids.h"
+  "${PERIODIC_BUNDLE_TEST}/target_registry_sizes.h"
+  "${PERIODIC_BUNDLE_TEST}/target_connections.h"
+)
+
+proton_core_generator(
+  "${PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES}"
+  ${PERIODIC_BUNDLE_TEST}
+  "producer"
+  CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/periodic_bundle_test.yaml
+)
+
+add_executable(periodic_bundle_test
+  tests/core/periodic_bundle_test.cpp
+  ${PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES}
+)
+
+target_link_libraries(periodic_bundle_test PUBLIC
+  GTest::gtest_main
+  proton::proton_core
+)
+
+target_include_directories(periodic_bundle_test PUBLIC
+  ${PERIODIC_BUNDLE_TEST}
+  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+)
+
 include(GoogleTest)
 gtest_discover_tests(registry_test)
 gtest_discover_tests(encode_decode_test)
@@ -371,3 +403,4 @@ gtest_discover_tests(serial_transport_test)
 gtest_discover_tests(udp4_transport_test)
 gtest_discover_tests(node_manager_test)
 gtest_discover_tests(multi_node_test)
+gtest_discover_tests(periodic_bundle_test)

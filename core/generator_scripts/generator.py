@@ -26,6 +26,7 @@ from config import validate_ids
 from jinja2 import Template
 from normalize import (
     normalize_signals,
+    set_bundle_periods,
     set_node_endpoint_address,
     set_producer_consumer_ids,
 )
@@ -141,6 +142,7 @@ def main():
     set_node_endpoint_address(config['nodes'])
     normalize_signals(config['signals'])
     set_producer_consumer_ids(config['bundles'], config['nodes'])
+    set_bundle_periods(config['bundles'])
 
     generate(
         dest_path,

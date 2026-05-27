@@ -59,3 +59,10 @@ bundles:
     producers: [producer]
     consumers: [consumer]
     signals: [0x1015]
+
+  - name: periodic_bundle
+    id: 0x104
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1000]
+    period_ms: 100

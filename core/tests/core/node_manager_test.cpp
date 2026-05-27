@@ -278,9 +278,9 @@ TEST_F(NodeManagerTest, Update_SetsLastSendMs)
   // With all bundles at last_send_ms == 0 and no send_now flags, the selection algorithm
   // (using <=) picks the last bundle in the table. Verify exactly one bundle was updated.
   size_t updated_count = 0;
-  for (size_t i = 0; i < g_proton_registry.bundle_count; i++)
+  for (size_t i = 0; i < node_.registry->bundle_count; i++)
   {
-    if (g_proton_registry.bundle_table[i].last_send_ms == UPTIME_MS)
+    if (node_.registry->bundle_table[i].last_send_ms == UPTIME_MS)
     {
       updated_count++;
     }
@@ -307,11 +307,57 @@ TEST_F(NodeManagerTest, Update_TriggeredBundleIsPrioritized)
   EXPECT_GT(out_len, 0);
 
   // value_test (index 0) was sent
-  EXPECT_EQ(g_proton_registry.bundle_table[0].last_send_ms, UPTIME_MS);
-  EXPECT_FALSE(g_proton_registry.bundle_table[0].send_now);
+  EXPECT_EQ(node_.registry->bundle_table[0].last_send_ms, UPTIME_MS);
+  EXPECT_FALSE(node_.registry->bundle_table[0].send_now);
 
   // The last bundle (shared_2, index 3) was NOT sent
-  EXPECT_EQ(g_proton_registry.bundle_table[3].last_send_ms, 0ULL);
+  EXPECT_EQ(node_.registry->bundle_table[3].last_send_ms, 0ULL);
+}
+
+TEST_F(NodeManagerTest, PeriodicBundleTest)
+{
+  uint64_t uptime_ms = 1000;
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  ASSERT_EQ(
+    proton_node_update(&node_, uptime_ms, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_OK);
+  EXPECT_GT(out_len, 0);
+  EXPECT_EQ(num_peers, 1);
+
+  // periodic_bundle
+  size_t bundle_slot;
+  const bundle_desc_t * desc =
+    proton_registry_get_bundle(node_.registry, PROTON_BUNDLE_PERIODIC_BUNDLE_ID, &bundle_slot);
+  ASSERT_NE(desc, nullptr);
+  EXPECT_EQ(desc->last_send_ms, uptime_ms);
+
+  // Update bundle again, before the period of the periodic bundle is up
+  memset(buf, 0, BUFFER_SIZE);
+  num_peers = 0;
+  memset(dest, 0, sizeof(proton_endpoint_t));
+  uint64_t second_uptime = uptime_ms + 10;
+
+  ASSERT_EQ(
+    proton_node_update(&node_, second_uptime, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_OK);
+  EXPECT_GT(out_len, 0);
+  EXPECT_EQ(num_peers, 0);
+
+  EXPECT_EQ(node_.registry->bundle_table[bundle_slot].last_send_ms, uptime_ms);
+
+  // Update bundle a third time, after the bundle period has expired
+  uint64_t third_uptime = second_uptime + desc->period_ms;
+  ASSERT_EQ(
+    proton_node_update(&node_, third_uptime, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_OK);
+  EXPECT_GT(out_len, 0);
+  EXPECT_EQ(num_peers, 1);
+
+  EXPECT_EQ(node_.registry->bundle_table[bundle_slot].last_send_ms, third_uptime);
 }
 
 // -----------------------------------------------------------------------
@@ -438,7 +484,7 @@ TEST_F(NodeManagerTest, EncodeBundle_ValidBundle_PopulatesOutputsAndUpdatesTimes
   EXPECT_EQ(dest[0].node_id, static_cast<uint32_t>(PROTON_NODE_CONSUMER_ID));
   EXPECT_EQ(dest[0].endpoint_id, static_cast<uint32_t>(PROTON_NODE_CONSUMER_ENDPOINT_0_ID));
   // bundle_table is shared; verify last_send_ms was updated on the value_test slot (index 0)
-  EXPECT_EQ(g_proton_registry.bundle_table[0].last_send_ms, UPTIME_MS);
+  EXPECT_EQ(node_.registry->bundle_table[0].last_send_ms, UPTIME_MS);
 }
 
 TEST_F(NodeManagerTest, EncodeBundle_RoundTrip_WithReceive_SignalValuePreserved)
@@ -556,11 +602,11 @@ TEST_F(NodeManagerTest, Update_QueueTriggeredBundle_IsPrioritizedOverDefault)
 
   EXPECT_GT(out_len, 0);
   // value_test (slot 0) was the triggered bundle — its timestamp must be updated
-  EXPECT_EQ(g_proton_registry.bundle_table[0].last_send_ms, UPTIME_MS);
+  EXPECT_EQ(node_.registry->bundle_table[0].last_send_ms, UPTIME_MS);
   // The fallback bundle (shared_2, slot 3) must NOT have been sent
-  EXPECT_EQ(g_proton_registry.bundle_table[3].last_send_ms, 0ULL);
+  EXPECT_EQ(node_.registry->bundle_table[3].last_send_ms, 0ULL);
   // send_now must be cleared after sending
-  EXPECT_FALSE(g_proton_registry.bundle_table[0].send_now);
+  EXPECT_FALSE(node_.registry->bundle_table[0].send_now);
 }
 
 // -----------------------------------------------------------------------

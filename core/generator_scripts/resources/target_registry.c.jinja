@@ -107,6 +107,7 @@ bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
       .count = {{ bundle.signals | length }}
     },
     .last_send_ms = 0,
+    .period_ms = {{ bundle.period_ms }},
     .send_now = false,
   },
 {% endif %}
