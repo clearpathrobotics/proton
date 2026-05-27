@@ -21,7 +21,7 @@ jobs:
             gh pr edit ${{ github.event.pull_request.number }} --repo "${REPO}" --add-assignee "${AUTHOR}"
           else
             echo "${AUTHOR} is not a member of ${ORG}, assigning code owners"
-            gh pr edit ${{ github.event.pull_request.number }} --repo "${REPO}" --add-assignee jtwallis-cpr,tonybaltovski
+            gh pr edit ${{ github.event.pull_request.number }} --repo "${REPO}" --add-assignee twallis-cpr,tonybaltovski
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -35,6 +35,6 @@ jobs:
       - name: Assign issue to code owners
         run: |
           REPO="${{ github.repository }}"
-          gh issue edit ${{ github.event.issue.number }} --repo "${REPO}" --add-assignee jtwallis-cpr,tonybaltovski
+          gh issue edit ${{ github.event.issue.number }} --repo "${REPO}" --add-assignee twallis-cpr,tonybaltovski
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
