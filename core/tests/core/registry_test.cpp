@@ -65,6 +65,17 @@ TEST(SignalRegistry, GetSignalInvalidId)
   free(registry.signal_registry);
 }
 
+TEST(SignalRegistry, GetSignalIdNotInTarget)
+{
+  // Signal ID 0x1111 is defined in test.yaml, but it is not part of any bundle that
+  // the test producer is part of.
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  signal_desc_t * desc = proton_registry_get_signal(&registry, 0x1111, NULL);
+  bool found = desc != nullptr;
+  EXPECT_FALSE(found);
+  free(registry.signal_registry);
+}
+
 TEST(SignalRegistry, GetScalarSignalValue)
 {
   proton_registry_t registry = copy_default_registry(&g_proton_registry);

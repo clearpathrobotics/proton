@@ -13,10 +13,23 @@ nodes:
         type: udp4
         ip: 127.0.0.1
         port: 11417
+      - id: 1
+        type: udp4
+        ip: 127.0.0.1
+        port: 11418
+  - name: unused_consumer
+    id: 2
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11419
 
 connections:
   - first: {node: producer, id: 0}
     second: {node: consumer, id: 0}
+  - first: {node: consumer, id: 1}
+    second: {node: unused_consumer, id: 0}
 
 signals:
   - {name: double_value, id: 0x1000, type: double}
@@ -34,6 +47,7 @@ signals:
   - {name: really_long_string, id: 0x1013, type: string, value: "ipsumsedolorsitametconsecteturadipiscingelit", capacity: 44}
   - {name: really_long_bytes, id: 0x1014, type: bytes, value: [0, 1, 2, 3, 4, 5, 6, 7], capacity: 8}
   - {name: shared_signal, id: 0x1015, type: int32}
+  - {name: unused_signal, id: 0x1111, type: float}
 
 bundles:
   - name: value_test
@@ -66,3 +80,15 @@ bundles:
     consumers: [consumer]
     signals: [0x1000]
     period_ms: 100
+
+  - name: really_long_values_test
+    id: 0x105
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1013, 0x1014]
+
+  - name: unused_bundle
+    id: 0x1112
+    producers: [consumer]
+    consumers: [unused_consumer]
+    signals: [0x1111]
