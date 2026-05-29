@@ -53,51 +53,6 @@ if(NOT PROTOC_EXECUTABLE)
   message(FATAL_ERROR "Could not find protoc")
 endif()
 
-# proton_core generator
-
-set(PROTON_CORE_GENERATOR ${CMAKE_CURRENT_LIST_DIR}/generator_scripts/generator.py)
-
-function(proton_core_generator GENERATED_FILES GENERATED_FOLDER TARGET)
-  # CONFIG_FILE is optional - use PROTON_CORE_CONFIG_FILE if set by user
-  set(options "")
-  set(oneValueArgs CONFIG_FILE)
-  set(multiValueArgs "")
-  cmake_parse_arguments(ARG "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-  if(ARG_CONFIG_FILE)
-    set(CONFIG_FILE ${ARG_CONFIG_FILE})
-  elseif(PROTON_CORE_CONFIG_FILE)
-    set(CONFIG_FILE ${PROTON_CORE_CONFIG_FILE})
-  endif()
-
-  # Build optional config argument
-  set(CONFIG_ARG "")
-  set(CONFIG_DEPENDS "")
-  if(CONFIG_FILE)
-    set(CONFIG_ARG -c ${CONFIG_FILE})
-    if(EXISTS ${CONFIG_FILE})
-      set(CONFIG_DEPENDS ${CONFIG_FILE})
-    endif()
-  endif()
-
-  find_package(Python3 REQUIRED COMPONENTS Interpreter)
-  set(PROTON_CORE_GENERATOR ${CMAKE_CURRENT_LIST_DIR}/generator_scripts/generator.py)
-  # Add a custom target to execute the script
-  add_custom_command(
-    OUTPUT ${GENERATED_FILES}
-    COMMAND ${CMAKE_COMMAND} -E env
-      PYTHONPATH=${CMAKE_CURRENT_LIST_DIR}/generator_scripts
-      ${Python3_EXECUTABLE}
-      ${PROTON_CORE_GENERATOR}
-      ${CONFIG_ARG}
-      -d ${GENERATED_FOLDER}
-      -t ${TARGET}
-    DEPENDS ${CONFIG_DEPENDS}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Running Python script: ${Python3_EXECUTABLE} ${PROTON_CORE_GENERATOR} ${CONFIG_ARG} -d ${GENERATED_FOLDER} -t ${TARGET}"
-  )
-endfunction()
-
 # -------------------------------
 # Proto files
 # -------------------------------
@@ -263,6 +218,7 @@ endif()
 if(PROTON_BUILD_TESTS)
   enable_testing()
   find_package(GTest REQUIRED)
+  include(${CMAKE_CURRENT_LIST_DIR}/../cmake/protonCoreGenerator.cmake)
 
 # autogen registry for tests
   set(GENERATED_REGISTRY_FILES
