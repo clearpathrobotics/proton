@@ -232,6 +232,8 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
 static bool proton_operation_decode_cb(
   pb_istream_t * istream, const pb_field_t * field, void ** arg)
 {
+  (void)istream;
+
   if (!field || !arg)
   {
     return false;

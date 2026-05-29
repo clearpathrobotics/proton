@@ -142,6 +142,7 @@
     "Txps",
     "txps",
     "venv",
+    "Werror",
     "Wextra",
     "Wpedantic"
   ]
