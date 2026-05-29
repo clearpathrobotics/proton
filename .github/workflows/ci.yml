@@ -200,7 +200,7 @@ jobs:
 
       - name: Find base workflow run id
         id: find_base_run
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const owner = context.repo.owner;
@@ -326,7 +326,7 @@ jobs:
           } > coverage_comment.md
 
       - name: Create or update PR coverage comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
