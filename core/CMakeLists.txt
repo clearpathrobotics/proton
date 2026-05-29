@@ -4,10 +4,13 @@ project(proton_core C CXX)
 # Code coverage instrumentation option
 option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
 
-if(PROTON_ENABLE_TEST_COVERAGE)
-  message(STATUS "Code coverage instrumentation enabled for proton_core")
-  add_compile_options(-fprofile-arcs -ftest-coverage)
-  add_link_options(--coverage)
+if (PROTON_BUILD_TESTS)
+  add_compile_options(-Werror -Wall -Wextra)
+  if(PROTON_ENABLE_TEST_COVERAGE)
+    message(STATUS "Code coverage instrumentation enabled for proton_core")
+    add_compile_options(-fprofile-arcs -ftest-coverage)
+    add_link_options(--coverage)
+  endif()
 endif()
 
 # protobuf v*.23.0+ will fail to find Abseil, which is a required dependency.
@@ -247,169 +250,172 @@ if (PROTON_INSTALL)
 endif()
 
 # Testing
-enable_testing()
-find_package(GTest REQUIRED)
+if (PROTON_BUILD_TESTS)
+  enable_testing()
+  find_package(GTest REQUIRED)
 
-# autogen registry for tests
-set(GENERATED_REGISTRY_FILES
-  "${GENERATED_FOLDER}/target_registry.c"
-  "${GENERATED_FOLDER}/target_node.c"
-  "${GENERATED_FOLDER}/target_registry_ids.h"
-  "${GENERATED_FOLDER}/target_registry_sizes.h"
-  "${GENERATED_FOLDER}/target_connections.h"
-)
+  # autogen registry for tests
+  set(GENERATED_REGISTRY_FILES
+    "${GENERATED_FOLDER}/target_registry.c"
+    "${GENERATED_FOLDER}/target_node.c"
+    "${GENERATED_FOLDER}/target_registry_ids.h"
+    "${GENERATED_FOLDER}/target_registry_sizes.h"
+    "${GENERATED_FOLDER}/target_connections.h"
+  )
 
-proton_core_generator(
-  "${GENERATED_REGISTRY_FILES}"
-  ${GENERATED_FOLDER}
-  "producer"
-  CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/test.yaml
-)
+  proton_core_generator(
+    "${GENERATED_REGISTRY_FILES}"
+    ${GENERATED_FOLDER}
+    "producer"
+    CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/test.yaml
+  )
 
-add_executable(registry_test
-  tests/core/registry_test.cpp
-  ${GENERATED_REGISTRY_FILES}
-)
+  add_executable(registry_test
+    tests/core/registry_test.cpp
+    ${GENERATED_REGISTRY_FILES}
+  )
 
-target_link_libraries(registry_test PUBLIC
-  GTest::gtest_main
-  proton::proton_core
-)
+  target_link_libraries(registry_test PUBLIC
+    GTest::gtest_main
+    proton::proton_core
+  )
 
-target_include_directories(registry_test PUBLIC
-  ${GENERATED_FOLDER}
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
-)
+  target_include_directories(registry_test PUBLIC
+    ${GENERATED_FOLDER}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
 
-add_executable(encode_decode_test
-  tests/core/encode_decode_test.cpp
-  ${GENERATED_REGISTRY_FILES}
-)
+  add_executable(encode_decode_test
+    tests/core/encode_decode_test.cpp
+    ${GENERATED_REGISTRY_FILES}
+  )
 
-target_link_libraries(encode_decode_test PUBLIC
-  GTest::gtest_main
-  proton::proton_core
-)
+  target_link_libraries(encode_decode_test PUBLIC
+    GTest::gtest_main
+    proton::proton_core
+  )
 
-target_include_directories(encode_decode_test PUBLIC
-  ${GENERATED_FOLDER}
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
-)
+  target_include_directories(encode_decode_test PUBLIC
+    ${GENERATED_FOLDER}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
 
-add_executable(serial_transport_test
-  tests/core/serial_transport_test.cpp
-  ${GENERATED_REGISTRY_FILES}
-)
+  add_executable(serial_transport_test
+    tests/core/serial_transport_test.cpp
+    ${GENERATED_REGISTRY_FILES}
+  )
 
-target_link_libraries(serial_transport_test PUBLIC
-  GTest::gtest_main
-  proton::proton_core
-)
+  target_link_libraries(serial_transport_test PUBLIC
+    GTest::gtest_main
+    proton::proton_core
+  )
 
-target_include_directories(serial_transport_test PUBLIC
-  ${GENERATED_FOLDER}
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
-)
+  target_include_directories(serial_transport_test PUBLIC
+    ${GENERATED_FOLDER}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
 
-add_executable(udp4_transport_test
-  tests/core/udp4_transport_test.cpp
-  ${GENERATED_REGISTRY_FILES}
-)
+  add_executable(udp4_transport_test
+    tests/core/udp4_transport_test.cpp
+    ${GENERATED_REGISTRY_FILES}
+  )
 
-target_link_libraries(udp4_transport_test PUBLIC
-  GTest::gtest_main
-  proton::proton_core
-)
+  target_link_libraries(udp4_transport_test PUBLIC
+    GTest::gtest_main
+    proton::proton_core
+  )
 
-target_include_directories(udp4_transport_test PUBLIC
-  ${GENERATED_FOLDER}
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
-)
+  target_include_directories(udp4_transport_test PUBLIC
+    ${GENERATED_FOLDER}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
 
-add_executable(node_manager_test
-  tests/core/node_manager_test.cpp
-  ${GENERATED_REGISTRY_FILES}
-)
+  add_executable(node_manager_test
+    tests/core/node_manager_test.cpp
+    ${GENERATED_REGISTRY_FILES}
+  )
 
-target_link_libraries(node_manager_test PUBLIC
-  GTest::gtest_main
-  proton::proton_core
-)
+  target_link_libraries(node_manager_test PUBLIC
+    GTest::gtest_main
+    proton::proton_core
+  )
 
-target_include_directories(node_manager_test PUBLIC
-  ${GENERATED_FOLDER}
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
-)
+  target_include_directories(node_manager_test PUBLIC
+    ${GENERATED_FOLDER}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
 
-set(MULTI_NODE_GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/tests/multi_node_generated)
+  set(MULTI_NODE_GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/tests/multi_node_generated)
 
-set(MULTI_NODE_GENERATED_REGISTRY_FILES
-  "${MULTI_NODE_GENERATED_FOLDER}/target_registry.c"
-  "${MULTI_NODE_GENERATED_FOLDER}/target_node.c"
-  "${MULTI_NODE_GENERATED_FOLDER}/target_registry_ids.h"
-  "${MULTI_NODE_GENERATED_FOLDER}/target_registry_sizes.h"
-  "${MULTI_NODE_GENERATED_FOLDER}/target_connections.h"
-)
+  set(MULTI_NODE_GENERATED_REGISTRY_FILES
+    "${MULTI_NODE_GENERATED_FOLDER}/target_registry.c"
+    "${MULTI_NODE_GENERATED_FOLDER}/target_node.c"
+    "${MULTI_NODE_GENERATED_FOLDER}/target_registry_ids.h"
+    "${MULTI_NODE_GENERATED_FOLDER}/target_registry_sizes.h"
+    "${MULTI_NODE_GENERATED_FOLDER}/target_connections.h"
+  )
 
-proton_core_generator(
-  "${MULTI_NODE_GENERATED_REGISTRY_FILES}"
-  ${MULTI_NODE_GENERATED_FOLDER}
-  "node1"
-  CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/multi_node_test.yaml
-)
+  proton_core_generator(
+    "${MULTI_NODE_GENERATED_REGISTRY_FILES}"
+    ${MULTI_NODE_GENERATED_FOLDER}
+    "node1"
+    CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/multi_node_test.yaml
+  )
 
-add_executable(multi_node_test
-  tests/core/multi_node_test.cpp
-  ${MULTI_NODE_GENERATED_REGISTRY_FILES}
-)
+  add_executable(multi_node_test
+    tests/core/multi_node_test.cpp
+    ${MULTI_NODE_GENERATED_REGISTRY_FILES}
+  )
 
-target_link_libraries(multi_node_test PUBLIC
-  GTest::gtest_main
-  proton::proton_core
-)
+  target_link_libraries(multi_node_test PUBLIC
+    GTest::gtest_main
+    proton::proton_core
+  )
 
-target_include_directories(multi_node_test PUBLIC
-  ${MULTI_NODE_GENERATED_FOLDER}
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
-)
+  target_include_directories(multi_node_test PUBLIC
+    ${MULTI_NODE_GENERATED_FOLDER}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
 
-set(PERIODIC_BUNDLE_TEST ${CMAKE_CURRENT_BINARY_DIR}/tests/periodic_bundle_generated)
+  set(PERIODIC_BUNDLE_TEST ${CMAKE_CURRENT_BINARY_DIR}/tests/periodic_bundle_generated)
 
-set(PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES
-  "${PERIODIC_BUNDLE_TEST}/target_registry.c"
-  "${PERIODIC_BUNDLE_TEST}/target_node.c"
-  "${PERIODIC_BUNDLE_TEST}/target_registry_ids.h"
-  "${PERIODIC_BUNDLE_TEST}/target_registry_sizes.h"
-  "${PERIODIC_BUNDLE_TEST}/target_connections.h"
-)
+  set(PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES
+    "${PERIODIC_BUNDLE_TEST}/target_registry.c"
+    "${PERIODIC_BUNDLE_TEST}/target_node.c"
+    "${PERIODIC_BUNDLE_TEST}/target_registry_ids.h"
+    "${PERIODIC_BUNDLE_TEST}/target_registry_sizes.h"
+    "${PERIODIC_BUNDLE_TEST}/target_connections.h"
+  )
 
-proton_core_generator(
-  "${PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES}"
-  ${PERIODIC_BUNDLE_TEST}
-  "producer"
-  CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/periodic_bundle_test.yaml
-)
+  proton_core_generator(
+    "${PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES}"
+    ${PERIODIC_BUNDLE_TEST}
+    "producer"
+    CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/core/periodic_bundle_test.yaml
+  )
 
-add_executable(periodic_bundle_test
-  tests/core/periodic_bundle_test.cpp
-  ${PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES}
-)
+  add_executable(periodic_bundle_test
+    tests/core/periodic_bundle_test.cpp
+    ${PERIODIC_BUNDLE_GENERATED_REGISTRY_FILES}
+  )
 
-target_link_libraries(periodic_bundle_test PUBLIC
-  GTest::gtest_main
-  proton::proton_core
-)
+  target_link_libraries(periodic_bundle_test PUBLIC
+    GTest::gtest_main
+    proton::proton_core
+  )
 
-target_include_directories(periodic_bundle_test PUBLIC
-  ${PERIODIC_BUNDLE_TEST}
-  ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
-)
+  target_include_directories(periodic_bundle_test PUBLIC
+    ${PERIODIC_BUNDLE_TEST}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
 
-include(GoogleTest)
-gtest_discover_tests(registry_test)
-gtest_discover_tests(encode_decode_test)
-gtest_discover_tests(serial_transport_test)
-gtest_discover_tests(udp4_transport_test)
-gtest_discover_tests(node_manager_test)
-gtest_discover_tests(multi_node_test)
-gtest_discover_tests(periodic_bundle_test)
+  include(GoogleTest)
+  gtest_discover_tests(registry_test)
+  gtest_discover_tests(encode_decode_test)
+  gtest_discover_tests(serial_transport_test)
+  gtest_discover_tests(udp4_transport_test)
+  gtest_discover_tests(node_manager_test)
+  gtest_discover_tests(multi_node_test)
+  gtest_discover_tests(periodic_bundle_test)
+
+endif()

@@ -213,8 +213,6 @@ TEST(EncodeDecode, RoundTripMutatedDoubleValue)
   ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded, &decoded_msg), PROTON_OK);
 
   double decoded = 0.0;
-  size_t len = sizeof(decoded);
-  proton_signal_type_e type;
   status = proton_signal_get_double(&registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID, &decoded);
   ASSERT_EQ(status, PROTON_OK);
   EXPECT_DOUBLE_EQ(decoded, new_value);
@@ -258,7 +256,6 @@ TEST(EncodeDecode, SignalSharedBetweenBundles)
   ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded, &decoded_msg), PROTON_OK);
 
   int32_t decoded = 0;
-  size_t len = sizeof(decoded);
   status = proton_signal_get_int32(&registry, PROTON_SIGNAL_SHARED_SIGNAL_ID, &decoded);
   ASSERT_EQ(status, PROTON_OK);
   EXPECT_EQ(decoded, first_value);
