@@ -145,6 +145,7 @@ jobs:
         run: |
           cmake -S ./core -B build_core \
             -DCMAKE_BUILD_TYPE=Debug \
+            -DPROTON_BUILD_TESTS=ON \
             -DPROTON_ENABLE_TEST_COVERAGE=ON
 
       - name: Build

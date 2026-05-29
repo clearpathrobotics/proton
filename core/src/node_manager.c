@@ -155,7 +155,6 @@ proton_status_e proton_node_update(
 
   bool something_to_send = false;
 
-  uint32_t bundle_to_send = 0;
   uint64_t most_overdue_ms = 0;
   bool send_now_flag = false;
   size_t slot_id = 0;
@@ -181,7 +180,6 @@ proton_status_e proton_node_update(
       if (!send_now_flag)
       {
         send_now_flag = true;
-        bundle_to_send = bundle_desc->bundle_id;
         most_overdue_ms = candidate_overdue;
         slot_id = i;
         something_to_send = true;
@@ -189,7 +187,6 @@ proton_status_e proton_node_update(
       // Check if this triggered bundle is more overdue than our current candidate triggered bundle
       else if (candidate_overdue >= most_overdue_ms)
       {
-        bundle_to_send = bundle_desc->bundle_id;
         most_overdue_ms = candidate_overdue;
         slot_id = i;
         something_to_send = true;
@@ -207,7 +204,6 @@ proton_status_e proton_node_update(
         {
           if (candidate_overdue >= most_overdue_ms)
           {
-            bundle_to_send = bundle_desc->bundle_id;
             most_overdue_ms = candidate_overdue;
             slot_id = i;
             something_to_send = true;
