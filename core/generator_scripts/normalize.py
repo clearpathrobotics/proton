@@ -131,7 +131,7 @@ def set_bundle_periods(bundles: list[dict]):
 
 
 def filter_for_target(
-    bundles: list[dict], signals: list[dict], connections: list[dict], target: str
+    bundles: list[dict], signals: list[dict], target: str
 ) -> tuple[list[dict], list[dict]]:
     """
     Filter out all signals and bundles that a target does not care about.
@@ -139,7 +139,6 @@ def filter_for_target(
     Args:
         bundles: "bundles" stanza in proton config
         signals: "signals" stanza in proton config
-        connections: "connections" stanza in proton config
         target: name of node being generated
 
     Returns:

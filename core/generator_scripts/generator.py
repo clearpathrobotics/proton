@@ -145,9 +145,12 @@ def main():
     set_producer_consumer_ids(config['bundles'], config['nodes'])
     set_bundle_periods(config['bundles'])
 
-    (config['bundles'], config['signals']) = filter_for_target(
-        config['bundles'], config['signals'], config['connections'], target
-    )
+    try:
+        config['bundles'], config['signals'] = filter_for_target(
+            config['bundles'], config['signals'], target
+        )
+    except KeyError as e:
+        raise KeyError(f'Could not find key in config: {e}') from e
 
     generate(
         dest_path,
