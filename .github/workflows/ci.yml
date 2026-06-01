@@ -99,14 +99,14 @@ jobs:
           lcov --summary tests_coverage.info > tests_coverage_summary.txt
 
       - name: Upload tests coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tests-coverage-report
           path: tests_coverage_report/
           retention-days: 30
 
       - name: Upload tests coverage summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tests-coverage-summary
           path: tests_coverage_summary.txt
@@ -167,14 +167,14 @@ jobs:
           lcov --summary core_coverage.info > core_coverage_summary.txt
 
       - name: Upload core coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: core-coverage-report
           path: core_coverage_report/
           retention-days: 30
 
       - name: Upload core coverage summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: core-coverage-summary
           path: core_coverage_summary.txt
