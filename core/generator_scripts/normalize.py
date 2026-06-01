@@ -146,13 +146,6 @@ def filter_for_target(
         tuple of bundles and signals that the target cares about
 
     """
-    peers = {target}
-    for connection in connections:
-        if connection['first']['node'] == target:
-            peers.add(connection['second']['node'])
-        elif connection['second']['node'] == target:
-            peers.add(connection['first']['node'])
-
     filtered_bundles = [
         bundle
         for bundle in bundles
