@@ -128,3 +128,32 @@ def set_bundle_periods(bundles: list[dict]):
     """
     for bundle in bundles:
         bundle.setdefault('period_ms', 0)
+
+
+def filter_for_target(
+    bundles: list[dict], signals: list[dict], target: str
+) -> tuple[list[dict], list[dict]]:
+    """
+    Filter out all signals and bundles that a target does not care about.
+
+    Args:
+        bundles: "bundles" stanza in proton config
+        signals: "signals" stanza in proton config
+        target: name of node being generated
+
+    Returns:
+        tuple of bundles and signals that the target cares about
+
+    """
+    filtered_bundles = [
+        bundle
+        for bundle in bundles
+        if target in bundle['producers'] or target in bundle['consumers']
+    ]
+    filtered_signal_ids = set()
+    for bundle in filtered_bundles:
+        filtered_signal_ids.update(bundle['signals'])
+
+    filtered_signals = [signal for signal in signals if signal['id'] in filtered_signal_ids]
+
+    return (filtered_bundles, filtered_signals)

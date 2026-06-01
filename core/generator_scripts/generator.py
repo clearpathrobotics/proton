@@ -25,6 +25,7 @@ from pathlib import Path
 from config import validate_ids
 from jinja2 import Template
 from normalize import (
+    filter_for_target,
     normalize_signals,
     set_bundle_periods,
     set_node_endpoint_address,
@@ -143,6 +144,13 @@ def main():
     normalize_signals(config['signals'])
     set_producer_consumer_ids(config['bundles'], config['nodes'])
     set_bundle_periods(config['bundles'])
+
+    try:
+        config['bundles'], config['signals'] = filter_for_target(
+            config['bundles'], config['signals'], target
+        )
+    except KeyError as e:
+        raise KeyError(f'Could not find key in config: {e}') from e
 
     generate(
         dest_path,
