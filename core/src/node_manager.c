@@ -102,38 +102,51 @@ proton_status_e proton_node_receive(proton_core_node_t * node, const uint8_t * b
 
   proton_Proton msg = proton_Proton_init_default;
 
+  proton_status_e lock_status = proton_lock_registry(node->registry);
+  if (lock_status != PROTON_OK)
+  {
+    return lock_status;
+  }
+
   proton_status_e decode_result = proton_decode(node->registry, buffer, len, &msg);
 
-  if (decode_result != PROTON_OK)
+  if (decode_result == PROTON_OK)
   {
-    return decode_result;
+    if (msg.which_operation == proton_Proton_bundle_tag)
+    {
+      size_t slot_id;
+      uint32_t bundle_id = msg.operation.bundle.id;
+      const bundle_desc_t * bundle_desc =
+        proton_registry_get_bundle(node->registry, bundle_id, &slot_id);
+
+      if (bundle_desc == NULL)
+      {
+        // If the bundle ID is not found, then this is likely not a bundle for this target
+        decode_result = PROTON_INCORRECT_TARGET_ERROR;
+      }
+      else
+      {
+        // Get the bundle callback directly from the slot ID to save time
+        proton_bundle_cb_t * callback_desc = &node->registry->bundle_callbacks[slot_id];
+
+        if (callback_desc != NULL && callback_desc->cb != NULL)
+        {
+          callback_desc->cb(
+            bundle_id, bundle_desc->signal_ids.ids, bundle_desc->signal_ids.count,
+            callback_desc->arg);
+        }
+      }
+    }
   }
 
-  if (msg.which_operation == proton_Proton_bundle_tag)
-  {
-    size_t slot_id;
-    uint32_t bundle_id = msg.operation.bundle.id;
-    const bundle_desc_t * bundle_desc =
-      proton_registry_get_bundle(node->registry, bundle_id, &slot_id);
-
-    if (bundle_desc == NULL)
-    {
-      // If the bundle ID is not found, then this is likely not a bundle for this target
-      return PROTON_INCORRECT_TARGET_ERROR;
-    }
-
-    // Get the bundle callback directly from the slot ID to save time
-    proton_bundle_cb_t * callback_desc = &node->registry->bundle_callbacks[slot_id];
-
-    if (callback_desc != NULL && callback_desc->cb != NULL)
-    {
-      callback_desc->cb(
-        bundle_id, bundle_desc->signal_ids.ids, bundle_desc->signal_ids.count, callback_desc->arg);
-    }
-  }
   // No unsupported operation check here, handled in proton_decode
+  proton_status_e unlock_status = proton_unlock_registry(node->registry);
+  if (unlock_status != PROTON_OK)
+  {
+    return unlock_status;
+  }
 
-  return PROTON_OK;
+  return decode_result;
 }
 
 proton_status_e proton_node_update(
@@ -158,6 +171,12 @@ proton_status_e proton_node_update(
   uint64_t most_overdue_ms = 0;
   bool send_now_flag = false;
   size_t slot_id = 0;
+
+  proton_status_e lock_status = proton_lock_registry(node->registry);
+  if (lock_status != PROTON_OK)
+  {
+    return lock_status;
+  }
 
   // Mark any bundles in the pending trigger buffer to be sent now
   while (node->trigger_tail != node->trigger_head)
@@ -213,15 +232,22 @@ proton_status_e proton_node_update(
     }
   }
 
+  proton_status_e ret = PROTON_OK;
   if (something_to_send)
   {
     // We have our priority bundle, encode it
-    return proton_node_encode_bundle_desc(
+    ret = proton_node_encode_bundle_desc(
       node, slot_id, uptime_ms, buffer, buffer_len, out_len, dest_peers, num_dest_peers,
       num_selected_peers);
   }
 
-  return PROTON_OK;
+  proton_status_e unlock_status = proton_unlock_registry(node->registry);
+  if (unlock_status != PROTON_OK)
+  {
+    return unlock_status;
+  }
+
+  return ret;
 }
 
 proton_status_e proton_node_trigger_bundle(proton_core_node_t * node, uint32_t bundle_id)
@@ -231,25 +257,44 @@ proton_status_e proton_node_trigger_bundle(proton_core_node_t * node, uint32_t b
     return PROTON_NULL_PTR_ERROR;
   }
 
+  proton_status_e trig_ret = PROTON_OK;
+
+  proton_status_e lock_status = proton_lock_registry(node->registry);
+  if (lock_status != PROTON_OK)
+  {
+    return lock_status;
+  }
+
   size_t slot_id;
   const bundle_desc_t * bundle_desc =
     proton_registry_get_bundle(node->registry, bundle_id, &slot_id);
   if (bundle_desc == NULL)
   {
-    return PROTON_INCORRECT_TARGET_ERROR;
+    trig_ret = PROTON_INCORRECT_TARGET_ERROR;
   }
-
-  size_t next_head = (node->trigger_head + 1) % PROTON_MAX_PENDING_TRIGGERS;
-  if (next_head == node->trigger_tail)
+  else
   {
-    // Trigger buffer is full, cannot accept new triggers
-    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+    size_t next_head = (node->trigger_head + 1) % PROTON_MAX_PENDING_TRIGGERS;
+    if (next_head == node->trigger_tail)
+    {
+      // Trigger buffer is full, cannot accept new triggers
+      trig_ret = PROTON_INSUFFICIENT_BUFFER_ERROR;
+    }
+
+    if (trig_ret != PROTON_INSUFFICIENT_BUFFER_ERROR)
+    {
+      node->pending_triggers[node->trigger_head] = slot_id;
+      node->trigger_head = next_head;
+    }
   }
 
-  node->pending_triggers[node->trigger_head] = slot_id;
-  node->trigger_head = next_head;
+  proton_status_e unlock_status = proton_unlock_registry(node->registry);
+  if (unlock_status != PROTON_OK)
+  {
+    return unlock_status;
+  }
 
-  return PROTON_OK;
+  return trig_ret;
 }
 
 proton_status_e proton_node_encode_bundle(
@@ -269,15 +314,33 @@ proton_status_e proton_node_encode_bundle(
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
 
+  proton_status_e enc_ret = PROTON_OK;
+
+  proton_status_e lock_status = proton_lock_registry(node->registry);
+  if (lock_status != PROTON_OK)
+  {
+    return lock_status;
+  }
+
   size_t slot_id;
   const bundle_desc_t * bundle_handle =
     proton_registry_get_bundle(node->registry, bundle_id, &slot_id);
   if (bundle_handle == NULL)
   {
-    return PROTON_INCORRECT_TARGET_ERROR;
+    enc_ret = PROTON_INCORRECT_TARGET_ERROR;
+  }
+  else
+  {
+    enc_ret = proton_node_encode_bundle_desc(
+      node, slot_id, uptime_ms, buffer, buffer_len, out_len, dest_peers, num_dest_peers,
+      num_selected_peers);
   }
 
-  return proton_node_encode_bundle_desc(
-    node, slot_id, uptime_ms, buffer, buffer_len, out_len, dest_peers, num_dest_peers,
-    num_selected_peers);
+  proton_status_e unlock_status = proton_unlock_registry(node->registry);
+  if (unlock_status != PROTON_OK)
+  {
+    return unlock_status;
+  }
+
+  return enc_ret;
 }

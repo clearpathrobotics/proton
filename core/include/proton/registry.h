@@ -169,6 +169,16 @@ extern "C"
   } proton_registry_t;
 
   /**
+   * @brief Lock and unlock the registry.
+   * If your application accesses the registry from different threads/tasks, this is a required part
+   * of the data contract with the registry. This function will be called during encode/decode, but
+   * if all operations are part of the same task, then it's okay to not set the mutex_handles callbacks
+   * in the registry object
+   */
+  proton_status_e proton_lock_registry(const proton_registry_t * registry);
+  proton_status_e proton_unlock_registry(const proton_registry_t * registry);
+
+  /**
    * Get the bundle from a registry by ID
    * slot_idx is optional output parameter for the index of the bundle in the registry
    * @return pointer to the bundle descriptor, or NULL if not found
@@ -190,7 +200,10 @@ extern "C"
     const proton_registry_t * registry, uint32_t bundle_id);
 
   /**
-   * Set the callback for a successful bundle decode
+   * Set the callback for a successful bundle decode.
+   * @note the registry mutex will be acquired when this callback fires, so it is safe to get/set registry values
+   * at this time. However, it should also be noted that the registry will be updated with new values before
+   * this callback is called.
    */
   void proton_registry_set_bundle_callback(
     proton_registry_t * registry, uint32_t bundle_id, proton_bundle_cb_f bundle_cb, void * context);

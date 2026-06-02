@@ -50,16 +50,48 @@ protected:
     registry_ = copy_default_registry(&g_proton_registry);
     node_ = copy_default_node(&g_target_node);
     node_.registry = &registry_;
+
+    mock_mutex_lock_result_ = PROTON_OK;
+    mock_mutex_unlock_result_ = PROTON_OK;
+    lock_called_ = false;
+    unlock_called_ = false;
   }
 
   void TearDown() override
   {
     free(registry_.signal_registry);
     free(registry_.bundle_callbacks);
+    registry_.mutex_handles.arg = nullptr;
+    registry_.mutex_handles.lock = nullptr;
+    registry_.mutex_handles.unlock = nullptr;
+    registry_.mutex_handles.mutex = nullptr;
+  }
+
+  static proton_status_e bundle_lock(void * mutex, void * ctx)
+  {
+    (void)mutex;
+    NodeManagerTest * cls = static_cast<NodeManagerTest *>(ctx);
+    cls->lock_called_ = true;
+
+    return cls->mock_mutex_lock_result_;
+  }
+
+  static proton_status_e bundle_unlock(void * mutex, void * ctx)
+  {
+    (void)mutex;
+    NodeManagerTest * cls = static_cast<NodeManagerTest *>(ctx);
+    cls->unlock_called_ = true;
+
+    return cls->mock_mutex_unlock_result_;
   }
 
   proton_registry_t registry_;
   proton_core_node_t node_;
+
+  bool lock_called_;
+  bool unlock_called_;
+  proton_status_e mock_mutex_lock_result_;
+  proton_status_e mock_mutex_unlock_result_;
 };
 
 // -----------------------------------------------------------------------
@@ -641,6 +673,90 @@ TEST_F(NodeManagerTest, RoundTrip_UpdateThenReceive_SignalValuePreserved)
   ASSERT_EQ(
     proton_signal_get_int32(&registry_, PROTON_SIGNAL_INT32_VALUE_ID, &received_value), PROTON_OK);
   EXPECT_EQ(received_value, SENT_VALUE);
+}
+
+// ---------------------------------------------------------------------------
+// Mutex:
+//      - Whether mutexes were called in happy-path and unhappy-path scenarios
+//      - If intentionally-failing lock/unlock returns the correct value from node_manager
+// ---------------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, MutexSuccessfulTrigger)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+
+  EXPECT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_OK);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, MutexBadLockReturnsLockError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+  // set mock result to an error that's not used in proton_node_trigger_bundle
+  mock_mutex_lock_result_ = PROTON_DISCONNECT_ERROR;
+
+  EXPECT_EQ(
+    proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_DISCONNECT_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_FALSE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, MutexBadUnlockReturnsUnlockError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+  // set mock result to an error that's not used in proton_node_trigger_bundle
+  mock_mutex_unlock_result_ = PROTON_DISCONNECT_ERROR;
+
+  EXPECT_EQ(
+    proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_DISCONNECT_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, MutexUnlocksOnIncorrectTargetTrigger)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+
+  EXPECT_EQ(proton_node_trigger_bundle(&node_, 9999), PROTON_INCORRECT_TARGET_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, MutexUnlocksOnTriggerInsufficientBuffer)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+
+  // Ring buffer holds PROTON_MAX_PENDING_TRIGGERS - 1 items before the head+1 == tail full check
+  for (size_t i = 0; i < PROTON_MAX_PENDING_TRIGGERS - 1; i++)
+  {
+    ASSERT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_OK)
+      << "Expected PROTON_OK on push " << i;
+  }
+  // Reset lock/unlock for the last call
+  lock_called_ = false;
+  unlock_called_ = false;
+  EXPECT_EQ(
+    proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID),
+    PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
 }
 
 int main(int argc, char ** argv)

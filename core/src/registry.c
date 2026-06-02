@@ -19,36 +19,28 @@
 #include "proton/registry.h"
 #include <string.h>
 
-/**
- * @brief lock the registry mutex
- */
-static bool proton_lock_registry(const proton_registry_t * registry)
+proton_status_e proton_lock_registry(const proton_registry_t * registry)
 {
-  bool ret = true;
+  proton_status_e lock_status = PROTON_OK;
   if (registry->mutex_handles.lock != NULL)
   {
-    proton_status_e lock_status =
+    lock_status =
       registry->mutex_handles.lock(registry->mutex_handles.mutex, registry->mutex_handles.arg);
-    ret = lock_status == PROTON_OK;
   }
 
-  return ret;
+  return lock_status;
 }
 
-/**
- * @brief unlock the registry mutex
- */
-static bool proton_unlock_registry(const proton_registry_t * registry)
+proton_status_e proton_unlock_registry(const proton_registry_t * registry)
 {
-  bool ret = true;
+  proton_status_e unlock_status = PROTON_OK;
   if (registry->mutex_handles.unlock != NULL)
   {
-    proton_status_e unlock_status =
+    unlock_status =
       registry->mutex_handles.unlock(registry->mutex_handles.mutex, registry->mutex_handles.arg);
-    ret = unlock_status == PROTON_OK;
   }
 
-  return ret;
+  return unlock_status;
 }
 
 proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
@@ -81,153 +73,98 @@ proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
 const bundle_desc_t * proton_registry_get_bundle(
   const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx)
 {
-  bool locked = proton_lock_registry(registry);
-  if (!locked)
-  {
-    return NULL;
-  }
-  size_t idx = 0;
-  bool found = false;
-
   for (size_t i = 0; i < registry->bundle_count; i++)
   {
     if (registry->bundle_id_lut[i].id == bundle_id)
     {
-      idx = registry->bundle_id_lut[i].idx;
+      size_t idx = registry->bundle_id_lut[i].idx;
       if (slot_idx)
       {
         *slot_idx = idx;
       }
-      found = true;
-      break;
+      return &registry->bundle_table[idx];
     }
   }
 
-  proton_unlock_registry(registry);
-
-  return found ? &registry->bundle_table[idx] : NULL;
+  return NULL;
 }
 
 proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
   const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx)
 {
-  bool locked = proton_lock_registry(registry);
-  if (!locked)
-  {
-    return NULL;
-  }
-
-  size_t idx = 0;
-  bool found = false;
-
   if (bundle_lut_idx != NULL)
   {
-    idx = *bundle_lut_idx;
-    found = true;
+    return registry->bundle_signal_ptrs[*bundle_lut_idx];
   }
-  else
+
+  for (size_t i = 0; i < registry->bundle_count; i++)
   {
-    for (size_t i = 0; i < registry->bundle_count; i++)
+    if (registry->bundle_id_lut[i].id == bundle_id)
     {
-      if (registry->bundle_id_lut[i].id == bundle_id)
-      {
-        idx = registry->bundle_id_lut[i].idx;
-        found = true;
-        break;
-      }
+      return registry->bundle_signal_ptrs[registry->bundle_id_lut[i].idx];
     }
   }
 
-  proton_unlock_registry(registry);
-
-  return found ? registry->bundle_signal_ptrs[idx] : NULL;
+  return NULL;
 }
 
 proton_bundle_cb_t * proton_registry_get_bundle_callback(
   const proton_registry_t * registry, uint32_t bundle_id)
 {
-  bool locked = proton_lock_registry(registry);
-  if (!locked)
-  {
-    return NULL;
-  }
-
-  size_t idx = 0;
-  bool found = false;
   for (size_t i = 0; i < registry->bundle_count; i++)
   {
     if (registry->bundle_id_lut[i].id == bundle_id)
     {
-      idx = registry->bundle_id_lut[i].idx;
-      found = true;
-      break;
+      return &registry->bundle_callbacks[registry->bundle_id_lut[i].idx];
     }
   }
 
-  proton_unlock_registry(registry);
-
-  return found ? &registry->bundle_callbacks[idx] : NULL;
+  return NULL;
 }
 
 void proton_registry_set_bundle_callback(
   proton_registry_t * registry, uint32_t bundle_id, proton_bundle_cb_f bundle_cb, void * context)
 {
-  proton_lock_registry(registry);
   for (size_t i = 0; i < registry->bundle_count; i++)
   {
     if (registry->bundle_id_lut[i].id == bundle_id)
     {
       registry->bundle_callbacks[registry->bundle_id_lut[i].idx].cb = bundle_cb;
       registry->bundle_callbacks[registry->bundle_id_lut[i].idx].arg = context;
-      break;
     }
   }
-  proton_unlock_registry(registry);
 }
 
 void proton_registry_set_bundle_period(
   proton_registry_t * registry, uint32_t bundle_id, uint32_t period_ms)
 {
-  proton_lock_registry(registry);
   for (size_t i = 0; i < registry->bundle_count; i++)
   {
     if (registry->bundle_id_lut[i].id == bundle_id)
     {
       registry->bundle_table[registry->bundle_id_lut[i].idx].period_ms = period_ms;
-      break;
+      return;
     }
   }
-  proton_unlock_registry(registry);
 }
 
 signal_desc_t * proton_registry_get_signal(
   const proton_registry_t * registry, uint32_t signal_id, size_t * registry_idx)
 {
-  bool locked = proton_lock_registry(registry);
-  if (!locked)
-  {
-    return NULL;
-  }
-
-  size_t idx = 0;
-  bool found = false;
   for (size_t i = 0; i < registry->signal_count; i++)
   {
     if (registry->signal_id_lut[i].id == signal_id)
     {
-      idx = registry->signal_id_lut[i].idx;
-      found = true;
+      size_t idx = registry->signal_id_lut[i].idx;
       if (registry_idx)
       {
         *registry_idx = idx;
       }
-      break;
+      return &registry->signal_registry[idx];
     }
   }
 
-  proton_unlock_registry(registry);
-
-  return found ? &registry->signal_registry[idx] : NULL;
+  return NULL;
 }
 
 /*
