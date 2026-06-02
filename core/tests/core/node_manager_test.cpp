@@ -759,6 +759,230 @@ TEST_F(NodeManagerTest, MutexUnlocksOnTriggerInsufficientBuffer)
   EXPECT_TRUE(unlock_called_);
 }
 
+// ---------------------------------------------------------------------------
+// proton_node_receive — mutex tests
+// ---------------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, Receive_MutexSuccessfulDecode)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+
+  // Encode a valid bundle to receive
+  uint8_t buf[BUFFER_SIZE];
+  size_t encoded_len = 0;
+  ASSERT_EQ(
+    proton_encode_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID, buf, sizeof(buf), &encoded_len),
+    PROTON_OK);
+
+  EXPECT_EQ(proton_node_receive(&node_, buf, encoded_len), PROTON_OK);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, Receive_MutexBadLockReturnsLockError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+  mock_mutex_lock_result_ = PROTON_DISCONNECT_ERROR;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t encoded_len = 0;
+  ASSERT_EQ(
+    proton_encode_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID, buf, sizeof(buf), &encoded_len),
+    PROTON_OK);
+
+  EXPECT_EQ(proton_node_receive(&node_, buf, encoded_len), PROTON_DISCONNECT_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_FALSE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, Receive_MutexBadUnlockReturnsUnlockError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+  mock_mutex_unlock_result_ = PROTON_DISCONNECT_ERROR;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t encoded_len = 0;
+  ASSERT_EQ(
+    proton_encode_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID, buf, sizeof(buf), &encoded_len),
+    PROTON_OK);
+
+  EXPECT_EQ(proton_node_receive(&node_, buf, encoded_len), PROTON_DISCONNECT_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, Receive_MutexUnlocksOnSerializationError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+
+  uint8_t garbage[BUFFER_SIZE];
+  memset(garbage, 0xFF, sizeof(garbage));
+
+  EXPECT_EQ(proton_node_receive(&node_, garbage, sizeof(garbage)), PROTON_SERIALIZATION_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+// ---------------------------------------------------------------------------
+// proton_node_update — mutex tests
+// ---------------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, Update_MutexSuccessfulUpdate)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  EXPECT_EQ(
+    proton_node_update(&node_, 1000, buf, sizeof(buf), &out_len, dest, 1, &num_peers), PROTON_OK);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, Update_MutexBadLockReturnsLockError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+  mock_mutex_lock_result_ = PROTON_DISCONNECT_ERROR;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  EXPECT_EQ(
+    proton_node_update(&node_, 1000, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_DISCONNECT_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_FALSE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, Update_MutexBadUnlockReturnsUnlockError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+  mock_mutex_unlock_result_ = PROTON_DISCONNECT_ERROR;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  EXPECT_EQ(
+    proton_node_update(&node_, 1000, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_DISCONNECT_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+// ---------------------------------------------------------------------------
+// proton_node_encode_bundle — mutex tests
+// ---------------------------------------------------------------------------
+
+TEST_F(NodeManagerTest, EncodeBundle_MutexSuccessfulEncode)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_OK);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_MutexBadLockReturnsLockError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+  mock_mutex_lock_result_ = PROTON_DISCONNECT_ERROR;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_DISCONNECT_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_FALSE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_MutexBadUnlockReturnsUnlockError)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+  mock_mutex_unlock_result_ = PROTON_DISCONNECT_ERROR;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_DISCONNECT_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
+TEST_F(NodeManagerTest, EncodeBundle_MutexUnlocksOnIncorrectTarget)
+{
+  registry_.mutex_handles.arg = this;
+  registry_.mutex_handles.mutex = nullptr;
+  registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
+  registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  proton_endpoint_t dest[1];
+  size_t num_peers = 0;
+
+  EXPECT_EQ(
+    proton_node_encode_bundle(
+      &node_, 0xDEADBEEFu, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
+    PROTON_INCORRECT_TARGET_ERROR);
+  EXPECT_TRUE(lock_called_);
+  EXPECT_TRUE(unlock_called_);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
