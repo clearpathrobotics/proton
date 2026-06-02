@@ -46,6 +46,21 @@ extern "C"
     void * arg;
   } proton_bundle_cb_t;
 
+  /**
+   * @typedef proton registry mutex callback. Same signature used for both locking and unlocking the mutex
+   * Parameters are: mutex as void*, additional user context as void*
+   * Return PROTON_OK if mutex acquired successfully, PROTON_ERROR if mutex cannot be acquired.
+   */
+  typedef proton_status_e (*proton_mutex_cb_f)(void *, void *);
+
+  typedef struct proton_mutex_cb
+  {
+    proton_mutex_cb_f lock;
+    proton_mutex_cb_f unlock;
+    void * mutex;
+    void * arg;
+  } proton_registry_mutex_cb_t;
+
   typedef enum
   {
     PROTON_INVALID_TYPE = 0,
@@ -148,7 +163,21 @@ extern "C"
     // Scratch-pad buffer for encoding/decoding string/bytes signals
     uint8_t * signal_scratch_buffer;
     size_t signal_scratch_buffer_size;
+
+    // Optional mutex callbacks
+    proton_registry_mutex_cb_t mutex_handles;
   } proton_registry_t;
+
+  /**
+   * @brief Lock and unlock the registry.
+   * If your application accesses the registry from multiple threads/tasks, this is a required part
+   * of the data contract with the registry. You must set the `mutex_handles` field of your registry,
+   * and lock/unlock when you access the registry to get or set signals/bundles.
+   *
+   * The locks are optional, but be aware that these functions are called during node_manager operations.
+   */
+  proton_status_e proton_lock_registry(const proton_registry_t * registry);
+  proton_status_e proton_unlock_registry(const proton_registry_t * registry);
 
   /**
    * Get the bundle from a registry by ID
@@ -159,11 +188,11 @@ extern "C"
     const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx);
 
   /**
-   * Get the buffer for encoding/decoding signals from a bundle, by bundle ID
+   * Get the buffer for encoding/decoding signals from a bundle, by bundle ID or lookup index if known
    * @return pointer to the buffer, or NULL if not found
    */
   proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
-    const proton_registry_t * registry, uint32_t bundle_id);
+    const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx);
 
   /**
    * Get the callback for a bundle
@@ -172,7 +201,10 @@ extern "C"
     const proton_registry_t * registry, uint32_t bundle_id);
 
   /**
-   * Set the callback for a successful bundle decode
+   * Set the callback for a successful bundle decode.
+   * @note the registry mutex will be acquired when this callback fires, so it is safe to get/set registry values
+   * at this time. However, it should also be noted that the registry will be updated with new values before
+   * this callback is called.
    */
   void proton_registry_set_bundle_callback(
     proton_registry_t * registry, uint32_t bundle_id, proton_bundle_cb_f bundle_cb, void * context);

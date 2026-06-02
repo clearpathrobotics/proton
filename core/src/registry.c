@@ -19,6 +19,30 @@
 #include "proton/registry.h"
 #include <string.h>
 
+proton_status_e proton_lock_registry(const proton_registry_t * registry)
+{
+  proton_status_e lock_status = PROTON_OK;
+  if (registry->mutex_handles.lock != NULL)
+  {
+    lock_status =
+      registry->mutex_handles.lock(registry->mutex_handles.mutex, registry->mutex_handles.arg);
+  }
+
+  return lock_status;
+}
+
+proton_status_e proton_unlock_registry(const proton_registry_t * registry)
+{
+  proton_status_e unlock_status = PROTON_OK;
+  if (registry->mutex_handles.unlock != NULL)
+  {
+    unlock_status =
+      registry->mutex_handles.unlock(registry->mutex_handles.mutex, registry->mutex_handles.arg);
+  }
+
+  return unlock_status;
+}
+
 proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
 {
   switch (tag)
@@ -66,8 +90,13 @@ const bundle_desc_t * proton_registry_get_bundle(
 }
 
 proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
-  const proton_registry_t * registry, uint32_t bundle_id)
+  const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx)
 {
+  if (bundle_lut_idx != NULL)
+  {
+    return registry->bundle_signal_ptrs[*bundle_lut_idx];
+  }
+
   for (size_t i = 0; i < registry->bundle_count; i++)
   {
     if (registry->bundle_id_lut[i].id == bundle_id)

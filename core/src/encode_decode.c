@@ -120,7 +120,8 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
     return false;
   }
 
-  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(registry, bundle_id, NULL);
+  size_t bundle_lut = 0;
+  const bundle_desc_t * bundle_desc = proton_registry_get_bundle(registry, bundle_id, &bundle_lut);
 
   if (!bundle_desc)
   {
@@ -129,7 +130,7 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
 
   size_t signal_count = bundle_desc->signal_ids.count;
   proton_Signal * bundle_signals =
-    proton_registry_get_bundle_encode_decode_buffer(registry, bundle_id);
+    proton_registry_get_bundle_encode_decode_buffer(registry, bundle_id, &bundle_lut);
 
   if (bundle_signals == NULL)
   {
@@ -284,7 +285,7 @@ static proton_status_e proton_decode_bundle(
 
   // Set signals in registry based on decoded values
   proton_Signal * bundle_signals =
-    proton_registry_get_bundle_encode_decode_buffer(registry, bundle->id);
+    proton_registry_get_bundle_encode_decode_buffer(registry, bundle->id, &bundle_slot);
   for (size_t i = 0; i < bundle_desc->signal_ids.count; i++)
   {
     proton_Signal * signal_ptr = &bundle_signals[i];
