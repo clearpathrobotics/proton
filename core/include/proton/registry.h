@@ -46,6 +46,21 @@ extern "C"
     void * arg;
   } proton_bundle_cb_t;
 
+  /**
+   * @typedef proton registry mutex callback. Same signature used for both locking and unlocking the mutex
+   * Parameters are: mutex as void*, additional user context as void*
+   * Return PROTON_OK if mutex acquired successfully, PROTON_ERROR if mutex cannot be acquired.
+   */
+  typedef proton_status_e (*proton_mutex_cb_f)(void *, void *);
+
+  typedef struct proton_mutex_cb
+  {
+    proton_mutex_cb_f lock;
+    proton_mutex_cb_f unlock;
+    void * mutex;
+    void * arg;
+  } proton_registry_mutex_cb_t;
+
   typedef enum
   {
     PROTON_INVALID_TYPE = 0,
@@ -148,6 +163,9 @@ extern "C"
     // Scratch-pad buffer for encoding/decoding string/bytes signals
     uint8_t * signal_scratch_buffer;
     size_t signal_scratch_buffer_size;
+
+    // Optional mutex callbacks
+    proton_registry_mutex_cb_t mutex_handles;
   } proton_registry_t;
 
   /**
@@ -159,11 +177,11 @@ extern "C"
     const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx);
 
   /**
-   * Get the buffer for encoding/decoding signals from a bundle, by bundle ID
+   * Get the buffer for encoding/decoding signals from a bundle, by bundle ID or lookup index if known
    * @return pointer to the buffer, or NULL if not found
    */
   proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
-    const proton_registry_t * registry, uint32_t bundle_id);
+    const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx);
 
   /**
    * Get the callback for a bundle
