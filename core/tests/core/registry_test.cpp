@@ -24,6 +24,31 @@
 
 extern proton_registry_t g_proton_registry;
 
+typedef struct mutex_ctx
+{
+  bool lock_called;
+  bool unlock_called;
+} mutex_ctx_t;
+
+static proton_status_e mock_mutex_lock(void * mutex, void * context)
+{
+  // Using mutex void * for desired return
+  proton_status_e * ret = (proton_status_e *)mutex;
+  mutex_ctx_t * ctx = (mutex_ctx_t *)context;
+  ctx->lock_called = true;
+
+  return *ret;
+}
+
+static proton_status_e mock_mutex_unlock(void * mutex, void * context)
+{
+  proton_status_e * ret = (proton_status_e *)mutex;
+  mutex_ctx_t * ctx = (mutex_ctx_t *)context;
+  ctx->unlock_called = true;
+
+  return *ret;
+}
+
 TEST(BundleRegistry, GetBundle)
 {
   proton_registry_t registry = copy_default_registry(&g_proton_registry);
@@ -312,6 +337,435 @@ TEST(SignalRegistry, SetBundlePeriod)
 
   EXPECT_EQ(periodic_bundle->period_ms, new_period);
 
+  free(registry.signal_registry);
+}
+
+// =============================================
+// Mutex Tests
+// =============================================
+
+TEST(RegistryMutex, GetBundle_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  const bundle_desc_t * desc =
+    proton_registry_get_bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID, NULL);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_NE(desc, nullptr);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, GetBundle_LockError_UnlockNotCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  const bundle_desc_t * desc =
+    proton_registry_get_bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID, NULL);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(desc, nullptr);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, GetBundleEncodeDecodeBuffer_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  proton_Signal * buffer =
+    proton_registry_get_bundle_encode_decode_buffer(&registry, PROTON_BUNDLE_VALUE_TEST_ID, NULL);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_NE(buffer, nullptr);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, GetBundleEncodeDecodeBuffer_LockError_UnlockNotCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  proton_Signal * buffer =
+    proton_registry_get_bundle_encode_decode_buffer(&registry, PROTON_BUNDLE_VALUE_TEST_ID, NULL);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(buffer, nullptr);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, GetBundleCallback_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  proton_bundle_cb_t * cb =
+    proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_NE(cb, nullptr);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, GetBundleCallback_LockError_UnlockNotCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  proton_bundle_cb_t * cb =
+    proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(cb, nullptr);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SetBundleCallback_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  proton_registry_set_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID, nullptr, nullptr);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SetBundlePeriod_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  proton_registry_set_bundle_period(&registry, PROTON_BUNDLE_PERIODIC_BUNDLE_ID, 500);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, GetSignal_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  signal_desc_t * desc = proton_registry_get_signal(&registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, NULL);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_NE(desc, nullptr);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, GetSignal_LockError_UnlockNotCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  signal_desc_t * desc = proton_registry_get_signal(&registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, NULL);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(desc, nullptr);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalGetDouble_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  double value = 0.0;
+  proton_status_e status =
+    proton_signal_get_double(&registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, &value);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_OK);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalGetDouble_LockError_ReturnsError)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  double value = 0.0;
+  proton_status_e status =
+    proton_signal_get_double(&registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, &value);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_ERROR);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalSetDouble_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  proton_status_e status =
+    proton_signal_set_double(&registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, 1.234);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_OK);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalSetDouble_LockError_ReturnsError)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  proton_status_e status =
+    proton_signal_set_double(&registry, PROTON_SIGNAL_DOUBLE_VALUE_ID, 1.234);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_ERROR);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalGetString_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  char value[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY] = {0};
+  size_t len = 0;
+  proton_status_e status = proton_signal_get_string(
+    &registry, PROTON_SIGNAL_DEFAULT_STRING_ID, value, sizeof(value), &len);
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_OK);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalGetString_LockError_ReturnsError)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  char buf[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY] = {0};
+  size_t len = 0;
+  proton_status_e status =
+    proton_signal_get_string(&registry, PROTON_SIGNAL_STRING_VALUE_ID, buf, sizeof(buf), &len);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_ERROR);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalSetString_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  const char * new_value = "test";
+  proton_status_e status = proton_signal_set_string(
+    &registry, PROTON_SIGNAL_STRING_VALUE_ID, new_value, strlen(new_value) + 1);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_OK);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalSetString_LockError_ReturnsError)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  const char * new_value = "test";
+  proton_status_e status = proton_signal_set_string(
+    &registry, PROTON_SIGNAL_STRING_VALUE_ID, new_value, strlen(new_value) + 1);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_ERROR);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalGetBytes_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  uint8_t buf[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY] = {0};
+  size_t len = 0;
+  proton_status_e status =
+    proton_signal_get_bytes(&registry, PROTON_SIGNAL_DEFAULT_BYTES_ID, buf, sizeof(buf), &len);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_OK);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalGetBytes_LockError_ReturnsError)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  uint8_t buf[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY] = {0};
+  size_t len = 0;
+  proton_status_e status =
+    proton_signal_get_bytes(&registry, PROTON_SIGNAL_BYTES_VALUE_ID, buf, sizeof(buf), &len);
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_ERROR);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalSetBytes_LockOk_UnlockCalled)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_OK;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  uint8_t data[] = {0x01, 0x02, 0x03};
+  proton_status_e status =
+    proton_signal_set_bytes(&registry, PROTON_SIGNAL_BYTES_VALUE_ID, data, sizeof(data));
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_TRUE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_OK);
+  free(registry.signal_registry);
+}
+
+TEST(RegistryMutex, SignalSetBytes_LockError_ReturnsError)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e lock_ret = PROTON_ERROR;
+  mutex_ctx_t ctx = {false, false};
+  registry.mutex_handles.lock = mock_mutex_lock;
+  registry.mutex_handles.unlock = mock_mutex_unlock;
+  registry.mutex_handles.mutex = &lock_ret;
+  registry.mutex_handles.arg = &ctx;
+
+  uint8_t data[] = {0x01, 0x02, 0x03};
+  proton_status_e status =
+    proton_signal_set_bytes(&registry, PROTON_SIGNAL_BYTES_VALUE_ID, data, sizeof(data));
+
+  EXPECT_TRUE(ctx.lock_called);
+  EXPECT_FALSE(ctx.unlock_called);
+  EXPECT_EQ(status, PROTON_ERROR);
   free(registry.signal_registry);
 }
 
