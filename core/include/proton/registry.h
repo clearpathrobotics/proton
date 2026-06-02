@@ -170,10 +170,11 @@ extern "C"
 
   /**
    * @brief Lock and unlock the registry.
-   * If your application accesses the registry from different threads/tasks, this is a required part
-   * of the data contract with the registry. This function will be called during encode/decode, but
-   * if all operations are part of the same task, then it's okay to not set the mutex_handles callbacks
-   * in the registry object
+   * If your application accesses the registry from multiple threads/tasks, this is a required part
+   * of the data contract with the registry. You must set the `mutex_handles` field of your registry,
+   * and lock/unlock when you access the registry to get or set signals/bundles.
+   *
+   * The locks are optional, but be aware that these functions are called during node_manager operations.
    */
   proton_status_e proton_lock_registry(const proton_registry_t * registry);
   proton_status_e proton_unlock_registry(const proton_registry_t * registry);

@@ -280,8 +280,7 @@ proton_status_e proton_node_trigger_bundle(proton_core_node_t * node, uint32_t b
       // Trigger buffer is full, cannot accept new triggers
       trig_ret = PROTON_INSUFFICIENT_BUFFER_ERROR;
     }
-
-    if (trig_ret != PROTON_INSUFFICIENT_BUFFER_ERROR)
+    else
     {
       node->pending_triggers[node->trigger_head] = slot_id;
       node->trigger_head = next_head;
