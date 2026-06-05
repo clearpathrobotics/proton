@@ -86,6 +86,20 @@ if (PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
   )
 
+  add_executable(lock_test_cpp
+    tests/lock_test.cpp
+  )
+
+  target_link_libraries(lock_test_cpp PUBLIC
+    GTest::gtest_main
+    proton::proton_core_cpp
+  )
+
+  target_include_directories(lock_test_cpp PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test_cpp)
+  gtest_discover_tests(lock_test_cpp)
 endif()

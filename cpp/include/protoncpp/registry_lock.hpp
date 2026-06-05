@@ -40,7 +40,10 @@ public:
 
   RegistryLock(const RegistryLock &) = delete;
   RegistryLock & operator=(const RegistryLock &) = delete;
-}
+
+private:
+  const proton_registry_t * registry_;
+};
 
 /**
  * @class ScopedLock class for RAII-style locking of proton_registry_t optional mutex.
