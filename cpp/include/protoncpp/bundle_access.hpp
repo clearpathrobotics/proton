@@ -29,7 +29,7 @@ class BundleAccess
 {
 public:
   constexpr explicit BundleAccess(proton_registry_t * registry, uint32_t id) noexcept
-  : registry_(reg), id_(id)
+  : registry_(registry), id_(id)
   {
   }
 

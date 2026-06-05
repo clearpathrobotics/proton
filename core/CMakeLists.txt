@@ -148,12 +148,9 @@ add_custom_target(generate_protoc ALL
 # -------------------------------
 set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/tests/generated)
 
-
 # -------------------------------
 # proton_core library
 # -------------------------------
-option(PROTON_DEBUG "Enable PROTON_DEBUG preprocessor macro" OFF)
-
 set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
 add_library(${PROJECT_NAME}
@@ -170,10 +167,6 @@ add_library(${PROJECT_NAME}
 )
 
 add_dependencies(${PROJECT_NAME} generate_protoc)
-
-if (PROTON_DEBUG)
-  target_compile_definitions(proton_core PUBLIC PROTON_DEBUG)
-endif()
 
 target_include_directories(proton_core PUBLIC ${GENERATED_FOLDER} ../include)
 

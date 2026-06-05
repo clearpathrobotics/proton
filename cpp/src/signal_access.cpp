@@ -27,7 +27,7 @@ proton_status_e SignalAccess::get(uint32_t id, double & out) const noexcept
 }
 proton_status_e SignalAccess::set(uint32_t id, double value) noexcept
 {
-  return proton_signal_set_double(registry, id, value);
+  return proton_signal_set_double(registry_, id, value);
 }
 
 proton_status_e SignalAccess::get(uint32_t id, float & out) const noexcept
@@ -36,7 +36,7 @@ proton_status_e SignalAccess::get(uint32_t id, float & out) const noexcept
 }
 proton_status_e SignalAccess::set(uint32_t id, float value) noexcept
 {
-  return proton_signal_set_float(registry, id, value);
+  return proton_signal_set_float(registry_, id, value);
 }
 
 proton_status_e SignalAccess::get(uint32_t id, int32_t & out) const noexcept
@@ -45,7 +45,7 @@ proton_status_e SignalAccess::get(uint32_t id, int32_t & out) const noexcept
 }
 proton_status_e SignalAccess::set(uint32_t id, int32_t value) noexcept
 {
-  return proton_signal_set_int32(registry, id, value);
+  return proton_signal_set_int32(registry_, id, value);
 }
 
 proton_status_e SignalAccess::get(uint32_t id, int64_t & out) const noexcept
@@ -54,7 +54,7 @@ proton_status_e SignalAccess::get(uint32_t id, int64_t & out) const noexcept
 }
 proton_status_e SignalAccess::set(uint64_t id, int64_t value) noexcept
 {
-  return proton_signal_set_int64(registry, id, value);
+  return proton_signal_set_int64(registry_, id, value);
 }
 
 proton_status_e SignalAccess::get(uint32_t id, uint32_t & out) const noexcept
@@ -63,7 +63,7 @@ proton_status_e SignalAccess::get(uint32_t id, uint32_t & out) const noexcept
 }
 proton_status_e SignalAccess::set(uint32_t id, uint32_t value) noexcept
 {
-  return proton_signal_set_uint32(registry, id, value);
+  return proton_signal_set_uint32(registry_, id, value);
 }
 
 proton_status_e SignalAccess::get(uint32_t id, uint64_t & out) const noexcept
@@ -72,21 +72,27 @@ proton_status_e SignalAccess::get(uint32_t id, uint64_t & out) const noexcept
 }
 proton_status_e SignalAccess::set(uint32_t id, uint64_t value) noexcept
 {
-  return proton_signal_set_uint64(registry, id, value);
+  return proton_signal_set_uint64(registry_, id, value);
 }
 
-proton_status_e SignalAccess::get_string(uint32_t id, char * buf, size_t cap, size_t & len)
-  const noexcept {return proton_signal_get_string(registry, id, buf, cap, &len)} proton_status_e
-  SignalAccess::set_string(uint32_t id, const char * buf, size_t len) const noexcept {
-    return proton_signal_set_string(registry, id, buf, len)}
-
-proton_status_e SignalAccess::get_bytes(uint32_t id, uint8_t * buf, size_t cap, size_t & len)
-  const noexcept {return proton_signal_get_bytes(registry, id, buf, cap, &len)} proton_status_e
-  SignalAccess::set_bytes(uint32_t id, const uint8_t * buf, size_t len) const noexcept
+proton_status_e SignalAccess::get_string(
+  uint32_t id, char * buf, size_t cap, size_t & len) const noexcept
 {
-  return proton_signal_set_bytes(registry, id, buf, len)
+  return proton_signal_get_string(registry_, id, buf, cap, &len);
+}
+proton_status_e SignalAccess::set_string(uint32_t id, const char * buf, size_t len) const noexcept
+{
+  return proton_signal_set_string(registry_, id, buf, len);
+}
+
+proton_status_e SignalAccess::get_bytes(
+  uint32_t id, uint8_t * buf, size_t cap, size_t & len) const noexcept
+{
+  return proton_signal_get_bytes(registry_, id, buf, cap, &len);
+}
+proton_status_e SignalAccess::set_bytes(uint32_t id, const uint8_t * buf, size_t len) const noexcept
+{
+  return proton_signal_set_bytes(registry_, id, buf, len);
 }
 
 }  // namespace proton
-
-#endif  // PROTON_SIGNAL_HPP

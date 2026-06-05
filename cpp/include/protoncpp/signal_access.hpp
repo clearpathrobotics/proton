@@ -28,7 +28,7 @@ namespace proton
 class SignalAccess
 {
 public:
-  constexpr explicit SignalAccess(proton_registry_t * registry) noexcept : registry_(reg) {}
+  constexpr explicit SignalAccess(proton_registry_t * registry) noexcept : registry_(registry) {}
 
   proton_status_e get(uint32_t id, double & out) const noexcept;
   proton_status_e set(uint32_t id, double value) noexcept;
