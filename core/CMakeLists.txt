@@ -214,7 +214,7 @@ if(PROTON_BUILD_TESTS)
   find_package(GTest REQUIRED)
   include(${CMAKE_CURRENT_LIST_DIR}/../cmake/protonCoreGenerator.cmake)
 
-# autogen registry for tests
+  # autogen registry for tests
   set(GENERATED_REGISTRY_FILES
     "${GENERATED_FOLDER}/target_registry.c"
     "${GENERATED_FOLDER}/target_node.c"
