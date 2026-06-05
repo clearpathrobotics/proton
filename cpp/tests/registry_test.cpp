@@ -661,6 +661,141 @@ TEST(Signal, SetSignalTypeMismatch)
   free(registry.signal_registry);
 }
 
+// =============================================================================
+// BundleAccess tests
+// =============================================================================
+
+TEST(BundleAccess, Id)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  EXPECT_EQ(bundle.id(), PROTON_BUNDLE_VALUE_TEST_ID);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, Descriptor)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  const bundle_desc_t * desc = bundle.descriptor();
+  ASSERT_NE(desc, nullptr);
+  EXPECT_EQ(desc->bundle_id, PROTON_BUNDLE_VALUE_TEST_ID);
+  EXPECT_EQ(desc->producer_ids.count, 1);
+  EXPECT_EQ(desc->consumer_ids.count, 1);
+  EXPECT_EQ(desc->signal_ids.count, 9);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, DescriptorInvalidId)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, 0x9999);
+
+  const bundle_desc_t * desc = bundle.descriptor();
+  EXPECT_EQ(desc, nullptr);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, DescriptorBundleNotInTarget)
+{
+  // Bundle 0x1112 (unused_bundle) is defined in test.yaml but the producer
+  // is not "producer", so it won't be in the target's registry
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, 0x1112);
+
+  const bundle_desc_t * desc = bundle.descriptor();
+  EXPECT_EQ(desc, nullptr);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, CheckBundlePeriodPopulated)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_PERIODIC_BUNDLE_ID);
+
+  const bundle_desc_t * desc = bundle.descriptor();
+  ASSERT_NE(desc, nullptr);
+  EXPECT_EQ(desc->period_ms, 100);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, SetPeriod)
+{
+  const uint32_t new_period = 200;
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_PERIODIC_BUNDLE_ID);
+
+  bundle.set_period(new_period);
+
+  const bundle_desc_t * desc = bundle.descriptor();
+  ASSERT_NE(desc, nullptr);
+  EXPECT_EQ(desc->period_ms, new_period);
+
+  free(registry.signal_registry);
+}
+
+typedef struct callback_context
+{
+  bool called;
+  uint32_t bundle_id;
+  size_t signal_count;
+} callback_context_t;
+
+static void test_bundle_callback(
+  uint32_t bundle_id, const uint32_t * signal_ids, size_t count, void * ctx)
+{
+  (void)signal_ids;
+  callback_context_t * context = static_cast<callback_context_t *>(ctx);
+  if (context)
+  {
+    context->called = true;
+    context->bundle_id = bundle_id;
+    context->signal_count = count;
+  }
+}
+
+TEST(BundleAccess, SetCallback)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  callback_context_t ctx;
+  bundle.set_callback(test_bundle_callback, &ctx);
+
+  // Verify callback was registered by retrieving it
+  proton_bundle_cb_t * cb =
+    proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  ASSERT_NE(cb, nullptr);
+  EXPECT_EQ(cb->cb, test_bundle_callback);
+  EXPECT_EQ(cb->arg, &ctx);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, SetCallbackNullptr)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  // Setting nullptr callback should be allowed (to clear callback)
+  bundle.set_callback(nullptr, nullptr);
+
+  proton_bundle_cb_t * cb =
+    proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  ASSERT_NE(cb, nullptr);
+  EXPECT_EQ(cb->cb, nullptr);
+  EXPECT_EQ(cb->arg, nullptr);
+
+  free(registry.signal_registry);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
