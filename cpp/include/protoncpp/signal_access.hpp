@@ -48,6 +48,9 @@ public:
   proton_status_e get(uint32_t id, uint64_t & out) const noexcept;
   proton_status_e set(uint32_t id, uint64_t value) noexcept;
 
+  proton_status_e get(uint32_t id, bool & out) const noexcept;
+  proton_status_e set(uint32_t id, bool value) noexcept;
+
   proton_status_e get(uint32_t id, char * buf, size_t cap, size_t & len) const noexcept;
   proton_status_e set(uint32_t id, const char * buf, size_t len) const noexcept;
 

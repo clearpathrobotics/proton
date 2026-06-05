@@ -75,6 +75,15 @@ proton_status_e SignalAccess::set(uint32_t id, uint64_t value) noexcept
   return proton_signal_set_uint64(registry_, id, value);
 }
 
+proton_status_e SignalAccess::get(uint32_t id, bool & out) const noexcept
+{
+  return proton_signal_get_bool(registry_, id, &out);
+}
+proton_status_e SignalAccess::set(uint32_t id, bool value) noexcept
+{
+  return proton_signal_set_bool(registry_, id, value);
+}
+
 proton_status_e SignalAccess::get(uint32_t id, char * buf, size_t cap, size_t & len) const noexcept
 {
   return proton_signal_get_string(registry_, id, buf, cap, &len);
