@@ -4,7 +4,7 @@ project(proton_core_cpp C CXX)
 # Code coverage instrumentation option
 option(PROTON_BUILD_TESTS "Build unit tests" ON)
 option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
-option(PROTON_ALLOW_ALLOC "Enable heap allocation and exceptions" OFF)
+option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
 
 if (PROTON_BUILD_TESTS)
   add_compile_options(-Werror -Wall -Wextra)
@@ -41,8 +41,8 @@ target_link_libraries(${PROJECT_NAME}
     proton::proton_core
 )
 
-if(PROTON_ALLOW_ALLOC)
-  target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ALLOW_ALLOC=1)
+if(PROTON_ENABLE_ALLOC)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
 else()
   target_compile_options(${PROJECT_NAME} PRIVATE -fno-exceptions -fno-rtti)
 endif()

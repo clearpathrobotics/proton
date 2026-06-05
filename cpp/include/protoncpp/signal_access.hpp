@@ -22,6 +22,11 @@
 #include "proton/common.h"
 #include "proton/registry.h"
 
+// Default to embedded mode (no allocation/RTTI) if not specified
+#ifndef PROTON_ENABLE_ALLOC
+#define PROTON_ENABLE_ALLOC 0
+#endif
+
 namespace proton
 {
 
@@ -61,14 +66,49 @@ private:
   proton_registry_t * registry_;
 };
 
+/**
+ * Forward-declaration of Signal class for RTTI-enabled purposes
+ */
 template <typename T>
-class Signal
+class Signal;
+
+/**
+ * @brief Non-templated base class for Signal<T>, enabling storage in containers.
+ *
+ * Use type() to determine the actual signal type at runtime.
+ * When PROTON_ENABLE_ALLOC is enabled, use as<T>() for safe dynamic_cast.
+ * When disabled (for embedded applications), cast to Signal<T>* only when type() matches.
+ */
+class SignalBase
 {
 public:
-  constexpr explicit Signal(proton_registry_t * registry, uint32_t id)
+  constexpr SignalBase(proton_registry_t * registry, uint32_t id) noexcept
   : registry_(registry), id_(id)
   {
   }
+
+#if PROTON_ENABLE_ALLOC
+  virtual ~SignalBase() = default;
+
+  /**
+   * @brief Safely cast to Signal<T>* using dynamic_cast (requires RTTI).
+   * @return Pointer to Signal<T> if type matches, nullptr otherwise.
+   */
+  template <typename T>
+  Signal<T> * as() noexcept
+  {
+    return dynamic_cast<Signal<T> *>(this);
+  }
+
+  template <typename T>
+  const Signal<T> * as() const noexcept
+  {
+    return dynamic_cast<const Signal<T> *>(this);
+  }
+#else
+  // No virtual destructor in embedded mode (no RTTI)
+  ~SignalBase() = default;
+#endif
 
   uint32_t id() const noexcept { return id_; }
 
@@ -77,13 +117,26 @@ public:
     return proton_registry_get_signal(registry_, id_, nullptr);
   }
 
+  proton_signal_type_e type() const noexcept
+  {
+    signal_desc_t * d = desc();
+    return d ? d->type : PROTON_INVALID_TYPE;
+  }
+
+protected:
+  proton_registry_t * registry_;
+  uint32_t id_;
+};
+
+template <typename T>
+class Signal : public SignalBase
+{
+public:
+  constexpr explicit Signal(proton_registry_t * registry, uint32_t id) : SignalBase(registry, id) {}
+
   proton_status_e get(T & out) const noexcept { return SignalAccess(registry_).get(id_, out); }
 
   proton_status_e set(T value) noexcept { return SignalAccess(registry_).set(id_, value); }
-
-private:
-  proton_registry_t * registry_;
-  uint32_t id_;
 };
 
 }  // namespace proton
