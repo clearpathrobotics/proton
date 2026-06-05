@@ -154,9 +154,9 @@ jobs:
 
       - name: Run tests
         run: |
-          ctest --schedule-random --test-dir build_core --output-on-failure
-        env:
-          GTEST_SHUFFLE: 1
+          SEED=$(( (RANDOM % 99999) + 1 ))
+          echo "GTest random seed: $SEED"
+          GTEST_SHUFFLE=1 GTEST_RANDOM_SEED=$SEED ctest --schedule-random --test-dir build_core --output-on-failure
 
       - name: Generate core coverage report
         run: |
