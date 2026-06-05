@@ -154,7 +154,9 @@ jobs:
 
       - name: Run tests
         run: |
-          ctest --test-dir build_core --output-on-failure
+          ctest --schedule-random --test-dir build_core --output-on-failure
+        env:
+          GTEST_SHUFFLE: 1
 
       - name: Generate core coverage report
         run: |
