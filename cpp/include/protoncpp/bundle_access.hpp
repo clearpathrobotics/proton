@@ -22,9 +22,16 @@
 #include "proton/common.h"
 #include "proton/registry.h"
 
+#if PROTON_ENABLE_ALLOC
+#include <functional>
+#endif
+
 namespace proton
 {
 
+/**
+ * @class BundleAccess provides access to bundle metadata and state from the proton_core registry API.
+ */
 class BundleAccess
 {
 public:
@@ -40,9 +47,34 @@ public:
   void set_period(uint32_t period_ms) noexcept;
   void set_callback(proton_bundle_cb_f cb, void * ctx) noexcept;
 
+#if PROTON_ENABLE_ALLOC
+  using CallbackType =
+    std::function<void(uint32_t bundle_id, const uint32_t * signal_ids, size_t count)>;
+
+  void set_callback(CallbackType cb) noexcept
+  {
+    // Store the std::function in a heap-allocated wrapper and pass it as the context to the C callback
+    callback_wrapper_ = std::move(cb);
+    set_callback(
+      [](uint32_t bundle_id, const uint32_t * signal_ids, size_t count, void * ctx)
+      {
+        auto * self = static_cast<BundleAccess *>(ctx);
+        if (self->callback_wrapper_)
+        {
+          self->callback_wrapper_(bundle_id, signal_ids, count);
+        }
+      },
+      this);
+  }
+#endif  // PROTON_ENABLE_ALLOC
+
 private:
   proton_registry_t * registry_;
   uint32_t id_;
+
+#if PROTON_ENABLE_ALLOC
+  CallbackType callback_wrapper_ = nullptr;
+#endif  // PROTON_ENABLE_ALLOC
 };
 
 }  // namespace proton

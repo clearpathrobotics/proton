@@ -24,6 +24,10 @@
 #include "target_registry_sizes.h"
 #include "utils.hpp"
 
+#if PROTON_ENABLE_ALLOC
+#include <vector>
+#endif
+
 extern proton_registry_t g_proton_registry;
 
 using namespace proton;
@@ -956,6 +960,145 @@ TEST(BundleAccess, SetCallbackNullptr)
 
   free(registry.signal_registry);
 }
+
+// =============================================================================
+// BundleAccess std::function callback tests (PROTON_ENABLE_ALLOC only)
+// =============================================================================
+
+#if PROTON_ENABLE_ALLOC
+
+TEST(BundleAccess, SetStdFunctionCallback)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  bool callback_called = false;
+  uint32_t received_bundle_id = 0;
+  size_t received_signal_count = 0;
+
+  bundle.set_callback(
+    [&](uint32_t bundle_id, const uint32_t * signal_ids, size_t count)
+    {
+      (void)signal_ids;
+      callback_called = true;
+      received_bundle_id = bundle_id;
+      received_signal_count = count;
+    });
+
+  // Verify callback was registered
+  proton_bundle_cb_t * cb =
+    proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  ASSERT_NE(cb, nullptr);
+  ASSERT_NE(cb->cb, nullptr);
+
+  // Simulate callback invocation
+  const bundle_desc_t * desc = bundle.descriptor();
+  ASSERT_NE(desc, nullptr);
+  cb->cb(PROTON_BUNDLE_VALUE_TEST_ID, desc->signal_ids.ids, desc->signal_ids.count, cb->arg);
+
+  EXPECT_TRUE(callback_called);
+  EXPECT_EQ(received_bundle_id, PROTON_BUNDLE_VALUE_TEST_ID);
+  EXPECT_EQ(received_signal_count, desc->signal_ids.count);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, SetStdFunctionCallbackWithCapture)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  int counter = 0;
+  std::vector<uint32_t> captured_signal_ids;
+
+  bundle.set_callback(
+    [&counter, &captured_signal_ids](uint32_t bundle_id, const uint32_t * signal_ids, size_t count)
+    {
+      (void)bundle_id;
+      counter++;
+      captured_signal_ids.assign(signal_ids, signal_ids + count);
+    });
+
+  // Get callback and invoke multiple times
+  proton_bundle_cb_t * cb =
+    proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  ASSERT_NE(cb, nullptr);
+
+  const bundle_desc_t * desc = bundle.descriptor();
+  ASSERT_NE(desc, nullptr);
+
+  cb->cb(PROTON_BUNDLE_VALUE_TEST_ID, desc->signal_ids.ids, desc->signal_ids.count, cb->arg);
+  cb->cb(PROTON_BUNDLE_VALUE_TEST_ID, desc->signal_ids.ids, desc->signal_ids.count, cb->arg);
+  cb->cb(PROTON_BUNDLE_VALUE_TEST_ID, desc->signal_ids.ids, desc->signal_ids.count, cb->arg);
+
+  EXPECT_EQ(counter, 3);
+  EXPECT_EQ(captured_signal_ids.size(), desc->signal_ids.count);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, ReplaceStdFunctionCallback)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  int first_counter = 0;
+  int second_counter = 0;
+
+  // Set first callback
+  bundle.set_callback([&first_counter](uint32_t, const uint32_t *, size_t) { first_counter++; });
+
+  proton_bundle_cb_t * cb =
+    proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  const bundle_desc_t * desc = bundle.descriptor();
+  cb->cb(PROTON_BUNDLE_VALUE_TEST_ID, desc->signal_ids.ids, desc->signal_ids.count, cb->arg);
+
+  EXPECT_EQ(first_counter, 1);
+  EXPECT_EQ(second_counter, 0);
+
+  // Replace with second callback
+  bundle.set_callback([&second_counter](uint32_t, const uint32_t *, size_t) { second_counter++; });
+
+  cb = proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  cb->cb(PROTON_BUNDLE_VALUE_TEST_ID, desc->signal_ids.ids, desc->signal_ids.count, cb->arg);
+
+  // First callback should not be called again, second should be called
+  EXPECT_EQ(first_counter, 1);
+  EXPECT_EQ(second_counter, 1);
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, StdFunctionCallbackReceivesCorrectSignalIds)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+
+  std::vector<uint32_t> received_ids;
+
+  bundle.set_callback([&received_ids](uint32_t, const uint32_t * signal_ids, size_t count)
+                      { received_ids.assign(signal_ids, signal_ids + count); });
+
+  const bundle_desc_t * desc = bundle.descriptor();
+  ASSERT_NE(desc, nullptr);
+
+  proton_bundle_cb_t * cb =
+    proton_registry_get_bundle_callback(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  cb->cb(PROTON_BUNDLE_VALUE_TEST_ID, desc->signal_ids.ids, desc->signal_ids.count, cb->arg);
+
+  // value_test bundle has 9 signals (see test.yaml)
+  ASSERT_EQ(received_ids.size(), 9);
+
+  // Verify the signal IDs match those in the bundle descriptor
+  for (size_t i = 0; i < desc->signal_ids.count; i++)
+  {
+    EXPECT_EQ(received_ids[i], desc->signal_ids.ids[i]);
+  }
+
+  free(registry.signal_registry);
+}
+
+#endif  // PROTON_ENABLE_ALLOC
 
 int main(int argc, char ** argv)
 {

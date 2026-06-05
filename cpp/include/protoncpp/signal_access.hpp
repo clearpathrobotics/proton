@@ -22,14 +22,12 @@
 #include "proton/common.h"
 #include "proton/registry.h"
 
-// Default to embedded mode (no allocation/RTTI) if not specified
-#ifndef PROTON_ENABLE_ALLOC
-#define PROTON_ENABLE_ALLOC 0
-#endif
-
 namespace proton
 {
 
+/**
+ * @class SignalAccess provides type-safe access to signal values from the proton_core registry API.
+ */
 class SignalAccess
 {
 public:
@@ -128,6 +126,10 @@ protected:
   uint32_t id_;
 };
 
+/**
+ * @class Signal typed wrapper around a SignalBase. Does not require RTTI, but if
+ * RTTI is enabled, it can be safely stored as a SignalBase pointer and dynamically cast back to Signal<T>.
+ */
 template <typename T>
 class Signal : public SignalBase
 {

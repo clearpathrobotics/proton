@@ -24,6 +24,28 @@
 namespace proton
 {
 
+/**
+ * @class RegistryLock class for proton_registry_t optional mutex.
+ * For using within std::lock_guard or std::unique_lock
+ */
+class RegistryLock
+{
+public:
+  explicit RegistryLock(const proton_registry_t * registry) noexcept : registry_(registry) {}
+
+  ~RegistryLock() noexcept = default;
+
+  void lock() noexcept { proton_lock_registry(registry_); }
+  void unlock() noexcept { proton_unlock_registry(registry_); }
+
+  RegistryLock(const RegistryLock &) = delete;
+  RegistryLock & operator=(const RegistryLock &) = delete;
+}
+
+/**
+ * @class ScopedLock class for RAII-style locking of proton_registry_t optional mutex.
+ * Automatically releases the lock when going out of scope.
+ */
 class ScopedLock
 {
 public:
