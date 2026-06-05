@@ -4,6 +4,7 @@ project(proton_core C CXX)
 # Code coverage instrumentation option
 option(PROTON_BUILD_TESTS "Build unit tests" ON)
 option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
+option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
 
 if (PROTON_BUILD_TESTS)
   add_compile_options(-Werror -Wall -Wextra)
@@ -165,6 +166,10 @@ add_library(${PROJECT_NAME}
   ${nanopb_SOURCE_DIR}/pb_encode.c
   ${NANOPB_GENERATED_SRCS}
 )
+
+if(PROTON_ENABLE_ALLOC)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
+endif()
 
 add_dependencies(${PROJECT_NAME} generate_protoc)
 
