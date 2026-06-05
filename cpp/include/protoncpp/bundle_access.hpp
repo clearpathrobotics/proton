@@ -35,7 +35,7 @@ namespace proton
 class BundleAccess
 {
 public:
-  constexpr explicit BundleAccess(proton_registry_t * registry, uint32_t id) noexcept
+  explicit BundleAccess(proton_registry_t * registry, uint32_t id) noexcept
   : registry_(registry), id_(id)
   {
   }
