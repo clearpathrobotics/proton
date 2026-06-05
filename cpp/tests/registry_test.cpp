@@ -662,6 +662,167 @@ TEST(Signal, SetSignalTypeMismatch)
 }
 
 // =============================================================================
+// SignalBase tests (no-RTTI type checking)
+// =============================================================================
+
+TEST(SignalBase, TypeDouble)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<double> signal(&registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_DOUBLE);
+  EXPECT_EQ(base->id(), PROTON_SIGNAL_DEFAULT_DOUBLE_ID);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeFloat)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<float> signal(&registry, PROTON_SIGNAL_FLOAT_VALUE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_FLOAT);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeInt32)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<int32_t> signal(&registry, PROTON_SIGNAL_INT32_VALUE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_INT32);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeInt64)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<int64_t> signal(&registry, PROTON_SIGNAL_INT64_VALUE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_INT64);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeUint32)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint32_t> signal(&registry, PROTON_SIGNAL_UINT32_VALUE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_UINT32);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeUint64)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint64_t> signal(&registry, PROTON_SIGNAL_UINT64_VALUE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_UINT64);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeBool)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<bool> signal(&registry, PROTON_SIGNAL_BOOL_VALUE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_BOOL);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<double> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_STRING);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<double> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_BYTES);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, TypeInvalidId)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<double> signal(&registry, 0x9999);
+  SignalBase * base = &signal;
+
+  EXPECT_EQ(base->type(), PROTON_INVALID_TYPE);
+  EXPECT_EQ(base->desc(), nullptr);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, DescReturnsValidDescriptor)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<double> signal(&registry, PROTON_SIGNAL_DEFAULT_DOUBLE_ID);
+  SignalBase * base = &signal;
+
+  signal_desc_t * desc = base->desc();
+  ASSERT_NE(desc, nullptr);
+  EXPECT_EQ(desc->id, PROTON_SIGNAL_DEFAULT_DOUBLE_ID);
+  EXPECT_EQ(desc->type, PROTON_DOUBLE);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBase, PolymorphicAccessViaBasePointer)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
+  Signal<double> double_signal(&registry, PROTON_SIGNAL_DOUBLE_VALUE_ID);
+  Signal<uint32_t> uint32_signal(&registry, PROTON_SIGNAL_UINT32_VALUE_ID);
+  Signal<bool> bool_signal(&registry, PROTON_SIGNAL_BOOL_VALUE_ID);
+
+  // Store in array of base pointers
+  SignalBase * signals[] = {&double_signal, &uint32_signal, &bool_signal};
+
+  // Verify type checking works for each
+  EXPECT_EQ(signals[0]->type(), PROTON_DOUBLE);
+  EXPECT_EQ(signals[1]->type(), PROTON_UINT32);
+  EXPECT_EQ(signals[2]->type(), PROTON_BOOL);
+
+  // Verify safe casting pattern (no RTTI)
+  if (signals[0]->type() == PROTON_DOUBLE)
+  {
+    auto * typed = static_cast<Signal<double> *>(signals[0]);
+    double value = 123.456;
+    EXPECT_EQ(typed->set(value), PROTON_OK);
+
+    double read_value;
+    EXPECT_EQ(typed->get(read_value), PROTON_OK);
+    EXPECT_EQ(read_value, value);
+  }
+
+  free(registry.signal_registry);
+}
+
+// =============================================================================
 // BundleAccess tests
 // =============================================================================
 
