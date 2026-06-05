@@ -24,15 +24,15 @@
 namespace proton
 {
 
-class RegistryLock
+class ScopedLock
 {
 public:
-  explicit RegistryLock(const proton_registry_t * registry) noexcept : registry_(registry)
+  explicit ScopedLock(const proton_registry_t * registry) noexcept : registry_(registry)
   {
     acquired_ = proton_lock_registry(registry_) == PROTON_OK;
   }
 
-  ~RegistryLock() noexcept
+  ~ScopedLock() noexcept
   {
     if (acquired_)
     {
@@ -40,8 +40,8 @@ public:
     }
   }
 
-  RegistryLock(const RegistryLock &) = delete;
-  RegistryLock & operator=(const RegistryLock &) = delete;
+  ScopedLock(const ScopedLock &) = delete;
+  ScopedLock & operator=(const ScopedLock &) = delete;
 
   bool ok() const noexcept { return acquired_; }
 
