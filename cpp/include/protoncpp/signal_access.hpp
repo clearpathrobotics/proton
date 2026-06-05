@@ -40,7 +40,7 @@ public:
   proton_status_e set(uint32_t id, int32_t value) noexcept;
 
   proton_status_e get(uint32_t id, int64_t & out) const noexcept;
-  proton_status_e set(uint64_t id, int64_t value) noexcept;
+  proton_status_e set(uint32_t id, int64_t value) noexcept;
 
   proton_status_e get(uint32_t id, uint32_t & out) const noexcept;
   proton_status_e set(uint32_t id, uint32_t value) noexcept;
