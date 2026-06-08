@@ -24,12 +24,9 @@
 #include <stdint.h>
 
 #include "proton/common.h"
+#include "proton/proton_config.h"
 #include "proton/registry.h"
 #include "proton/transport.h"
-
-#ifndef PROTON_MAX_PENDING_TRIGGERS
-#define PROTON_MAX_PENDING_TRIGGERS 4
-#endif
 
 #ifdef __cplusplus
 extern "C"
