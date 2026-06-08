@@ -143,10 +143,11 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -S ./core -B build_core \
+          cmake -S ./cpp -B build_core \
             -DCMAKE_BUILD_TYPE=Debug \
             -DPROTON_BUILD_TESTS=ON \
-            -DPROTON_ENABLE_TEST_COVERAGE=ON
+            -DPROTON_ENABLE_TEST_COVERAGE=ON \
+            -DPROTON_ENABLE_ALLOC=ON
 
       - name: Build
         run: |

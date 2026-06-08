@@ -28,6 +28,7 @@
 #include "proton_core/signal.pb.h"
 
 #include "proton/common.h"
+#include "proton/proton_config.h"
 
 #ifdef __cplusplus
 extern "C"

@@ -4,6 +4,7 @@ project(proton_core C CXX)
 # Code coverage instrumentation option
 option(PROTON_BUILD_TESTS "Build unit tests" ON)
 option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
+option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
 
 if (PROTON_BUILD_TESTS)
   add_compile_options(-Werror -Wall -Wextra)
@@ -148,12 +149,9 @@ add_custom_target(generate_protoc ALL
 # -------------------------------
 set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/tests/generated)
 
-
 # -------------------------------
 # proton_core library
 # -------------------------------
-option(PROTON_DEBUG "Enable PROTON_DEBUG preprocessor macro" OFF)
-
 set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
 add_library(${PROJECT_NAME}
@@ -169,11 +167,11 @@ add_library(${PROJECT_NAME}
   ${NANOPB_GENERATED_SRCS}
 )
 
-add_dependencies(${PROJECT_NAME} generate_protoc)
-
-if (PROTON_DEBUG)
-  target_compile_definitions(proton_core PUBLIC PROTON_DEBUG)
+if(PROTON_ENABLE_ALLOC)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
 endif()
+
+add_dependencies(${PROJECT_NAME} generate_protoc)
 
 target_include_directories(proton_core PUBLIC ${GENERATED_FOLDER} ../include)
 
@@ -221,7 +219,7 @@ if(PROTON_BUILD_TESTS)
   find_package(GTest REQUIRED)
   include(${CMAKE_CURRENT_LIST_DIR}/../cmake/protonCoreGenerator.cmake)
 
-# autogen registry for tests
+  # autogen registry for tests
   set(GENERATED_REGISTRY_FILES
     "${GENERATED_FOLDER}/target_registry.c"
     "${GENERATED_FOLDER}/target_node.c"
