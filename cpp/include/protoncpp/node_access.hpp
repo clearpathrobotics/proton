@@ -22,6 +22,9 @@
 #include <cstddef>
 #include <cstdint>
 #include "proton/node_manager.h"
+#include "proton/proton_config.h"
+#include "protoncpp/bundle_access.hpp"
+#include "protoncpp/signal_access.hpp"
 
 #if __cplusplus >= 202002L
 #include <span>
@@ -39,44 +42,67 @@ public:
 
   explicit NodeAccess(proton_core_node_t * node) : node_(node) {}
 
-  proton_status_e receive(const uint8_t * buffer, size_t len)
+  proton_status_e receive(const uint8_t * buffer, size_t len) noexcept
   {
     return proton_node_receive(node_, buffer, len);
   }
 
+  uint32_t id() const noexcept { return node_->id; }
+
+  size_t num_peers() const noexcept { return node_->num_peers; }
+
   proton_status_e update(
     uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len, size_t & out_len,
-    Endpoint * dest_peers, size_t num_dest_peers, size_t & num_selected_peers)
+    Endpoint * dest_peers, size_t num_dest_peers, size_t & num_selected_peers) noexcept
   {
     return proton_node_update(
       node_, uptime_ms, buffer, buffer_len, &out_len, dest_peers, num_dest_peers,
       &num_selected_peers);
   }
 
-  proton_status_e trigger_bundle(uint32_t bundle_id)
+  proton_status_e trigger_bundle(uint32_t bundle_id) noexcept
   {
     return proton_node_trigger_bundle(node_, bundle_id);
   }
 
+  bool has_pending_triggers() const noexcept { return node_->trigger_head != node_->trigger_tail; }
+
   proton_status_e encode_bundle(
     uint32_t bundle_id, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len, size_t & out_len,
-    Endpoint * dest_peers, size_t num_dest_peers, size_t & num_selected_peers)
+    Endpoint * dest_peers, size_t num_dest_peers, size_t & num_selected_peers) noexcept
   {
     return proton_node_encode_bundle(
       node_, bundle_id, uptime_ms, buffer, buffer_len, &out_len, dest_peers, num_dest_peers,
       &num_selected_peers);
   }
 
+  SignalAccess signals() noexcept { return SignalAccess(node_->registry); }
+  BundleAccess bundle(uint32_t id) noexcept { return BundleAccess(node_->registry, id); }
+
+#if PROTON_ENABLE_ALLOC
+
+  void on_bundle_update(uint32_t bundle_id, BundleAccess::CallbackType cb) noexcept
+  {
+    bundle(bundle_id).set_callback(cb);
+  }
+
+#endif
+
 #if __cplusplus >= 202002L
 
-  proton_status_e receive(std::span<const uint8_t> buffer)
+  std::span<const Endpoint> peers() const noexcept
+  {
+    return {node_->destination_peers, node_->num_peers};
+  }
+
+  proton_status_e receive(std::span<const uint8_t> buffer) noexcept
   {
     return receive(buffer.data(), buffer.size());
   }
 
   proton_status_e update(
     uint64_t uptime_ms, std::span<uint8_t> buffer, size_t & out_len, std::span<Endpoint> peers,
-    size_t & num_selected_peers)
+    size_t & num_selected_peers) noexcept
   {
     return update(
       uptime_ms, buffer.data(), buffer.size(), out_len, peers.data(), peers.size(),
@@ -85,7 +111,7 @@ public:
 
   proton_status_e encode_bundle(
     uint32_t bundle_id, uint64_t uptime_ms, std::span<uint8_t> buffer, size_t & out_len,
-    std::span<Endpoint> peers, size_t & num_selected_peers)
+    std::span<Endpoint> peers, size_t & num_selected_peers) noexcept
   {
     return encode_bundle(
       bundle_id, uptime_ms, buffer.data(), buffer.size(), out_len, peers.data(), peers.size(),
