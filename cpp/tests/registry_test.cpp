@@ -666,6 +666,251 @@ TEST(Signal, SetSignalTypeMismatch)
 }
 
 // =============================================================================
+// Signal<char*> tests
+// =============================================================================
+
+TEST(SignalString, GetDefaultString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, PROTON_SIGNAL_DEFAULT_STRING_ID);
+
+  char buf[PROTON_SIGNAL_DEFAULT_STRING_CAPACITY] = {0};
+  size_t len = 0;
+  proton_status_e status = signal.get(buf, sizeof(buf), len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_STREQ(buf, "foo");
+  EXPECT_EQ(len, strlen(buf) + 1);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalString, SetString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  const char * new_value = "bar";
+  proton_status_e status = signal.set(new_value, strlen(new_value) + 1);
+  ASSERT_EQ(status, PROTON_OK);
+
+  char buf[PROTON_SIGNAL_STRING_VALUE_CAPACITY] = {0};
+  size_t len = 0;
+  status = signal.get(buf, sizeof(buf), len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_STREQ(buf, new_value);
+  EXPECT_EQ(len, strlen(new_value) + 1);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalString, SetStringNullPtr)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  char * buf = nullptr;
+
+  proton_status_e status = signal.set(buf, 4);
+  EXPECT_EQ(status, PROTON_NULL_PTR_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalString, SetStringExcessiveLength)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  char new_value[PROTON_SIGNAL_STRING_VALUE_CAPACITY + 1] = {0};
+  memset(new_value, 'a', PROTON_SIGNAL_STRING_VALUE_CAPACITY);
+  proton_status_e status = signal.set(new_value, 999);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalString, SetStringNotNullTerminated)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  char new_value[PROTON_SIGNAL_STRING_VALUE_CAPACITY] = {0};
+  memset(new_value, 'a', PROTON_SIGNAL_STRING_VALUE_CAPACITY);  // No null terminator
+  proton_status_e status = signal.set(new_value, sizeof(new_value));
+  EXPECT_EQ(status, PROTON_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalString, SetStringNullTerminatorAtCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  char new_value[PROTON_SIGNAL_STRING_VALUE_CAPACITY] = {0};
+  memset(new_value, 'a', PROTON_SIGNAL_STRING_VALUE_CAPACITY - 1);
+  new_value[PROTON_SIGNAL_STRING_VALUE_CAPACITY - 1] = '\0';  // Null terminator at capacity
+  proton_status_e status = signal.set(new_value, sizeof(new_value));
+  EXPECT_EQ(status, PROTON_OK);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalString, SetGetLongString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, PROTON_SIGNAL_REALLY_LONG_STRING_ID);
+
+  const char * new_value = "ipsumsedolorsitametconsecteturadipiscingeaaa";
+  size_t new_len = strlen(new_value) + 1;
+  proton_status_e status = signal.set(new_value, new_len);
+  ASSERT_EQ(status, PROTON_OK);
+
+  char buf[PROTON_SIGNAL_REALLY_LONG_STRING_CAPACITY] = {0};
+  size_t len = 0;
+  status = signal.get(buf, sizeof(buf), len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, new_len);
+  EXPECT_STREQ(buf, new_value);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalString, GetInvalidSignalId)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, 0x9999);
+
+  char buf[64] = {0};
+  size_t len = 0;
+  proton_status_e status = signal.get(buf, sizeof(buf), len);
+  EXPECT_EQ(status, PROTON_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalString, SetInvalidSignalId)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<char *> signal(&registry, 0x9999);
+
+  proton_status_e status = signal.set("test", 5);
+  EXPECT_EQ(status, PROTON_ERROR);
+
+  free(registry.signal_registry);
+}
+
+// =============================================================================
+// Signal<uint8_t*> tests
+// =============================================================================
+
+TEST(SignalBytes, GetDefaultBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_DEFAULT_BYTES_ID);
+
+  uint8_t buf[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY] = {0};
+  size_t len = 0;
+  proton_status_e status = signal.get(buf, sizeof(buf), len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, 3);
+  EXPECT_EQ(buf[0], 0);
+  EXPECT_EQ(buf[1], 1);
+  EXPECT_EQ(buf[2], 2);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBytes, SetBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  uint8_t new_value[] = {0xAA, 0xBB, 0xCC, 0xDD};
+  proton_status_e status = signal.set(new_value, sizeof(new_value));
+  ASSERT_EQ(status, PROTON_OK);
+
+  uint8_t buf[PROTON_SIGNAL_BYTES_VALUE_CAPACITY] = {0};
+  size_t len = 0;
+  status = signal.get(buf, sizeof(buf), len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, sizeof(new_value));
+  EXPECT_EQ(memcmp(buf, new_value, len), 0);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBytes, SetBytesNullPtr)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  uint8_t * buf = nullptr;
+  proton_status_e status = signal.set(buf, 4);
+  EXPECT_EQ(status, PROTON_NULL_PTR_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBytes, SetBytesExcessiveLength)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  uint8_t new_value[PROTON_SIGNAL_BYTES_VALUE_CAPACITY + 1] = {0};
+  memset(new_value, 0xFF, PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  proton_status_e status = signal.set(new_value, 999);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBytes, SetGetLongBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_REALLY_LONG_BYTES_ID);
+
+  uint8_t new_value[PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY] = {0};
+  memset(new_value, 0xAB, PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY);
+  proton_status_e status = signal.set(new_value, sizeof(new_value));
+  ASSERT_EQ(status, PROTON_OK);
+
+  uint8_t buf[PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY] = {0};
+  size_t len = 0;
+  status = signal.get(buf, sizeof(buf), len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, sizeof(new_value));
+  EXPECT_EQ(memcmp(buf, new_value, len), 0);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBytes, GetInvalidSignalId)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, 0x9999);
+
+  uint8_t buf[64] = {0};
+  size_t len = 0;
+  proton_status_e status = signal.get(buf, sizeof(buf), len);
+  EXPECT_EQ(status, PROTON_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalBytes, SetInvalidSignalId)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, 0x9999);
+
+  uint8_t data[] = {0x01, 0x02};
+  proton_status_e status = signal.set(data, sizeof(data));
+  EXPECT_EQ(status, PROTON_ERROR);
+
+  free(registry.signal_registry);
+}
+
+// =============================================================================
 // SignalBase tests (no-RTTI type checking)
 // =============================================================================
 

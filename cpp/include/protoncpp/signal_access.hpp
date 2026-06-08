@@ -22,6 +22,10 @@
 #include "proton/common.h"
 #include "proton/registry.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
+
 namespace proton
 {
 
@@ -139,6 +143,36 @@ public:
   proton_status_e get(T & out) const noexcept { return SignalAccess(registry_).get(id_, out); }
 
   proton_status_e set(T value) noexcept { return SignalAccess(registry_).set(id_, value); }
+
+  proton_status_e get(char * buf, size_t cap, size_t & len) const noexcept
+  {
+    static_assert(
+      std::is_same_v<T, char *>, "get(char*, size_t, size_t&) is only valid for Signal<char*>");
+    return SignalAccess(registry_).get(id_, buf, cap, len);
+  }
+
+  proton_status_e set(const char * buf, size_t len) noexcept
+  {
+    static_assert(
+      std::is_same_v<T, char *>, "set(const char*, size_t) is only valid for Signal<char*>");
+    return SignalAccess(registry_).set(id_, buf, len);
+  }
+
+  proton_status_e get(uint8_t * buf, size_t cap, size_t & len) const noexcept
+  {
+    static_assert(
+      std::is_same_v<T, uint8_t *>,
+      "get(uint8_t*, size_t, size_t&) is only valid for Signal<uint8_t*>");
+    return SignalAccess(registry_).get(id_, buf, cap, len);
+  }
+
+  proton_status_e set(const uint8_t * buf, size_t len) noexcept
+  {
+    static_assert(
+      std::is_same_v<T, uint8_t *>,
+      "set(const uint8_t*, size_t) is only valid for Signal<uint8_t*>");
+    return SignalAccess(registry_).set(id_, buf, len);
+  }
 };
 
 }  // namespace proton
