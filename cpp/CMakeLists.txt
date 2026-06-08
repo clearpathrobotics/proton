@@ -99,7 +99,23 @@ if (PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
   )
 
+  add_executable(node_manager_test_cpp
+    tests/node_manager_test.cpp
+    ${GENERATED_REGISTRY_FILES}
+  )
+
+  target_link_libraries(node_manager_test_cpp PUBLIC
+    GTest::gtest_main
+    proton::proton_core_cpp
+  )
+
+  target_include_directories(node_manager_test_cpp PUBLIC
+    ${GENERATED_FOLDER}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test_cpp)
   gtest_discover_tests(lock_test_cpp)
+  gtest_discover_tests(node_manager_test_cpp)
 endif()

@@ -24,6 +24,7 @@
 
 #if PROTON_ENABLE_ALLOC
 #include <functional>
+#include <memory>
 #endif
 
 namespace proton
@@ -53,28 +54,25 @@ public:
 
   void set_callback(CallbackType cb) noexcept
   {
-    // Store the std::function in a heap-allocated wrapper and pass it as the context to the C callback
-    callback_wrapper_ = std::move(cb);
+    auto wrapper = std::make_unique<CallbackType>(std::move(cb));
     set_callback(
       [](uint32_t bundle_id, const uint32_t * signal_ids, size_t count, void * ctx)
       {
-        auto * self = static_cast<BundleAccess *>(ctx);
-        if (self->callback_wrapper_)
+        auto * callback = static_cast<CallbackType *>(ctx);
+        if (*callback)
         {
-          self->callback_wrapper_(bundle_id, signal_ids, count);
+          (*callback)(bundle_id, signal_ids, count);
         }
       },
-      this);
+      // Note, this is a known memory leak, but it's only expected to be used once
+      // per bundle, which keeps the objects allocated until the process
+      wrapper.release());
   }
 #endif  // PROTON_ENABLE_ALLOC
 
 private:
   proton_registry_t * registry_;
   uint32_t id_;
-
-#if PROTON_ENABLE_ALLOC
-  CallbackType callback_wrapper_ = nullptr;
-#endif  // PROTON_ENABLE_ALLOC
 };
 
 }  // namespace proton
