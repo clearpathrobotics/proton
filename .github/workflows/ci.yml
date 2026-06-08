@@ -155,7 +155,9 @@ jobs:
 
       - name: Run tests
         run: |
-          ctest --test-dir build_core --output-on-failure
+          SEED=$(( (${{ github.run_id }} % 99999) + 1 ))
+          echo "GTest random seed: $SEED"
+          GTEST_SHUFFLE=1 GTEST_RANDOM_SEED=$SEED ctest --schedule-random --test-dir build_core --output-on-failure
 
       - name: Generate core coverage report
         run: |
