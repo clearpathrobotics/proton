@@ -16,8 +16,8 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
-#ifndef PROTON_BUNDLE_HPP
-#define PROTON_BUNDLE_HPP
+#ifndef PROTON_BUNDLE_ACCESS_HPP
+#define PROTON_BUNDLE_ACCESS_HPP
 
 #include "proton/common.h"
 #include "proton/registry.h"
@@ -79,4 +79,4 @@ private:
 
 }  // namespace proton
 
-#endif  // PROTON_BUNDLE_HPP
+#endif  // PROTON_BUNDLE_ACCESS_HPP
