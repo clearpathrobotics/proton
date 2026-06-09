@@ -45,6 +45,13 @@ TEST(BundleRegistry, GetBundleInvalidId)
   free(registry.signal_registry);
 }
 
+TEST(BundleRegistry, GetBundleNullRegistry)
+{
+  const bundle_desc_t * desc =
+    proton_registry_get_bundle(nullptr, PROTON_BUNDLE_VALUE_TEST_ID, nullptr);
+  EXPECT_EQ(desc, nullptr);
+}
+
 TEST(SignalRegistry, GetSignal)
 {
   proton_registry_t registry = copy_default_registry(&g_proton_registry);

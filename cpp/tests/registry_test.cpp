@@ -1345,6 +1345,32 @@ TEST(BundleAccess, StdFunctionCallbackReceivesCorrectSignalIds)
 
 #endif  // PROTON_ENABLE_ALLOC
 
+TEST(BundleAccess, IndexOperatorGetValidSignal)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  EXPECT_TRUE(bundle[PROTON_SIGNAL_DOUBLE_VALUE_ID].has_value());
+
+  free(registry.signal_registry);
+}
+
+TEST(BundleAccess, IndexOperatorNulloptWithInvalidRegistry)
+{
+  BundleAccess bundle(nullptr, PROTON_BUNDLE_VALUE_TEST_ID);
+  EXPECT_FALSE(bundle[PROTON_SIGNAL_DOUBLE_VALUE_ID].has_value());
+}
+
+TEST(BundleAccess, IndexOperatorNulloptFromSignalNotInBundle)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+
+  BundleAccess bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID);
+  EXPECT_FALSE(bundle[9999].has_value());
+
+  free(registry.signal_registry);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);

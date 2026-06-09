@@ -16,14 +16,20 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
-#ifndef PROTON_BUNDLE_HPP
-#define PROTON_BUNDLE_HPP
+#ifndef PROTON_BUNDLE_ACCESS_HPP
+#define PROTON_BUNDLE_ACCESS_HPP
 
 #include "proton/common.h"
 #include "proton/registry.h"
+#include "protoncpp/signal_access.hpp"
+
+#if __cplusplus >= 201703L
+#include <optional>
+#endif
 
 #if PROTON_ENABLE_ALLOC
 #include <functional>
+#include <memory>
 #endif
 
 namespace proton
@@ -53,30 +59,46 @@ public:
 
   void set_callback(CallbackType cb) noexcept
   {
-    // Store the std::function in a heap-allocated wrapper and pass it as the context to the C callback
-    callback_wrapper_ = std::move(cb);
+    auto wrapper = std::make_unique<CallbackType>(std::move(cb));
     set_callback(
       [](uint32_t bundle_id, const uint32_t * signal_ids, size_t count, void * ctx)
       {
-        auto * self = static_cast<BundleAccess *>(ctx);
-        if (self->callback_wrapper_)
+        auto * callback = static_cast<CallbackType *>(ctx);
+        if (*callback)
         {
-          self->callback_wrapper_(bundle_id, signal_ids, count);
+          (*callback)(bundle_id, signal_ids, count);
         }
       },
-      this);
+      // Note, this is a known memory leak, but it's only expected to be used once
+      // per bundle, which keeps the objects allocated until the process
+      wrapper.release());
   }
 #endif  // PROTON_ENABLE_ALLOC
+
+#if __cplusplus >= 201703L
+  std::optional<SignalBase> operator[](uint32_t signal_id) const noexcept
+  {
+    const bundle_desc_t * desc = descriptor();
+    if (!desc)
+    {
+      return std::nullopt;
+    }
+    for (size_t i = 0; i < desc->signal_ids.count; i++)
+    {
+      if (desc->signal_ids.ids[i] == signal_id)
+      {
+        return SignalBase(registry_, signal_id);
+      }
+    }
+    return std::nullopt;
+  }
+#endif
 
 private:
   proton_registry_t * registry_;
   uint32_t id_;
-
-#if PROTON_ENABLE_ALLOC
-  CallbackType callback_wrapper_ = nullptr;
-#endif  // PROTON_ENABLE_ALLOC
 };
 
 }  // namespace proton
 
-#endif  // PROTON_BUNDLE_HPP
+#endif  // PROTON_BUNDLE_ACCESS_HPP

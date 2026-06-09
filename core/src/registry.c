@@ -73,16 +73,19 @@ proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
 const bundle_desc_t * proton_registry_get_bundle(
   const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx)
 {
-  for (size_t i = 0; i < registry->bundle_count; i++)
+  if (registry != NULL)
   {
-    if (registry->bundle_id_lut[i].id == bundle_id)
+    for (size_t i = 0; i < registry->bundle_count; i++)
     {
-      size_t idx = registry->bundle_id_lut[i].idx;
-      if (slot_idx)
+      if (registry->bundle_id_lut[i].id == bundle_id)
       {
-        *slot_idx = idx;
+        size_t idx = registry->bundle_id_lut[i].idx;
+        if (slot_idx)
+        {
+          *slot_idx = idx;
+        }
+        return &registry->bundle_table[idx];
       }
-      return &registry->bundle_table[idx];
     }
   }
 

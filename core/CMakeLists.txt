@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.14)
 project(proton_core C CXX)
 
-# Code coverage instrumentation option
 option(PROTON_BUILD_TESTS "Build unit tests" ON)
 option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
 option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
+set(PROTON_MAX_PENDING_TRIGGERS 4 CACHE STRING "Number of allowable pending triggers in node_manager")
 
+# Code coverage instrumentation option
 if (PROTON_BUILD_TESTS)
   add_compile_options(-Werror -Wall -Wextra)
   if(PROTON_ENABLE_TEST_COVERAGE)
@@ -166,6 +167,8 @@ add_library(${PROJECT_NAME}
   ${nanopb_SOURCE_DIR}/pb_encode.c
   ${NANOPB_GENERATED_SRCS}
 )
+
+target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_MAX_PENDING_TRIGGERS=${PROTON_MAX_PENDING_TRIGGERS})
 
 if(PROTON_ENABLE_ALLOC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
