@@ -5,6 +5,7 @@ project(proton_core_cpp C CXX)
 option(PROTON_BUILD_TESTS "Build unit tests" ON)
 option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
 option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
+option(PROTON_NODE_BUILDER "Enable optional yaml file parsing" OFF)
 
 if (PROTON_BUILD_TESTS)
   add_compile_options(-Werror -Wall -Wextra)
@@ -45,6 +46,10 @@ if(PROTON_ENABLE_ALLOC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
 else()
   target_compile_options(${PROJECT_NAME} PRIVATE -fno-exceptions -fno-rtti)
+endif()
+
+if (PROTON_NODE_BUILDER)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_NODE_BUILDER=1)
 endif()
 
 add_library(proton::${PROJECT_NAME} ALIAS ${PROJECT_NAME})

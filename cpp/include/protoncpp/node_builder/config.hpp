@@ -16,20 +16,24 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
-#ifndef PROTON_CONFIG_HPP
-#define PROTON_CONFIG_HPP
+#ifndef PROTON_NODE_BUILDER_CONFIG_HPP
+#define PROTON_NODE_BUILDER_CONFIG_HPP
 
-// Default to embedded mode (no allocation/RTTI) if not specified
-#ifndef PROTON_ENABLE_ALLOC
-#define PROTON_ENABLE_ALLOC 0
-#endif
+#include "proton/proton_config.h"
 
-#ifndef PROTON_MAX_PENDING_TRIGGERS
-#define PROTON_MAX_PENDING_TRIGGERS 4
-#endif
+#if PROTON_NODE_BUILDER
 
-#ifndef PROTON_NODE_BUILDER
-#define PROTON_NODE_BUILDER 0
-#endif
+#include <cstdint>
+#include <map>
+#include <string>
+#include <vector>
 
-#endif  // PROTON_CONFIG_HPP
+#include <yaml-cpp/yaml.h>
+
+namespace proton::node_builder
+{
+
+}  // namespace proton::node_builder
+
+#endif  // PROTON_NODE_BUILDER
+#endif  // PROTON_NODE_BUILDER_CONFIG_HPP
