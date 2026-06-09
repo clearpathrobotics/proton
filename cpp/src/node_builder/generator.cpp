@@ -25,12 +25,7 @@
 namespace proton::node_builder
 {
 
-NodeGenerator::NodeGenerator(const std::string & file, const std::string & target_name)
-: file_name_(file), name_(target_name)
-{
-}
-
-proton_status_e NodeGenerator::validate_for_target() { return PROTON_OK; }
+proton_status_e validate_for_target() { return PROTON_OK; }
 
 }  // namespace proton::node_builder
 

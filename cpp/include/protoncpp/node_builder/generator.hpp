@@ -36,23 +36,7 @@
 namespace proton::node_builder
 {
 
-class NodeGenerator
-{
-public:
-  NodeGenerator(const std::string & file, const std::string & target_name);
-  virtual ~NodeGenerator() = default;
-
-  proton_status_e validate_for_target();
-  proton_core_node_t generate_node();
-
-private:
-  std::string file_name_;
-  std::string name_;
-  std::vector<BundleConfig> bundles_;
-  std::map<std::string, NodeConfig> nodes_;
-  std::vector<ConnectionConfig> connections_;
-  ::YAML::Node yaml_node_;
-};
+proton_status_e validate_for_target();
 
 }  // namespace proton::node_builder
 

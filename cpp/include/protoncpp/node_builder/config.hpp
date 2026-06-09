@@ -124,6 +124,19 @@ struct ConnectionConfig
   std::pair<ConnectionEndpointConfig, ConnectionEndpointConfig> connection;
 };
 
+class Config
+{
+public:
+  Config(const std::string & file, const std::string & target_name);
+  virtual ~Config() = default;
+
+  std::string name_;
+  std::vector<BundleConfig> bundles_;
+  std::map<std::string, NodeConfig> nodes_;
+  std::vector<ConnectionConfig> connections_;
+  ::YAML::Node yaml_node_;
+};
+
 }  // namespace proton::node_builder
 
 #endif  // PROTON_NODE_BUILDER

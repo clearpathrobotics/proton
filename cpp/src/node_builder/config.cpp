@@ -276,4 +276,34 @@ struct convert<proton::node_builder::ConnectionConfig>
 
 }  // namespace YAML
 
+namespace proton::node_builder
+{
+
+Config::Config(const std::string & file, const std::string & target_name) : name_(target_name)
+{
+  yaml_node_ = YAML::LoadFile(file);
+
+  // Get node configs
+  for (auto node : yaml_node_[keys::NODES])
+  {
+    NodeConfig config = node.as<NodeConfig>();
+    nodes_.emplace(config.name, config);
+  }
+
+  // Get connection configs
+  for (auto node : yaml_node_[keys::CONNECTIONS])
+  {
+    ConnectionConfig config = node.as<ConnectionConfig>();
+    connections_.push_back(config);
+  }
+
+  // Get bundle configs
+  for (auto bundle : yaml_node_[keys::BUNDLES])
+  {
+    bundles_.push_back(bundle.as<BundleConfig>());
+  }
+}
+
+}  // namespace proton::node_builder
+
 #endif  // PROTON_NODE_BUILDER
