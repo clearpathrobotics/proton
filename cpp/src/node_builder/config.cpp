@@ -279,7 +279,7 @@ struct convert<proton::node_builder::ConnectionConfig>
 namespace proton::node_builder
 {
 
-Config::Config(const std::string & file, const std::string & target_name) : name_(target_name)
+Config::Config(const std::string & file)
 {
   yaml_node_ = YAML::LoadFile(file);
 

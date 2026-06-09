@@ -127,10 +127,9 @@ struct ConnectionConfig
 class Config
 {
 public:
-  Config(const std::string & file, const std::string & target_name);
+  Config(const std::string & file);
   virtual ~Config() = default;
 
-  std::string name_;
   std::vector<BundleConfig> bundles_;
   std::map<std::string, NodeConfig> nodes_;
   std::vector<ConnectionConfig> connections_;
