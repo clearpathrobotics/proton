@@ -61,7 +61,8 @@ inline proton_status_e get_framed_payload_length(const uint8_t * framed_buf, uin
 
 #if __cplusplus >= 202002L
 
-inline proton_status_e fill_crc16(std::span<const uint8_t> payload, std::span<uint8_t> crc)
+inline proton_status_e fill_crc16(
+  std::span<const uint8_t> payload, std::span<uint8_t, FRAME_CRC_OVERHEAD> crc)
 {
   return fill_crc16(payload.data(), static_cast<uint16_t>(payload.size()), crc.data());
 }
