@@ -50,6 +50,8 @@ endif()
 
 if (PROTON_NODE_BUILDER)
   target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_NODE_BUILDER=1)
+  find_package(yaml-cpp REQUIRED)
+  target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)
 endif()
 
 add_library(proton::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
