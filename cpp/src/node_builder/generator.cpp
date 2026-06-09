@@ -16,45 +16,22 @@
  * @author Tom Wallis (thomas.wallis@rockwellautomation.com)
  */
 
-#ifndef PROTON_NODE_BUILDER_GENERATOR_HPP
-#define PROTON_NODE_BUILDER_GENERATOR_HPP
-
 #include "proton/proton_config.h"
 
 #if PROTON_NODE_BUILDER
 
-#include "protoncpp/node_builder/config.hpp"
-
-#include <cstdint>
-#include <map>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <yaml-cpp/yaml.h>
+#include "protoncpp/node_builder/generator.hpp"
 
 namespace proton::node_builder
 {
 
-class NodeGenerator
+NodeGenerator::NodeGenerator(const std::string & file, const std::string & target_name)
+: file_name_(file), name_(target_name)
 {
-public:
-  NodeGenerator(const std::string & file, const std::string & target_name);
-  virtual ~NodeGenerator() = default;
+}
 
-  proton_status_e validate_for_target();
-  proton_core_node_t generate_node();
-
-private:
-  std::string file_name_;
-  std::string name_;
-  std::vector<BundleConfig> bundles_;
-  std::map<std::string, NodeConfig> nodes_;
-  std::vector<ConnectionConfig> connections_;
-  ::YAML::Node yaml_node_;
-};
+proton_status_e NodeGenerator::validate_for_target() { return PROTON_OK; }
 
 }  // namespace proton::node_builder
 
 #endif  // PROTON_NODE_BUILDER
-#endif  // PROTON_NODE_BUILDER_GENERATOR_HPP
