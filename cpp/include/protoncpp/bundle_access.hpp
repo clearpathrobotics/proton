@@ -21,6 +21,11 @@
 
 #include "proton/common.h"
 #include "proton/registry.h"
+#include "protoncpp/signal_access.hpp"
+
+#if __cplusplus >= 201703L
+#include <optional>
+#endif
 
 #if PROTON_ENABLE_ALLOC
 #include <functional>
@@ -69,6 +74,25 @@ public:
       wrapper.release());
   }
 #endif  // PROTON_ENABLE_ALLOC
+
+#if __cplusplus >= 201703L
+  std::optional<SignalBase> operator[](uint32_t signal_id) const noexcept
+  {
+    const bundle_desc_t * desc = descriptor();
+    if (!desc)
+    {
+      return std::nullopt;
+    }
+    for (size_t i = 0; i < desc->signal_ids.count; i++)
+    {
+      if (desc->signal_ids.ids[i] == signal_id)
+      {
+        return SignalBase(registry_, signal_id);
+      }
+    }
+    return std::nullopt;
+  }
+#endif
 
 private:
   proton_registry_t * registry_;

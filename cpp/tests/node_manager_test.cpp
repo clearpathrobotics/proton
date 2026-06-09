@@ -350,6 +350,40 @@ TEST_F(NodeAccessTest, EncodeBundleSpan_ValidBundle_ReturnsOk)
 
 #endif  // __cplusplus >= 202002L
 
+// -----------------------------------------------------------------------
+// C++17 [] operator overloads
+// -----------------------------------------------------------------------
+
+TEST_F(NodeAccessTest, GetValidBundleByIndex)
+{
+  NodeAccess access(&node_);
+  std::optional<BundleAccess> bundle = access[PROTON_BUNDLE_VALUE_TEST_ID];
+  EXPECT_TRUE(bundle.has_value());
+  EXPECT_EQ(bundle->id(), PROTON_BUNDLE_VALUE_TEST_ID);
+}
+
+TEST_F(NodeAccessTest, InvalidBundleIdReturnsNullopt)
+{
+  NodeAccess access(&node_);
+  std::optional<BundleAccess> bundle = access[9999];
+  EXPECT_FALSE(bundle.has_value());
+}
+
+TEST_F(NodeAccessTest, InvalidNodeReturnsNullopt)
+{
+  NodeAccess access(nullptr);
+  std::optional<BundleAccess> bundle = access[PROTON_BUNDLE_VALUE_TEST_ID];
+  EXPECT_FALSE(bundle.has_value());
+}
+
+TEST_F(NodeAccessTest, InvalidRegistryReturnsNullopt)
+{
+  node_.registry = nullptr;
+  NodeAccess access(&node_);
+  std::optional<BundleAccess> bundle = access[PROTON_BUNDLE_VALUE_TEST_ID];
+  EXPECT_FALSE(bundle.has_value());
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);

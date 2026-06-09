@@ -26,6 +26,10 @@
 #include "protoncpp/bundle_access.hpp"
 #include "protoncpp/signal_access.hpp"
 
+#if __cplusplus >= 201703L
+#include <optional>
+#endif
+
 #if __cplusplus >= 202002L
 #include <span>
 #endif
@@ -84,6 +88,25 @@ public:
   void on_bundle_update(uint32_t bundle_id, BundleAccess::CallbackType cb) noexcept
   {
     bundle(bundle_id).set_callback(cb);
+  }
+
+#endif
+
+#if __cplusplus >= 201703L
+
+  std::optional<BundleAccess> operator[](uint32_t bundle_id) const noexcept
+  {
+    if (node_ != nullptr && node_->registry != nullptr && node_->registry->bundle_table != nullptr)
+    {
+      const bundle_desc_t * bundle =
+        proton_registry_get_bundle(node_->registry, bundle_id, nullptr);
+      if (bundle != nullptr)
+      {
+        return BundleAccess(node_->registry, bundle_id);
+      }
+    }
+
+    return std::nullopt;
   }
 
 #endif
