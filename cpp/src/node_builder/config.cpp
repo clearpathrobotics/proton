@@ -156,7 +156,7 @@ struct convert<proton::node_builder::BundleConfig>
       // Get signal configs for this bundle
       for (const auto & signal : signals)
       {
-        rhs.signals.push_back(signal.as<proton::node_builder::SignalConfig>());
+        rhs.signals.push_back(signal.as<uint32_t>());
       }
     }
 
@@ -301,6 +301,12 @@ Config::Config(const std::string & file, const std::string & target_name) : name
   for (auto bundle : yaml_node_[keys::BUNDLES])
   {
     bundles_.push_back(bundle.as<BundleConfig>());
+  }
+
+  // Get signal configs
+  for (auto signal : yaml_node_[keys::SIGNALS])
+  {
+    signals_.push_back(signal.as<SignalConfig>());
   }
 }
 

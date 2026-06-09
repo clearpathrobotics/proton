@@ -96,7 +96,7 @@ struct BundleConfig
   uint32_t id;
   std::vector<std::string> producers;
   std::vector<std::string> consumers;
-  std::vector<SignalConfig> signals;
+  std::vector<uint32_t> signals;
 };
 
 struct EndpointConfig
@@ -134,6 +134,7 @@ public:
   std::vector<BundleConfig> bundles_;
   std::map<std::string, NodeConfig> nodes_;
   std::vector<ConnectionConfig> connections_;
+  std::vector<SignalConfig> signals_;
   ::YAML::Node yaml_node_;
 };
 
