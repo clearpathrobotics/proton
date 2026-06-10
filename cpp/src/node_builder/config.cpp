@@ -367,30 +367,30 @@ namespace proton::node_builder
 
 Config::Config(const std::string & file)
 {
-  yaml_node_ = YAML::LoadFile(file);
+  ::YAML::Node yaml_node = YAML::LoadFile(file);
 
   // Get yaml_node configs
-  for (auto yaml_node : yaml_node_[keys::NODES])
+  for (auto yaml_node : yaml_node[keys::NODES])
   {
     NodeConfig config = yaml_node.as<NodeConfig>();
     nodes.emplace(config.name, config);
   }
 
   // Get connection configs
-  for (auto yaml_node : yaml_node_[keys::CONNECTIONS])
+  for (auto yaml_node : yaml_node[keys::CONNECTIONS])
   {
     ConnectionConfig config = yaml_node.as<ConnectionConfig>();
     connections.push_back(config);
   }
 
   // Get bundle configs
-  for (auto bundle : yaml_node_[keys::BUNDLES])
+  for (auto bundle : yaml_node[keys::BUNDLES])
   {
     bundles.push_back(bundle.as<BundleConfig>());
   }
 
   // Get signal configs
-  for (auto signal : yaml_node_[keys::SIGNALS])
+  for (auto signal : yaml_node[keys::SIGNALS])
   {
     signals.push_back(signal.as<SignalConfig>());
   }

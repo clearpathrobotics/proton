@@ -149,9 +149,6 @@ public:
   std::map<std::string, NodeConfig> nodes;
   std::vector<ConnectionConfig> connections;
   std::vector<SignalConfig> signals;
-
-private:
-  ::YAML::Node yaml_node_;
 };
 
 }  // namespace proton::node_builder
