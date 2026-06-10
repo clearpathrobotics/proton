@@ -135,7 +135,7 @@ TEST(BundleConfigTest, InvalidConsumer)
 {
   expect_throw_with_message(
     "test_configs/bundle_invalid_consumer.yaml",
-    "Bundle value_test must have a sequence of producers");
+    "Bundle value_test must have a sequence of consumers");
 }
 
 TEST(BundleConfigTest, SignalsNotList)
@@ -193,32 +193,38 @@ TEST(ConnectionConfigTest, NoNodeName)
 
 TEST(EndpointConfigTest, NoId)
 {
-  EXPECT_THROW(Config("test_configs/endpoint_no_id.yaml"), std::exception);
+  expect_throw_with_message(
+    "test_configs/endpoint_no_id.yaml", "Node producer endpoint requires an ID");
 }
 
 TEST(EndpointConfigTest, NoType)
 {
-  EXPECT_THROW(Config("test_configs/endpoint_no_type.yaml"), std::exception);
+  expect_throw_with_message(
+    "test_configs/endpoint_no_type.yaml", "Endpoint must define id and type");
 }
 
 TEST(EndpointConfigTest, InvalidType)
 {
-  EXPECT_THROW(Config("test_configs/endpoint_invalid_type.yaml"), std::exception);
+  expect_throw_with_message(
+    "test_configs/endpoint_invalid_type.yaml", "Endpoint type not_a_real_type is not a valid type");
 }
 
 TEST(EndpointConfigTest, Udp4MissingIp)
 {
-  EXPECT_THROW(Config("test_configs/endpoint_udp4_missing_ip.yaml"), std::exception);
+  expect_throw_with_message(
+    "test_configs/endpoint_udp4_missing_ip.yaml", "udp4 endpoints require ip and port");
 }
 
 TEST(EndpointConfigTest, Udp4MissingPort)
 {
-  EXPECT_THROW(Config("test_configs/endpoint_udp4_missing_port.yaml"), std::exception);
+  expect_throw_with_message(
+    "test_configs/endpoint_udp4_missing_port.yaml", "udp4 endpoints require ip and port");
 }
 
 TEST(EndpointConfigTest, SerialNoDevice)
 {
-  EXPECT_THROW(Config("test_configs/endpoint_serial_no_device.yaml"), std::exception);
+  expect_throw_with_message(
+    "test_configs/endpoint_serial_no_device.yaml", "serial endpoints require a device");
 }
 
 TEST(NodeConfigTest, NoId)

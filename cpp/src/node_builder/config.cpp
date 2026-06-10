@@ -174,7 +174,7 @@ struct convert<proton::node_builder::BundleConfig>
     else
     {
       throw proton::node_builder::NodeBuilderException(
-        "Bundle " + rhs.name + " must have a sequence of producers");
+        "Bundle " + rhs.name + " must have a sequence of consumers");
     }
 
     if (signals.IsDefined() && !signals.IsNull())
@@ -218,7 +218,7 @@ struct convert<proton::node_builder::EndpointConfig>
     if (!(node[proton::node_builder::keys::ID].IsDefined() &&
           node[proton::node_builder::keys::TYPE].IsDefined()))
     {
-      return false;
+      throw proton::node_builder::NodeBuilderException("Endpoint must define id and type");
     }
 
     rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
@@ -230,16 +230,25 @@ struct convert<proton::node_builder::EndpointConfig>
 
     if (rhs.type == proton::node_builder::transport_types::UDP4)
     {
+      if (!(ip_node && port_node))
+      {
+        throw proton::node_builder::NodeBuilderException("udp4 endpoints require ip and port");
+      }
       rhs.ip = ip_node.as<std::string>();
       rhs.port = port_node.as<uint32_t>();
     }
     else if (rhs.type == proton::node_builder::transport_types::SERIAL)
     {
+      if (!device_node)
+      {
+        throw proton::node_builder::NodeBuilderException("serial endpoints require a device");
+      }
       rhs.device = device_node.as<std::string>();
     }
     else
     {
-      return false;
+      throw proton::node_builder::NodeBuilderException(
+        "Endpoint type " + rhs.type + " is not a valid type");
     }
 
     return true;
