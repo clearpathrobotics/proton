@@ -51,9 +51,9 @@ def load_config(config_path: str) -> dict:
 
     try:
         with config_fullpath.open('r', encoding='utf-8') as f:
-            if config_fullpath.suffix in ('yaml', 'yml'):
+            if config_fullpath.suffix in ('.yaml', '.yml'):
                 config = yaml.safe_load(f)
-            elif config_fullpath.suffix == 'json':
+            elif config_fullpath.suffix == '.json':
                 config = json.load(f)
     except yaml.scanner.ScannerError as s:
         raise RuntimeError(f'YAML file {config_path} is not well formed') from s

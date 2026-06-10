@@ -293,6 +293,20 @@ public:
    */
   static ConfigTree from_yaml_string(std::string_view yaml);
 
+#if PROTON_NODE_BUILDER_JSON_PARSER
+
+  /**
+   * @brief Factory: Load from JSON file
+   */
+  static ConfigTree from_json_file(const std::string & path);
+
+  /**
+   * @brief Factory: Parse from JSON string
+   */
+  static ConfigTree from_json_string(std::string_view json);
+
+#endif  // PROTON_NODE_BUILDER_JSON_PARSER
+
 private:
   ConfigValue root_;
 };

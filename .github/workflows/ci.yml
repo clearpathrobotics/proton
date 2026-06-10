@@ -150,7 +150,8 @@ jobs:
             -DPROTON_BUILD_TESTS=ON \
             -DPROTON_ENABLE_TEST_COVERAGE=ON \
             -DPROTON_ENABLE_ALLOC=ON \
-            -DPROTON_NODE_BUILDER=ON
+            -DPROTON_NODE_BUILDER=ON \
+            -DPROTON_NODE_BUILDER_JSON_PARSER=ON
 
       - name: Build
         run: |
