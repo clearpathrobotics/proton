@@ -50,8 +50,6 @@ namespace keys
 inline constexpr std::string_view NODES = "nodes";
 inline constexpr std::string_view BUNDLES = "bundles";
 inline constexpr std::string_view NAME = "name";
-inline constexpr std::string_view ENABLED = "enabled";
-inline constexpr std::string_view PERIOD = "period";
 inline constexpr std::string_view ENDPOINTS = "endpoints";
 inline constexpr std::string_view TYPE = "type";
 inline constexpr std::string_view IP = "ip";
@@ -137,14 +135,15 @@ struct ConnectionEndpointConfig
 
 struct ConnectionConfig
 {
-  std::pair<ConnectionEndpointConfig, ConnectionEndpointConfig> connection;
+  ConnectionEndpointConfig first;
+  ConnectionEndpointConfig second;
 };
 
 class Config
 {
 public:
   Config(const std::string & file);
-  virtual ~Config() = default;
+  ~Config() = default;
 
   std::vector<BundleConfig> bundles_;
   std::map<std::string, NodeConfig> nodes_;

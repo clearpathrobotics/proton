@@ -348,8 +348,8 @@ struct convert<proton::node_builder::ConnectionConfig>
         "Node connection requires first and second element");
     }
 
-    rhs.connection.first = first.as<proton::node_builder::ConnectionEndpointConfig>();
-    rhs.connection.second = second.as<proton::node_builder::ConnectionEndpointConfig>();
+    rhs.first = first.as<proton::node_builder::ConnectionEndpointConfig>();
+    rhs.second = second.as<proton::node_builder::ConnectionEndpointConfig>();
 
     return true;
   }
