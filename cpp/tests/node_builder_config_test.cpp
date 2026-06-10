@@ -62,7 +62,7 @@ TEST(SignalConfigTest, InvalidStringCapacity)
 {
   expect_throw_with_message(
     "test_configs/signal_invalid_string_capacity.yaml",
-    "Error in signal: invalid_capacity_string: Capacity 1 is shorter than default value: 4");
+    "Error in signal: invalid_capacity_string: Capacity 1 is shorter than default value: 3 + 1");
 }
 
 TEST(SignalConfigTest, InvalidId)
@@ -163,6 +163,87 @@ TEST(BundleConfigTest, WithNoConsumer)
   Config config("test_configs/bundle_with_no_consumer.yaml");
   EXPECT_EQ(config.bundles_.size(), 1);
   EXPECT_TRUE(config.bundles_[0].consumers.empty());
+}
+
+TEST(ConnectionConfigTest, NoFirstElement)
+{
+  expect_throw_with_message(
+    "test_configs/connection_no_first_element.yaml",
+    "Node connection requires first and second element");
+}
+
+TEST(ConnectionConfigTest, NoSecondElement)
+{
+  expect_throw_with_message(
+    "test_configs/connection_no_second_element.yaml",
+    "Node connection requires first and second element");
+}
+
+TEST(ConnectionConfigTest, NoId)
+{
+  expect_throw_with_message(
+    "test_configs/connections_no_id.yaml", "Connection element requires a node ID and name");
+}
+
+TEST(ConnectionConfigTest, NoNodeName)
+{
+  expect_throw_with_message(
+    "test_configs/connections_no_node_name.yaml", "Connection element requires a node ID and name");
+}
+
+TEST(EndpointConfigTest, NoId)
+{
+  EXPECT_THROW(Config("test_configs/endpoint_no_id.yaml"), std::exception);
+}
+
+TEST(EndpointConfigTest, NoType)
+{
+  EXPECT_THROW(Config("test_configs/endpoint_no_type.yaml"), std::exception);
+}
+
+TEST(EndpointConfigTest, InvalidType)
+{
+  EXPECT_THROW(Config("test_configs/endpoint_invalid_type.yaml"), std::exception);
+}
+
+TEST(EndpointConfigTest, Udp4MissingIp)
+{
+  EXPECT_THROW(Config("test_configs/endpoint_udp4_missing_ip.yaml"), std::exception);
+}
+
+TEST(EndpointConfigTest, Udp4MissingPort)
+{
+  EXPECT_THROW(Config("test_configs/endpoint_udp4_missing_port.yaml"), std::exception);
+}
+
+TEST(EndpointConfigTest, SerialNoDevice)
+{
+  EXPECT_THROW(Config("test_configs/endpoint_serial_no_device.yaml"), std::exception);
+}
+
+TEST(NodeConfigTest, NoId)
+{
+  expect_throw_with_message(
+    "test_configs/node_no_id.yaml", "Node name, ID, and endpoints must be defined");
+}
+
+TEST(NodeConfigTest, NoName)
+{
+  expect_throw_with_message(
+    "test_configs/node_no_name.yaml", "Node name, ID, and endpoints must be defined");
+}
+
+TEST(NodeConfigTest, NoEndpoints)
+{
+  expect_throw_with_message(
+    "test_configs/node_no_endpoints.yaml", "Node name, ID, and endpoints must be defined");
+}
+
+TEST(NodeConfigTest, EndpointsNotSequence)
+{
+  expect_throw_with_message(
+    "test_configs/node_endpoints_not_sequence.yaml",
+    "Node producer requires a sequence of endpoints");
 }
 
 int main(int argc, char ** argv)

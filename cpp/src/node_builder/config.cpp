@@ -79,16 +79,16 @@ struct convert<proton::node_builder::SignalConfig>
       if (value_key.IsScalar() && rhs.type_string == proton::node_builder::value_types::STRING)
       {
         std::string value = value_key.as<std::string>();
-        size_t string_capacity = value.size() + 1;
-        if (rhs.capacity == 0)
+        size_t string_capacity = value.size();
+        if (rhs.capacity == 0 || rhs.capacity == string_capacity)
         {
-          rhs.capacity = string_capacity;
+          rhs.capacity = string_capacity + 1;
         }
         else if (rhs.capacity < string_capacity)
         {
           std::stringstream ss;
           ss << "Error in signal: " << rhs.name << ": Capacity " << rhs.capacity
-             << " is shorter than default value: " << string_capacity;
+             << " is shorter than default value: " << string_capacity << " + 1";
           throw std::runtime_error(ss.str());
         }
       }
