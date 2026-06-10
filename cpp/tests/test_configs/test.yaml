@@ -1,0 +1,94 @@
+nodes:
+  - name: producer
+    id: 0
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11416
+  - name: consumer
+    id: 1
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11417
+      - id: 1
+        type: udp4
+        ip: 127.0.0.1
+        port: 11418
+  - name: unused_consumer
+    id: 2
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11419
+
+connections:
+  - first: {node: producer, id: 0}
+    second: {node: consumer, id: 0}
+  - first: {node: consumer, id: 1}
+    second: {node: unused_consumer, id: 0}
+
+signals:
+  - {name: double_value, id: 0x1000, type: double}
+  - {name: float_value, id: 0x1001, type: float}
+  - {name: int32_value, id: 0x1002, type: int32}
+  - {name: int64_value, id: 0x1003, type: int64}
+  - {name: uint32_value, id: 0x1004, type: uint32}
+  - {name: uint64_value, id: 0x1005, type: uint64}
+  - {name: bool_value, id: 0x1006, type: bool}
+  - {name: string_value, id: 0x1007, type: string, capacity: 8}
+  - {name: bytes_value, id: 0x1008, type: bytes, capacity: 8}
+  - {name: default_double, id: 0x1010, type: double, value: 3.14159}
+  - {name: default_string, id: 0x1011, type: string, value: "foo"}
+  - {name: default_bytes, id: 0x1012, type: bytes, value: [0, 1, 2], capacity: 3}
+  - {name: really_long_string, id: 0x1013, type: string, value: "ipsumsedolorsitametconsecteturadipiscingelit", capacity: 44}
+  - {name: really_long_bytes, id: 0x1014, type: bytes, value: [0, 1, 2, 3, 4, 5, 6, 7], capacity: 8}
+  - {name: shared_signal, id: 0x1015, type: int32}
+  - {name: unused_signal, id: 0x1111, type: float}
+
+bundles:
+  - name: value_test
+    id: 0x100
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1000, 0x1001, 0x1002, 0x1003, 0x1004, 0x1005, 0x1006, 0x1007, 0x1008]
+
+  - name: default_value_test
+    id: 0x101
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1010, 0x1011, 0x1012]
+
+  - name: shared_1
+    id: 0x102
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1015]
+
+  - name: shared_2
+    id: 0x103
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1015]
+
+  - name: periodic_bundle
+    id: 0x104
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1000]
+    period_ms: 100
+
+  - name: really_long_values_test
+    id: 0x105
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1013, 0x1014]
+
+  - name: unused_bundle
+    id: 0x1112
+    producers: [consumer]
+    consumers: [unused_consumer]
+    signals: [0x1111]

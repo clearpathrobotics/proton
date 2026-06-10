@@ -141,7 +141,7 @@ struct convert<proton::node_builder::BundleConfig>
           node[proton::node_builder::keys::PRODUCERS].IsDefined() &&
           node[proton::node_builder::keys::CONSUMERS].IsDefined()))
     {
-      return false;
+      throw std::runtime_error("Bundle must contain name, ID, producers and consumers");
     }
 
     rhs.name = node[proton::node_builder::keys::NAME].as<std::string>();
