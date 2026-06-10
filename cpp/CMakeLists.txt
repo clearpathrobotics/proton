@@ -29,6 +29,7 @@ add_library(${PROJECT_NAME}
   src/bundle_access.cpp
   src/signal_access.cpp
   src/node_builder/config.cpp
+  src/node_builder/config_tree.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

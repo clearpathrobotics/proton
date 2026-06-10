@@ -25,6 +25,7 @@
 #if PROTON_NODE_BUILDER
 
 #include "proton/node_manager.h"
+#include "protoncpp/node_builder/config_tree.hpp"
 
 #include <array>
 #include <cstdint>
@@ -33,8 +34,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <yaml-cpp/yaml.h>
 
 namespace proton::node_builder
 {
@@ -98,7 +97,7 @@ struct SignalConfig
   std::string type_string;
   uint32_t capacity;
   bool has_default_value;
-  ::YAML::Node value;
+  ConfigValue value;
 };
 
 struct BundleConfig
@@ -139,16 +138,31 @@ struct ConnectionConfig
   ConnectionEndpointConfig second;
 };
 
+/**
+ * @class Config top-level configuration representation for generating nodes and registries
+ */
 class Config
 {
 public:
-  Config(const std::string & file);
+  /**
+   * @brief Construct from a ConfigTree (format-agnostic)
+   */
+  explicit Config(const ConfigTree & tree);
+
+  /**
+   * @brief Convenience: construct from YAML file path
+   */
+  explicit Config(const std::string & yaml_file);
+
   ~Config() = default;
 
   std::vector<BundleConfig> bundles;
   std::map<std::string, NodeConfig> nodes;
   std::vector<ConnectionConfig> connections;
   std::vector<SignalConfig> signals;
+
+private:
+  void parse(const ConfigTree & tree);
 };
 
 }  // namespace proton::node_builder

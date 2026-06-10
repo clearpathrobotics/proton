@@ -19,9 +19,12 @@
 #include <gtest/gtest.h>
 #include <cstring>
 #include <functional>
+#include <sstream>
 #include <string>
 
 #include "protoncpp/node_builder/config.hpp"
+
+#include <yaml-cpp/yaml.h>
 
 using namespace proton::node_builder;
 
@@ -49,6 +52,18 @@ TEST(ConfigTest, HappyPathTest)
   EXPECT_EQ(config.nodes.size(), 3);
   EXPECT_EQ(config.connections.size(), 2);
   EXPECT_EQ(config.signals.size(), 16);
+
+  YAML::Node node = YAML::LoadFile("test_configs/test.yaml");
+  std::stringstream ss;
+  ss << node;
+
+  ConfigTree config_tree = ConfigTree::from_yaml_string(ss.str());
+  Config config_2(config_tree);
+
+  EXPECT_EQ(config.bundles.size(), config_2.bundles.size());
+  EXPECT_EQ(config.nodes.size(), config_2.nodes.size());
+  EXPECT_EQ(config.connections.size(), config_2.connections.size());
+  EXPECT_EQ(config.signals.size(), config_2.signals.size());
 }
 
 TEST(SignalConfigTest, InvalidBytesCapacity)
