@@ -145,10 +145,12 @@ public:
   Config(const std::string & file);
   ~Config() = default;
 
-  std::vector<BundleConfig> bundles_;
-  std::map<std::string, NodeConfig> nodes_;
-  std::vector<ConnectionConfig> connections_;
-  std::vector<SignalConfig> signals_;
+  std::vector<BundleConfig> bundles;
+  std::map<std::string, NodeConfig> nodes;
+  std::vector<ConnectionConfig> connections;
+  std::vector<SignalConfig> signals;
+
+private:
   ::YAML::Node yaml_node_;
 };
 

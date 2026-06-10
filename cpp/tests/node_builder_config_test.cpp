@@ -45,10 +45,10 @@ void expect_throw_with_message(const std::string & filepath, const std::string &
 TEST(ConfigTest, HappyPathTest)
 {
   Config config("test_configs/test.yaml");
-  EXPECT_EQ(config.bundles_.size(), 7);
-  EXPECT_EQ(config.nodes_.size(), 3);
-  EXPECT_EQ(config.connections_.size(), 2);
-  EXPECT_EQ(config.signals_.size(), 16);
+  EXPECT_EQ(config.bundles.size(), 7);
+  EXPECT_EQ(config.nodes.size(), 3);
+  EXPECT_EQ(config.connections.size(), 2);
+  EXPECT_EQ(config.signals.size(), 16);
 }
 
 TEST(SignalConfigTest, InvalidBytesCapacity)
@@ -147,22 +147,22 @@ TEST(BundleConfigTest, SignalsNotList)
 TEST(BundleConfigTest, ValidWithNoSignals)
 {
   Config config("test_configs/bundle_valid_with_no_signals.yaml");
-  EXPECT_EQ(config.bundles_.size(), 1);
-  EXPECT_TRUE(config.bundles_[0].signals.empty());
+  EXPECT_EQ(config.bundles.size(), 1);
+  EXPECT_TRUE(config.bundles[0].signals.empty());
 }
 
 TEST(BundleConfigTest, WithNoProducer)
 {
   Config config("test_configs/bundle_with_no_producer.yaml");
-  EXPECT_EQ(config.bundles_.size(), 1);
-  EXPECT_TRUE(config.bundles_[0].producers.empty());
+  EXPECT_EQ(config.bundles.size(), 1);
+  EXPECT_TRUE(config.bundles[0].producers.empty());
 }
 
 TEST(BundleConfigTest, WithNoConsumer)
 {
   Config config("test_configs/bundle_with_no_consumer.yaml");
-  EXPECT_EQ(config.bundles_.size(), 1);
-  EXPECT_TRUE(config.bundles_[0].consumers.empty());
+  EXPECT_EQ(config.bundles.size(), 1);
+  EXPECT_TRUE(config.bundles[0].consumers.empty());
 }
 
 TEST(ConnectionConfigTest, NoFirstElement)

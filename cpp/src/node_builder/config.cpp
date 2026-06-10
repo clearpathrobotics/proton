@@ -30,97 +30,101 @@ namespace YAML
 template <>
 struct convert<proton::node_builder::SignalConfig>
 {
-  static bool decode(const Node & node, proton::node_builder::SignalConfig & rhs)
+  static bool decode(const Node & yaml_node, proton::node_builder::SignalConfig & signal_config)
   {
-    if (!node.IsDefined() || node.IsNull())
+    if (!yaml_node.IsDefined() || yaml_node.IsNull())
     {
       return false;
     }
 
-    rhs.name = node[proton::node_builder::keys::NAME].as<std::string>();
-    rhs.type_string = node[proton::node_builder::keys::TYPE].as<std::string>();
+    signal_config.name = yaml_node[proton::node_builder::keys::NAME].as<std::string>();
+    signal_config.type_string = yaml_node[proton::node_builder::keys::TYPE].as<std::string>();
 
     // Check that type string is a valid type
     bool valid_value_type = std::any_of(
       proton::node_builder::value_types::VALUE_TYPES.begin(),
       proton::node_builder::value_types::VALUE_TYPES.end(),
-      [&rhs](const std::string_view & val_type) { return rhs.type_string == val_type; });
+      [&signal_config](const std::string_view & val_type)
+      { return signal_config.type_string == val_type; });
 
     if (!valid_value_type)
     {
       throw proton::node_builder::NodeBuilderException(
-        "Signal value type " + rhs.type_string + " is not a valid type");
+        "Signal value type " + signal_config.type_string + " is not a valid type");
     }
 
-    rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
+    signal_config.id = yaml_node[proton::node_builder::keys::ID].as<uint32_t>();
 
-    auto value_key = node[proton::node_builder::keys::VALUE];
+    auto value_key = yaml_node[proton::node_builder::keys::VALUE];
     // Default value defined
-    rhs.has_default_value = value_key.IsDefined() && !value_key.IsNull();
+    signal_config.has_default_value = value_key.IsDefined() && !value_key.IsNull();
 
     // Signal is a capacity type
-    bool is_capacity_type = rhs.type_string == proton::node_builder::value_types::BYTES ||
-                            rhs.type_string == proton::node_builder::value_types::STRING;
+    bool is_capacity_type = signal_config.type_string == proton::node_builder::value_types::BYTES ||
+                            signal_config.type_string == proton::node_builder::value_types::STRING;
 
-    auto capacity_key = node[proton::node_builder::keys::CAPACITY];
+    auto capacity_key = yaml_node[proton::node_builder::keys::CAPACITY];
     if (capacity_key.IsDefined())
     {
-      rhs.capacity = capacity_key.as<uint32_t>();
+      signal_config.capacity = capacity_key.as<uint32_t>();
     }
     else
     {
-      rhs.capacity = 0;
+      signal_config.capacity = 0;
     }
 
-    if (rhs.has_default_value)
+    if (signal_config.has_default_value)
     {
-      rhs.value = value_key;
+      signal_config.value = value_key;
 
       // Determine capacity based on the size of the default value
-      if (value_key.IsScalar() && rhs.type_string == proton::node_builder::value_types::STRING)
+      if (
+        value_key.IsScalar() &&
+        signal_config.type_string == proton::node_builder::value_types::STRING)
       {
         std::string value = value_key.as<std::string>();
         size_t string_capacity = value.size();
-        if (rhs.capacity == 0 || rhs.capacity == string_capacity)
+        if (signal_config.capacity == 0 || signal_config.capacity == string_capacity)
         {
-          rhs.capacity = string_capacity + 1;
+          signal_config.capacity = string_capacity + 1;
         }
-        else if (rhs.capacity < string_capacity)
+        else if (signal_config.capacity < string_capacity)
         {
           std::stringstream ss;
-          ss << "Error in signal: " << rhs.name << ": Capacity " << rhs.capacity
+          ss << "Error in signal: " << signal_config.name << ": Capacity " << signal_config.capacity
              << " is shorter than default value: " << string_capacity << " + 1";
           throw proton::node_builder::NodeBuilderException(ss.str());
         }
       }
       else if (value_key.IsSequence())
       {
-        if (rhs.type_string == proton::node_builder::value_types::BYTES)
+        if (signal_config.type_string == proton::node_builder::value_types::BYTES)
         {
-          if (rhs.capacity == 0)
+          if (signal_config.capacity == 0)
           {
-            rhs.capacity = value_key.size();
+            signal_config.capacity = value_key.size();
           }
-          else if (rhs.capacity < value_key.size())
+          else if (signal_config.capacity < value_key.size())
           {
             std::stringstream ss;
-            ss << "Error in signal: " << rhs.name << ": Capacity " << rhs.capacity
-               << " is shorter than default value: " << value_key.size();
+            ss << "Error in signal: " << signal_config.name << ": Capacity "
+               << signal_config.capacity << " is shorter than default value: " << value_key.size();
             throw proton::node_builder::NodeBuilderException(ss.str());
           }
         }
         else
         {
           throw proton::node_builder::NodeBuilderException(
-            "Error in signal " + rhs.name +
+            "Error in signal " + signal_config.name +
             ": only bytes type signals can have a sequence as a default value");
         }
       }
     }
-    else if (is_capacity_type && rhs.capacity == 0)
+    else if (is_capacity_type && signal_config.capacity == 0)
     {
       std::stringstream ss;
-      ss << "Signal " << rhs.name << " of type " << rhs.type_string << " must define a capacity";
+      ss << "Signal " << signal_config.name << " of type " << signal_config.type_string
+         << " must define a capacity";
       throw proton::node_builder::NodeBuilderException(ss.str());
     }
 
@@ -131,50 +135,50 @@ struct convert<proton::node_builder::SignalConfig>
 template <>
 struct convert<proton::node_builder::BundleConfig>
 {
-  static bool decode(const Node & node, proton::node_builder::BundleConfig & rhs)
+  static bool decode(const Node & yaml_node, proton::node_builder::BundleConfig & bundle_config)
   {
-    if (!node.IsDefined() || node.IsNull())
+    if (!yaml_node.IsDefined() || yaml_node.IsNull())
     {
       return false;
     }
 
-    if (!(node[proton::node_builder::keys::NAME].IsDefined() &&
-          node[proton::node_builder::keys::ID].IsDefined() &&
-          node[proton::node_builder::keys::PRODUCERS].IsDefined() &&
-          node[proton::node_builder::keys::CONSUMERS].IsDefined()))
+    if (!(yaml_node[proton::node_builder::keys::NAME].IsDefined() &&
+          yaml_node[proton::node_builder::keys::ID].IsDefined() &&
+          yaml_node[proton::node_builder::keys::PRODUCERS].IsDefined() &&
+          yaml_node[proton::node_builder::keys::CONSUMERS].IsDefined()))
     {
       throw proton::node_builder::NodeBuilderException(
         "Bundle must contain name, ID, producers and consumers");
     }
 
-    rhs.name = node[proton::node_builder::keys::NAME].as<std::string>();
-    rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
-    YAML::Node signals = node[proton::node_builder::keys::SIGNALS];
+    bundle_config.name = yaml_node[proton::node_builder::keys::NAME].as<std::string>();
+    bundle_config.id = yaml_node[proton::node_builder::keys::ID].as<uint32_t>();
+    YAML::Node signals = yaml_node[proton::node_builder::keys::SIGNALS];
 
-    if (node[proton::node_builder::keys::PRODUCERS].IsSequence())
+    if (yaml_node[proton::node_builder::keys::PRODUCERS].IsSequence())
     {
-      for (const auto & p : node[proton::node_builder::keys::PRODUCERS])
+      for (const auto & p : yaml_node[proton::node_builder::keys::PRODUCERS])
       {
-        rhs.producers.push_back(p.as<std::string>());
+        bundle_config.producers.push_back(p.as<std::string>());
       }
     }
     else
     {
       throw proton::node_builder::NodeBuilderException(
-        "Bundle " + rhs.name + " must have a sequence of producers");
+        "Bundle " + bundle_config.name + " must have a sequence of producers");
     }
 
-    if (node[proton::node_builder::keys::CONSUMERS].IsSequence())
+    if (yaml_node[proton::node_builder::keys::CONSUMERS].IsSequence())
     {
-      for (const auto & p : node[proton::node_builder::keys::CONSUMERS])
+      for (const auto & p : yaml_node[proton::node_builder::keys::CONSUMERS])
       {
-        rhs.consumers.push_back(p.as<std::string>());
+        bundle_config.consumers.push_back(p.as<std::string>());
       }
     }
     else
     {
       throw proton::node_builder::NodeBuilderException(
-        "Bundle " + rhs.name + " must have a sequence of consumers");
+        "Bundle " + bundle_config.name + " must have a sequence of consumers");
     }
 
     if (signals.IsDefined() && !signals.IsNull())
@@ -184,21 +188,21 @@ struct convert<proton::node_builder::BundleConfig>
         // Get signal configs for this bundle
         for (const auto & signal : signals)
         {
-          rhs.signals.push_back(signal.as<uint32_t>());
+          bundle_config.signals.push_back(signal.as<uint32_t>());
         }
       }
       else
       {
         throw proton::node_builder::NodeBuilderException(
-          "Bundle " + rhs.name + " signals are not a list");
+          "Bundle " + bundle_config.name + " signals are not a list");
       }
     }
 
-    rhs.period_ms = 0;
-    auto period_node = node[proton::node_builder::keys::PERIOD_MS];
+    bundle_config.period_ms = 0;
+    auto period_node = yaml_node[proton::node_builder::keys::PERIOD_MS];
     if (period_node.IsDefined())
     {
-      rhs.period_ms = period_node.as<uint32_t>();
+      bundle_config.period_ms = period_node.as<uint32_t>();
     }
 
     return true;
@@ -208,47 +212,47 @@ struct convert<proton::node_builder::BundleConfig>
 template <>
 struct convert<proton::node_builder::EndpointConfig>
 {
-  static bool decode(const Node & node, proton::node_builder::EndpointConfig & rhs)
+  static bool decode(const Node & yaml_node, proton::node_builder::EndpointConfig & endpoint_config)
   {
-    if (!node.IsDefined() || node.IsNull())
+    if (!yaml_node.IsDefined() || yaml_node.IsNull())
     {
       return false;
     }
 
-    if (!(node[proton::node_builder::keys::ID].IsDefined() &&
-          node[proton::node_builder::keys::TYPE].IsDefined()))
+    if (!(yaml_node[proton::node_builder::keys::ID].IsDefined() &&
+          yaml_node[proton::node_builder::keys::TYPE].IsDefined()))
     {
       throw proton::node_builder::NodeBuilderException("Endpoint must define id and type");
     }
 
-    rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
-    rhs.type = node[proton::node_builder::keys::TYPE].as<std::string>();
+    endpoint_config.id = yaml_node[proton::node_builder::keys::ID].as<uint32_t>();
+    endpoint_config.type = yaml_node[proton::node_builder::keys::TYPE].as<std::string>();
 
-    const auto ip_node = node[proton::node_builder::keys::IP];
-    const auto port_node = node[proton::node_builder::keys::PORT];
-    const auto device_node = node[proton::node_builder::keys::DEVICE];
+    const auto ip_node = yaml_node[proton::node_builder::keys::IP];
+    const auto port_node = yaml_node[proton::node_builder::keys::PORT];
+    const auto device_node = yaml_node[proton::node_builder::keys::DEVICE];
 
-    if (rhs.type == proton::node_builder::transport_types::UDP4)
+    if (endpoint_config.type == proton::node_builder::transport_types::UDP4)
     {
       if (!(ip_node && port_node))
       {
         throw proton::node_builder::NodeBuilderException("udp4 endpoints require ip and port");
       }
-      rhs.ip = ip_node.as<std::string>();
-      rhs.port = port_node.as<uint32_t>();
+      endpoint_config.ip = ip_node.as<std::string>();
+      endpoint_config.port = port_node.as<uint32_t>();
     }
-    else if (rhs.type == proton::node_builder::transport_types::SERIAL)
+    else if (endpoint_config.type == proton::node_builder::transport_types::SERIAL)
     {
       if (!device_node)
       {
         throw proton::node_builder::NodeBuilderException("serial endpoints require a device");
       }
-      rhs.device = device_node.as<std::string>();
+      endpoint_config.device = device_node.as<std::string>();
     }
     else
     {
       throw proton::node_builder::NodeBuilderException(
-        "Endpoint type " + rhs.type + " is not a valid type");
+        "Endpoint type " + endpoint_config.type + " is not a valid type");
     }
 
     return true;
@@ -258,16 +262,16 @@ struct convert<proton::node_builder::EndpointConfig>
 template <>
 struct convert<proton::node_builder::NodeConfig>
 {
-  static bool decode(const Node & node, proton::node_builder::NodeConfig & rhs)
+  static bool decode(const Node & yaml_node, proton::node_builder::NodeConfig & node_config)
   {
-    if (!node.IsDefined() || node.IsNull())
+    if (!yaml_node.IsDefined() || yaml_node.IsNull())
     {
       return false;
     }
 
-    auto node_name = node[proton::node_builder::keys::NAME];
-    auto node_id = node[proton::node_builder::keys::ID];
-    auto endpoints = node[proton::node_builder::keys::ENDPOINTS];
+    auto node_name = yaml_node[proton::node_builder::keys::NAME];
+    auto node_id = yaml_node[proton::node_builder::keys::ID];
+    auto endpoints = yaml_node[proton::node_builder::keys::ENDPOINTS];
 
     if (!(node_name.IsDefined() && node_id.IsDefined() && endpoints.IsDefined()))
     {
@@ -275,8 +279,8 @@ struct convert<proton::node_builder::NodeConfig>
         "Node name, ID, and endpoints must be defined");
     }
 
-    rhs.name = node_name.as<std::string>();
-    rhs.id = node_id.as<uint32_t>();
+    node_config.name = node_name.as<std::string>();
+    node_config.id = node_id.as<uint32_t>();
     if (endpoints.IsSequence())
     {
       for (const auto & endpoint : endpoints)
@@ -285,19 +289,19 @@ struct convert<proton::node_builder::NodeConfig>
         if (ep_id)
         {
           uint32_t id = ep_id.as<uint32_t>();
-          rhs.endpoints.emplace(id, endpoint.as<proton::node_builder::EndpointConfig>());
+          node_config.endpoints.emplace(id, endpoint.as<proton::node_builder::EndpointConfig>());
         }
         else
         {
           throw proton::node_builder::NodeBuilderException(
-            "Node " + rhs.name + " endpoint requires an ID");
+            "Node " + node_config.name + " endpoint requires an ID");
         }
       }
     }
     else
     {
       throw proton::node_builder::NodeBuilderException(
-        "Node " + rhs.name + " requires a sequence of endpoints");
+        "Node " + node_config.name + " requires a sequence of endpoints");
     }
 
     return true;
@@ -307,23 +311,24 @@ struct convert<proton::node_builder::NodeConfig>
 template <>
 struct convert<proton::node_builder::ConnectionEndpointConfig>
 {
-  static bool decode(const Node & node, proton::node_builder::ConnectionEndpointConfig & rhs)
+  static bool decode(
+    const Node & yaml_node, proton::node_builder::ConnectionEndpointConfig & conn_ep_config)
   {
-    if (!node.IsDefined() || node.IsNull())
+    if (!yaml_node.IsDefined() || yaml_node.IsNull())
     {
       return false;
     }
 
-    auto node_id = node[proton::node_builder::keys::ID];
-    auto node_name = node[proton::node_builder::keys::NODE];
+    auto node_id = yaml_node[proton::node_builder::keys::ID];
+    auto node_name = yaml_node[proton::node_builder::keys::NODE];
     if (!(node_id && node_name))
     {
       throw proton::node_builder::NodeBuilderException(
         "Connection element requires a node ID and name");
     }
 
-    rhs.id = node_id.as<uint32_t>();
-    rhs.node = node_name.as<std::string>();
+    conn_ep_config.id = node_id.as<uint32_t>();
+    conn_ep_config.node = node_name.as<std::string>();
 
     return true;
   }
@@ -332,15 +337,15 @@ struct convert<proton::node_builder::ConnectionEndpointConfig>
 template <>
 struct convert<proton::node_builder::ConnectionConfig>
 {
-  static bool decode(const Node & node, proton::node_builder::ConnectionConfig & rhs)
+  static bool decode(const Node & yaml_node, proton::node_builder::ConnectionConfig & conn_config)
   {
-    if (!node.IsDefined() || node.IsNull())
+    if (!yaml_node.IsDefined() || yaml_node.IsNull())
     {
       return false;
     }
 
-    auto first = node[proton::node_builder::keys::FIRST];
-    auto second = node[proton::node_builder::keys::SECOND];
+    auto first = yaml_node[proton::node_builder::keys::FIRST];
+    auto second = yaml_node[proton::node_builder::keys::SECOND];
 
     if (!(first && second))
     {
@@ -348,8 +353,8 @@ struct convert<proton::node_builder::ConnectionConfig>
         "Node connection requires first and second element");
     }
 
-    rhs.first = first.as<proton::node_builder::ConnectionEndpointConfig>();
-    rhs.second = second.as<proton::node_builder::ConnectionEndpointConfig>();
+    conn_config.first = first.as<proton::node_builder::ConnectionEndpointConfig>();
+    conn_config.second = second.as<proton::node_builder::ConnectionEndpointConfig>();
 
     return true;
   }
@@ -364,30 +369,30 @@ Config::Config(const std::string & file)
 {
   yaml_node_ = YAML::LoadFile(file);
 
-  // Get node configs
-  for (auto node : yaml_node_[keys::NODES])
+  // Get yaml_node configs
+  for (auto yaml_node : yaml_node_[keys::NODES])
   {
-    NodeConfig config = node.as<NodeConfig>();
-    nodes_.emplace(config.name, config);
+    NodeConfig config = yaml_node.as<NodeConfig>();
+    nodes.emplace(config.name, config);
   }
 
   // Get connection configs
-  for (auto node : yaml_node_[keys::CONNECTIONS])
+  for (auto yaml_node : yaml_node_[keys::CONNECTIONS])
   {
-    ConnectionConfig config = node.as<ConnectionConfig>();
-    connections_.push_back(config);
+    ConnectionConfig config = yaml_node.as<ConnectionConfig>();
+    connections.push_back(config);
   }
 
   // Get bundle configs
   for (auto bundle : yaml_node_[keys::BUNDLES])
   {
-    bundles_.push_back(bundle.as<BundleConfig>());
+    bundles.push_back(bundle.as<BundleConfig>());
   }
 
   // Get signal configs
   for (auto signal : yaml_node_[keys::SIGNALS])
   {
-    signals_.push_back(signal.as<SignalConfig>());
+    signals.push_back(signal.as<SignalConfig>());
   }
 }
 
