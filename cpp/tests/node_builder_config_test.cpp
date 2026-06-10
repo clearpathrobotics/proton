@@ -32,7 +32,7 @@ void expect_throw_with_message(const std::string & filepath, const std::string &
     Config config(filepath);
     FAIL() << "Expected exception was not thrown.";
   }
-  catch (const std::runtime_error & e)
+  catch (const NodeBuilderException & e)
   {
     EXPECT_EQ(std::string(e.what()), expected_msg);
   }

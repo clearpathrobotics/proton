@@ -48,7 +48,8 @@ struct convert<proton::node_builder::SignalConfig>
 
     if (!valid_value_type)
     {
-      throw std::runtime_error("Signal value type " + rhs.type_string + " is not a valid type");
+      throw proton::node_builder::NodeBuilderException(
+        "Signal value type " + rhs.type_string + " is not a valid type");
     }
 
     rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
@@ -89,7 +90,7 @@ struct convert<proton::node_builder::SignalConfig>
           std::stringstream ss;
           ss << "Error in signal: " << rhs.name << ": Capacity " << rhs.capacity
              << " is shorter than default value: " << string_capacity << " + 1";
-          throw std::runtime_error(ss.str());
+          throw proton::node_builder::NodeBuilderException(ss.str());
         }
       }
       else if (value_key.IsSequence())
@@ -105,12 +106,12 @@ struct convert<proton::node_builder::SignalConfig>
             std::stringstream ss;
             ss << "Error in signal: " << rhs.name << ": Capacity " << rhs.capacity
                << " is shorter than default value: " << value_key.size();
-            throw std::runtime_error(ss.str());
+            throw proton::node_builder::NodeBuilderException(ss.str());
           }
         }
         else
         {
-          throw std::runtime_error(
+          throw proton::node_builder::NodeBuilderException(
             "Error in signal " + rhs.name +
             ": only bytes type signals can have a sequence as a default value");
         }
@@ -120,7 +121,7 @@ struct convert<proton::node_builder::SignalConfig>
     {
       std::stringstream ss;
       ss << "Signal " << rhs.name << " of type " << rhs.type_string << " must define a capacity";
-      throw std::runtime_error(ss.str());
+      throw proton::node_builder::NodeBuilderException(ss.str());
     }
 
     return true;
@@ -142,7 +143,8 @@ struct convert<proton::node_builder::BundleConfig>
           node[proton::node_builder::keys::PRODUCERS].IsDefined() &&
           node[proton::node_builder::keys::CONSUMERS].IsDefined()))
     {
-      throw std::runtime_error("Bundle must contain name, ID, producers and consumers");
+      throw proton::node_builder::NodeBuilderException(
+        "Bundle must contain name, ID, producers and consumers");
     }
 
     rhs.name = node[proton::node_builder::keys::NAME].as<std::string>();
@@ -158,7 +160,8 @@ struct convert<proton::node_builder::BundleConfig>
     }
     else
     {
-      throw std::runtime_error("Bundle " + rhs.name + " must have a sequence of producers");
+      throw proton::node_builder::NodeBuilderException(
+        "Bundle " + rhs.name + " must have a sequence of producers");
     }
 
     if (node[proton::node_builder::keys::CONSUMERS].IsSequence())
@@ -170,7 +173,8 @@ struct convert<proton::node_builder::BundleConfig>
     }
     else
     {
-      throw std::runtime_error("Bundle " + rhs.name + " must have a sequence of producers");
+      throw proton::node_builder::NodeBuilderException(
+        "Bundle " + rhs.name + " must have a sequence of producers");
     }
 
     if (signals.IsDefined() && !signals.IsNull())
@@ -185,7 +189,8 @@ struct convert<proton::node_builder::BundleConfig>
       }
       else
       {
-        throw std::runtime_error("Bundle " + rhs.name + " signals are not a list");
+        throw proton::node_builder::NodeBuilderException(
+          "Bundle " + rhs.name + " signals are not a list");
       }
     }
 
@@ -257,7 +262,8 @@ struct convert<proton::node_builder::NodeConfig>
 
     if (!(node_name.IsDefined() && node_id.IsDefined() && endpoints.IsDefined()))
     {
-      throw std::runtime_error("Node name, ID, and endpoints must be defined");
+      throw proton::node_builder::NodeBuilderException(
+        "Node name, ID, and endpoints must be defined");
     }
 
     rhs.name = node_name.as<std::string>();
@@ -274,13 +280,15 @@ struct convert<proton::node_builder::NodeConfig>
         }
         else
         {
-          throw std::runtime_error("Node " + rhs.name + " endpoint requires an ID");
+          throw proton::node_builder::NodeBuilderException(
+            "Node " + rhs.name + " endpoint requires an ID");
         }
       }
     }
     else
     {
-      throw std::runtime_error("Node " + rhs.name + " requires a sequence of endpoints");
+      throw proton::node_builder::NodeBuilderException(
+        "Node " + rhs.name + " requires a sequence of endpoints");
     }
 
     return true;
@@ -301,7 +309,8 @@ struct convert<proton::node_builder::ConnectionEndpointConfig>
     auto node_name = node[proton::node_builder::keys::NODE];
     if (!(node_id && node_name))
     {
-      throw std::runtime_error("Connection element requires a node ID and name");
+      throw proton::node_builder::NodeBuilderException(
+        "Connection element requires a node ID and name");
     }
 
     rhs.id = node_id.as<uint32_t>();
@@ -326,7 +335,8 @@ struct convert<proton::node_builder::ConnectionConfig>
 
     if (!(first && second))
     {
-      throw std::runtime_error("Node connection requires first and second element");
+      throw proton::node_builder::NodeBuilderException(
+        "Node connection requires first and second element");
     }
 
     rhs.connection.first = first.as<proton::node_builder::ConnectionEndpointConfig>();

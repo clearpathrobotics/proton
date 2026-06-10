@@ -29,6 +29,7 @@
 #include <array>
 #include <cstdint>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -37,6 +38,12 @@
 
 namespace proton::node_builder
 {
+
+class NodeBuilderException : public std::runtime_error
+{
+public:
+  explicit NodeBuilderException(const std::string & message) : std::runtime_error(message) {}
+};
 
 namespace keys
 {
