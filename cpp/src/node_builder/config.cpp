@@ -224,9 +224,9 @@ struct convert<proton::node_builder::EndpointConfig>
     rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
     rhs.type = node[proton::node_builder::keys::TYPE].as<std::string>();
 
-    auto ip_node = node[proton::node_builder::keys::IP];
-    auto port_node = node[proton::node_builder::keys::PORT];
-    auto device_node = node[proton::node_builder::keys::DEVICE];
+    const auto ip_node = node[proton::node_builder::keys::IP];
+    const auto port_node = node[proton::node_builder::keys::PORT];
+    const auto device_node = node[proton::node_builder::keys::DEVICE];
 
     if (rhs.type == proton::node_builder::transport_types::UDP4)
     {
