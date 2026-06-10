@@ -40,6 +40,19 @@ struct convert<proton::node_builder::SignalConfig>
     rhs.name = node[proton::node_builder::keys::NAME].as<std::string>();
     rhs.type_string = node[proton::node_builder::keys::TYPE].as<std::string>();
 
+    // Check that type string is a valid type
+    bool valid_value_type = std::any_of(
+      proton::node_builder::value_types::VALUE_TYPES.begin(),
+      proton::node_builder::value_types::VALUE_TYPES.end(),
+      [&rhs](const std::string_view & val_type) { return rhs.type_string == val_type; });
+
+    if (!valid_value_type)
+    {
+      throw std::runtime_error("Signal value type " + rhs.type_string + " is not a valid type");
+    }
+
+    rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
+
     auto value_key = node[proton::node_builder::keys::VALUE];
     // Default value defined
     rhs.has_default_value = value_key.IsDefined() && !value_key.IsNull();
@@ -123,6 +136,14 @@ struct convert<proton::node_builder::BundleConfig>
       return false;
     }
 
+    if (!(node[proton::node_builder::keys::NAME].IsDefined() &&
+          node[proton::node_builder::keys::ID].IsDefined() &&
+          node[proton::node_builder::keys::PRODUCERS].IsDefined() &&
+          node[proton::node_builder::keys::CONSUMERS].IsDefined()))
+    {
+      return false;
+    }
+
     rhs.name = node[proton::node_builder::keys::NAME].as<std::string>();
     rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
     YAML::Node signals = node[proton::node_builder::keys::SIGNALS];
@@ -160,6 +181,13 @@ struct convert<proton::node_builder::BundleConfig>
       }
     }
 
+    rhs.period_ms = 0;
+    auto period_node = node[proton::node_builder::keys::PERIOD_MS];
+    if (period_node.IsDefined())
+    {
+      rhs.period_ms = period_node.as<uint32_t>();
+    }
+
     return true;
   }
 };
@@ -174,6 +202,13 @@ struct convert<proton::node_builder::EndpointConfig>
       return false;
     }
 
+    if (!(node[proton::node_builder::keys::ID].IsDefined() &&
+          node[proton::node_builder::keys::TYPE].IsDefined()))
+    {
+      return false;
+    }
+
+    rhs.id = node[proton::node_builder::keys::ID].as<uint32_t>();
     rhs.type = node[proton::node_builder::keys::TYPE].as<std::string>();
 
     auto ip_node = node[proton::node_builder::keys::IP];
@@ -208,21 +243,36 @@ struct convert<proton::node_builder::NodeConfig>
       return false;
     }
 
-    rhs.name = node[proton::node_builder::keys::NAME].as<std::string>();
+    auto node_name = node[proton::node_builder::keys::NAME];
+    auto node_id = node[proton::node_builder::keys::ID];
     auto endpoints = node[proton::node_builder::keys::ENDPOINTS];
-    if (endpoints && endpoints.IsSequence())
+
+    if (!(node_name.IsDefined() && node_id.IsDefined() && endpoints.IsDefined()))
+    {
+      throw std::runtime_error("Node name, ID, and endpoints must be defined");
+    }
+
+    rhs.name = node_name.as<std::string>();
+    rhs.id = node_id.as<uint32_t>();
+    if (endpoints.IsSequence())
     {
       for (const auto & endpoint : endpoints)
       {
-        uint32_t id = 0;
         auto ep_id = endpoint[proton::node_builder::keys::ID];
         if (ep_id)
         {
-          id = ep_id.as<uint32_t>();
+          uint32_t id = ep_id.as<uint32_t>();
+          rhs.endpoints.emplace(id, endpoint.as<proton::node_builder::EndpointConfig>());
         }
-
-        rhs.endpoints.emplace(id, endpoint.as<proton::node_builder::EndpointConfig>());
+        else
+        {
+          throw std::runtime_error("Node " + rhs.name + " endpoint requires an ID");
+        }
       }
+    }
+    else
+    {
+      throw std::runtime_error("Node " + rhs.name + " requires a sequence of endpoints");
     }
 
     return true;
@@ -240,16 +290,14 @@ struct convert<proton::node_builder::ConnectionEndpointConfig>
     }
 
     auto node_id = node[proton::node_builder::keys::ID];
-    if (node_id)
+    auto node_name = node[proton::node_builder::keys::NODE];
+    if (!(node_id && node_name))
     {
-      rhs.id = node_id.as<uint32_t>();
-    }
-    else
-    {
-      rhs.id = 0;
+      throw std::runtime_error("Connection element requires a node ID and name");
     }
 
-    rhs.node = node[proton::node_builder::keys::NODE].as<std::string>();
+    rhs.id = node_id.as<uint32_t>();
+    rhs.node = node_name.as<std::string>();
 
     return true;
   }
@@ -265,10 +313,16 @@ struct convert<proton::node_builder::ConnectionConfig>
       return false;
     }
 
-    rhs.connection.first =
-      node[proton::node_builder::keys::FIRST].as<proton::node_builder::ConnectionEndpointConfig>();
-    rhs.connection.second =
-      node[proton::node_builder::keys::SECOND].as<proton::node_builder::ConnectionEndpointConfig>();
+    auto first = node[proton::node_builder::keys::FIRST];
+    auto second = node[proton::node_builder::keys::SECOND];
+
+    if (!(first && second))
+    {
+      throw std::runtime_error("Node connection requires first and second element");
+    }
+
+    rhs.connection.first = first.as<proton::node_builder::ConnectionEndpointConfig>();
+    rhs.connection.second = second.as<proton::node_builder::ConnectionEndpointConfig>();
 
     return true;
   }

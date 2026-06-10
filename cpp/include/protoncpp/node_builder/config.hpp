@@ -26,6 +26,7 @@
 
 #include "proton/node_manager.h"
 
+#include <array>
 #include <cstdint>
 #include <map>
 #include <string>
@@ -59,6 +60,7 @@ inline constexpr std::string_view ID = "id";
 inline constexpr std::string_view PRODUCERS = "producers";
 inline constexpr std::string_view CONSUMERS = "consumers";
 inline constexpr std::string_view SIGNALS = "signals";
+inline constexpr std::string_view PERIOD_MS = "period_ms";
 }  // namespace keys
 
 namespace value_types
@@ -72,6 +74,10 @@ inline constexpr std::string_view UINT64 = "uint64";
 inline constexpr std::string_view BOOL = "bool";
 inline constexpr std::string_view STRING = "string";
 inline constexpr std::string_view BYTES = "bytes";
+
+constexpr std::array<std::string_view, 9> VALUE_TYPES = {DOUBLE, FLOAT, INT32,  INT64, UINT32,
+                                                         UINT64, BOOL,  STRING, BYTES};
+
 }  // namespace value_types
 
 namespace transport_types
@@ -94,6 +100,7 @@ struct BundleConfig
 {
   std::string name;
   uint32_t id;
+  uint32_t period_ms;
   std::vector<std::string> producers;
   std::vector<std::string> consumers;
   std::vector<uint32_t> signals;
@@ -101,6 +108,7 @@ struct BundleConfig
 
 struct EndpointConfig
 {
+  uint32_t id;
   std::string type;
   std::string device;
   std::string ip;
@@ -110,6 +118,7 @@ struct EndpointConfig
 struct NodeConfig
 {
   std::string name;
+  uint32_t id;
   std::map<uint32_t, EndpointConfig> endpoints;
 };
 
