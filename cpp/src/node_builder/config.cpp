@@ -310,7 +310,19 @@ static ConnectionConfig parse_connection(const ConfigNode & node)
 
 Config::Config(const ConfigTree & tree) { parse(tree); }
 
-Config::Config(const std::string & yaml_file) { parse(ConfigTree::from_yaml_file(yaml_file)); }
+Config Config::from_yaml(const std::string & yaml_file)
+{
+  Config config = Config();
+  config.parse(ConfigTree::from_yaml_file(yaml_file));
+  return config;
+}
+
+Config Config::from_json(const std::string & json_file)
+{
+  Config config = Config();
+  config.parse(ConfigTree::from_json_file(json_file));
+  return config;
+}
 
 void Config::parse(const ConfigTree & tree)
 {

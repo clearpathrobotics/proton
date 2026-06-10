@@ -1,0 +1,59 @@
+{
+  "nodes": [
+    {
+      "name": "producer",
+      "id": 0,
+      "endpoints": [
+        {
+          "id": 0,
+          "type": "udp4",
+          "ip": "127.0.0.1"
+        }
+      ]
+    },
+    {
+      "name": "consumer",
+      "id": 1,
+      "endpoints": [
+        {
+          "id": 0,
+          "type": "udp4",
+          "ip": "127.0.0.1",
+          "port": 11417
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "first": {
+        "node": "producer",
+        "id": 0
+      },
+      "second": {
+        "node": "consumer",
+        "id": 0
+      }
+    }
+  ],
+  "signals": [
+    {
+      "name": "double_value",
+      "id": 4096,
+      "type": "double"
+    }
+  ],
+  "bundles": [
+    {
+      "name": "value_test",
+      "id": 256,
+      "producers": [
+        "producer"
+      ],
+      "consumers": [
+        "consumer"
+      ],
+      "signals": 4096
+    }
+  ]
+}
