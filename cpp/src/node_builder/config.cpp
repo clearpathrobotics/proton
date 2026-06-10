@@ -78,16 +78,17 @@ struct convert<proton::node_builder::SignalConfig>
       // Determine capacity based on the size of the default value
       if (value_key.IsScalar() && rhs.type_string == proton::node_builder::value_types::STRING)
       {
+        std::string value = value_key.as<std::string>();
+        size_t string_capacity = value.size() + 1;
         if (rhs.capacity == 0)
         {
-          // TODO check if this includes nullchar
-          rhs.capacity = value_key.size();
+          rhs.capacity = string_capacity;
         }
-        else if (rhs.capacity < value_key.size())
+        else if (rhs.capacity < string_capacity)
         {
           std::stringstream ss;
           ss << "Error in signal: " << rhs.name << ": Capacity " << rhs.capacity
-             << " is shorter than default value: " << value_key.size();
+             << " is shorter than default value: " << string_capacity;
           throw std::runtime_error(ss.str());
         }
       }
@@ -111,7 +112,7 @@ struct convert<proton::node_builder::SignalConfig>
         {
           throw std::runtime_error(
             "Error in signal " + rhs.name +
-            ": Only bytes type signals can have a sequence as a default value");
+            ": only bytes type signals can have a sequence as a default value");
         }
       }
     }

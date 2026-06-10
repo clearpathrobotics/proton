@@ -18,13 +18,85 @@
 
 #include <gtest/gtest.h>
 #include <cstring>
+#include <functional>
 #include <string>
 
 #include "protoncpp/node_builder/config.hpp"
 
 using namespace proton::node_builder;
 
-TEST(ConfigTest, HappyPathTest) { Config("test_configs/test.yaml"); }
+void expect_throw_with_message(const std::string & filepath, const std::string & expected_msg)
+{
+  try
+  {
+    Config config(filepath);
+    FAIL() << "Expected exception was not thrown.";
+  }
+  catch (const std::runtime_error & e)
+  {
+    EXPECT_EQ(std::string(e.what()), expected_msg);
+  }
+  catch (...)
+  {
+    FAIL() << "An unknown exception type was thrown.";
+  }
+};
+
+TEST(ConfigTest, HappyPathTest)
+{
+  Config config("test_configs/test.yaml");
+  EXPECT_EQ(config.bundles_.size(), 7);
+  EXPECT_EQ(config.nodes_.size(), 3);
+  EXPECT_EQ(config.connections_.size(), 2);
+  EXPECT_EQ(config.signals_.size(), 16);
+}
+
+TEST(SignalConfigTest, InvalidBytesCapacity)
+{
+  expect_throw_with_message(
+    "test_configs/signal_invalid_bytes_capacity.yaml",
+    "Error in signal: invalid_capacity_bytes: Capacity 1 is shorter than default value: 3");
+}
+
+TEST(SignalConfigTest, InvalidStringCapacity)
+{
+  expect_throw_with_message(
+    "test_configs/signal_invalid_string_capacity.yaml",
+    "Error in signal: invalid_capacity_string: Capacity 1 is shorter than default value: 4");
+}
+
+TEST(SignalConfigTest, InvalidId)
+{
+  EXPECT_THROW(Config("test_configs/signal_invalid_id.yaml"), std::runtime_error);
+}
+
+TEST(SignalConfigTest, InvalidTypeString)
+{
+  expect_throw_with_message(
+    "test_configs/signal_invalid_type_string.yaml",
+    "Signal value type not_a_real_type_string is not a valid type");
+}
+
+TEST(SignalConfigTest, ListForNonListType)
+{
+  expect_throw_with_message(
+    "test_configs/signal_list_for_non_list_type.yaml",
+    "Error in signal list_floats: only bytes type signals can have a sequence as a default value");
+}
+
+TEST(SignalConfigTest, SignalNoBytesCapacity)
+{
+  expect_throw_with_message(
+    "test_configs/signal_no_bytes_capacity.yaml",
+    "Signal invalid_capacity_bytes of type bytes must define a capacity");
+}
+
+TEST(SignalConfigTest, SignalNoStringCapacity)
+{
+  expect_throw_with_message(
+    "test_configs/signal_no_string_capacity.yaml",
+    "Signal invalid_capacity_string of type string must define a capacity");
+}
 
 int main(int argc, char ** argv)
 {
