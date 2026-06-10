@@ -26,16 +26,18 @@
 #include <sstream>
 #include <stdexcept>
 
+#if PROTON_NODE_BUILDER_YAML_PARSER
 #include <yaml-cpp/yaml.h>
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
 
 #if PROTON_NODE_BUILDER_JSON_PARSER
-
 #include <nlohmann/json.hpp>
-
 #endif  // PROTON_NODE_BUILDER_JSON_PARSER
 
 namespace proton::node_builder
 {
+
+#if PROTON_NODE_BUILDER_YAML_PARSER
 
 // Helper to convert YAML::Node to ConfigValue recursively
 static ConfigValue yaml_to_config_value(const YAML::Node & node)
@@ -127,9 +129,9 @@ static ConfigValue yaml_to_config_value(const YAML::Node & node)
 
   return ConfigValue(std::monostate{});
 }
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
 
 #if PROTON_NODE_BUILDER_JSON_PARSER
-
 static ConfigValue json_to_config_value(const nlohmann::json & json)
 {
   if (json.is_null())
@@ -190,7 +192,6 @@ static ConfigValue json_to_config_value(const nlohmann::json & json)
 
   return ConfigValue(std::monostate{});
 }
-
 #endif  // PROTON_NODE_BUILDER_JSON_PARSER
 
 // ConfigNode conversion methods
@@ -337,6 +338,7 @@ bool ConfigNode::as_bool() const
 
 // ConfigTree factory methods
 
+#if PROTON_NODE_BUILDER_YAML_PARSER
 ConfigTree ConfigTree::from_yaml_file(const std::string & path)
 {
   YAML::Node yaml_node = YAML::LoadFile(path);
@@ -348,9 +350,9 @@ ConfigTree ConfigTree::from_yaml_string(std::string_view yaml)
   YAML::Node yaml_node = YAML::Load(std::string(yaml));
   return ConfigTree(yaml_to_config_value(yaml_node));
 }
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
 
 #if PROTON_NODE_BUILDER_JSON_PARSER
-
 ConfigTree ConfigTree::from_json_file(const std::string & path)
 {
   std::ifstream f(path);
@@ -363,7 +365,6 @@ ConfigTree ConfigTree::from_json_string(std::string_view json)
   nlohmann::json config = nlohmann::json::parse(json);
   return ConfigTree(json_to_config_value(config));
 }
-
 #endif  // PROTON_NODE_BUILDER_JSON_PARSER
 
 }  // namespace proton::node_builder

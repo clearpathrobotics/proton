@@ -283,6 +283,8 @@ public:
    */
   ConfigNode operator[](std::string_view key) const { return root()[key]; }
 
+#if PROTON_NODE_BUILDER_YAML_PARSER
+
   /**
    * @brief Factory: Load from YAML file
    */
@@ -292,6 +294,8 @@ public:
    * @brief Factory: Parse from YAML string
    */
   static ConfigTree from_yaml_string(std::string_view yaml);
+
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
 
 #if PROTON_NODE_BUILDER_JSON_PARSER
 
