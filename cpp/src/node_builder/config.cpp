@@ -175,10 +175,17 @@ struct convert<proton::node_builder::BundleConfig>
 
     if (signals.IsDefined() && !signals.IsNull())
     {
-      // Get signal configs for this bundle
-      for (const auto & signal : signals)
+      if (signals.IsSequence())
       {
-        rhs.signals.push_back(signal.as<uint32_t>());
+        // Get signal configs for this bundle
+        for (const auto & signal : signals)
+        {
+          rhs.signals.push_back(signal.as<uint32_t>());
+        }
+      }
+      else
+      {
+        throw std::runtime_error("Bundle " + rhs.name + " signals are not a list");
       }
     }
 

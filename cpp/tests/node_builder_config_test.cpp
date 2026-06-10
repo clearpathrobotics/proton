@@ -98,6 +98,73 @@ TEST(SignalConfigTest, SignalNoStringCapacity)
     "Signal invalid_capacity_string of type string must define a capacity");
 }
 
+TEST(BundleConfigTest, NoId)
+{
+  expect_throw_with_message(
+    "test_configs/bundle_no_id.yaml", "Bundle must contain name, ID, producers and consumers");
+}
+
+TEST(BundleConfigTest, NoName)
+{
+  expect_throw_with_message(
+    "test_configs/bundle_no_name.yaml", "Bundle must contain name, ID, producers and consumers");
+}
+
+TEST(BundleConfigTest, NoProducers)
+{
+  expect_throw_with_message(
+    "test_configs/bundle_no_producers.yaml",
+    "Bundle must contain name, ID, producers and consumers");
+}
+
+TEST(BundleConfigTest, NoConsumers)
+{
+  expect_throw_with_message(
+    "test_configs/bundle_no_consumers.yaml",
+    "Bundle must contain name, ID, producers and consumers");
+}
+
+TEST(BundleConfigTest, InvalidProducer)
+{
+  expect_throw_with_message(
+    "test_configs/bundle_invalid_producer.yaml",
+    "Bundle value_test must have a sequence of producers");
+}
+
+TEST(BundleConfigTest, InvalidConsumer)
+{
+  expect_throw_with_message(
+    "test_configs/bundle_invalid_consumer.yaml",
+    "Bundle value_test must have a sequence of producers");
+}
+
+TEST(BundleConfigTest, SignalsNotList)
+{
+  expect_throw_with_message(
+    "test_configs/bundle_signals_not_list.yaml", "Bundle value_test signals are not a list");
+}
+
+TEST(BundleConfigTest, ValidWithNoSignals)
+{
+  Config config("test_configs/bundle_valid_with_no_signals.yaml");
+  EXPECT_EQ(config.bundles_.size(), 1);
+  EXPECT_TRUE(config.bundles_[0].signals.empty());
+}
+
+TEST(BundleConfigTest, WithNoProducer)
+{
+  Config config("test_configs/bundle_with_no_producer.yaml");
+  EXPECT_EQ(config.bundles_.size(), 1);
+  EXPECT_TRUE(config.bundles_[0].producers.empty());
+}
+
+TEST(BundleConfigTest, WithNoConsumer)
+{
+  Config config("test_configs/bundle_with_no_consumer.yaml");
+  EXPECT_EQ(config.bundles_.size(), 1);
+  EXPECT_TRUE(config.bundles_[0].consumers.empty());
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);

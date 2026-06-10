@@ -3,22 +3,10 @@ signals:
   - {name: float_value, id: 0x1001, type: float}
   - {name: int32_value, id: 0x1002, type: int32}
   - {name: int64_value, id: 0x1003, type: int64}
-  - {name: uint32_value, id: 0x1004, type: uint32}
-  - {name: uint64_value, id: 0x1005, type: uint64}
-  - {name: bool_value, id: 0x1006, type: bool}
-  - {name: string_value, id: 0x1007, type: string, capacity: 8}
-  - {name: bytes_value, id: 0x1008, type: bytes, capacity: 8}
-  - {name: default_double, id: 0x1010, type: double, value: 3.14159}
-  - {name: default_string, id: 0x1011, type: string, value: "foo"}
-  - {name: default_bytes, id: 0x1012, type: bytes, value: [0, 1, 2], capacity: 3}
-  - {name: really_long_string, id: 0x1013, type: string, value: "ipsumsedolorsitametconsecteturadipiscingelit", capacity: 44}
-  - {name: really_long_bytes, id: 0x1014, type: bytes, value: [0, 1, 2, 3, 4, 5, 6, 7], capacity: 8}
-  - {name: shared_signal, id: 0x1015, type: int32}
-  - {name: unused_signal, id: 0x1111, type: float}
 
 bundles:
   - name: no_producer
     id: 0
     producers: []
     consumers: [consumer]
-    signals: [0x1000, 0x1001, 0x1002, 0x1003, 0x1004, 0x1005, 0x1006, 0x1007, 0x1008]
+    signals: [0x1000, 0x1001, 0x1002, 0x1003]
