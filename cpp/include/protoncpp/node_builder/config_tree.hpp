@@ -151,6 +151,19 @@ public:
   }
 
   /**
+   * @brief Access a child node by index (for sequences)
+   */
+  ConfigNode operator[](size_t idx) const
+  {
+    if (!is_sequence())
+    {
+      return ConfigNode();
+    }
+    const auto & sequence = std::get<ConfigSequence>(value_->data);
+    return ConfigNode(sequence[idx]);
+  }
+
+  /**
    * @brief Get the size of a sequence
    */
   size_t size() const
@@ -282,6 +295,11 @@ public:
    * @brief Access top-level key
    */
   ConfigNode operator[](std::string_view key) const { return root()[key]; }
+
+  /**
+   * @brief Access index
+   */
+  ConfigNode operator[](size_t idx) const { return root()[idx]; }
 
 #if PROTON_NODE_BUILDER_YAML_PARSER
 

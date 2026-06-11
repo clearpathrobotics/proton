@@ -172,6 +172,26 @@ TEST(ConfigNodeTest, MapAccessByKey)
   EXPECT_TRUE(node["nonexistent"].is_null());
 }
 
+TEST(ConfigNodeTest, SequenceAccessByIndex)
+{
+  ConfigSequence seq = {ConfigValue(1), ConfigValue(2), ConfigValue(3)};
+  ConfigValue val(seq);
+  ConfigNode node(val);
+  EXPECT_EQ(node[0].as_uint32(), 1);
+  EXPECT_EQ(node[1].as_uint32(), 2);
+  EXPECT_EQ(node[2].as_uint32(), 3);
+}
+
+TEST(ConfigNodeTest, NonSequenceIndexIsMonostate)
+{
+  ConfigMap map;
+  map["name"] = ConfigValue("test");
+  map["value"] = ConfigValue(123);
+  ConfigValue val(map);
+  ConfigNode node(val);
+  EXPECT_FALSE(node[0].is_defined());
+}
+
 TEST(ConfigNodeTest, SequenceSize)
 {
   ConfigSequence seq = {ConfigValue(1), ConfigValue(2), ConfigValue(3)};
@@ -535,6 +555,33 @@ mixed:
   EXPECT_EQ(mixed.size(), 4);
 }
 
+TEST(ConfigTreeTest, YamlSequenceIndex)
+{
+  const char * yaml = R"(
+mixed:
+  - string_value
+  - 42
+  - 3.14
+  - true
+)";
+  auto tree = ConfigTree::from_yaml_string(yaml);
+  auto mixed = tree["mixed"];
+  EXPECT_EQ(mixed[0].as_string(), "string_value");
+  EXPECT_EQ(mixed[1].as_uint32(), 42);
+  EXPECT_EQ(mixed[2].as_double(), 3.14);
+  EXPECT_EQ(mixed[3].as_bool(), true);
+}
+
+TEST(ConfigTreeTest, YamlNonSequenceIndex)
+{
+  const char * yaml = R"(
+foo: bar
+)";
+  auto tree = ConfigTree::from_yaml_string(yaml);
+  auto mixed = tree["foo"];
+  EXPECT_FALSE(mixed[0].is_defined());
+}
+
 TEST(ConfigTreeTest, YamlRootAccess)
 {
   const char * yaml = R"(
@@ -693,6 +740,27 @@ TEST(ConfigTreeTest, ParseJsonRootArray)
   auto tree = ConfigTree::from_json_string(json);
   EXPECT_TRUE(tree.root().is_sequence());
   EXPECT_EQ(tree.root().size(), 5);
+}
+
+TEST(ConfigTreeTest, ParseJsonRootArrayByIndex)
+{
+  const char * json = R"([0, 1, 2, 3, 4])";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_EQ(tree.root()[0].as_uint32(), 0);
+  EXPECT_EQ(tree.root()[1].as_uint32(), 1);
+  EXPECT_EQ(tree.root()[2].as_uint32(), 2);
+  EXPECT_EQ(tree.root()[3].as_uint32(), 3);
+  EXPECT_EQ(tree.root()[4].as_uint32(), 4);
+}
+
+TEST(ConfigTreeTest, ParseJsonRootNonSequenceByIndex)
+{
+  const char * json = R"({
+  "key": "value"
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  auto root = tree.root();
+  EXPECT_FALSE(root[0].is_defined());
 }
 
 #endif  // PROTON_NODE_BUILDER_JSON_PARSER
