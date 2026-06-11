@@ -5,6 +5,7 @@ project(proton_core_cpp C CXX)
 option(PROTON_BUILD_TESTS "Build unit tests" ON)
 option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
 option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
+option(PROTON_NODE_BUILDER "Enable optional yaml file parsing" OFF)
 
 if (PROTON_BUILD_TESTS)
   add_compile_options(-Werror -Wall -Wextra)
@@ -27,6 +28,8 @@ endif()
 add_library(${PROJECT_NAME}
   src/bundle_access.cpp
   src/signal_access.cpp
+  src/node_builder/config.cpp
+  src/node_builder/config_tree.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -45,6 +48,16 @@ if(PROTON_ENABLE_ALLOC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
 else()
   target_compile_options(${PROJECT_NAME} PRIVATE -fno-exceptions -fno-rtti)
+endif()
+
+if (PROTON_NODE_BUILDER)
+  if (PROTON_ENABLE_ALLOC)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_NODE_BUILDER=1)
+    find_package(yaml-cpp REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PUBLIC yaml-cpp)
+  else()
+    message(ERROR "PROTON_ENABLE_ALLOC must be enabled for PROTON_NODE_BUILDER")
+  endif()
 endif()
 
 add_library(proton::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
@@ -140,10 +153,42 @@ if (PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
   )
 
+  add_executable(node_builder_config_test_cpp
+    tests/node_builder_config_test.cpp
+  )
+
+  target_link_libraries(node_builder_config_test_cpp PUBLIC
+    GTest::gtest_main
+    proton::proton_core_cpp
+  )
+
+  target_include_directories(node_builder_config_test_cpp PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
+  )
+
+  add_executable(node_builder_config_tree_test_cpp
+    tests/node_builder_config_tree_test.cpp
+  )
+
+  target_link_libraries(node_builder_config_tree_test_cpp PUBLIC
+    GTest::gtest_main
+    proton::proton_core_cpp
+  )
+
+  target_include_directories(node_builder_config_tree_test_cpp PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test_cpp)
   gtest_discover_tests(lock_test_cpp)
   gtest_discover_tests(node_manager_test_cpp)
   gtest_discover_tests(serial_transport_test_cpp)
   gtest_discover_tests(udp4_transport_test_cpp)
+  gtest_discover_tests(node_builder_config_test_cpp
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
+  )
+  gtest_discover_tests(node_builder_config_tree_test_cpp
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
+  )
 endif()

@@ -28,4 +28,8 @@
 #define PROTON_MAX_PENDING_TRIGGERS 4
 #endif
 
+#ifndef PROTON_NODE_BUILDER
+#define PROTON_NODE_BUILDER 0
+#endif
+
 #endif  // PROTON_CONFIG_HPP

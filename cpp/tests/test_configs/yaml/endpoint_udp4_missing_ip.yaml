@@ -1,0 +1,28 @@
+nodes:
+  - name: producer
+    id: 0
+    endpoints:
+      - id: 0
+        type: udp4
+        port: 11416
+  - name: consumer
+    id: 1
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11417
+
+connections:
+  - first: {node: producer, id: 0}
+    second: {node: consumer, id: 0}
+
+signals:
+  - {name: double_value, id: 0x1000, type: double}
+
+bundles:
+  - name: value_test
+    id: 0x100
+    producers: [producer]
+    consumers: [consumer]
+    signals: [0x1000]
