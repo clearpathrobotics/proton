@@ -40,8 +40,6 @@ extern proton_core_node_t g_target_node;
 
 using namespace proton;
 
-static constexpr size_t BUFFER_SIZE = 1024;
-
 // -----------------------------------------------------------------------
 // Test fixture
 // -----------------------------------------------------------------------

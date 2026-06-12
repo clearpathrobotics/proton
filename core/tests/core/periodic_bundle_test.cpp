@@ -25,8 +25,6 @@
 #include <gtest/gtest.h>
 #include <cstring>
 
-static constexpr size_t BUFFER_SIZE = 1024;
-
 extern proton_registry_t g_proton_registry;
 extern proton_core_node_t g_target_node;
 

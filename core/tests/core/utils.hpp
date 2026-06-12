@@ -29,6 +29,8 @@ extern "C"
 {
 #endif
 
+  static constexpr size_t BUFFER_SIZE = 1024;
+
   proton_registry_t copy_default_registry(proton_registry_t * original_registry)
   {
     proton_registry_t copy = *original_registry;
