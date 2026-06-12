@@ -22,9 +22,16 @@
 #include <sstream>
 #include <string>
 
+#include "proton/proton_config.h"
 #include "protoncpp/node_builder/config_tree.hpp"
 
+#if PROTON_NODE_BUILDER_YAML_PARSER
 #include <yaml-cpp/yaml.h>
+#endif
+
+#if PROTON_NODE_BUILDER_JSON_PARSER
+#include <nlohmann/json.hpp>
+#endif
 
 using namespace proton::node_builder;
 
@@ -167,6 +174,26 @@ TEST(ConfigNodeTest, MapAccessByKey)
   EXPECT_EQ(node["name"].as_string(), "test");
   EXPECT_EQ(node["value"].as_uint32(), 123);
   EXPECT_TRUE(node["nonexistent"].is_null());
+}
+
+TEST(ConfigNodeTest, SequenceAccessByIndex)
+{
+  ConfigSequence seq = {ConfigValue(1), ConfigValue(2), ConfigValue(3)};
+  ConfigValue val(seq);
+  ConfigNode node(val);
+  EXPECT_EQ(node[0].as_uint32(), 1);
+  EXPECT_EQ(node[1].as_uint32(), 2);
+  EXPECT_EQ(node[2].as_uint32(), 3);
+}
+
+TEST(ConfigNodeTest, NonSequenceIndexIsMonostate)
+{
+  ConfigMap map;
+  map["name"] = ConfigValue("test");
+  map["value"] = ConfigValue(123);
+  ConfigValue val(map);
+  ConfigNode node(val);
+  EXPECT_FALSE(node[0].is_defined());
 }
 
 TEST(ConfigNodeTest, SequenceSize)
@@ -390,6 +417,8 @@ TEST(ConfigNodeTest, BoolOperatorFalseWhenNull)
 // ConfigTree YAML Parsing Tests
 // ============================================================================
 
+#if PROTON_NODE_BUILDER_YAML_PARSER
+
 TEST(ConfigTreeTest, ParseYamlString)
 {
   const char * yaml = R"(
@@ -530,7 +559,34 @@ mixed:
   EXPECT_EQ(mixed.size(), 4);
 }
 
-TEST(ConfigTreeTest, RootAccess)
+TEST(ConfigTreeTest, YamlSequenceIndex)
+{
+  const char * yaml = R"(
+mixed:
+  - string_value
+  - 42
+  - 3.14
+  - true
+)";
+  auto tree = ConfigTree::from_yaml_string(yaml);
+  auto mixed = tree["mixed"];
+  EXPECT_EQ(mixed[0].as_string(), "string_value");
+  EXPECT_EQ(mixed[1].as_uint32(), 42);
+  EXPECT_EQ(mixed[2].as_double(), 3.14);
+  EXPECT_EQ(mixed[3].as_bool(), true);
+}
+
+TEST(ConfigTreeTest, YamlNonSequenceIndex)
+{
+  const char * yaml = R"(
+foo: bar
+)";
+  auto tree = ConfigTree::from_yaml_string(yaml);
+  auto mixed = tree["foo"];
+  EXPECT_FALSE(mixed[0].is_defined());
+}
+
+TEST(ConfigTreeTest, YamlRootAccess)
 {
   const char * yaml = R"(
 key: value
@@ -546,6 +602,242 @@ TEST(ConfigTreeTest, EmptyYaml)
   auto tree = ConfigTree::from_yaml_string("");
   EXPECT_TRUE(tree.root().is_null());
 }
+
+TEST(ConfigTreeTest, FromYamlNode_SubNode)
+{
+  // Parse a full config, then pass a sub-node to from_yaml_node
+  const char * yaml = R"(
+root:
+  signals:
+    - id: 100
+      name: "temperature"
+      type: float
+    - id: 101
+      name: "pressure"
+      type: double
+)";
+  YAML::Node full_config = YAML::Load(yaml);
+
+  // Access one layer in: root -> signals
+  YAML::Node signals_node = full_config["root"]["signals"];
+
+  // Pass the sub-node to from_yaml_node
+  auto tree = ConfigTree::from_yaml_node(signals_node);
+
+  // Verify we can access the sequence
+  EXPECT_TRUE(tree.root().is_sequence());
+  EXPECT_EQ(tree.root().size(), 2);
+
+  // Verify first signal
+  EXPECT_EQ(tree.root()[0]["id"].as_uint32(), 100);
+  EXPECT_EQ(tree.root()[0]["name"].as_string(), "temperature");
+  EXPECT_EQ(tree.root()[0]["type"].as_string(), "float");
+
+  // Verify second signal
+  EXPECT_EQ(tree.root()[1]["id"].as_uint32(), 101);
+  EXPECT_EQ(tree.root()[1]["name"].as_string(), "pressure");
+  EXPECT_EQ(tree.root()[1]["type"].as_string(), "double");
+}
+
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
+
+// ============================================================================
+// ConfigTree JSON Parsing Tests
+// ============================================================================
+
+#if PROTON_NODE_BUILDER_JSON_PARSER
+
+TEST(ConfigTreeTest, ParseJsonString)
+{
+  const char * json = R"({
+  "name": "test",
+  "value": 42
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_EQ(tree["name"].as_string(), "test");
+  EXPECT_EQ(tree["value"].as_uint32(), 42);
+}
+
+TEST(ConfigTreeTest, ParseJsonBooleans)
+{
+  const char * json = R"({
+  "bool_true": true,
+  "bool_false": false
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_TRUE(tree["bool_true"].as_bool());
+  EXPECT_FALSE(tree["bool_false"].as_bool());
+}
+
+TEST(ConfigTreeTest, ParseJsonIntegers)
+{
+  const char * json = R"({
+  "positive": 12345,
+  "negative": -67890,
+  "zero": 0
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_EQ(tree["positive"].as_int64(), 12345);
+  EXPECT_EQ(tree["negative"].as_int64(), -67890);
+  EXPECT_EQ(tree["zero"].as_int64(), 0);
+}
+
+TEST(ConfigTreeTest, ParseJsonDoubles)
+{
+  const char * json = R"({
+  "pi": 3.14159,
+  "negative": -2.5,
+  "scientific": 1.0e10
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_DOUBLE_EQ(tree["pi"].as_double(), 3.14159);
+  EXPECT_DOUBLE_EQ(tree["negative"].as_double(), -2.5);
+}
+
+TEST(ConfigTreeTest, ParseJsonStrings)
+{
+  const char * json = R"({
+  "simple": "hello",
+  "with_spaces": "hello world"
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_EQ(tree["simple"].as_string(), "hello");
+  EXPECT_EQ(tree["with_spaces"].as_string(), "hello world");
+}
+
+TEST(ConfigTreeTest, ParseJsonSequence)
+{
+  const char * json = R"({
+  "items": [1, 2, 3]
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  auto items = tree["items"];
+  EXPECT_TRUE(items.is_sequence());
+  EXPECT_EQ(items.size(), 3);
+
+  std::vector<int64_t> values;
+  for (const auto & item : items)
+  {
+    values.push_back(item.as_int64());
+  }
+  EXPECT_EQ(values, (std::vector<int64_t>{1, 2, 3}));
+}
+
+TEST(ConfigTreeTest, ParseJsonNestedMap)
+{
+  const char * json = R"({
+  "outer": {
+    "inner": {
+      "value": 42
+    }
+  }
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_EQ(tree["outer"]["inner"]["value"].as_uint32(), 42);
+}
+
+TEST(ConfigTreeTest, ParseJsonNull)
+{
+  const char * json = R"({
+  "null_value": null
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_TRUE(tree["null_value"].is_null());
+  EXPECT_TRUE(tree["nonexistent"].is_null());
+}
+
+TEST(ConfigTreeTest, ParseJsonMixedSequence)
+{
+  const char * json = R"({
+  "mixed": ["string_value", 42, 3.14, true]
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  auto mixed = tree["mixed"];
+  EXPECT_TRUE(mixed.is_sequence());
+  EXPECT_EQ(mixed.size(), 4);
+}
+
+TEST(ConfigTreeTest, JsonRootAccess)
+{
+  const char * json = R"({
+  "key": "value"
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  auto root = tree.root();
+  EXPECT_TRUE(root.is_map());
+  EXPECT_EQ(root["key"].as_string(), "value");
+}
+
+TEST(ConfigTreeTest, EmptyJsonObject)
+{
+  auto tree = ConfigTree::from_json_string("{}");
+  EXPECT_TRUE(tree.root().is_map());
+}
+
+TEST(ConfigTreeTest, ParseJsonRootArray)
+{
+  const char * json = R"([1, 2, 3, 4, 5])";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_TRUE(tree.root().is_sequence());
+  EXPECT_EQ(tree.root().size(), 5);
+}
+
+TEST(ConfigTreeTest, ParseJsonRootArrayByIndex)
+{
+  const char * json = R"([0, 1, 2, 3, 4])";
+  auto tree = ConfigTree::from_json_string(json);
+  EXPECT_EQ(tree.root()[0].as_uint32(), 0);
+  EXPECT_EQ(tree.root()[1].as_uint32(), 1);
+  EXPECT_EQ(tree.root()[2].as_uint32(), 2);
+  EXPECT_EQ(tree.root()[3].as_uint32(), 3);
+  EXPECT_EQ(tree.root()[4].as_uint32(), 4);
+}
+
+TEST(ConfigTreeTest, ParseJsonRootNonSequenceByIndex)
+{
+  const char * json = R"({
+  "key": "value"
+})";
+  auto tree = ConfigTree::from_json_string(json);
+  auto root = tree.root();
+  EXPECT_FALSE(root[0].is_defined());
+}
+
+TEST(ConfigTreeTest, FromJsonValue_SubNode)
+{
+  // Parse a full config, then pass a sub-node to from_json_value
+  const char * json = R"({
+  "root": {
+    "signals": [
+      { "id": 100, "name": "temperature", "type": "float" },
+      { "id": 101, "name": "pressure", "type": "double" }
+    ]
+  }
+})";
+  nlohmann::json full_config = nlohmann::json::parse(json);
+
+  // Access one layer in: root -> signals
+  nlohmann::json signals_node = full_config["root"]["signals"];
+
+  // Pass the sub-node to from_json_value
+  auto tree = ConfigTree::from_json_value(signals_node);
+
+  // Verify we can access the sequence
+  EXPECT_TRUE(tree.root().is_sequence());
+  EXPECT_EQ(tree.root().size(), 2);
+
+  // Verify first signal
+  EXPECT_EQ(tree.root()[0]["id"].as_uint32(), 100);
+  EXPECT_EQ(tree.root()[0]["name"].as_string(), "temperature");
+  EXPECT_EQ(tree.root()[0]["type"].as_string(), "float");
+
+  // Verify second signal
+  EXPECT_EQ(tree.root()[1]["id"].as_uint32(), 101);
+  EXPECT_EQ(tree.root()[1]["name"].as_string(), "pressure");
+  EXPECT_EQ(tree.root()[1]["type"].as_string(), "double");
+}
+
+#endif  // PROTON_NODE_BUILDER_JSON_PARSER
 
 int main(int argc, char ** argv)
 {

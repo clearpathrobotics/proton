@@ -144,6 +144,8 @@ struct ConnectionConfig
 class Config
 {
 public:
+  explicit Config() = default;
+
   /**
    * @brief Construct from a ConfigTree (format-agnostic)
    */
@@ -152,7 +154,12 @@ public:
   /**
    * @brief Convenience: construct from YAML file path
    */
-  explicit Config(const std::string & yaml_file);
+  static Config from_yaml(const std::string & yaml_file);
+
+  /**
+   * @brief Convenience: construct from JSON file path
+   */
+  static Config from_json(const std::string & json_file);
 
   ~Config() = default;
 
