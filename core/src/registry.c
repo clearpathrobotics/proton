@@ -77,14 +77,13 @@ const bundle_desc_t * proton_registry_get_bundle(
   {
     for (size_t i = 0; i < registry->bundle_count; i++)
     {
-      if (registry->bundle_id_lut[i].id == bundle_id)
+      if (registry->bundle_table[i].bundle_id == bundle_id)
       {
-        size_t idx = registry->bundle_id_lut[i].idx;
         if (slot_idx)
         {
-          *slot_idx = idx;
+          *slot_idx = i;
         }
-        return &registry->bundle_table[idx];
+        return &registry->bundle_table[i];
       }
     }
   }
@@ -92,23 +91,9 @@ const bundle_desc_t * proton_registry_get_bundle(
   return NULL;
 }
 
-proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
-  const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx)
+proton_Signal * proton_registry_get_bundle_encode_decode_buffer(const proton_registry_t * registry)
 {
-  if (bundle_lut_idx != NULL)
-  {
-    return registry->bundle_signal_ptrs[*bundle_lut_idx];
-  }
-
-  for (size_t i = 0; i < registry->bundle_count; i++)
-  {
-    if (registry->bundle_id_lut[i].id == bundle_id)
-    {
-      return registry->bundle_signal_ptrs[registry->bundle_id_lut[i].idx];
-    }
-  }
-
-  return NULL;
+  return registry->encode_decode_buffer;
 }
 
 proton_bundle_cb_t * proton_registry_get_bundle_callback(
@@ -116,9 +101,9 @@ proton_bundle_cb_t * proton_registry_get_bundle_callback(
 {
   for (size_t i = 0; i < registry->bundle_count; i++)
   {
-    if (registry->bundle_id_lut[i].id == bundle_id)
+    if (registry->bundle_table[i].bundle_id == bundle_id)
     {
-      return &registry->bundle_callbacks[registry->bundle_id_lut[i].idx];
+      return &registry->bundle_table[i].callback;
     }
   }
 
@@ -130,10 +115,10 @@ void proton_registry_set_bundle_callback(
 {
   for (size_t i = 0; i < registry->bundle_count; i++)
   {
-    if (registry->bundle_id_lut[i].id == bundle_id)
+    if (registry->bundle_table[i].bundle_id == bundle_id)
     {
-      registry->bundle_callbacks[registry->bundle_id_lut[i].idx].cb = bundle_cb;
-      registry->bundle_callbacks[registry->bundle_id_lut[i].idx].arg = context;
+      registry->bundle_table[i].callback.cb = bundle_cb;
+      registry->bundle_table[i].callback.arg = context;
     }
   }
 }
@@ -143,9 +128,9 @@ void proton_registry_set_bundle_period(
 {
   for (size_t i = 0; i < registry->bundle_count; i++)
   {
-    if (registry->bundle_id_lut[i].id == bundle_id)
+    if (registry->bundle_table[i].bundle_id == bundle_id)
     {
-      registry->bundle_table[registry->bundle_id_lut[i].idx].period_ms = period_ms;
+      registry->bundle_table[i].period_ms = period_ms;
       return;
     }
   }
@@ -156,14 +141,13 @@ signal_desc_t * proton_registry_get_signal(
 {
   for (size_t i = 0; i < registry->signal_count; i++)
   {
-    if (registry->signal_id_lut[i].id == signal_id)
+    if (registry->signal_registry[i].id == signal_id)
     {
-      size_t idx = registry->signal_id_lut[i].idx;
       if (registry_idx)
       {
-        *registry_idx = idx;
+        *registry_idx = i;
       }
-      return &registry->signal_registry[idx];
+      return &registry->signal_registry[i];
     }
   }
 
@@ -291,7 +275,7 @@ proton_status_e proton_signal_set_string(
   {
     return PROTON_ERROR;
   }
-  if (registry->signal_max_capacity[idx] < len)
+  if (desc->value_size < len)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
@@ -336,7 +320,7 @@ proton_status_e proton_signal_set_bytes(
   {
     return PROTON_ERROR;
   }
-  if (registry->signal_max_capacity[idx] < len)
+  if (desc->value_size < len)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }

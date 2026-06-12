@@ -25,8 +25,6 @@
 #include <gtest/gtest.h>
 #include <cstring>
 
-static constexpr size_t BUFFER_SIZE = 1024;
-
 extern proton_registry_t g_proton_registry;
 extern proton_core_node_t g_target_node;
 
@@ -40,12 +38,12 @@ protected:
   void SetUp() override
   {
     // Reset shared bundle table state before each test.
-    // bundle_table is not deep-copied by copy_default_registry, so this affects
-    // both the global and any per-test registry copy.
+    // bundle_table is now deep-copied by copy_default_registry.
     for (size_t i = 0; i < g_proton_registry.bundle_count; i++)
     {
       g_proton_registry.bundle_table[i].last_send_ms = 0;
       g_proton_registry.bundle_table[i].send_now = false;
+      g_proton_registry.bundle_table[i].callback = {NULL, NULL};
     }
     registry_ = copy_default_registry(&g_proton_registry);
     node_ = copy_default_node(&g_target_node);
@@ -60,7 +58,7 @@ protected:
   void TearDown() override
   {
     free(registry_.signal_registry);
-    free(registry_.bundle_callbacks);
+    free(registry_.bundle_table);
     registry_.mutex_handles.arg = nullptr;
     registry_.mutex_handles.lock = nullptr;
     registry_.mutex_handles.unlock = nullptr;
