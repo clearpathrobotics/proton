@@ -29,6 +29,10 @@
 #include <yaml-cpp/yaml.h>
 #endif
 
+#if PROTON_NODE_BUILDER_JSON_PARSER
+#include <nlohmann/json.hpp>
+#endif
+
 using namespace proton::node_builder;
 
 // ============================================================================
@@ -599,6 +603,42 @@ TEST(ConfigTreeTest, EmptyYaml)
   EXPECT_TRUE(tree.root().is_null());
 }
 
+TEST(ConfigTreeTest, FromYamlNode_SubNode)
+{
+  // Parse a full config, then pass a sub-node to from_yaml_node
+  const char * yaml = R"(
+root:
+  signals:
+    - id: 100
+      name: "temperature"
+      type: float
+    - id: 101
+      name: "pressure"
+      type: double
+)";
+  YAML::Node full_config = YAML::Load(yaml);
+
+  // Access one layer in: root -> signals
+  YAML::Node signals_node = full_config["root"]["signals"];
+
+  // Pass the sub-node to from_yaml_node
+  auto tree = ConfigTree::from_yaml_node(signals_node);
+
+  // Verify we can access the sequence
+  EXPECT_TRUE(tree.root().is_sequence());
+  EXPECT_EQ(tree.root().size(), 2);
+
+  // Verify first signal
+  EXPECT_EQ(tree.root()[0]["id"].as_uint32(), 100);
+  EXPECT_EQ(tree.root()[0]["name"].as_string(), "temperature");
+  EXPECT_EQ(tree.root()[0]["type"].as_string(), "float");
+
+  // Verify second signal
+  EXPECT_EQ(tree.root()[1]["id"].as_uint32(), 101);
+  EXPECT_EQ(tree.root()[1]["name"].as_string(), "pressure");
+  EXPECT_EQ(tree.root()[1]["type"].as_string(), "double");
+}
+
 #endif  // PROTON_NODE_BUILDER_YAML_PARSER
 
 // ============================================================================
@@ -761,6 +801,40 @@ TEST(ConfigTreeTest, ParseJsonRootNonSequenceByIndex)
   auto tree = ConfigTree::from_json_string(json);
   auto root = tree.root();
   EXPECT_FALSE(root[0].is_defined());
+}
+
+TEST(ConfigTreeTest, FromJsonValue_SubNode)
+{
+  // Parse a full config, then pass a sub-node to from_json_value
+  const char * json = R"({
+  "root": {
+    "signals": [
+      { "id": 100, "name": "temperature", "type": "float" },
+      { "id": 101, "name": "pressure", "type": "double" }
+    ]
+  }
+})";
+  nlohmann::json full_config = nlohmann::json::parse(json);
+
+  // Access one layer in: root -> signals
+  nlohmann::json signals_node = full_config["root"]["signals"];
+
+  // Pass the sub-node to from_json_value
+  auto tree = ConfigTree::from_json_value(signals_node);
+
+  // Verify we can access the sequence
+  EXPECT_TRUE(tree.root().is_sequence());
+  EXPECT_EQ(tree.root().size(), 2);
+
+  // Verify first signal
+  EXPECT_EQ(tree.root()[0]["id"].as_uint32(), 100);
+  EXPECT_EQ(tree.root()[0]["name"].as_string(), "temperature");
+  EXPECT_EQ(tree.root()[0]["type"].as_string(), "float");
+
+  // Verify second signal
+  EXPECT_EQ(tree.root()[1]["id"].as_uint32(), 101);
+  EXPECT_EQ(tree.root()[1]["name"].as_string(), "pressure");
+  EXPECT_EQ(tree.root()[1]["type"].as_string(), "double");
 }
 
 #endif  // PROTON_NODE_BUILDER_JSON_PARSER

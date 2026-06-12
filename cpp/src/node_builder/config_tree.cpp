@@ -26,14 +26,6 @@
 #include <sstream>
 #include <stdexcept>
 
-#if PROTON_NODE_BUILDER_YAML_PARSER
-#include <yaml-cpp/yaml.h>
-#endif  // PROTON_NODE_BUILDER_YAML_PARSER
-
-#if PROTON_NODE_BUILDER_JSON_PARSER
-#include <nlohmann/json.hpp>
-#endif  // PROTON_NODE_BUILDER_JSON_PARSER
-
 namespace proton::node_builder
 {
 
@@ -350,6 +342,11 @@ ConfigTree ConfigTree::from_yaml_string(std::string_view yaml)
   YAML::Node yaml_node = YAML::Load(std::string(yaml));
   return ConfigTree(yaml_to_config_value(yaml_node));
 }
+
+ConfigTree ConfigTree::from_yaml_node(const YAML::Node & yaml)
+{
+  return ConfigTree(yaml_to_config_value(yaml));
+}
 #endif  // PROTON_NODE_BUILDER_YAML_PARSER
 
 #if PROTON_NODE_BUILDER_JSON_PARSER
@@ -364,6 +361,11 @@ ConfigTree ConfigTree::from_json_string(std::string_view json)
 {
   nlohmann::json config = nlohmann::json::parse(json);
   return ConfigTree(json_to_config_value(config));
+}
+
+ConfigTree ConfigTree::from_json_value(const nlohmann::json & json)
+{
+  return ConfigTree(json_to_config_value(json));
 }
 #endif  // PROTON_NODE_BUILDER_JSON_PARSER
 

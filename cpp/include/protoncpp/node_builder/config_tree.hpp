@@ -32,6 +32,14 @@
 #include <variant>
 #include <vector>
 
+#if PROTON_NODE_BUILDER_YAML_PARSER
+#include <yaml-cpp/yaml.h>
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
+
+#if PROTON_NODE_BUILDER_JSON_PARSER
+#include <nlohmann/json.hpp>
+#endif  // PROTON_NODE_BUILDER_JSON_PARSER
+
 namespace proton::node_builder
 {
 
@@ -313,6 +321,11 @@ public:
    */
   static ConfigTree from_yaml_string(std::string_view yaml);
 
+  /**
+   * @brief Factory: Convert from YAML::Node
+   */
+  static ConfigTree from_yaml_node(const YAML::Node & yaml);
+
 #endif  // PROTON_NODE_BUILDER_YAML_PARSER
 
 #if PROTON_NODE_BUILDER_JSON_PARSER
@@ -326,6 +339,11 @@ public:
    * @brief Factory: Parse from JSON string
    */
   static ConfigTree from_json_string(std::string_view json);
+
+  /**
+   * @brief Factory: Convert from nlohmann::json
+   */
+  static ConfigTree from_json_value(const nlohmann::json & json);
 
 #endif  // PROTON_NODE_BUILDER_JSON_PARSER
 
