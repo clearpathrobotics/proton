@@ -102,6 +102,8 @@ extern "C"
     // For strings and bytes, capacity of the signal. For other types, this is the size of the internal type.
     size_t value_size;
     proton_Signal signal;
+    // Decode buffer for string/bytes signals (NULL for other types)
+    uint8_t * signal_decode_buffer;
   } signal_desc_t;
 
   /**
@@ -157,8 +159,6 @@ extern "C"
     signal_desc_t * signal_registry;
     // Similar to how bundle ID's are not contiguous, signal ID's are looked up in a similar manner
     const id_to_index_t * signal_id_lut;
-    // Space for string/bytes signals
-    uint8_t ** signal_decode_buffers;
     size_t signal_count;
     // Scratch-pad buffer for encoding/decoding string/bytes signals
     uint8_t * signal_scratch_buffer;

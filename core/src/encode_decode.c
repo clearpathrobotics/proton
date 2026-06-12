@@ -187,7 +187,8 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
     {
       case proton_Signal_string_value_tag:
       {
-        char * decode_buf = (char *)registry->signal_decode_buffers[signal_registry_idx];
+        char * decode_buf =
+          (char *)registry->signal_registry[signal_registry_idx].signal_decode_buffer;
         if (decode_buf == NULL)
         {
           return false;
@@ -203,7 +204,7 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
       }
       case proton_Signal_bytes_value_tag:
       {
-        uint8_t * decode_buf = registry->signal_decode_buffers[signal_registry_idx];
+        uint8_t * decode_buf = registry->signal_registry[signal_registry_idx].signal_decode_buffer;
         if (decode_buf == NULL)
         {
           return false;

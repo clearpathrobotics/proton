@@ -49,17 +49,6 @@ static uint8_t g_signal_{{ signal.name }}_decode_buffer[PROTON_SIGNAL_{{ signal.
 {% endif %}
 {% endfor %}
 
-// Lookup for these decode space buffers
-uint8_t * g_signal_decode_buffers[PROTON_SIGNAL_REGISTRY_SIZE] = {
-{% for signal in signals %}
-{% if signal.type in ("string", "bytes") %}
-  g_signal_{{ signal.name }}_decode_buffer,
-{% else %}
-  NULL,
-{% endif %}
-{% endfor %}
-};
-
 signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
   {
@@ -70,9 +59,11 @@ signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
     {% if signal.type in ("string", "bytes") %}
     .signal.signal.{{ signal.type }}_value = g_signal_{{ signal.name }}_buffer,
     .value_size = PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
+    .signal_decode_buffer = g_signal_{{ signal.name }}_decode_buffer,
     {% else %}
     .signal.signal.{{ signal.type }}_value = {{ signal.value }},
     .value_size = sizeof({{ signal.type }}{% if "int" in signal.type %}_t{% endif %}),
+    .signal_decode_buffer = NULL,
     {% endif %}
   },
 {% endfor %}
@@ -142,7 +133,6 @@ proton_registry_t g_proton_registry = {
   .encode_decode_buffer_count = {{ max_bundle_signals.value if max_bundle_signals.value > 0 else 1 }},
   .signal_registry = g_signal_registry,
   .signal_id_lut = g_signal_id_lut,
-  .signal_decode_buffers = g_signal_decode_buffers,
   .signal_count = PROTON_SIGNAL_REGISTRY_SIZE,
   .signal_scratch_buffer = g_signal_decode_scratch,
   .signal_scratch_buffer_size = 1024,
