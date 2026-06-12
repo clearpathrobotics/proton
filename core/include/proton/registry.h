@@ -119,6 +119,8 @@ extern "C"
     // NOTE: 0 means no period, and will only be sent if triggered or directly requested in the node manager API
     uint32_t period_ms;
     bool send_now;
+    // Callback for when this bundle is successfully decoded
+    proton_bundle_cb_t callback;
   } bundle_desc_t;
 
   /**
@@ -145,7 +147,6 @@ extern "C"
     // Since the bundle IDs are not contiguous, the bundle_id_lut is used to find the index of a bundle descriptor
     bundle_desc_t * bundle_table;
     const id_to_index_t * bundle_id_lut;
-    proton_bundle_cb_t * bundle_callbacks;
     size_t bundle_count;
 
     // Shared buffer for encoding/decoding signals in bundles.

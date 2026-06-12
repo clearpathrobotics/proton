@@ -89,6 +89,7 @@ bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
     .last_send_ms = 0,
     .period_ms = {{ bundle.period_ms }},
     .send_now = false,
+    .callback = { NULL, NULL },
   },
 {% endif %}
 {% endfor %}
@@ -114,12 +115,6 @@ const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE] = {
 // Shared encode/decode buffer sized to largest bundle
 static proton_Signal g_encode_decode_buffer[{{ max_bundle_signals.value if max_bundle_signals.value > 0 else 1 }}] = {};
 
-proton_bundle_cb_t g_bundle_callbacks[PROTON_BUNDLE_REGISTRY_SIZE] = {
-{% for bundle in bundles %}
-  { NULL, NULL },
-{% endfor %}
-};
-
 // Scratch buffer used as a temporary decode target for string/bytes signals
 // TODO manage the size of this buffer at build time
 static uint8_t g_signal_decode_scratch[1024];
@@ -127,7 +122,6 @@ static uint8_t g_signal_decode_scratch[1024];
 proton_registry_t g_proton_registry = {
   .bundle_table = g_bundle_table,
   .bundle_id_lut = g_bundle_id_lut,
-  .bundle_callbacks = g_bundle_callbacks,
   .bundle_count = PROTON_BUNDLE_REGISTRY_SIZE,
   .encode_decode_buffer = g_encode_decode_buffer,
   .encode_decode_buffer_count = {{ max_bundle_signals.value if max_bundle_signals.value > 0 else 1 }},

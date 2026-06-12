@@ -107,7 +107,7 @@ proton_bundle_cb_t * proton_registry_get_bundle_callback(
   {
     if (registry->bundle_id_lut[i].id == bundle_id)
     {
-      return &registry->bundle_callbacks[registry->bundle_id_lut[i].idx];
+      return &registry->bundle_table[registry->bundle_id_lut[i].idx].callback;
     }
   }
 
@@ -121,8 +121,8 @@ void proton_registry_set_bundle_callback(
   {
     if (registry->bundle_id_lut[i].id == bundle_id)
     {
-      registry->bundle_callbacks[registry->bundle_id_lut[i].idx].cb = bundle_cb;
-      registry->bundle_callbacks[registry->bundle_id_lut[i].idx].arg = context;
+      registry->bundle_table[registry->bundle_id_lut[i].idx].callback.cb = bundle_cb;
+      registry->bundle_table[registry->bundle_id_lut[i].idx].callback.arg = context;
     }
   }
 }

@@ -56,6 +56,7 @@ protected:
     {
       g_proton_registry.bundle_table[i].last_send_ms = 0;
       g_proton_registry.bundle_table[i].send_now = false;
+      g_proton_registry.bundle_table[i].callback = {NULL, NULL};
     }
     registry_ = copy_default_registry(&g_proton_registry);
     node_ = copy_default_node(&g_target_node);
@@ -65,7 +66,7 @@ protected:
   void TearDown() override
   {
     free(registry_.signal_registry);
-    free(registry_.bundle_callbacks);
+    free(registry_.bundle_table);
     if (node_.num_peers > 0)
     {
       free(const_cast<proton_endpoint_t *>(node_.destination_peers));

@@ -126,8 +126,8 @@ proton_status_e proton_node_receive(proton_core_node_t * node, const uint8_t * b
       }
       else
       {
-        // Get the bundle callback directly from the slot ID to save time
-        proton_bundle_cb_t * callback_desc = &node->registry->bundle_callbacks[slot_id];
+        // Get the bundle callback directly from the bundle descriptor
+        proton_bundle_cb_t * callback_desc = &node->registry->bundle_table[slot_id].callback;
 
         if (callback_desc != NULL && callback_desc->cb != NULL)
         {
