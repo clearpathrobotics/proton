@@ -177,6 +177,258 @@ Config filter_for_target(const Config & config, const std::string & target_name)
   return filtered_config;
 }
 
+static proton_transport_type_e string_to_transport(const std::string & t_type)
+{
+  if (t_type == transport_types::UDP4)
+  {
+    return TRANSPORT_TYPE_UDP4;
+  }
+  else if (t_type == transport_types::SERIAL)
+  {
+    return TRANSPORT_TYPE_SERIAL;
+  }
+  else
+  {
+    throw NodeBuilderException(std::format("Transport type is invalid: {}", t_type));
+  }
+}
+
+// ============================================================================
+// GeneratedNode implementation
+// ============================================================================
+
+GeneratedNode::GeneratedNode(const Config & config, const std::string & target_name)
+{
+  generate_endpoints(config, target_name);
+  generate_signals(config);
+  generate_bundles(config);
+  init_registry();
+  init_node(config, target_name);
+}
+
+void GeneratedNode::generate_endpoints(const Config & config, const std::string & target_name)
+{
+  for (const auto & [name, node] : config.nodes)
+  {
+    if (name != target_name)
+    {
+      for (const auto & [id, endpoint] : node.endpoints)
+      {
+        proton_endpoint_t ep = {
+          .node_id = node.id,
+          .endpoint_id = endpoint.id,
+          .transport_type = string_to_transport(endpoint.type)};
+        node_destination_peers_.push_back(ep);
+      }
+    }
+  }
+}
+
+void GeneratedNode::generate_signals(const Config & config)
+{
+  signal_registry_.reserve(config.signals.size());
+  signal_id_lut_.reserve(config.signals.size());
+  signal_max_capacity_.reserve(config.signals.size());
+  signal_decode_buffer_storage_.reserve(config.signals.size());
+  signal_decode_buffers_.reserve(config.signals.size());
+
+  size_t max_scratch_size = 0;
+
+  for (size_t idx = 0; idx < config.signals.size(); idx++)
+  {
+    const auto & signal_cfg = config.signals[idx];
+    proton_signal_type_e sig_type = string_to_signal_type(signal_cfg.type_string.c_str());
+    if (sig_type == PROTON_INVALID_TYPE)
+    {
+      throw NodeBuilderException(std::format("Signal type is invalid: {}", signal_cfg.type_string));
+    }
+
+    size_t value_size = get_signal_value_size(sig_type, signal_cfg.capacity);
+
+    // Create signal descriptor
+    signal_desc_t sig_desc = {
+      .id = signal_cfg.id,
+      .type = sig_type,
+      .value_size = value_size,
+      .signal = proton_Signal_init_zero};
+
+    sig_desc.signal.which_signal = proton_get_tag_from_type(sig_type);
+
+    // Set default value if provided
+    if (signal_cfg.has_default_value)
+    {
+      ConfigNode value_node(signal_cfg.value);
+      switch (sig_type)
+      {
+        case PROTON_DOUBLE:
+          sig_desc.signal.signal.double_value = value_node.as_double();
+          break;
+        case PROTON_FLOAT:
+          sig_desc.signal.signal.float_value = static_cast<float>(value_node.as_double());
+          break;
+        case PROTON_INT32:
+          sig_desc.signal.signal.int32_value = static_cast<int32_t>(value_node.as_int64());
+          break;
+        case PROTON_INT64:
+          sig_desc.signal.signal.int64_value = value_node.as_int64();
+          break;
+        case PROTON_UINT32:
+          sig_desc.signal.signal.uint32_value = static_cast<uint32_t>(value_node.as_uint64());
+          break;
+        case PROTON_UINT64:
+          sig_desc.signal.signal.uint64_value = value_node.as_uint64();
+          break;
+        case PROTON_BOOL:
+          sig_desc.signal.signal.bool_value = value_node.as_bool();
+          break;
+        case PROTON_STRING:
+        case PROTON_BYTES:
+          // String/bytes default values handled separately via decode buffers
+          break;
+        default:
+          break;
+      }
+    }
+
+    signal_registry_.push_back(sig_desc);
+
+    // Create ID to index lookup entry
+    id_to_index_t lut_entry = {.id = signal_cfg.id, .idx = static_cast<uint32_t>(idx)};
+    signal_id_lut_.push_back(lut_entry);
+
+    // Track capacity for string/bytes types
+    signal_max_capacity_.push_back(signal_cfg.capacity);
+
+    // Allocate decode buffer for string/bytes signals
+    if (sig_type == PROTON_STRING || sig_type == PROTON_BYTES)
+    {
+      signal_decode_buffer_storage_.emplace_back(signal_cfg.capacity, 0);
+      max_scratch_size = std::max(max_scratch_size, static_cast<size_t>(signal_cfg.capacity));
+    }
+    else
+    {
+      signal_decode_buffer_storage_.emplace_back();  // Empty vector for non-string/bytes
+    }
+  }
+
+  // Build pointer array for decode buffers
+  for (auto & buf : signal_decode_buffer_storage_)
+  {
+    signal_decode_buffers_.push_back(buf.empty() ? nullptr : buf.data());
+  }
+
+  // Allocate scratch buffer (largest string/bytes capacity)
+  if (max_scratch_size > 0)
+  {
+    signal_scratch_buffer_.resize(max_scratch_size, 0);
+  }
+}
+
+void GeneratedNode::generate_bundles(const Config & config)
+{
+  ProducerConsumerIds prod_con_ids = set_producer_consumer_ids(config);
+  bundle_producer_ids_ = std::move(prod_con_ids.producer_ids);
+  bundle_consumer_ids_ = std::move(prod_con_ids.consumer_ids);
+
+  bundle_table_.reserve(config.bundles.size());
+  bundle_id_lut_.reserve(config.bundles.size());
+  bundle_callbacks_.reserve(config.bundles.size());
+  bundle_encode_decode_buffers_.reserve(config.bundles.size());
+
+  for (size_t idx = 0; idx < config.bundles.size(); idx++)
+  {
+    const auto & bundle_cfg = config.bundles[idx];
+
+    // Store signal IDs for this bundle
+    bundle_signal_ids_[bundle_cfg.id] = bundle_cfg.signals;
+
+    // Create bundle descriptor
+    bundle_desc_t bundle_desc = {
+      .bundle_id = bundle_cfg.id,
+      .producer_ids =
+        {
+          .ids = bundle_producer_ids_[bundle_cfg.id].data(),
+          .count = bundle_producer_ids_[bundle_cfg.id].size(),
+        },
+      .consumer_ids =
+        {
+          .ids = bundle_consumer_ids_[bundle_cfg.id].data(),
+          .count = bundle_consumer_ids_[bundle_cfg.id].size(),
+        },
+      .signal_ids =
+        {
+          .ids = bundle_signal_ids_[bundle_cfg.id].data(),
+          .count = bundle_signal_ids_[bundle_cfg.id].size(),
+        },
+      .last_send_ms = 0,
+      .period_ms = bundle_cfg.period_ms,
+      .send_now = false};
+    bundle_table_.push_back(bundle_desc);
+
+    // Create ID to index lookup entry
+    id_to_index_t lut_entry = {.id = bundle_cfg.id, .idx = static_cast<uint32_t>(idx)};
+    bundle_id_lut_.push_back(lut_entry);
+
+    // Create empty callback entry
+    proton_bundle_cb_t cb = {.cb = nullptr, .arg = nullptr};
+    bundle_callbacks_.push_back(cb);
+
+    // Allocate encode/decode buffer for signals in this bundle
+    std::vector<proton_Signal> encode_decode_signals(
+      bundle_cfg.signals.size(), proton_Signal_init_zero);
+    bundle_encode_decode_buffers_.push_back(std::move(encode_decode_signals));
+  }
+
+  // Build pointer array for bundle signal pointers
+  bundle_signal_ptrs_.reserve(bundle_encode_decode_buffers_.size());
+  for (auto & buf : bundle_encode_decode_buffers_)
+  {
+    bundle_signal_ptrs_.push_back(buf.data());
+  }
+}
+
+void GeneratedNode::init_registry()
+{
+  // Bundle table and lookups
+  registry_.bundle_table = bundle_table_.data();
+  registry_.bundle_id_lut = bundle_id_lut_.data();
+  registry_.bundle_callbacks = bundle_callbacks_.data();
+  registry_.bundle_count = bundle_table_.size();
+  registry_.bundle_signal_ptrs = bundle_signal_ptrs_.data();
+
+  // Signal table and lookups
+  registry_.signal_registry = signal_registry_.data();
+  registry_.signal_id_lut = signal_id_lut_.data();
+  registry_.signal_max_capacity = signal_max_capacity_.data();
+  registry_.signal_decode_buffers = signal_decode_buffers_.data();
+  registry_.signal_count = signal_registry_.size();
+
+  // Scratch buffer for string/bytes encoding/decoding
+  registry_.signal_scratch_buffer =
+    signal_scratch_buffer_.empty() ? nullptr : signal_scratch_buffer_.data();
+  registry_.signal_scratch_buffer_size = signal_scratch_buffer_.size();
+
+  // No mutex by default (user can set if needed)
+  registry_.mutex_handles = {.lock = nullptr, .unlock = nullptr, .mutex = nullptr, .arg = nullptr};
+}
+
+void GeneratedNode::init_node(const Config & config, const std::string & target_name)
+{
+  node_.id = config.nodes.at(target_name).id;
+  node_.destination_peers =
+    node_destination_peers_.empty() ? nullptr : node_destination_peers_.data();
+  node_.num_peers = node_destination_peers_.size();
+  node_.registry = &registry_;
+  node_.trigger_head = 0;
+  node_.trigger_tail = 0;
+
+  // Initialize pending triggers to zero
+  for (size_t i = 0; i < PROTON_MAX_PENDING_TRIGGERS; i++)
+  {
+    node_.pending_triggers[i] = 0;
+  }
+}
+
 }  // namespace proton::node_builder
 
 #endif  // PROTON_NODE_BUILDER

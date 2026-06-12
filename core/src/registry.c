@@ -70,6 +70,103 @@ proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
   }
 }
 
+pb_size_t proton_get_tag_from_type(proton_signal_type_e type)
+{
+  switch (type)
+  {
+    case PROTON_DOUBLE:
+      return proton_Signal_double_value_tag;
+    case PROTON_FLOAT:
+      return proton_Signal_float_value_tag;
+    case PROTON_INT32:
+      return proton_Signal_int32_value_tag;
+    case PROTON_INT64:
+      return proton_Signal_int64_value_tag;
+    case PROTON_UINT32:
+      return proton_Signal_uint32_value_tag;
+    case PROTON_UINT64:
+      return proton_Signal_uint64_value_tag;
+    case PROTON_BOOL:
+      return proton_Signal_bool_value_tag;
+    case PROTON_STRING:
+      return proton_Signal_string_value_tag;
+    case PROTON_BYTES:
+      return proton_Signal_bytes_value_tag;
+    default:
+      return 0;
+  }
+}
+
+size_t get_signal_value_size(proton_signal_type_e type, uint32_t capacity)
+{
+  switch (type)
+  {
+    case PROTON_DOUBLE:
+      return sizeof(double);
+    case PROTON_FLOAT:
+      return sizeof(float);
+    case PROTON_INT32:
+      return sizeof(int32_t);
+    case PROTON_INT64:
+      return sizeof(int64_t);
+    case PROTON_UINT32:
+      return sizeof(uint32_t);
+    case PROTON_UINT64:
+      return sizeof(uint64_t);
+    case PROTON_BOOL:
+      return sizeof(bool);
+    case PROTON_STRING:
+    case PROTON_BYTES:
+      return capacity;
+    default:
+      return 0;
+  }
+}
+
+proton_signal_type_e string_to_signal_type(const char * type_str)
+{
+  if (strcmp(type_str, "double") == 0)
+  {
+    return PROTON_DOUBLE;
+  }
+  else if (strcmp(type_str, "float") == 0)
+  {
+    return PROTON_FLOAT;
+  }
+  else if (strcmp(type_str, "int32") == 0)
+  {
+    return PROTON_INT32;
+  }
+  else if (strcmp(type_str, "int64") == 0)
+  {
+    return PROTON_INT64;
+  }
+  else if (strcmp(type_str, "uint32") == 0)
+  {
+    return PROTON_UINT32;
+  }
+  else if (strcmp(type_str, "uint64") == 0)
+  {
+    return PROTON_UINT64;
+  }
+  else if (strcmp(type_str, "bool") == 0)
+  {
+    return PROTON_BOOL;
+  }
+  else if (strcmp(type_str, "string") == 0)
+  {
+    return PROTON_STRING;
+  }
+  else if (strcmp(type_str, "bytes") == 0)
+  {
+    return PROTON_BYTES;
+  }
+  else
+  {
+    return PROTON_INVALID_TYPE;
+  }
+}
+
 const bundle_desc_t * proton_registry_get_bundle(
   const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx)
 {

@@ -218,6 +218,24 @@ extern "C"
    */
   proton_signal_type_e proton_get_type_from_tag(pb_size_t tag);
 
+  /**
+   * Get the signal tag from type
+   * @return the protobuf tag
+   */
+  pb_size_t proton_get_tag_from_type(proton_signal_type_e type);
+
+  /**
+   * Get the size of a value for a given type, for string/bytes types, return given capacity
+   * @return the size of the value for the type, or capacity for string/bytes types
+   */
+  size_t get_signal_value_size(proton_signal_type_e type, size_t capacity);
+
+  /**
+   * Get the signal type from a string representation. Used for parsing config files
+   * @return the signal type, or PROTON_INVALID_TYPE if the string does not match a valid type
+   */
+  proton_signal_type_e string_to_signal_type(const char * type_str);
+
   /*
    * Typed signal accessors.
    *

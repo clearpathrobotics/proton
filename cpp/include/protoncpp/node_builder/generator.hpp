@@ -26,11 +26,14 @@
 #include "proton/node_manager.h"
 #include "protoncpp/node_builder/config.hpp"
 
+#include <cstdint>
 #include <format>
+#include <map>
 #include <span>
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 namespace proton::node_builder
 {
@@ -56,7 +59,10 @@ void find_duplicates(const std::span<T> & items, const std::string & name)
     bool first = true;
     for (const auto & d : duplicates)
     {
-      if (!first) oss << ", ";
+      if (!first)
+      {
+        oss << ", ";
+      }
       oss << d;
       first = false;
     }
@@ -67,6 +73,65 @@ void find_duplicates(const std::span<T> & items, const std::string & name)
 
 void validate(const Config & config);
 Config filter_for_target(const Config & config, const std::string & target_name);
+
+class GeneratedNode
+{
+public:
+  explicit GeneratedNode() = default;
+  explicit GeneratedNode(const Config & config, const std::string & target_name);
+  ~GeneratedNode() = default;
+
+  // Non-copyable, move-only
+  GeneratedNode(const GeneratedNode &) = delete;
+  GeneratedNode & operator=(const GeneratedNode &) = delete;
+  GeneratedNode(GeneratedNode &&) = default;
+  GeneratedNode & operator=(GeneratedNode &&) = default;
+
+  // Accessors
+  proton_core_node_t * node() { return &node_; }
+  const proton_core_node_t * node() const { return &node_; }
+  proton_registry_t * registry() { return &registry_; }
+  const proton_registry_t * registry() const { return &registry_; }
+
+private:
+  // Generation methods - called during construction
+  void generate_endpoints(const Config & config, const std::string & target_name);
+  void generate_signals(const Config & config);
+  void generate_bundles(const Config & config);
+  void init_registry();
+  void init_node(const Config & config, const std::string & target_name);
+
+  // Owned storage for endpoint peers
+  std::vector<proton_endpoint_t> node_destination_peers_;
+
+  // Owned storage for bundle ID lists (producer_ids, consumer_ids, signal_ids per bundle)
+  std::map<uint32_t, std::vector<uint32_t>> bundle_producer_ids_;
+  std::map<uint32_t, std::vector<uint32_t>> bundle_consumer_ids_;
+  std::map<uint32_t, std::vector<uint32_t>> bundle_signal_ids_;
+
+  // Owned storage for bundle descriptors and LUT
+  std::vector<bundle_desc_t> bundle_table_;
+  std::vector<id_to_index_t> bundle_id_lut_;
+  std::vector<proton_bundle_cb_t> bundle_callbacks_;
+
+  // Owned storage for bundle encode/decode signal pointers
+  std::vector<std::vector<proton_Signal>> bundle_encode_decode_buffers_;
+  std::vector<proton_Signal *> bundle_signal_ptrs_;
+
+  // Owned storage for signal descriptors and LUT
+  std::vector<signal_desc_t> signal_registry_;
+  std::vector<id_to_index_t> signal_id_lut_;
+  std::vector<size_t> signal_max_capacity_;
+
+  // Owned storage for string/bytes signal decode buffers
+  std::vector<std::vector<uint8_t>> signal_decode_buffer_storage_;
+  std::vector<uint8_t *> signal_decode_buffers_;
+  std::vector<uint8_t> signal_scratch_buffer_;
+
+  // The actual node and registry structs (point into owned storage above)
+  proton_core_node_t node_{};
+  proton_registry_t registry_{};
+};
 
 }  // namespace proton::node_builder
 
