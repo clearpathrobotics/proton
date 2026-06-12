@@ -17,6 +17,7 @@
  */
 
 #include "proton/registry.h"
+#include "proton/proton_config.h"
 #include "target_registry_sizes.h"
 #include "target_registry_ids.h"
 
@@ -101,7 +102,7 @@ static proton_Signal g_encode_decode_buffer[{{ max_bundle_signals.value if max_b
 
 // Scratch buffer used as a temporary decode target for string/bytes signals
 // TODO manage the size of this buffer at build time
-static uint8_t g_signal_decode_scratch[1024];
+static uint8_t g_signal_decode_scratch[PROTON_SCRATCH_BUFFER_SIZE];
 
 proton_registry_t g_proton_registry = {
   .bundle_table = g_bundle_table,
@@ -111,5 +112,5 @@ proton_registry_t g_proton_registry = {
   .signal_registry = g_signal_registry,
   .signal_count = PROTON_SIGNAL_REGISTRY_SIZE,
   .signal_scratch_buffer = g_signal_decode_scratch,
-  .signal_scratch_buffer_size = 1024,
+  .signal_scratch_buffer_size = PROTON_SCRATCH_BUFFER_SIZE,
 };
