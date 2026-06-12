@@ -1,5 +1,7 @@
 # Proton
 
+[![Proton CI](https://github.com/clearpathrobotics/proton/actions/workflows/ci.yml/badge.svg)](https://github.com/clearpathrobotics/proton/actions/workflows/ci.yml)
+
 Proton communication protocol.
 
 Documentation is available [here](https://docs.clearpathrobotics.com/docs_proton/)
