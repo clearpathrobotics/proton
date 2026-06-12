@@ -88,7 +88,7 @@ extern "C"
   typedef struct proton_id_list
   {
     const uint32_t * ids;
-    size_t count;
+    uint8_t count;
   } proton_id_list_t;
 
   /**
@@ -100,7 +100,7 @@ extern "C"
     uint32_t id;
     proton_signal_type_e type;
     // For strings and bytes, capacity of the signal. For other types, this is the size of the internal type.
-    size_t value_size;
+    uint16_t value_size;
     proton_Signal signal;
     // Decode buffer for string/bytes signals (NULL for other types)
     uint8_t * signal_decode_buffer;
@@ -136,22 +136,22 @@ extern "C"
     // Bundle metadata and state
     // bundle_table is the table of all bundle descriptors
     bundle_desc_t * bundle_table;
-    size_t bundle_count;
+    uint16_t bundle_count;
 
     // Shared buffer for encoding/decoding signals in bundles.
     // Sized to fit the largest bundle's signal count.
     proton_Signal * encode_decode_buffer;
-    size_t encode_decode_buffer_count;
+    uint8_t encode_decode_buffer_count;
 
     // Signal metadata and state
     // signal_registry is the table of all signal descriptors,
     // It also contains the current value of each signal. It is written to after a bundle is successfully decoded
     signal_desc_t * signal_registry;
 
-    size_t signal_count;
+    uint16_t signal_count;
     // Scratch-pad buffer for encoding/decoding string/bytes signals
     uint8_t * signal_scratch_buffer;
-    size_t signal_scratch_buffer_size;
+    uint16_t signal_scratch_buffer_size;
 
     // Optional mutex callbacks
     proton_registry_mutex_cb_t mutex_handles;
