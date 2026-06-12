@@ -124,15 +124,6 @@ extern "C"
   } bundle_desc_t;
 
   /**
-   * Mapping from ID to index in the signal or bundle registries.
-   */
-  typedef struct signal_id_to_index
-  {
-    uint32_t id;
-    uint32_t idx;
-  } id_to_index_t;
-
-  /**
    * proton_registry_t is a memory representation of the entire set of bundles and signals for a node.
    * It is used as the source of truth for encoding and decoding bundles, and can be queried for signal values.
    * The registry is provided by a user pre-populated with bundle and signal mapping
@@ -144,9 +135,7 @@ extern "C"
   {
     // Bundle metadata and state
     // bundle_table is the table of all bundle descriptors
-    // Since the bundle IDs are not contiguous, the bundle_id_lut is used to find the index of a bundle descriptor
     bundle_desc_t * bundle_table;
-    const id_to_index_t * bundle_id_lut;
     size_t bundle_count;
 
     // Shared buffer for encoding/decoding signals in bundles.
@@ -158,8 +147,7 @@ extern "C"
     // signal_registry is the table of all signal descriptors,
     // It also contains the current value of each signal. It is written to after a bundle is successfully decoded
     signal_desc_t * signal_registry;
-    // Similar to how bundle ID's are not contiguous, signal ID's are looked up in a similar manner
-    const id_to_index_t * signal_id_lut;
+
     size_t signal_count;
     // Scratch-pad buffer for encoding/decoding string/bytes signals
     uint8_t * signal_scratch_buffer;

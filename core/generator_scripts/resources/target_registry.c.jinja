@@ -26,13 +26,6 @@
 
 {# this is the top-level signals array, already filtered by signals we care about and ordered by ID #}
 
-// Signal ID's are not contiguous, so use a lookup to find them in the registry
-const id_to_index_t g_signal_id_lut[PROTON_SIGNAL_REGISTRY_SIZE] = {
-{% for signal in signals %}
-  { .id = {{ signal.id }}, .idx = {{ loop.index0 }} },
-{% endfor %}
-};
-
 // Buffers for signals that are repeated, such as strings and bytes
 {% for signal in signals %}
 {% if signal.type == "string" %}
@@ -95,15 +88,6 @@ bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% endfor %}
 };
 
-// Bundle ID's are not contiguous, so use a lookup to find them in the registry
-const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE] = {
-{% for bundle in bundles %}
-{% if target in bundle.producers or target in bundle.consumers %}
-  { .id = {{ bundle.id }}, .idx = {{ loop.index0 }} },
-{% endif %}
-{% endfor %}
-};
-
 // Calculate max signals in any bundle for shared encode/decode buffer
 {% set max_bundle_signals = namespace(value=0) %}
 {% for bundle in bundles %}
@@ -121,12 +105,10 @@ static uint8_t g_signal_decode_scratch[1024];
 
 proton_registry_t g_proton_registry = {
   .bundle_table = g_bundle_table,
-  .bundle_id_lut = g_bundle_id_lut,
   .bundle_count = PROTON_BUNDLE_REGISTRY_SIZE,
   .encode_decode_buffer = g_encode_decode_buffer,
   .encode_decode_buffer_count = {{ max_bundle_signals.value if max_bundle_signals.value > 0 else 1 }},
   .signal_registry = g_signal_registry,
-  .signal_id_lut = g_signal_id_lut,
   .signal_count = PROTON_SIGNAL_REGISTRY_SIZE,
   .signal_scratch_buffer = g_signal_decode_scratch,
   .signal_scratch_buffer_size = 1024,
