@@ -32,6 +32,7 @@ add_library(${PROJECT_NAME}
   src/signal_access.cpp
   src/node_builder/config.cpp
   src/node_builder/config_tree.cpp
+  src/node_builder/generator.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -197,6 +198,19 @@ if (PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
   )
 
+  add_executable(node_builder_generator_test_cpp
+    tests/node_builder_generator_test.cpp
+  )
+
+  target_link_libraries(node_builder_generator_test_cpp PUBLIC
+    GTest::gtest_main
+    proton::proton_core_cpp
+  )
+
+  target_include_directories(node_builder_generator_test_cpp PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test_cpp)
   gtest_discover_tests(lock_test_cpp)
@@ -207,6 +221,9 @@ if (PROTON_BUILD_TESTS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
   )
   gtest_discover_tests(node_builder_config_tree_test_cpp
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
+  )
+  gtest_discover_tests(node_builder_generator_test_cpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
   )
 endif()

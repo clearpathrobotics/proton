@@ -133,7 +133,6 @@ Config filter_for_target(const Config & config, const std::string & target_name)
       filtered_config.connections.push_back(conn);
       try
       {
-        const auto & conn_node = config.nodes.at(*conn_to_add);
         if (!filtered_config.nodes.contains(*conn_to_add))
         {
           filtered_config.nodes.insert({*conn_to_add, config.nodes.at(*conn_to_add)});

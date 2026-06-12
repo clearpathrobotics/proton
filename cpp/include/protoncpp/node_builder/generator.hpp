@@ -28,6 +28,7 @@
 
 #include <format>
 #include <span>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 
@@ -44,13 +45,23 @@ void find_duplicates(const std::span<T> & items, const std::string & name)
   {
     if (!seen.insert(i).second)
     {
-      duplicates.insert(i)
+      duplicates.insert(i);
     }
   }
 
   if (!duplicates.empty())
   {
-    throw NodeBuilderException(std::format("Error: {} contains duplicates {}", name, duplicates));
+    std::ostringstream oss;
+    oss << "{";
+    bool first = true;
+    for (const auto & d : duplicates)
+    {
+      if (!first) oss << ", ";
+      oss << d;
+      first = false;
+    }
+    oss << "}";
+    throw NodeBuilderException(std::format("Error: {} contains duplicates {}", name, oss.str()));
   }
 }
 
