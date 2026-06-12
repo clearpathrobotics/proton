@@ -26,9 +26,35 @@
 #include "proton/node_manager.h"
 #include "protoncpp/node_builder/config.hpp"
 
+#include <format>
+#include <span>
+#include <string>
+#include <unordered_set>
+
 namespace proton::node_builder
 {
 
+template <typename T>
+void find_duplicates(const std::span<T> & items, const std::string & name)
+{
+  std::unordered_set<T> seen;
+  std::unordered_set<T> duplicates;
+
+  for (const auto & i : items)
+  {
+    if (!seen.insert(i).second)
+    {
+      duplicates.insert(i)
+    }
+  }
+
+  if (!duplicates.empty())
+  {
+    throw NodeBuilderException(std::format("Error: {} contains duplicates {}", name, duplicates));
+  }
+}
+
+void validate(const Config & config);
 Config filter_for_target(const Config & config, const std::string & target_name);
 
 }  // namespace proton::node_builder
