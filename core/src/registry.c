@@ -92,11 +92,8 @@ const bundle_desc_t * proton_registry_get_bundle(
   return NULL;
 }
 
-proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
-  const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx)
+proton_Signal * proton_registry_get_bundle_encode_decode_buffer(const proton_registry_t * registry)
 {
-  (void)bundle_id;       // Unused — shared buffer serves all bundles
-  (void)bundle_lut_idx;  // Unused — shared buffer serves all bundles
   return registry->encode_decode_buffer;
 }
 

@@ -189,11 +189,11 @@ extern "C"
     const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx);
 
   /**
-   * Get the buffer for encoding/decoding signals from a bundle, by bundle ID or lookup index if known
+   * Get the buffer for encoding/decoding signals from a bundle
    * @return pointer to the buffer, or NULL if not found
    */
   proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
-    const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx);
+    const proton_registry_t * registry);
 
   /**
    * Get the callback for a bundle
