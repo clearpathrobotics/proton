@@ -60,17 +60,6 @@ uint8_t * g_signal_decode_buffers[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% endfor %}
 };
 
-// Capacities for signals that are repeated, such as strings and bytes
-const size_t g_signal_max_capacity[PROTON_SIGNAL_REGISTRY_SIZE] = {
-{% for signal in signals %}
-  {% if signal.type in ("string", "bytes") %}
-  PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
-  {% else %}
-  0,
-  {% endif %}
-{% endfor %}
-};
-
 signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
 {% for signal in signals %}
   {
@@ -123,22 +112,16 @@ const id_to_index_t g_bundle_id_lut[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% endfor %}
 };
 
-// Per-bundle arrays of signals for encode/decode
+// Calculate max signals in any bundle for shared encode/decode buffer
+{% set max_bundle_signals = namespace(value=0) %}
 {% for bundle in bundles %}
-{% if bundle.signals | length > 0 %}
-static proton_Signal g_bundle_{{ bundle.name }}_signals[{{ bundle.signals | length }}] = {};
+{% if bundle.signals | length > max_bundle_signals.value %}
+{% set max_bundle_signals.value = bundle.signals | length %}
 {% endif %}
 {% endfor %}
 
-proton_Signal* g_bundle_signal_ptrs[PROTON_BUNDLE_REGISTRY_SIZE] = {
-{% for bundle in bundles %}
-{% if bundle.signals | length > 0 %}
-  g_bundle_{{ bundle.name }}_signals,
-{% else %}
-  NULL,
-{% endif %}
-{% endfor %}
-};
+// Shared encode/decode buffer sized to largest bundle
+static proton_Signal g_encode_decode_buffer[{{ max_bundle_signals.value if max_bundle_signals.value > 0 else 1 }}] = {};
 
 proton_bundle_cb_t g_bundle_callbacks[PROTON_BUNDLE_REGISTRY_SIZE] = {
 {% for bundle in bundles %}
@@ -154,12 +137,11 @@ proton_registry_t g_proton_registry = {
   .bundle_table = g_bundle_table,
   .bundle_id_lut = g_bundle_id_lut,
   .bundle_callbacks = g_bundle_callbacks,
-
   .bundle_count = PROTON_BUNDLE_REGISTRY_SIZE,
-  .bundle_signal_ptrs = g_bundle_signal_ptrs,
+  .encode_decode_buffer = g_encode_decode_buffer,
+  .encode_decode_buffer_count = {{ max_bundle_signals.value if max_bundle_signals.value > 0 else 1 }},
   .signal_registry = g_signal_registry,
   .signal_id_lut = g_signal_id_lut,
-  .signal_max_capacity = g_signal_max_capacity,
   .signal_decode_buffers = g_signal_decode_buffers,
   .signal_count = PROTON_SIGNAL_REGISTRY_SIZE,
   .signal_scratch_buffer = g_signal_decode_scratch,

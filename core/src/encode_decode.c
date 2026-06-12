@@ -192,7 +192,7 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
         {
           return false;
         }
-        size_t capacity = registry->signal_max_capacity[signal_registry_idx];
+        size_t capacity = registry->signal_registry[signal_registry_idx].value_size;
         if (scratch_buf.len > capacity)
         {
           return false;
@@ -208,7 +208,7 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
         {
           return false;
         }
-        size_t capacity = registry->signal_max_capacity[signal_registry_idx];
+        size_t capacity = registry->signal_registry[signal_registry_idx].value_size;
         if (scratch_buf.len > capacity)
         {
           return false;

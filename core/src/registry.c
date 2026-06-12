@@ -95,20 +95,9 @@ const bundle_desc_t * proton_registry_get_bundle(
 proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
   const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx)
 {
-  if (bundle_lut_idx != NULL)
-  {
-    return registry->bundle_signal_ptrs[*bundle_lut_idx];
-  }
-
-  for (size_t i = 0; i < registry->bundle_count; i++)
-  {
-    if (registry->bundle_id_lut[i].id == bundle_id)
-    {
-      return registry->bundle_signal_ptrs[registry->bundle_id_lut[i].idx];
-    }
-  }
-
-  return NULL;
+  (void)bundle_id;       // Unused — shared buffer serves all bundles
+  (void)bundle_lut_idx;  // Unused — shared buffer serves all bundles
+  return registry->encode_decode_buffer;
 }
 
 proton_bundle_cb_t * proton_registry_get_bundle_callback(
@@ -291,7 +280,7 @@ proton_status_e proton_signal_set_string(
   {
     return PROTON_ERROR;
   }
-  if (registry->signal_max_capacity[idx] < len)
+  if (desc->value_size < len)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
@@ -336,7 +325,7 @@ proton_status_e proton_signal_set_bytes(
   {
     return PROTON_ERROR;
   }
-  if (registry->signal_max_capacity[idx] < len)
+  if (desc->value_size < len)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }

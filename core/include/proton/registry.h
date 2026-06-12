@@ -146,9 +146,10 @@ extern "C"
     proton_bundle_cb_t * bundle_callbacks;
     size_t bundle_count;
 
-    // Buffers for encoding/decoding signals per bundle.
-    // This is NOT the actual value of the signal, but a temporary buffer space.
-    proton_Signal ** bundle_signal_ptrs;
+    // Shared buffer for encoding/decoding signals in bundles.
+    // Sized to fit the largest bundle's signal count.
+    proton_Signal * encode_decode_buffer;
+    size_t encode_decode_buffer_count;
 
     // Signal metadata and state
     // signal_registry is the table of all signal descriptors,
@@ -156,8 +157,6 @@ extern "C"
     signal_desc_t * signal_registry;
     // Similar to how bundle ID's are not contiguous, signal ID's are looked up in a similar manner
     const id_to_index_t * signal_id_lut;
-    // For signals that are bytes/string types, the max capacity of the signal is specified here
-    const size_t * signal_max_capacity;
     // Space for string/bytes signals
     uint8_t ** signal_decode_buffers;
     size_t signal_count;
