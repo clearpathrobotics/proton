@@ -124,7 +124,7 @@ jobs:
 
   comment-coverage-on-pr:
     if: github.event_name == 'pull_request'
-    needs: [build-and-test, test-proton-core]
+    needs: [test-proton-core]
     runs-on: ubuntu-latest
 
     steps:
