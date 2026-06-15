@@ -125,39 +125,39 @@ uint16_t get_signal_value_size(proton_signal_type_e type, uint32_t capacity)
 
 proton_signal_type_e string_to_signal_type(const char * type_str)
 {
-  if (strcmp(type_str, "double") == 0)
+  if (strncmp(type_str, "double", strlen("double")) == 0)
   {
     return PROTON_DOUBLE;
   }
-  else if (strcmp(type_str, "float") == 0)
+  else if (strncmp(type_str, "float", strlen("float")) == 0)
   {
     return PROTON_FLOAT;
   }
-  else if (strcmp(type_str, "int32") == 0)
+  else if (strncmp(type_str, "int32", strlen("int32")) == 0)
   {
     return PROTON_INT32;
   }
-  else if (strcmp(type_str, "int64") == 0)
+  else if (strncmp(type_str, "int64", strlen("int64")) == 0)
   {
     return PROTON_INT64;
   }
-  else if (strcmp(type_str, "uint32") == 0)
+  else if (strncmp(type_str, "uint32", strlen("uint32")) == 0)
   {
     return PROTON_UINT32;
   }
-  else if (strcmp(type_str, "uint64") == 0)
+  else if (strncmp(type_str, "uint64", strlen("uint64")) == 0)
   {
     return PROTON_UINT64;
   }
-  else if (strcmp(type_str, "bool") == 0)
+  else if (strncmp(type_str, "bool", strlen("bool")) == 0)
   {
     return PROTON_BOOL;
   }
-  else if (strcmp(type_str, "string") == 0)
+  else if (strncmp(type_str, "string", strlen("string")) == 0)
   {
     return PROTON_STRING;
   }
-  else if (strcmp(type_str, "bytes") == 0)
+  else if (strncmp(type_str, "bytes", strlen("bytes")) == 0)
   {
     return PROTON_BYTES;
   }
