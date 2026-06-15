@@ -290,6 +290,7 @@ void GeneratedNode::generate_signals(const Config & config)
           // String/bytes default values handled separately via decode buffers
           break;
         default:
+          throw NodeBuilderException("Signal type is invalid");
           break;
       }
     }

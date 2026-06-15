@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Rockwell Automation Technologies, Inc., All rights reserved.
+ * Copyright SIG_DEFAULT_BOOL_ID6 Rockwell Automation Technologies, Inc., All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,17 @@ static constexpr uint32_t BUNDLE_STRING_BYTES_ID = 12;
 
 static constexpr size_t STRING_CAPACITY = 64;
 static constexpr size_t BYTES_CAPACITY = 32;
+
+// Signal IDs used for signals with default values
+static constexpr uint32_t SIG_DEFAULT_DOUBLE_ID = 200;
+static constexpr uint32_t SIG_DEFAULT_FLOAT_ID = 201;
+static constexpr uint32_t SIG_DEFAULT_INT32_ID = 202;
+static constexpr uint32_t SIG_DEFAULT_INT64_ID = 203;
+static constexpr uint32_t SIG_DEFAULT_UINT32_ID = 204;
+static constexpr uint32_t SIG_DEFAULT_UINT64_ID = 205;
+static constexpr uint32_t SIG_DEFAULT_BOOL_ID = 206;
+static constexpr uint32_t SIG_DEFAULT_STRING_ID = 207;
+static constexpr uint32_t SIG_DEFAULT_BYTES_ID = 208;
 
 // Helper to create a config with all signal types for round-trip testing
 Config create_round_trip_config()
@@ -652,6 +663,582 @@ TEST_F(GeneratedNodeRoundTripTest, MoveConstructorPreservesState)
   double decoded_value = 0.0;
   ASSERT_EQ(proton_signal_get_double(moved_registry, SIG_DOUBLE_ID, &decoded_value), PROTON_OK);
   EXPECT_DOUBLE_EQ(decoded_value, test_value);
+}
+
+// ============================================================================
+// Default Value Tests
+// ============================================================================
+
+Config create_default_values_config()
+{
+  Config config;
+
+  NodeConfig node_a;
+  node_a.name = "node_a";
+  node_a.id = 1;
+  node_a.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.1", 5000};
+
+  NodeConfig node_b;
+  node_b.name = "node_b";
+  node_b.id = 2;
+  node_b.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.2", 5000};
+
+  config.nodes["node_a"] = node_a;
+  config.nodes["node_b"] = node_b;
+
+  ConnectionConfig conn_ab;
+  conn_ab.first = {0, "node_a"};
+  conn_ab.second = {0, "node_b"};
+  config.connections.push_back(conn_ab);
+
+  // Signal with default double value
+  SignalConfig sig_double("default_double", SIG_DEFAULT_DOUBLE_ID, "double");
+  sig_double.has_default_value = true;
+  sig_double.value = 3.14159;
+  config.signals.push_back(sig_double);
+
+  // Signal with default float value
+  SignalConfig sig_float("default_float", SIG_DEFAULT_FLOAT_ID, "float");
+  sig_float.has_default_value = true;
+  sig_float.value = 1.141;
+  config.signals.push_back(sig_float);
+
+  // Signal with default int32 value
+  SignalConfig sig_int32("default_int32", SIG_DEFAULT_INT32_ID, "int32");
+  sig_int32.has_default_value = true;
+  sig_int32.value = int32_t{-42};
+  config.signals.push_back(sig_int32);
+
+  // Signal with default int64 value
+  SignalConfig sig_int64("default_int64", SIG_DEFAULT_INT64_ID, "int64");
+  sig_int64.has_default_value = true;
+  sig_int64.value = int64_t{-64};
+  config.signals.push_back(sig_int64);
+
+  // Signal with default uint32 value
+  SignalConfig sig_uint32("default_uint32", SIG_DEFAULT_UINT32_ID, "uint32");
+  sig_uint32.has_default_value = true;
+  sig_uint32.value = uint32_t{42};
+  config.signals.push_back(sig_uint32);
+
+  // Signal with default bool value
+  SignalConfig sig_bool("default_bool", SIG_DEFAULT_BOOL_ID, "bool");
+  sig_bool.has_default_value = true;
+  sig_bool.value = true;
+  config.signals.push_back(sig_bool);
+
+  // Signal with default uint64 value
+  SignalConfig sig_uint64("default_uint64", SIG_DEFAULT_UINT64_ID, "uint64");
+  sig_uint64.has_default_value = true;
+  sig_uint64.value = uint64_t{0xDEADBEEFCAFEBABEULL};
+  config.signals.push_back(sig_uint64);
+
+  // Signal with default string value
+  SignalConfig sig_string("default_string", SIG_DEFAULT_STRING_ID, "string", 64);
+  sig_string.has_default_value = true;
+  sig_string.value = std::string("hello_default");
+  config.signals.push_back(sig_string);
+
+  // Signal with default bytes value
+  SignalConfig sig_bytes("default_bytes", SIG_DEFAULT_BYTES_ID, "bytes", 64);
+  sig_bytes.has_default_value = true;
+  sig_bytes.value = ConfigSequence{ConfigValue(0), ConfigValue(1), ConfigValue(2)};
+  config.signals.push_back(sig_bytes);
+
+  BundleConfig bundle;
+  bundle.name = "defaults_bundle";
+  bundle.id = 20;
+  bundle.period_ms = 100;
+  bundle.producers = {"node_a"};
+  bundle.consumers = {"node_b"};
+  bundle.signals = {
+    SIG_DEFAULT_DOUBLE_ID, SIG_DEFAULT_FLOAT_ID,  SIG_DEFAULT_INT32_ID,
+    SIG_DEFAULT_INT64_ID,  SIG_DEFAULT_UINT32_ID, SIG_DEFAULT_UINT64_ID,
+    SIG_DEFAULT_BOOL_ID,   SIG_DEFAULT_STRING_ID, SIG_DEFAULT_BYTES_ID,
+  };
+  config.bundles.push_back(bundle);
+
+  return config;
+}
+
+TEST(DefaultValuesTest, DoubleDefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  double value = 0.0;
+  ASSERT_EQ(proton_signal_get_double(node.registry(), SIG_DEFAULT_DOUBLE_ID, &value), PROTON_OK);
+  EXPECT_DOUBLE_EQ(value, 3.14159);
+}
+
+TEST(DefaultValuesTest, FloatDefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  float value = 0.0;
+  ASSERT_EQ(proton_signal_get_float(node.registry(), SIG_DEFAULT_FLOAT_ID, &value), PROTON_OK);
+  EXPECT_FLOAT_EQ(value, 1.141);
+}
+
+TEST(DefaultValuesTest, Int32DefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  int32_t value = 0;
+  ASSERT_EQ(proton_signal_get_int32(node.registry(), SIG_DEFAULT_INT32_ID, &value), PROTON_OK);
+  EXPECT_EQ(value, -42);
+}
+
+TEST(DefaultValuesTest, Int64DefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  int64_t value = 0;
+  ASSERT_EQ(proton_signal_get_int64(node.registry(), SIG_DEFAULT_INT64_ID, &value), PROTON_OK);
+  EXPECT_EQ(value, -64);
+}
+
+TEST(DefaultValuesTest, UInt32DefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  uint32_t value = 0;
+  ASSERT_EQ(proton_signal_get_uint32(node.registry(), SIG_DEFAULT_UINT32_ID, &value), PROTON_OK);
+  EXPECT_EQ(value, 42);
+}
+
+TEST(DefaultValuesTest, BoolDefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  bool value = false;
+  ASSERT_EQ(proton_signal_get_bool(node.registry(), SIG_DEFAULT_BOOL_ID, &value), PROTON_OK);
+  EXPECT_TRUE(value);
+}
+
+TEST(DefaultValuesTest, Uint64DefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  uint64_t value = 0;
+  ASSERT_EQ(proton_signal_get_uint64(node.registry(), SIG_DEFAULT_UINT64_ID, &value), PROTON_OK);
+  EXPECT_EQ(value, 0xDEADBEEFCAFEBABEULL);
+}
+
+TEST(DefaultValuesTest, StringDefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  char buf[64] = {0};
+  size_t len = 0;
+  ASSERT_EQ(
+    proton_signal_get_string(node.registry(), SIG_DEFAULT_STRING_ID, buf, sizeof(buf), &len),
+    PROTON_OK);
+  EXPECT_STREQ(buf, "hello_default");
+}
+
+TEST(DefaultValuesTest, BytesDefaultValue)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  uint8_t buf[64] = {0};
+  size_t len = 0;
+  ASSERT_EQ(
+    proton_signal_get_bytes(node.registry(), SIG_DEFAULT_BYTES_ID, buf, sizeof(buf), &len),
+    PROTON_OK);
+  EXPECT_EQ(len, 3);
+  EXPECT_EQ(buf[0], 0);
+  EXPECT_EQ(buf[1], 1);
+  EXPECT_EQ(buf[2], 2);
+}
+
+TEST(DefaultValuesTest, RoundTripPreservesDefaults)
+{
+  Config config = create_default_values_config();
+  GeneratedNode node(config, "node_a");
+
+  uint8_t buffer[BUFFER_SIZE];
+  size_t bytes_encoded = 0;
+
+  // Encode with default values
+  ASSERT_EQ(
+    proton_encode_bundle(node.registry(), 20, buffer, sizeof(buffer), &bytes_encoded), PROTON_OK);
+  ASSERT_GT(bytes_encoded, 0u);
+
+  // Create a second node to decode into
+  GeneratedNode node2(config, "node_a");
+
+  // Modify values before decode
+  ASSERT_EQ(proton_signal_set_double(node2.registry(), SIG_DEFAULT_DOUBLE_ID, 999.0), PROTON_OK);
+  ASSERT_EQ(proton_signal_set_int32(node2.registry(), SIG_DEFAULT_INT32_ID, 999), PROTON_OK);
+
+  proton_Proton decoded_msg = proton_Proton_init_zero;
+  ASSERT_EQ(proton_decode(node2.registry(), buffer, bytes_encoded, &decoded_msg), PROTON_OK);
+
+  // Verify decoded values match original defaults
+  double double_val = 0.0;
+  ASSERT_EQ(
+    proton_signal_get_double(node2.registry(), SIG_DEFAULT_DOUBLE_ID, &double_val), PROTON_OK);
+  EXPECT_DOUBLE_EQ(double_val, 3.14159);
+
+  int32_t int32_val = 0;
+  ASSERT_EQ(proton_signal_get_int32(node2.registry(), SIG_DEFAULT_INT32_ID, &int32_val), PROTON_OK);
+  EXPECT_EQ(int32_val, -42);
+}
+
+// ============================================================================
+// Invalid signal type Tests
+// ============================================================================
+
+TEST(InvalidSignalType, InvalidSignalTypeThrows)
+{
+  Config config;
+
+  NodeConfig node_a;
+  node_a.name = "node_a";
+  node_a.id = 1;
+  node_a.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB0", "", 0};
+
+  NodeConfig node_b;
+  node_b.name = "node_b";
+  node_b.id = 2;
+  node_b.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB1", "", 0};
+
+  config.nodes["node_a"] = node_a;
+  config.nodes["node_b"] = node_b;
+
+  ConnectionConfig conn;
+  conn.first = {0, "node_a"};
+  conn.second = {0, "node_b"};
+  config.connections.push_back(conn);
+
+  SignalConfig sig("test_signal", 100, "invalid_signal_type");
+  config.signals.push_back(sig);
+
+  BundleConfig bundle;
+  bundle.name = "test_bundle";
+  bundle.id = 10;
+  bundle.period_ms = 100;
+  bundle.producers = {"node_a"};
+  bundle.consumers = {"node_b"};
+  bundle.signals = {100};
+  config.bundles.push_back(bundle);
+
+  EXPECT_THROW(GeneratedNode(config, "node_a"), NodeBuilderException);
+}
+
+// ============================================================================
+// Invalid node name Tests
+// ============================================================================
+
+TEST(InvalidNodeName, InvalidNodeNameThrows)
+{
+  Config config;
+
+  NodeConfig node_a;
+  node_a.name = "node_a";
+  node_a.id = 1;
+  node_a.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB0", "", 0};
+
+  NodeConfig node_b;
+  node_b.name = "node_b";
+  node_b.id = 2;
+  node_b.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB1", "", 0};
+
+  config.nodes["node_a"] = node_a;
+  config.nodes["node_b"] = node_b;
+
+  ConnectionConfig conn;
+  conn.first = {0, "node_a"};
+  conn.second = {0, "node_b"};
+  config.connections.push_back(conn);
+
+  SignalConfig sig("test_signal", 100, "invalid_signal_type");
+  config.signals.push_back(sig);
+
+  BundleConfig bundle;
+  bundle.name = "test_bundle";
+  bundle.id = 10;
+  bundle.period_ms = 100;
+  bundle.producers = {"node_a"};
+  bundle.consumers = {"node_b"};
+  bundle.signals = {100};
+  config.bundles.push_back(bundle);
+
+  EXPECT_THROW(GeneratedNode(config, "node_notanode"), NodeBuilderException);
+}
+
+// ============================================================================
+// Invalid Transport Tests
+// ============================================================================
+
+TEST(InvalidTransportTest, InvalidTransportTypeThrows)
+{
+  Config config;
+
+  NodeConfig node_a;
+  node_a.name = "node_a";
+  node_a.id = 1;
+  node_a.endpoints[0] = EndpointConfig{0, "invalid_transport", "", "192.168.1.1", 5000};
+
+  NodeConfig node_b;
+  node_b.name = "node_b";
+  node_b.id = 2;
+  node_b.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.2", 5000};
+
+  config.nodes["node_a"] = node_a;
+  config.nodes["node_b"] = node_b;
+
+  ConnectionConfig conn;
+  conn.first = {0, "node_a"};
+  conn.second = {0, "node_b"};
+  config.connections.push_back(conn);
+
+  // Should throw when generating node_b (which tries to create endpoint for node_a with invalid transport)
+  EXPECT_THROW(GeneratedNode(config, "node_b"), NodeBuilderException);
+}
+
+TEST(InvalidTransportTest, SerialTransportIsValid)
+{
+  Config config;
+
+  NodeConfig node_a;
+  node_a.name = "node_a";
+  node_a.id = 1;
+  node_a.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB0", "", 0};
+
+  NodeConfig node_b;
+  node_b.name = "node_b";
+  node_b.id = 2;
+  node_b.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB1", "", 0};
+
+  config.nodes["node_a"] = node_a;
+  config.nodes["node_b"] = node_b;
+
+  ConnectionConfig conn;
+  conn.first = {0, "node_a"};
+  conn.second = {0, "node_b"};
+  config.connections.push_back(conn);
+
+  SignalConfig sig("test_signal", 100, "int32");
+  config.signals.push_back(sig);
+
+  BundleConfig bundle;
+  bundle.name = "test_bundle";
+  bundle.id = 10;
+  bundle.period_ms = 100;
+  bundle.producers = {"node_a"};
+  bundle.consumers = {"node_b"};
+  bundle.signals = {100};
+  config.bundles.push_back(bundle);
+
+  // Should not throw - serial is a valid transport
+  EXPECT_NO_THROW(GeneratedNode(config, "node_a"));
+}
+
+// ============================================================================
+// Node Filtering Tests
+// ============================================================================
+
+Config create_multi_node_config()
+{
+  Config config;
+
+  // Create 4 nodes in a chain: A <-> B <-> C <-> D
+  NodeConfig node_a;
+  node_a.name = "node_a";
+  node_a.id = 1;
+  node_a.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB0", "", 0};
+
+  NodeConfig node_b;
+  node_b.name = "node_b";
+  node_b.id = 2;
+  node_b.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB1", "", 0};
+
+  NodeConfig node_c;
+  node_c.name = "node_c";
+  node_c.id = 3;
+  node_c.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB2", "", 0};
+
+  NodeConfig node_d;
+  node_d.name = "node_d";
+  node_d.id = 4;
+  node_d.endpoints[0] = EndpointConfig{0, "serial", "/dev/ttyUSB3", "", 0};
+
+  config.nodes["node_a"] = node_a;
+  config.nodes["node_b"] = node_b;
+  config.nodes["node_c"] = node_c;
+  config.nodes["node_d"] = node_d;
+
+  // Connections: A <-> B, B <-> C, C <-> D
+  ConnectionConfig conn_ab;
+  conn_ab.first = {0, "node_a"};
+  conn_ab.second = {0, "node_b"};
+  config.connections.push_back(conn_ab);
+
+  ConnectionConfig conn_bc;
+  conn_bc.first = {0, "node_b"};
+  conn_bc.second = {0, "node_c"};
+  config.connections.push_back(conn_bc);
+
+  ConnectionConfig conn_cd;
+  conn_cd.first = {0, "node_c"};
+  conn_cd.second = {0, "node_d"};
+  config.connections.push_back(conn_cd);
+
+  // Signals
+  config.signals.push_back(SignalConfig("signal_ab", 100, "int32"));
+  config.signals.push_back(SignalConfig("signal_bc", 101, "int32"));
+  config.signals.push_back(SignalConfig("signal_cd", 102, "int32"));
+
+  // Bundles
+  BundleConfig bundle_ab;
+  bundle_ab.name = "bundle_ab";
+  bundle_ab.id = 10;
+  bundle_ab.period_ms = 100;
+  bundle_ab.producers = {"node_a"};
+  bundle_ab.consumers = {"node_b"};
+  bundle_ab.signals = {100};
+  config.bundles.push_back(bundle_ab);
+
+  BundleConfig bundle_bc;
+  bundle_bc.name = "bundle_bc";
+  bundle_bc.id = 11;
+  bundle_bc.period_ms = 100;
+  bundle_bc.producers = {"node_b"};
+  bundle_bc.consumers = {"node_c"};
+  bundle_bc.signals = {101};
+  config.bundles.push_back(bundle_bc);
+
+  BundleConfig bundle_cd;
+  bundle_cd.name = "bundle_cd";
+  bundle_cd.id = 12;
+  bundle_cd.period_ms = 100;
+  bundle_cd.producers = {"node_c"};
+  bundle_cd.consumers = {"node_d"};
+  bundle_cd.signals = {102};
+  config.bundles.push_back(bundle_cd);
+
+  return config;
+}
+
+TEST(NodeFilteringTest, FilteredNodeOnlySeesRelevantSignals)
+{
+  Config config = create_multi_node_config();
+  Config filtered_config = filter_for_target(config, "node_a");
+
+  // Node A should only see signal 100 (bundle_ab)
+  GeneratedNode node_a(filtered_config, "node_a");
+  EXPECT_NE(proton_registry_get_signal(node_a.registry(), 100, nullptr), nullptr);
+  EXPECT_EQ(proton_registry_get_signal(node_a.registry(), 101, nullptr), nullptr);
+  EXPECT_EQ(proton_registry_get_signal(node_a.registry(), 102, nullptr), nullptr);
+}
+
+TEST(NodeFilteringTest, FilteredNodeOnlySeesRelevantBundles)
+{
+  Config config = create_multi_node_config();
+  Config filtered_config = filter_for_target(config, "node_a");
+
+  // Node A should only see bundle 10 (bundle_ab)
+  GeneratedNode node_a(filtered_config, "node_a");
+  EXPECT_NE(proton_registry_get_bundle(node_a.registry(), 10, nullptr), nullptr);
+  EXPECT_EQ(proton_registry_get_bundle(node_a.registry(), 11, nullptr), nullptr);
+  EXPECT_EQ(proton_registry_get_bundle(node_a.registry(), 12, nullptr), nullptr);
+}
+
+TEST(NodeFilteringTest, MiddleNodeSeesAdjacentBundles)
+{
+  Config config = create_multi_node_config();
+  Config filtered_config = filter_for_target(config, "node_b");
+
+  // Node B should see bundles 10 and 11
+  GeneratedNode node_b(filtered_config, "node_b");
+  EXPECT_NE(proton_registry_get_bundle(node_b.registry(), 10, nullptr), nullptr);
+  EXPECT_NE(proton_registry_get_bundle(node_b.registry(), 11, nullptr), nullptr);
+  EXPECT_EQ(proton_registry_get_bundle(node_b.registry(), 12, nullptr), nullptr);
+}
+
+TEST(NodeFilteringTest, MiddleNodeSeesAdjacentSignals)
+{
+  Config config = create_multi_node_config();
+  Config filtered_config = filter_for_target(config, "node_b");
+
+  // Node B should see signals 100 and 101
+  GeneratedNode node_b(filtered_config, "node_b");
+  EXPECT_NE(proton_registry_get_signal(node_b.registry(), 100, nullptr), nullptr);
+  EXPECT_NE(proton_registry_get_signal(node_b.registry(), 101, nullptr), nullptr);
+  EXPECT_EQ(proton_registry_get_signal(node_b.registry(), 102, nullptr), nullptr);
+}
+
+TEST(NodeFilteringTest, EndNodeOnlySeesItsBundle)
+{
+  Config config = create_multi_node_config();
+  Config filtered_config = filter_for_target(config, "node_d");
+
+  // Node D should only see bundle 12 (bundle_cd)
+  GeneratedNode node_d(filtered_config, "node_d");
+  EXPECT_EQ(proton_registry_get_bundle(node_d.registry(), 10, nullptr), nullptr);
+  EXPECT_EQ(proton_registry_get_bundle(node_d.registry(), 11, nullptr), nullptr);
+  EXPECT_NE(proton_registry_get_bundle(node_d.registry(), 12, nullptr), nullptr);
+}
+
+TEST(NodeFilteringTest, NodeOnlyHasPeersItConnectsTo)
+{
+  Config config = create_multi_node_config();
+
+  // Node A should only have node B as a peer (1 peer)
+  Config node_a_config = filter_for_target(config, "node_a");
+  GeneratedNode node_a(node_a_config, "node_a");
+  EXPECT_EQ(node_a.node()->num_peers, 1);
+
+  // Node B should have nodes A and C as peers (2 peers)
+  Config node_b_config = filter_for_target(config, "node_b");
+  GeneratedNode node_b(node_b_config, "node_b");
+  EXPECT_EQ(node_b.node()->num_peers, 2);
+
+  // Node D should only have node C as a peer (1 peer)
+  Config node_d_config = filter_for_target(config, "node_d");
+  GeneratedNode node_d(node_d_config, "node_d");
+  EXPECT_EQ(node_d.node()->num_peers, 1);
+}
+
+TEST(NodeFilteringTest, InvalidTargetNodeThrows)
+{
+  Config config = create_multi_node_config();
+
+  EXPECT_THROW(filter_for_target(config, "nonexistent_node"), NodeBuilderException);
+}
+
+TEST(NodeFilteringTest, FilterForTargetFunction)
+{
+  Config config = create_multi_node_config();
+
+  Config filtered = filter_for_target(config, "node_a");
+
+  // Should have node_a and node_b (connected peer)
+  EXPECT_TRUE(filtered.nodes.contains("node_a"));
+  EXPECT_TRUE(filtered.nodes.contains("node_b"));
+  EXPECT_FALSE(filtered.nodes.contains("node_c"));
+  EXPECT_FALSE(filtered.nodes.contains("node_d"));
+
+  // Should have 1 connection (a <-> b)
+  EXPECT_EQ(filtered.connections.size(), 1);
+
+  // Should have 1 bundle (bundle_ab)
+  EXPECT_EQ(filtered.bundles.size(), 1);
+  EXPECT_EQ(filtered.bundles[0].id, 10);
+
+  // Should have 1 signal (signal_ab)
+  EXPECT_EQ(filtered.signals.size(), 1);
+  EXPECT_EQ(filtered.signals[0].id, 100);
 }
 
 int main(int argc, char ** argv)
