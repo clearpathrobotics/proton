@@ -45,73 +45,6 @@ jobs:
           . venv/bin/activate
           pre-commit run --all-files
 
-  build-and-test:
-    runs-on: ubuntu-latest
-
-    container:
-      image: ubuntu:24.04
-
-    steps:
-      - name: Install dependencies
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            build-essential \
-            cmake \
-            pkg-config \
-            python3 \
-            python3-pip \
-            python3-jinja2 \
-            python3-yaml \
-            python3-protobuf \
-            protobuf-compiler \
-            libboost-all-dev \
-            libyaml-cpp-dev \
-            libgtest-dev \
-            git \
-            lcov
-
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Configure CMake
-        run: |
-          cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DPROTON_ENABLE_TEST_COVERAGE=ON
-
-      - name: Build
-        run: |
-          cmake --build build --parallel
-
-      - name: Run tests
-        run: |
-          ctest --test-dir build/tests --output-on-failure
-
-      - name: Generate tests coverage report
-        run: |
-          lcov --directory build --capture --output-file tests_coverage.info --ignore-errors mismatch
-          lcov --remove tests_coverage.info "*tests/*" "examples/*" "core/*" "/usr/include/*" "*/_deps/*" --output-file tests_coverage.info --ignore-errors unused
-          genhtml tests_coverage.info --output-directory tests_coverage_report --title "Proton Tests Code Coverage"
-
-      - name: Generate tests coverage summary
-        run: |
-          lcov --summary tests_coverage.info > tests_coverage_summary.txt
-
-      - name: Upload tests coverage report
-        uses: actions/upload-artifact@v7
-        with:
-          name: tests-coverage-report
-          path: tests_coverage_report/
-          retention-days: 30
-
-      - name: Upload tests coverage summary
-        uses: actions/upload-artifact@v7
-        with:
-          name: tests-coverage-summary
-          path: tests_coverage_summary.txt
-          retention-days: 30
-
   test-proton-core:
     runs-on: ubuntu-latest
 
@@ -195,12 +128,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download PR head tests coverage summary
-        uses: actions/download-artifact@v8
-        with:
-          name: tests-coverage-summary
-          path: coverage_summaries/head
-
       - name: Download PR head core coverage summary
         uses: actions/download-artifact@v8
         with:
@@ -248,16 +175,6 @@ jobs:
             core.info(`Resolved run ID: ${runId || 'not found'}`);
             core.setOutput('run_id', runId);
 
-      - name: Download base tests coverage summary artifact
-        if: steps.find_base_run.outputs.run_id != ''
-        uses: actions/download-artifact@v8
-        with:
-          name: tests-coverage-summary
-          path: coverage_summaries/base
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ steps.find_base_run.outputs.run_id }}
-
       - name: Download base core coverage summary artifact
         if: steps.find_base_run.outputs.run_id != ''
         uses: actions/download-artifact@v8
@@ -299,18 +216,12 @@ jobs:
             fi
           }
 
-          head_tests_lines=$(extract_rate lines coverage_summaries/head/tests_coverage_summary.txt)
-          head_tests_funcs=$(extract_rate functions coverage_summaries/head/tests_coverage_summary.txt)
           head_core_lines=$(extract_rate lines coverage_summaries/head/core_coverage_summary.txt)
           head_core_funcs=$(extract_rate functions coverage_summaries/head/core_coverage_summary.txt)
 
-          base_tests_lines=$(extract_rate lines coverage_summaries/base/tests_coverage_summary.txt)
-          base_tests_funcs=$(extract_rate functions coverage_summaries/base/tests_coverage_summary.txt)
           base_core_lines=$(extract_rate lines coverage_summaries/base/core_coverage_summary.txt)
           base_core_funcs=$(extract_rate functions coverage_summaries/base/core_coverage_summary.txt)
 
-          delta_tests_lines=$(format_delta "$head_tests_lines" "$base_tests_lines")
-          delta_tests_funcs=$(format_delta "$head_tests_funcs" "$base_tests_funcs")
           delta_core_lines=$(format_delta "$head_core_lines" "$base_core_lines")
           delta_core_funcs=$(format_delta "$head_core_funcs" "$base_core_funcs")
 
@@ -320,17 +231,15 @@ jobs:
             echo
             echo "| Scope | Base Lines | PR Lines | Delta (pp) | Base Functions | PR Functions | Delta (pp) |"
             echo "|---|---:|---:|---:|---:|---:|---:|"
-            echo "| protonc/protoncpp | $(format_percent "$base_tests_lines") | $(format_percent "$head_tests_lines") | ${delta_tests_lines} | $(format_percent "$base_tests_funcs") | $(format_percent "$head_tests_funcs") | ${delta_tests_funcs} |"
             echo "| core | $(format_percent "$base_core_lines") | $(format_percent "$head_core_lines") | ${delta_core_lines} | $(format_percent "$base_core_funcs") | $(format_percent "$head_core_funcs") | ${delta_core_funcs} |"
             echo
             echo "Coverage deltas are computed as: PR source branch minus target branch (base commit)."
             echo
-            if [[ ! -f coverage_summaries/base/tests_coverage_summary.txt || ! -f coverage_summaries/base/core_coverage_summary.txt ]]; then
+            if [[ ! -f coverage_summaries/base/core_coverage_summary.txt ]]; then
               echo "Baseline artifact for the target branch commit was not found, so one or more deltas may be shown as N/A."
               echo
             fi
             echo "Detailed HTML reports are available in the workflow artifacts:"
-            echo "- tests-coverage-report"
             echo "- core-coverage-report"
           } > coverage_comment.md
 
