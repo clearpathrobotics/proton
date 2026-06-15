@@ -88,7 +88,7 @@ extern "C"
   typedef struct proton_id_list
   {
     const uint32_t * ids;
-    size_t count;
+    uint8_t count;
   } proton_id_list_t;
 
   /**
@@ -100,8 +100,10 @@ extern "C"
     uint32_t id;
     proton_signal_type_e type;
     // For strings and bytes, capacity of the signal. For other types, this is the size of the internal type.
-    size_t value_size;
+    uint16_t value_size;
     proton_Signal signal;
+    // Decode buffer for string/bytes signals (NULL for other types)
+    uint8_t * signal_decode_buffer;
   } signal_desc_t;
 
   /**
@@ -117,16 +119,9 @@ extern "C"
     // NOTE: 0 means no period, and will only be sent if triggered or directly requested in the node manager API
     uint32_t period_ms;
     bool send_now;
+    // Callback for when this bundle is successfully decoded
+    proton_bundle_cb_t callback;
   } bundle_desc_t;
-
-  /**
-   * Mapping from ID to index in the signal or bundle registries.
-   */
-  typedef struct signal_id_to_index
-  {
-    uint32_t id;
-    uint32_t idx;
-  } id_to_index_t;
 
   /**
    * proton_registry_t is a memory representation of the entire set of bundles and signals for a node.
@@ -140,30 +135,23 @@ extern "C"
   {
     // Bundle metadata and state
     // bundle_table is the table of all bundle descriptors
-    // Since the bundle IDs are not contiguous, the bundle_id_lut is used to find the index of a bundle descriptor
     bundle_desc_t * bundle_table;
-    const id_to_index_t * bundle_id_lut;
-    proton_bundle_cb_t * bundle_callbacks;
-    size_t bundle_count;
+    uint16_t bundle_count;
 
-    // Buffers for encoding/decoding signals per bundle.
-    // This is NOT the actual value of the signal, but a temporary buffer space.
-    proton_Signal ** bundle_signal_ptrs;
+    // Shared buffer for encoding/decoding signals in bundles.
+    // Sized to fit the largest bundle's signal count.
+    proton_Signal * encode_decode_buffer;
+    uint8_t encode_decode_buffer_count;
 
     // Signal metadata and state
     // signal_registry is the table of all signal descriptors,
     // It also contains the current value of each signal. It is written to after a bundle is successfully decoded
     signal_desc_t * signal_registry;
-    // Similar to how bundle ID's are not contiguous, signal ID's are looked up in a similar manner
-    const id_to_index_t * signal_id_lut;
-    // For signals that are bytes/string types, the max capacity of the signal is specified here
-    const size_t * signal_max_capacity;
-    // Space for string/bytes signals
-    uint8_t ** signal_decode_buffers;
-    size_t signal_count;
+
+    uint16_t signal_count;
     // Scratch-pad buffer for encoding/decoding string/bytes signals
     uint8_t * signal_scratch_buffer;
-    size_t signal_scratch_buffer_size;
+    uint16_t signal_scratch_buffer_size;
 
     // Optional mutex callbacks
     proton_registry_mutex_cb_t mutex_handles;
@@ -189,11 +177,11 @@ extern "C"
     const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx);
 
   /**
-   * Get the buffer for encoding/decoding signals from a bundle, by bundle ID or lookup index if known
+   * Get the buffer for encoding/decoding signals from a bundle
    * @return pointer to the buffer, or NULL if not found
    */
   proton_Signal * proton_registry_get_bundle_encode_decode_buffer(
-    const proton_registry_t * registry, uint32_t bundle_id, const size_t * bundle_lut_idx);
+    const proton_registry_t * registry);
 
   /**
    * Get the callback for a bundle

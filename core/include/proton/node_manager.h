@@ -55,11 +55,11 @@ extern "C"
   {
     uint32_t id;
     const proton_endpoint_t * destination_peers;
-    size_t num_peers;
+    uint8_t num_peers;
     proton_registry_t * registry;
     uint32_t pending_triggers[PROTON_MAX_PENDING_TRIGGERS];
-    size_t trigger_head;
-    size_t trigger_tail;
+    uint8_t trigger_head;
+    uint8_t trigger_tail;
   } proton_core_node_t;  // TODO change to proton_node_t as part of protonc deprecation
 
   /**

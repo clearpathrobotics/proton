@@ -19,6 +19,10 @@
 #ifndef PROTON_CONFIG_HPP
 #define PROTON_CONFIG_HPP
 
+#ifndef PROTON_SCRATCH_BUFFER_SIZE
+#define PROTON_SCRATCH_BUFFER_SIZE 512
+#endif
+
 // Default to embedded mode (no allocation/RTTI) if not specified
 #ifndef PROTON_ENABLE_ALLOC
 #define PROTON_ENABLE_ALLOC 0

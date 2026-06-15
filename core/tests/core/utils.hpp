@@ -29,6 +29,8 @@ extern "C"
 {
 #endif
 
+  static constexpr size_t BUFFER_SIZE = 1024;
+
   proton_registry_t copy_default_registry(proton_registry_t * original_registry)
   {
     proton_registry_t copy = *original_registry;
@@ -40,13 +42,13 @@ extern "C"
       sizeof(signal_desc_t) * copy.signal_count);
     copy.signal_registry = signal_registry_copy;
 
-    // Deep copy bundle callbacks
-    proton_bundle_cb_t * bundle_cb_copy =
-      (proton_bundle_cb_t *)malloc(sizeof(proton_bundle_cb_t) * copy.bundle_count);
+    // Deep copy bundle table (includes callbacks and mutable state like last_send_ms)
+    bundle_desc_t * bundle_table_copy =
+      (bundle_desc_t *)malloc(sizeof(bundle_desc_t) * copy.bundle_count);
     memcpy(
-      bundle_cb_copy, original_registry->bundle_callbacks,
-      sizeof(proton_bundle_cb_t) * copy.bundle_count);
-    copy.bundle_callbacks = bundle_cb_copy;
+      bundle_table_copy, original_registry->bundle_table,
+      sizeof(bundle_desc_t) * copy.bundle_count);
+    copy.bundle_table = bundle_table_copy;
 
     return copy;
   }
