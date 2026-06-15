@@ -22,13 +22,14 @@
 
 #include "protoncpp/node_builder/config_tree.hpp"
 
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 
-#include <yaml-cpp/yaml.h>
-
 namespace proton::node_builder
 {
+
+#if PROTON_NODE_BUILDER_YAML_PARSER
 
 // Helper to convert YAML::Node to ConfigValue recursively
 static ConfigValue yaml_to_config_value(const YAML::Node & node)
@@ -120,6 +121,70 @@ static ConfigValue yaml_to_config_value(const YAML::Node & node)
 
   return ConfigValue(std::monostate{});
 }
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
+
+#if PROTON_NODE_BUILDER_JSON_PARSER
+static ConfigValue json_to_config_value(const nlohmann::json & json)
+{
+  if (json.is_null())
+  {
+    return ConfigValue(std::monostate{});
+  }
+
+  if (json.is_primitive())
+  {
+    if (json.is_boolean())
+    {
+      return ConfigValue(json.get<bool>());
+    }
+
+    if (json.is_number_integer())
+    {
+      if (json.is_number_unsigned())
+      {
+        return ConfigValue(json.get<uint64_t>());
+      }
+      else
+      {
+        return ConfigValue(json.get<int64_t>());
+      }
+    }
+
+    if (json.is_number_float())
+    {
+      return ConfigValue(json.get<double>());
+    }
+
+    if (json.is_string())
+    {
+      return ConfigValue(json.get<std::string>());
+    }
+  }
+
+  if (json.is_array())
+  {
+    ConfigSequence seq;
+    seq.reserve(json.size());
+    for (const auto & child : json)
+    {
+      seq.push_back(json_to_config_value(child));
+    }
+    return ConfigValue(std::move(seq));
+  }
+
+  if (json.is_object())
+  {
+    ConfigMap map;
+    for (const auto & [key, val] : json.items())
+    {
+      map.emplace(std::move(key), json_to_config_value(val));
+    }
+    return ConfigValue(std::move(map));
+  }
+
+  return ConfigValue(std::monostate{});
+}
+#endif  // PROTON_NODE_BUILDER_JSON_PARSER
 
 // ConfigNode conversion methods
 
@@ -265,6 +330,7 @@ bool ConfigNode::as_bool() const
 
 // ConfigTree factory methods
 
+#if PROTON_NODE_BUILDER_YAML_PARSER
 ConfigTree ConfigTree::from_yaml_file(const std::string & path)
 {
   YAML::Node yaml_node = YAML::LoadFile(path);
@@ -276,6 +342,32 @@ ConfigTree ConfigTree::from_yaml_string(std::string_view yaml)
   YAML::Node yaml_node = YAML::Load(std::string(yaml));
   return ConfigTree(yaml_to_config_value(yaml_node));
 }
+
+ConfigTree ConfigTree::from_yaml_node(const YAML::Node & yaml)
+{
+  return ConfigTree(yaml_to_config_value(yaml));
+}
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
+
+#if PROTON_NODE_BUILDER_JSON_PARSER
+ConfigTree ConfigTree::from_json_file(const std::string & path)
+{
+  std::ifstream f(path);
+  nlohmann::json config = nlohmann::json::parse(f);
+  return ConfigTree(json_to_config_value(config));
+}
+
+ConfigTree ConfigTree::from_json_string(std::string_view json)
+{
+  nlohmann::json config = nlohmann::json::parse(json);
+  return ConfigTree(json_to_config_value(config));
+}
+
+ConfigTree ConfigTree::from_json_value(const nlohmann::json & json)
+{
+  return ConfigTree(json_to_config_value(json));
+}
+#endif  // PROTON_NODE_BUILDER_JSON_PARSER
 
 }  // namespace proton::node_builder
 

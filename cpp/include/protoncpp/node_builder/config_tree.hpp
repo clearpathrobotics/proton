@@ -32,6 +32,14 @@
 #include <variant>
 #include <vector>
 
+#if PROTON_NODE_BUILDER_YAML_PARSER
+#include <yaml-cpp/yaml.h>
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
+
+#if PROTON_NODE_BUILDER_JSON_PARSER
+#include <nlohmann/json.hpp>
+#endif  // PROTON_NODE_BUILDER_JSON_PARSER
+
 namespace proton::node_builder
 {
 
@@ -148,6 +156,19 @@ public:
       return ConfigNode();
     }
     return ConfigNode(&it->second);
+  }
+
+  /**
+   * @brief Access a child node by index (for sequences)
+   */
+  ConfigNode operator[](size_t idx) const
+  {
+    if (!is_sequence())
+    {
+      return ConfigNode();
+    }
+    const auto & sequence = std::get<ConfigSequence>(value_->data);
+    return ConfigNode(sequence[idx]);
   }
 
   /**
@@ -284,6 +305,13 @@ public:
   ConfigNode operator[](std::string_view key) const { return root()[key]; }
 
   /**
+   * @brief Access index
+   */
+  ConfigNode operator[](size_t idx) const { return root()[idx]; }
+
+#if PROTON_NODE_BUILDER_YAML_PARSER
+
+  /**
    * @brief Factory: Load from YAML file
    */
   static ConfigTree from_yaml_file(const std::string & path);
@@ -292,6 +320,32 @@ public:
    * @brief Factory: Parse from YAML string
    */
   static ConfigTree from_yaml_string(std::string_view yaml);
+
+  /**
+   * @brief Factory: Convert from YAML::Node
+   */
+  static ConfigTree from_yaml_node(const YAML::Node & yaml);
+
+#endif  // PROTON_NODE_BUILDER_YAML_PARSER
+
+#if PROTON_NODE_BUILDER_JSON_PARSER
+
+  /**
+   * @brief Factory: Load from JSON file
+   */
+  static ConfigTree from_json_file(const std::string & path);
+
+  /**
+   * @brief Factory: Parse from JSON string
+   */
+  static ConfigTree from_json_string(std::string_view json);
+
+  /**
+   * @brief Factory: Convert from nlohmann::json
+   */
+  static ConfigTree from_json_value(const nlohmann::json & json);
+
+#endif  // PROTON_NODE_BUILDER_JSON_PARSER
 
 private:
   ConfigValue root_;

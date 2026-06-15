@@ -20,6 +20,7 @@
 """Generator for protonc C code."""
 
 import argparse
+import json
 from pathlib import Path
 
 from config import validate_ids
@@ -43,21 +44,28 @@ def load_config(config_path: str) -> dict:
     Raises:
         RuntimeError: if there are issues with the yaml construction or syntax
     Returns:
-        yaml config as dict
+        yaml or json config as dict
 
     """
+    config_fullpath = Path(config_path)
+
     try:
-        with Path(config_path).open('r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
+        with config_fullpath.open('r', encoding='utf-8') as f:
+            if config_fullpath.suffix in ('.yaml', '.yml'):
+                config = yaml.safe_load(f)
+            elif config_fullpath.suffix == '.json':
+                config = json.load(f)
     except yaml.scanner.ScannerError as s:
         raise RuntimeError(f'YAML file {config_path} is not well formed') from s
     except yaml.constructor.ConstructorError as c:
         raise RuntimeError(
             f'YAML file {config_path} is attempting to create unsafe objects'
         ) from c
+    except json.JSONDecodeError as j:
+        raise RuntimeError(f'JSON file {config_path} is not well formed') from j
     # Check contents are a Dictionary
     if not isinstance(config, dict):
-        raise RuntimeError(f'YAML file {config_path} is not a dictionary, is {type(config)}')
+        raise RuntimeError(f'Config file {config_path} is not a dictionary, is {type(config)}')
     return config
 
 

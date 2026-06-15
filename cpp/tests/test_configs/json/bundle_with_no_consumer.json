@@ -1,0 +1,40 @@
+{
+  "signals": [
+    {
+      "name": "double_value",
+      "id": 4096,
+      "type": "double"
+    },
+    {
+      "name": "float_value",
+      "id": 4097,
+      "type": "float"
+    },
+    {
+      "name": "int32_value",
+      "id": 4098,
+      "type": "int32"
+    },
+    {
+      "name": "int64_value",
+      "id": 4099,
+      "type": "int64"
+    }
+  ],
+  "bundles": [
+    {
+      "name": "no_consumer",
+      "id": 0,
+      "producers": [
+        "producer"
+      ],
+      "consumers": [],
+      "signals": [
+        4096,
+        4097,
+        4098,
+        4099
+      ]
+    }
+  ]
+}
