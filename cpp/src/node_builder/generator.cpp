@@ -227,12 +227,8 @@ void GeneratedNode::generate_endpoints(const Config & config, const std::string 
 void GeneratedNode::generate_signals(const Config & config)
 {
   signal_registry_.reserve(config.signals.size());
-  signal_id_lut_.reserve(config.signals.size());
-  signal_max_capacity_.reserve(config.signals.size());
   signal_decode_buffer_storage_.reserve(config.signals.size());
-  signal_decode_buffers_.reserve(config.signals.size());
-
-  size_t max_scratch_size = 0;
+  signal_scratch_buffer_.reserve(PROTON_SCRATCH_BUFFER_SIZE);
 
   for (size_t idx = 0; idx < config.signals.size(); idx++)
   {
@@ -243,14 +239,16 @@ void GeneratedNode::generate_signals(const Config & config)
       throw NodeBuilderException(std::format("Signal type is invalid: {}", signal_cfg.type_string));
     }
 
-    size_t value_size = get_signal_value_size(sig_type, signal_cfg.capacity);
+    uint16_t value_size = get_signal_value_size(sig_type, signal_cfg.capacity);
 
     // Create signal descriptor
     signal_desc_t sig_desc = {
       .id = signal_cfg.id,
       .type = sig_type,
       .value_size = value_size,
-      .signal = proton_Signal_init_zero};
+      .signal = proton_Signal_init_zero,
+      .signal_decode_buffer = nullptr,
+    };
 
     sig_desc.signal.which_signal = proton_get_tag_from_type(sig_type);
 
@@ -292,35 +290,16 @@ void GeneratedNode::generate_signals(const Config & config)
 
     signal_registry_.push_back(sig_desc);
 
-    // Create ID to index lookup entry
-    id_to_index_t lut_entry = {.id = signal_cfg.id, .idx = static_cast<uint32_t>(idx)};
-    signal_id_lut_.push_back(lut_entry);
-
-    // Track capacity for string/bytes types
-    signal_max_capacity_.push_back(signal_cfg.capacity);
-
     // Allocate decode buffer for string/bytes signals
     if (sig_type == PROTON_STRING || sig_type == PROTON_BYTES)
     {
       signal_decode_buffer_storage_.emplace_back(signal_cfg.capacity, 0);
-      max_scratch_size = std::max(max_scratch_size, static_cast<size_t>(signal_cfg.capacity));
+      sig_desc.signal_decode_buffer = signal_decode_buffer_storage_.back().data();
     }
     else
     {
       signal_decode_buffer_storage_.emplace_back();  // Empty vector for non-string/bytes
     }
-  }
-
-  // Build pointer array for decode buffers
-  for (auto & buf : signal_decode_buffer_storage_)
-  {
-    signal_decode_buffers_.push_back(buf.empty() ? nullptr : buf.data());
-  }
-
-  // Allocate scratch buffer (largest string/bytes capacity)
-  if (max_scratch_size > 0)
-  {
-    signal_scratch_buffer_.resize(max_scratch_size, 0);
   }
 }
 
@@ -331,13 +310,16 @@ void GeneratedNode::generate_bundles(const Config & config)
   bundle_consumer_ids_ = std::move(prod_con_ids.consumer_ids);
 
   bundle_table_.reserve(config.bundles.size());
-  bundle_id_lut_.reserve(config.bundles.size());
-  bundle_callbacks_.reserve(config.bundles.size());
-  bundle_encode_decode_buffers_.reserve(config.bundles.size());
+  size_t max_signal_count = 0;
 
   for (size_t idx = 0; idx < config.bundles.size(); idx++)
   {
     const auto & bundle_cfg = config.bundles[idx];
+
+    if (max_signal_count < bundle_cfg.signals.size())
+    {
+      max_signal_count = bundle_cfg.signals.size();
+    }
 
     // Store signal IDs for this bundle
     bundle_signal_ids_[bundle_cfg.id] = bundle_cfg.signals;
@@ -348,59 +330,43 @@ void GeneratedNode::generate_bundles(const Config & config)
       .producer_ids =
         {
           .ids = bundle_producer_ids_[bundle_cfg.id].data(),
-          .count = bundle_producer_ids_[bundle_cfg.id].size(),
+          .count = static_cast<uint8_t>(bundle_producer_ids_[bundle_cfg.id].size()),
         },
       .consumer_ids =
         {
           .ids = bundle_consumer_ids_[bundle_cfg.id].data(),
-          .count = bundle_consumer_ids_[bundle_cfg.id].size(),
+          .count = static_cast<uint8_t>(bundle_consumer_ids_[bundle_cfg.id].size()),
         },
       .signal_ids =
         {
           .ids = bundle_signal_ids_[bundle_cfg.id].data(),
-          .count = bundle_signal_ids_[bundle_cfg.id].size(),
+          .count = static_cast<uint8_t>(bundle_signal_ids_[bundle_cfg.id].size()),
         },
       .last_send_ms = 0,
       .period_ms = bundle_cfg.period_ms,
-      .send_now = false};
+      .send_now = false,
+      .callback =
+        {
+          .cb = nullptr,
+          .arg = nullptr,
+        },
+    };
     bundle_table_.push_back(bundle_desc);
-
-    // Create ID to index lookup entry
-    id_to_index_t lut_entry = {.id = bundle_cfg.id, .idx = static_cast<uint32_t>(idx)};
-    bundle_id_lut_.push_back(lut_entry);
-
-    // Create empty callback entry
-    proton_bundle_cb_t cb = {.cb = nullptr, .arg = nullptr};
-    bundle_callbacks_.push_back(cb);
-
-    // Allocate encode/decode buffer for signals in this bundle
-    std::vector<proton_Signal> encode_decode_signals(
-      bundle_cfg.signals.size(), proton_Signal_init_zero);
-    bundle_encode_decode_buffers_.push_back(std::move(encode_decode_signals));
   }
 
-  // Build pointer array for bundle signal pointers
-  bundle_signal_ptrs_.reserve(bundle_encode_decode_buffers_.size());
-  for (auto & buf : bundle_encode_decode_buffers_)
-  {
-    bundle_signal_ptrs_.push_back(buf.data());
-  }
+  // Build space for encode/decode buffer (largest bundle signal count)
+  bundle_encode_decode_buffer_.reserve(max_signal_count);
 }
 
 void GeneratedNode::init_registry()
 {
   // Bundle table and lookups
   registry_.bundle_table = bundle_table_.data();
-  registry_.bundle_id_lut = bundle_id_lut_.data();
-  registry_.bundle_callbacks = bundle_callbacks_.data();
   registry_.bundle_count = bundle_table_.size();
-  registry_.bundle_signal_ptrs = bundle_signal_ptrs_.data();
 
   // Signal table and lookups
   registry_.signal_registry = signal_registry_.data();
-  registry_.signal_id_lut = signal_id_lut_.data();
-  registry_.signal_max_capacity = signal_max_capacity_.data();
-  registry_.signal_decode_buffers = signal_decode_buffers_.data();
+  registry_.encode_decode_buffer = bundle_encode_decode_buffer_.data();
   registry_.signal_count = signal_registry_.size();
 
   // Scratch buffer for string/bytes encoding/decoding

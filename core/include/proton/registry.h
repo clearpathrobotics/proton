@@ -228,7 +228,7 @@ extern "C"
    * Get the size of a value for a given type, for string/bytes types, return given capacity
    * @return the size of the value for the type, or capacity for string/bytes types
    */
-  size_t get_signal_value_size(proton_signal_type_e type, size_t capacity);
+  uint16_t get_signal_value_size(proton_signal_type_e type, uint32_t capacity);
 
   /**
    * Get the signal type from a string representation. Used for parsing config files

@@ -109,23 +109,15 @@ private:
   std::map<uint32_t, std::vector<uint32_t>> bundle_consumer_ids_;
   std::map<uint32_t, std::vector<uint32_t>> bundle_signal_ids_;
 
-  // Owned storage for bundle descriptors and LUT
+  // Owned storage for bundle descriptors
   std::vector<bundle_desc_t> bundle_table_;
-  std::vector<id_to_index_t> bundle_id_lut_;
-  std::vector<proton_bundle_cb_t> bundle_callbacks_;
 
   // Owned storage for bundle encode/decode signal pointers
-  std::vector<std::vector<proton_Signal>> bundle_encode_decode_buffers_;
-  std::vector<proton_Signal *> bundle_signal_ptrs_;
-
-  // Owned storage for signal descriptors and LUT
+  std::vector<proton_Signal> bundle_encode_decode_buffer_;
   std::vector<signal_desc_t> signal_registry_;
-  std::vector<id_to_index_t> signal_id_lut_;
-  std::vector<size_t> signal_max_capacity_;
 
-  // Owned storage for string/bytes signal decode buffers
+  // Owned storage for string/bytes signal decode buffer
   std::vector<std::vector<uint8_t>> signal_decode_buffer_storage_;
-  std::vector<uint8_t *> signal_decode_buffers_;
   std::vector<uint8_t> signal_scratch_buffer_;
 
   // The actual node and registry structs (point into owned storage above)

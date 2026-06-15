@@ -97,7 +97,7 @@ pb_size_t proton_get_tag_from_type(proton_signal_type_e type)
   }
 }
 
-size_t get_signal_value_size(proton_signal_type_e type, uint32_t capacity)
+uint16_t get_signal_value_size(proton_signal_type_e type, uint32_t capacity)
 {
   switch (type)
   {
