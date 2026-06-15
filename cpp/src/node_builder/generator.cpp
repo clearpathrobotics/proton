@@ -249,7 +249,11 @@ void GeneratedNode::generate_signals(const Config & config)
       .value_size = value_size,
       .capacity = signal_cfg.capacity,
       .signal = proton_Signal_init_zero,
-      .signal_decode_buffer = nullptr,
+      .signal_decode_buffer =
+        {
+          .data = nullptr,
+          .len = 0,
+        },
     };
 
     sig_desc.signal.which_signal = proton_get_tag_from_type(sig_type);
@@ -325,7 +329,8 @@ void GeneratedNode::generate_signals(const Config & config)
 
       // Decode buffer - temporary space for decoding incoming data
       signal_decode_buffer_storage_.emplace_back(signal_cfg.capacity, 0);
-      signal_registry_.back().signal_decode_buffer = signal_decode_buffer_storage_.back().data();
+      sig_desc.signal_decode_buffer.data = signal_decode_buffer_storage_.back().data();
+      sig_desc.signal_decode_buffer.len = signal_decode_buffer_storage_.back().size();
     }
     else
     {
