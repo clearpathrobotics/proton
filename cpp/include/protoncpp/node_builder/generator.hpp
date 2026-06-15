@@ -29,6 +29,8 @@
 #include <cstdint>
 #include <format>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <span>
 #include <sstream>
 #include <string>
@@ -101,6 +103,10 @@ private:
   void init_registry();
   void init_node(const Config & config, const std::string & target_name);
 
+  // Locking methods
+  static proton_status_e lock(void * mutex, void * ctx);
+  static proton_status_e unlock(void * mutex, void * ctx);
+
   // Owned storage for endpoint peers
   std::vector<proton_endpoint_t> node_destination_peers_;
 
@@ -121,6 +127,9 @@ private:
   // Owned storage for string/bytes signal decode buffer (temporary decode space)
   std::vector<std::vector<uint8_t>> signal_decode_buffer_storage_;
   std::vector<uint8_t> signal_scratch_buffer_;
+
+  // Registry locking
+  mutable std::unique_ptr<std::mutex> mtx_ = std::make_unique<std::mutex>();
 
   // The actual node and registry structs (point into owned storage above)
   proton_core_node_t node_{};

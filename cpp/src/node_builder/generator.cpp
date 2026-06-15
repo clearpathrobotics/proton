@@ -415,8 +415,11 @@ void GeneratedNode::init_registry()
     signal_scratch_buffer_.empty() ? nullptr : signal_scratch_buffer_.data();
   registry_.signal_scratch_buffer_size = signal_scratch_buffer_.size();
 
-  // No mutex by default (user can set if needed)
-  registry_.mutex_handles = {.lock = nullptr, .unlock = nullptr, .mutex = nullptr, .arg = nullptr};
+  registry_.mutex_handles = {
+    .lock = GeneratedNode::lock,
+    .unlock = GeneratedNode::unlock,
+    .mutex = mtx_.get(),
+    .arg = nullptr};
 }
 
 void GeneratedNode::init_node(const Config & config, const std::string & target_name)
@@ -434,6 +437,24 @@ void GeneratedNode::init_node(const Config & config, const std::string & target_
   {
     node_.pending_triggers[i] = 0;
   }
+}
+
+proton_status_e GeneratedNode::lock(void * mutex, void * ctx)
+{
+  (void)ctx;
+  std::mutex * mtx = static_cast<std::mutex *>(mutex);
+  mtx->lock();
+
+  return PROTON_OK;
+}
+
+proton_status_e GeneratedNode::unlock(void * mutex, void * ctx)
+{
+  (void)ctx;
+  std::mutex * mtx = static_cast<std::mutex *>(mutex);
+  mtx->unlock();
+
+  return PROTON_OK;
 }
 
 }  // namespace proton::node_builder
