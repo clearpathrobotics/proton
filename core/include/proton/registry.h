@@ -99,8 +99,10 @@ extern "C"
   {
     uint32_t id;
     proton_signal_type_e type;
-    // For strings and bytes, capacity of the signal. For other types, this is the size of the internal type.
+    // For strings and bytes, current size of the signal. For other types, this is the size of the internal type.
     uint16_t value_size;
+    // For strings and bytes, max size of the signal. Others, 0
+    uint16_t capacity;
     proton_Signal signal;
     // Decode buffer for string/bytes signals (NULL for other types)
     uint8_t * signal_decode_buffer;

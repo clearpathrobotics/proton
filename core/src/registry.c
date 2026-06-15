@@ -328,23 +328,23 @@ static proton_status_e proton_signal_get_buffer(
     return PROTON_ERROR;
   }
 
-  size_t signal_capacity = desc->value_size;
+  size_t signal_size = desc->value_size;
   if (expected_tag == proton_Signal_string_value_tag)
   {
-    signal_capacity = strnlen(desc->signal.signal.string_value, desc->value_size);
-    if (signal_capacity < desc->value_size)
+    signal_size = strnlen(desc->signal.signal.string_value, desc->capacity);
+    if (signal_size < desc->capacity)
     {
-      signal_capacity += 1;  // Account for null terminator if not present
+      signal_size += 1;  // Account for null terminator if not present
     }
   }
 
-  if (capacity < signal_capacity)
+  if (capacity < signal_size)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
 
-  memcpy(buf, desc->signal.signal.string_value, signal_capacity);
-  *out_len = signal_capacity;
+  memcpy(buf, desc->signal.signal.string_value, signal_size);
+  *out_len = signal_size;
   return PROTON_OK;
 }
 
@@ -373,22 +373,25 @@ proton_status_e proton_signal_set_string(
   {
     return PROTON_ERROR;
   }
-  if (desc->value_size < len)
-  {
-    return PROTON_INSUFFICIENT_BUFFER_ERROR;
-  }
 
-  size_t capacity = strnlen(str, len);
-  if (capacity == len)
+  size_t string_len = strnlen(str, len);
+  if (string_len == len)
   {
     return PROTON_ERROR;  // Input string is not null-terminated within the specified length
   }
   else
   {
-    capacity += 1;  // Account for null terminator
+    string_len += 1;  // Account for null terminator
   }
 
-  memcpy(desc->signal.signal.string_value, str, capacity);
+  if (desc->capacity < string_len)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+
+  desc->value_size = string_len;
+
+  memcpy(desc->signal.signal.string_value, str, string_len);
   return PROTON_OK;
 }
 
@@ -417,7 +420,7 @@ proton_status_e proton_signal_set_bytes(
   {
     return PROTON_ERROR;
   }
-  if (desc->value_size < len)
+  if (desc->capacity < len)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }

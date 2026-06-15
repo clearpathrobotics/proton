@@ -227,8 +227,9 @@ void GeneratedNode::generate_endpoints(const Config & config, const std::string 
 void GeneratedNode::generate_signals(const Config & config)
 {
   signal_registry_.reserve(config.signals.size());
+  signal_value_buffer_storage_.reserve(config.signals.size());
   signal_decode_buffer_storage_.reserve(config.signals.size());
-  signal_scratch_buffer_.reserve(PROTON_SCRATCH_BUFFER_SIZE);
+  signal_scratch_buffer_.resize(PROTON_SCRATCH_BUFFER_SIZE);
 
   for (size_t idx = 0; idx < config.signals.size(); idx++)
   {
@@ -246,6 +247,7 @@ void GeneratedNode::generate_signals(const Config & config)
       .id = signal_cfg.id,
       .type = sig_type,
       .value_size = value_size,
+      .capacity = signal_cfg.capacity,
       .signal = proton_Signal_init_zero,
       .signal_decode_buffer = nullptr,
     };
@@ -288,18 +290,50 @@ void GeneratedNode::generate_signals(const Config & config)
       }
     }
 
-    signal_registry_.push_back(sig_desc);
-
-    // Allocate decode buffer for string/bytes signals
+    // Allocate buffers for string/bytes signals
     if (sig_type == PROTON_STRING || sig_type == PROTON_BYTES)
     {
+      signal_value_buffer_storage_.emplace_back(signal_cfg.capacity, 0);
+
+      if (signal_cfg.has_default_value)
+      {
+        ConfigNode value_node(signal_cfg.value);
+        if (sig_type == PROTON_STRING)
+        {
+          std::memcpy(
+            signal_value_buffer_storage_.back().data(), value_node.as_string().c_str(),
+            value_node.as_string().size() + 1);
+          sig_desc.value_size = value_node.as_string().size() + 1;
+        }
+        else if (sig_type == PROTON_BYTES)
+        {
+          std::vector<uint8_t> bytes_value;
+          for (const auto & item : value_node)
+          {
+            bytes_value.push_back(static_cast<uint8_t>(item.as_uint32()));
+          }
+
+          std::memcpy(
+            signal_value_buffer_storage_.back().data(), bytes_value.data(), bytes_value.size());
+          sig_desc.value_size = bytes_value.size();
+        }
+      }
+
+      // Value buffer - where the actual signal value is stored
+      sig_desc.signal.signal.string_value =
+        reinterpret_cast<char *>(signal_value_buffer_storage_.back().data());
+
+      // Decode buffer - temporary space for decoding incoming data
       signal_decode_buffer_storage_.emplace_back(signal_cfg.capacity, 0);
-      sig_desc.signal_decode_buffer = signal_decode_buffer_storage_.back().data();
+      signal_registry_.back().signal_decode_buffer = signal_decode_buffer_storage_.back().data();
     }
     else
     {
+      signal_value_buffer_storage_.emplace_back();   // Empty vector for non-string/bytes
       signal_decode_buffer_storage_.emplace_back();  // Empty vector for non-string/bytes
     }
+
+    signal_registry_.push_back(sig_desc);
   }
 }
 
@@ -355,7 +389,7 @@ void GeneratedNode::generate_bundles(const Config & config)
   }
 
   // Build space for encode/decode buffer (largest bundle signal count)
-  bundle_encode_decode_buffer_.reserve(max_signal_count);
+  bundle_encode_decode_buffer_.resize(max_signal_count);
 }
 
 void GeneratedNode::init_registry()
@@ -367,6 +401,7 @@ void GeneratedNode::init_registry()
   // Signal table and lookups
   registry_.signal_registry = signal_registry_.data();
   registry_.encode_decode_buffer = bundle_encode_decode_buffer_.data();
+  registry_.encode_decode_buffer_count = bundle_encode_decode_buffer_.size();
   registry_.signal_count = signal_registry_.size();
 
   // Scratch buffer for string/bytes encoding/decoding

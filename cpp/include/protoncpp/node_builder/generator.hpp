@@ -116,7 +116,9 @@ private:
   std::vector<proton_Signal> bundle_encode_decode_buffer_;
   std::vector<signal_desc_t> signal_registry_;
 
-  // Owned storage for string/bytes signal decode buffer
+  // Owned storage for string/bytes signal value buffer (where actual values are stored)
+  std::vector<std::vector<uint8_t>> signal_value_buffer_storage_;
+  // Owned storage for string/bytes signal decode buffer (temporary decode space)
   std::vector<std::vector<uint8_t>> signal_decode_buffer_storage_;
   std::vector<uint8_t> signal_scratch_buffer_;
 
