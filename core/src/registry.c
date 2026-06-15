@@ -384,7 +384,7 @@ proton_status_e proton_signal_set_string(
     string_len += 1;  // Account for null terminator
   }
 
-  if (desc->capacity < string_len)
+  if (len > desc->capacity || desc->capacity < string_len)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
