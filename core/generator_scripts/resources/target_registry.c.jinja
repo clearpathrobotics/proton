@@ -53,11 +53,19 @@ signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
     {% if signal.type in ("string", "bytes") %}
     .signal.signal.{{ signal.type }}_value = g_signal_{{ signal.name }}_buffer,
     .value_size = PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
-    .signal_decode_buffer = g_signal_{{ signal.name }}_decode_buffer,
+    .capacity = PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
+    .signal_decode_buffer = {
+      .data = g_signal_{{ signal.name }}_decode_buffer,
+      .len = PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
+    },
     {% else %}
     .signal.signal.{{ signal.type }}_value = {{ signal.value }},
     .value_size = sizeof({{ signal.type }}{% if "int" in signal.type %}_t{% endif %}),
-    .signal_decode_buffer = NULL,
+    .capacity = 0,
+    .signal_decode_buffer = {
+      .data = NULL,
+      .len = 0,
+    },
     {% endif %}
   },
 {% endfor %}

@@ -70,6 +70,103 @@ proton_signal_type_e proton_get_type_from_tag(pb_size_t tag)
   }
 }
 
+pb_size_t proton_get_tag_from_type(proton_signal_type_e type)
+{
+  switch (type)
+  {
+    case PROTON_DOUBLE:
+      return proton_Signal_double_value_tag;
+    case PROTON_FLOAT:
+      return proton_Signal_float_value_tag;
+    case PROTON_INT32:
+      return proton_Signal_int32_value_tag;
+    case PROTON_INT64:
+      return proton_Signal_int64_value_tag;
+    case PROTON_UINT32:
+      return proton_Signal_uint32_value_tag;
+    case PROTON_UINT64:
+      return proton_Signal_uint64_value_tag;
+    case PROTON_BOOL:
+      return proton_Signal_bool_value_tag;
+    case PROTON_STRING:
+      return proton_Signal_string_value_tag;
+    case PROTON_BYTES:
+      return proton_Signal_bytes_value_tag;
+    default:
+      return 0;
+  }
+}
+
+uint16_t get_signal_value_size(proton_signal_type_e type, uint32_t capacity)
+{
+  switch (type)
+  {
+    case PROTON_DOUBLE:
+      return sizeof(double);
+    case PROTON_FLOAT:
+      return sizeof(float);
+    case PROTON_INT32:
+      return sizeof(int32_t);
+    case PROTON_INT64:
+      return sizeof(int64_t);
+    case PROTON_UINT32:
+      return sizeof(uint32_t);
+    case PROTON_UINT64:
+      return sizeof(uint64_t);
+    case PROTON_BOOL:
+      return sizeof(bool);
+    case PROTON_STRING:
+    case PROTON_BYTES:
+      return capacity;
+    default:
+      return 0;
+  }
+}
+
+proton_signal_type_e string_to_signal_type(const char * type_str)
+{
+  if (strncmp(type_str, "double", strlen("double")) == 0)
+  {
+    return PROTON_DOUBLE;
+  }
+  else if (strncmp(type_str, "float", strlen("float")) == 0)
+  {
+    return PROTON_FLOAT;
+  }
+  else if (strncmp(type_str, "int32", strlen("int32")) == 0)
+  {
+    return PROTON_INT32;
+  }
+  else if (strncmp(type_str, "int64", strlen("int64")) == 0)
+  {
+    return PROTON_INT64;
+  }
+  else if (strncmp(type_str, "uint32", strlen("uint32")) == 0)
+  {
+    return PROTON_UINT32;
+  }
+  else if (strncmp(type_str, "uint64", strlen("uint64")) == 0)
+  {
+    return PROTON_UINT64;
+  }
+  else if (strncmp(type_str, "bool", strlen("bool")) == 0)
+  {
+    return PROTON_BOOL;
+  }
+  else if (strncmp(type_str, "string", strlen("string")) == 0)
+  {
+    return PROTON_STRING;
+  }
+  else if (strncmp(type_str, "bytes", strlen("bytes")) == 0)
+  {
+    return PROTON_BYTES;
+  }
+  else
+  {
+    return PROTON_INVALID_TYPE;
+  }
+}
+
 const bundle_desc_t * proton_registry_get_bundle(
   const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx)
 {
@@ -230,23 +327,24 @@ static proton_status_e proton_signal_get_buffer(
   {
     return PROTON_ERROR;
   }
-  if (capacity < desc->value_size)
+
+  size_t signal_size = desc->value_size;
+  if (expected_tag == proton_Signal_string_value_tag)
+  {
+    signal_size = strnlen(desc->signal.signal.string_value, desc->capacity);
+    if (signal_size < desc->capacity)
+    {
+      signal_size += 1;  // Account for null terminator if not present
+    }
+  }
+
+  if (capacity < signal_size)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
 
-  size_t string_capacity = desc->value_size;
-  if (expected_tag == proton_Signal_string_value_tag)
-  {
-    string_capacity = strnlen(desc->signal.signal.string_value, desc->value_size);
-    if (string_capacity < desc->value_size)
-    {
-      string_capacity += 1;  // Account for null terminator if not present
-    }
-  }
-
-  memcpy(buf, desc->signal.signal.string_value, string_capacity);
-  *out_len = string_capacity;
+  memcpy(buf, desc->signal.signal.string_value, signal_size);
+  *out_len = signal_size;
   return PROTON_OK;
 }
 
@@ -275,23 +373,25 @@ proton_status_e proton_signal_set_string(
   {
     return PROTON_ERROR;
   }
-  if (desc->value_size < len)
-  {
-    return PROTON_INSUFFICIENT_BUFFER_ERROR;
-  }
 
-  size_t capacity = strnlen(str, len);
-  if (capacity == len)
+  size_t string_len = strnlen(str, len);
+  if (string_len == len)
   {
     return PROTON_ERROR;  // Input string is not null-terminated within the specified length
   }
   else
   {
-    capacity += 1;  // Account for null terminator
+    string_len += 1;  // Account for null terminator
   }
 
-  memcpy(desc->signal.signal.string_value, str, capacity);
-  desc->value_size = len;
+  if (len > desc->capacity || desc->capacity < string_len)
+  {
+    return PROTON_INSUFFICIENT_BUFFER_ERROR;
+  }
+
+  desc->value_size = string_len;
+
+  memcpy(desc->signal.signal.string_value, str, string_len);
   return PROTON_OK;
 }
 
@@ -320,7 +420,7 @@ proton_status_e proton_signal_set_bytes(
   {
     return PROTON_ERROR;
   }
-  if (desc->value_size < len)
+  if (desc->capacity < len)
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }

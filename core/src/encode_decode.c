@@ -184,39 +184,33 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
 
     switch (incoming.which_signal)
     {
+      case proton_Signal_bytes_value_tag:
       case proton_Signal_string_value_tag:
       {
-        char * decode_buf =
-          (char *)registry->signal_registry[signal_registry_idx].signal_decode_buffer;
-        if (decode_buf == NULL)
+        proton_buffer_t * decode_buf =
+          &registry->signal_registry[signal_registry_idx].signal_decode_buffer;
+        if (decode_buf->data == NULL)
         {
           return false;
         }
-        size_t capacity = registry->signal_registry[signal_registry_idx].value_size;
+        size_t capacity = registry->signal_registry[signal_registry_idx].capacity;
         if (scratch_buf.len > capacity)
         {
           return false;
         }
-        memcpy(decode_buf, scratch_buf.data, scratch_buf.len);
-        signal->signal.string_value = decode_buf;
+        memcpy(decode_buf->data, scratch_buf.data, scratch_buf.len);
+        if (incoming.which_signal == proton_Signal_bytes_value_tag)
+        {
+          signal->signal.bytes_value = decode_buf->data;
+        }
+        else
+        {
+          signal->signal.string_value = decode_buf->data;
+        }
+        decode_buf->len = scratch_buf.len;
         break;
       }
-      case proton_Signal_bytes_value_tag:
-      {
-        uint8_t * decode_buf = registry->signal_registry[signal_registry_idx].signal_decode_buffer;
-        if (decode_buf == NULL)
-        {
-          return false;
-        }
-        size_t capacity = registry->signal_registry[signal_registry_idx].value_size;
-        if (scratch_buf.len > capacity)
-        {
-          return false;
-        }
-        memcpy(decode_buf, scratch_buf.data, scratch_buf.len);
-        signal->signal.bytes_value = decode_buf;
-        break;
-      }
+
       default:
       {
         memcpy(&signal->signal, &incoming.signal, sizeof(incoming.signal));
@@ -300,7 +294,8 @@ static proton_status_e proton_decode_bundle(
     {
       // value pointer in union points to the decode buffer — copy content into registry
       const void * src = signal_ptr->signal.string_value;  // same union slot as bytes_value
-      memcpy(desc->signal.signal.string_value, src, desc->value_size);
+      memcpy(desc->signal.signal.string_value, src, desc->signal_decode_buffer.len);
+      desc->value_size = desc->signal_decode_buffer.len;
     }
     else
     {

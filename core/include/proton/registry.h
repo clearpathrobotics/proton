@@ -99,11 +99,13 @@ extern "C"
   {
     uint32_t id;
     proton_signal_type_e type;
-    // For strings and bytes, capacity of the signal. For other types, this is the size of the internal type.
+    // For strings and bytes, current size of the signal. For other types, this is the size of the internal type.
     uint16_t value_size;
+    // For strings and bytes, max size of the signal. Others, 0
+    uint16_t capacity;
     proton_Signal signal;
     // Decode buffer for string/bytes signals (NULL for other types)
-    uint8_t * signal_decode_buffer;
+    proton_buffer_t signal_decode_buffer;
   } signal_desc_t;
 
   /**
@@ -217,6 +219,24 @@ extern "C"
    * @return the signal type
    */
   proton_signal_type_e proton_get_type_from_tag(pb_size_t tag);
+
+  /**
+   * Get the signal tag from type
+   * @return the protobuf tag
+   */
+  pb_size_t proton_get_tag_from_type(proton_signal_type_e type);
+
+  /**
+   * Get the size of a value for a given type, for string/bytes types, return given capacity
+   * @return the size of the value for the type, or capacity for string/bytes types
+   */
+  uint16_t get_signal_value_size(proton_signal_type_e type, uint32_t capacity);
+
+  /**
+   * Get the signal type from a string representation. Used for parsing config files
+   * @return the signal type, or PROTON_INVALID_TYPE if the string does not match a valid type
+   */
+  proton_signal_type_e string_to_signal_type(const char * type_str);
 
   /*
    * Typed signal accessors.

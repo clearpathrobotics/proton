@@ -92,11 +92,32 @@ inline constexpr std::string_view SERIAL = "serial";
 
 struct SignalConfig
 {
+  SignalConfig() = default;
+  SignalConfig(std::string name, uint32_t id, std::string type_string)
+  : name(std::move(name)),
+    id(id),
+    type_string(std::move(type_string)),
+    value_size(0),
+    capacity(0),
+    has_default_value(false)
+  {
+  }
+  SignalConfig(std::string name, uint32_t id, std::string type_string, uint16_t capacity)
+  : name(std::move(name)),
+    id(id),
+    type_string(std::move(type_string)),
+    value_size(capacity),
+    capacity(capacity),
+    has_default_value(false)
+  {
+  }
+
   std::string name;
-  uint32_t id;
+  uint32_t id{};
   std::string type_string;
-  uint32_t capacity;
-  bool has_default_value;
+  uint16_t value_size{};
+  uint16_t capacity{};
+  bool has_default_value{};
   ConfigValue value;
 };
 
