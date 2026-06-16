@@ -121,6 +121,40 @@ jobs:
           path: core_coverage_summary.txt
           retention-days: 30
 
+  test-proto-generation:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ubuntu:24.04
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential \
+            cmake \
+            pkg-config \
+            python3 \
+            python3-pip \
+            python3-protobuf \
+            protobuf-compiler \
+            git
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure CMake with proto generation
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DPROTON_BUILD_TESTS=OFF \
+            -DPROTON_GENERATE_PROTOS=ON
+
+      - name: Build proton_core and proton_cpp
+        run: |
+          cmake --build build --target proton_core proton_cpp --parallel
+
   comment-coverage-on-pr:
     if: github.event_name == 'pull_request'
     needs: [test-proton-core]
