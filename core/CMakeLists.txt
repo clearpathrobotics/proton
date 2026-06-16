@@ -179,14 +179,6 @@ if (PROTON_INSTALL)
       DESTINATION include/proton/generated
     )
   endif()
-
-  install(
-    FILES
-      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonConfig.cmake
-      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonConfigVersion.cmake
-      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonCoreGenerator.cmake
-    DESTINATION lib/cmake/proton
-  )
 endif()
 
 # Testing
