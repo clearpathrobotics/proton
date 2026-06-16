@@ -79,7 +79,7 @@ if (PROTON_INSTALL)
     FILES
       ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
       ${CMAKE_CURRENT_BINARY_DIR}/protonConfigVersion.cmake
-      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonFunctions.cmake
+      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonCoreGenerator.cmake
     DESTINATION lib/cmake/proton
   )
 endif()
