@@ -40,6 +40,10 @@ endif()
 # Export targets from libraries
 include(CMakePackageConfigHelpers)
 
+# Bake build-time config into installed package config
+set(PROTON_INSTALLED_WITH_JSON_PARSER ${PROTON_NODE_BUILDER_JSON_PARSER})
+set(PROTON_INSTALLED_WITH_YAML_PARSER ${PROTON_NODE_BUILDER_YAML_PARSER})
+
 configure_package_config_file(
   cmake/protonConfig.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/protonConfig.cmake
