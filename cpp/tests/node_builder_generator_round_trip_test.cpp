@@ -382,7 +382,6 @@ TEST_F(GeneratedNodeRoundTripTest, RoundTripString)
   ASSERT_GT(bytes_encoded, 0u);
 
   // Clear the string signal
-  // TODO this breaks the test later on
   ASSERT_EQ(proton_signal_set_string(registry, SIG_STRING_ID, "", 1), PROTON_OK);
 
   proton_Proton decoded_msg = proton_Proton_init_zero;

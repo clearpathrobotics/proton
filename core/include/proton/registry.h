@@ -23,9 +23,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "proton_core/bundle.pb.h"
-#include "proton_core/proton.pb.h"
-#include "proton_core/signal.pb.h"
+#include "proton/generated/bundle.pb.h"
+#include "proton/generated/proton.pb.h"
+#include "proton/generated/signal.pb.h"
 
 #include "proton/common.h"
 #include "proton/proton_config.h"

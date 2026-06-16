@@ -121,6 +121,110 @@ jobs:
           path: core_coverage_summary.txt
           retention-days: 30
 
+  test-proto-generation:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ubuntu:24.04
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential \
+            cmake \
+            pkg-config \
+            python3 \
+            python3-pip \
+            python3-protobuf \
+            protobuf-compiler \
+            git
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure CMake with proto generation
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DPROTON_BUILD_TESTS=OFF \
+            -DPROTON_GENERATE_PROTOS=ON
+
+      - name: Build proton_core and proton_cpp
+        run: |
+          cmake --build build --target proton_core proton_cpp --parallel
+
+  test-install:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ubuntu:24.04
+
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential \
+            cmake \
+            pkg-config \
+            libyaml-cpp-dev \
+            nlohmann-json3-dev \
+            git
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure and build
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=20 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DPROTON_BUILD_TESTS=OFF \
+            -DPROTON_ENABLE_ALLOC=ON \
+            -DPROTON_NODE_BUILDER=ON \
+            -DPROTON_NODE_BUILDER_YAML_PARSER=ON \
+            -DPROTON_NODE_BUILDER_JSON_PARSER=ON \
+            -DPROTON_INSTALL=ON
+          cmake --build build --parallel
+
+      - name: Install to staging directory
+        run: |
+          cmake --install build --prefix /tmp/proton-install
+
+      - name: Verify install structure
+        run: |
+          test -f /tmp/proton-install/lib/libproton_core.a
+          test -f /tmp/proton-install/lib/libproton_cpp.a
+          test -f /tmp/proton-install/include/proton/registry.h
+          test -f /tmp/proton-install/include/proton/generated/signal.pb.h
+          test -f /tmp/proton-install/include/protoncpp/node_builder/generator.hpp
+          test -f /tmp/proton-install/include/pb.h
+          test -f /tmp/proton-install/lib/cmake/proton/protonConfig.cmake
+
+      - name: Test find_package works
+        run: |
+          mkdir -p /tmp/consumer && cd /tmp/consumer
+          cat > CMakeLists.txt << 'EOF'
+          cmake_minimum_required(VERSION 3.20)
+          project(consumer)
+          find_package(proton REQUIRED)
+          add_executable(test_consumer main.cpp)
+          target_link_libraries(test_consumer proton::proton_cpp)
+          EOF
+          cat > main.cpp << 'EOF'
+          #include <proton/registry.h>
+          #include <protoncpp/node_builder/generator.hpp>
+          int main() { return 0; }
+          EOF
+          cmake -B build \
+            -DCMAKE_CXX_STANDARD=20 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DCMAKE_PREFIX_PATH=/tmp/proton-install
+          cmake --build build
+
   comment-coverage-on-pr:
     if: github.event_name == 'pull_request'
     needs: [test-proton-core]

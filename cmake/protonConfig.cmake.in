@@ -2,37 +2,13 @@
 
 include(CMakeFindDependencyMacro)
 
-# Find dependencies required by protoncpp
-find_package(PkgConfig REQUIRED)
-  if(PkgConfig_FOUND)
-    pkg_search_module(Protobuf protobuf CONFIG REQUIRED)
-  endif()
-find_dependency(Protobuf REQUIRED)
-
-# Abseil may be needed for protobuf v22+
-find_dependency(absl CONFIG QUIET)
-if(NOT absl_FOUND)
-  find_package(Abseil QUIET)
+# Find dependencies that were enabled at build time
+if(@PROTON_INSTALLED_WITH_JSON_PARSER@)
+  find_dependency(nlohmann_json REQUIRED)
 endif()
 
-if (PROTON_NODE_BUILDER_JSON_PARSER OR PROTON_NODE_BUILDER_YAML_PARSER)
-  if (NOT PROTON_NODE_BUILDER)
-    message(ERROR "PROTON_NODE_BUILDER must be enabled for PROTON_NODE_BUILDER_JSON_PARSER or PROTON_NODE_BUILDER_YAML_PARSER")
-  endif()
-endif()
-
-if (PROTON_NODE_BUILDER)
-  if (NOT PROTON_ENABLE_ALLOC)
-    message(ERROR "PROTON_ENABLE_ALLOC must be enabled for PROTON_NODE_BUILDER")
-  endif()
-
-  if (PROTON_NODE_BUILDER_JSON_PARSER)
-    find_package(nlohmann_json REQUIRED)
-  endif()
-
-  if (PROTON_NODE_BUILDER_YAML_PARSER)
-    find_package(yaml-cpp REQUIRED)
-  endif()
+if(@PROTON_INSTALLED_WITH_YAML_PARSER@)
+  find_dependency(yaml-cpp REQUIRED)
 endif()
 
 # Include the targets file

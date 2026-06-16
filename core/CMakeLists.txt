@@ -1,113 +1,129 @@
 cmake_minimum_required(VERSION 3.14)
 project(proton_core C CXX)
 
-include(FetchContent)
 # -------------------------------
-# Fetch nanopb (runtime + generator)
+# Vendored nanopb
 # -------------------------------
-set(nanopb_BUILD_GENERATOR ON CACHE BOOL "Build nanopb generator" FORCE)
-FetchContent_Declare(
-  nanopb
-  GIT_REPOSITORY https://github.com/nanopb/nanopb.git
-  GIT_TAG        0.4.9.1
-  SOURCE_SUBDIR  null
-)
-FetchContent_MakeAvailable(nanopb)
+set(NANOPB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../external/nanopb)
 
-# Protobuf compiler
-find_program(PROTOC_EXECUTABLE protoc)
-if(NOT PROTOC_EXECUTABLE)
-  message(FATAL_ERROR "Could not find protoc")
+# -------------------------------
+# Proto generation (conditional)
+# -------------------------------
+if(PROTON_GENERATE_PROTOS)
+  # protobuf v*.23.0+ will fail to find Abseil, which is a required dependency.
+  # Using pkg-config to find protobuf config information instead of direct find_package, to get correct dependencies
+  find_package(PkgConfig REQUIRED)
+  if(PkgConfig_FOUND)
+    pkg_search_module(Protobuf protobuf CONFIG REQUIRED)
+  endif()
+
+  find_package(Protobuf REQUIRED)
+
+  if (Protobuf_VERSION_MINOR GREATER_EQUAL 23)
+    find_package(absl CONFIG QUIET)
+    if(NOT absl_FOUND)
+      message(WARNING "Abseil not found via CMake config, trying pkg-config")
+      if(PkgConfig_FOUND)
+        pkg_search_module(Abseil absl)
+      endif()
+    endif()
+  endif()
+
+  # Protobuf compiler required for generation
+  find_program(PROTOC_EXECUTABLE protoc)
+  if(NOT PROTOC_EXECUTABLE)
+    message(FATAL_ERROR "PROTON_GENERATE_PROTOS=ON but protoc not found")
+  endif()
+
+  set(PROTO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
+  set(PROTO_FILES
+    ${PROTO_PATH}/signal.proto
+    ${PROTO_PATH}/bundle.proto
+    ${PROTO_PATH}/proton.proto
+  )
+  set(PROTO_OPTION_FILES ${PROTO_PATH}/signal.options)
+  set(PROTO_DEPENDS ${PROTO_FILES} ${PROTO_OPTION_FILES})
+
+  # Generated sources go into build dir
+  set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
+  set(GENERATED_INC_DIR ${CMAKE_CURRENT_BINARY_DIR}/include/proton/generated)
+  set(GENERATED_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/src)
+  file(MAKE_DIRECTORY ${GENERATED_DIR})
+  file(MAKE_DIRECTORY ${GENERATED_INC_DIR})
+  file(MAKE_DIRECTORY ${GENERATED_SRC_DIR})
+
+  set(NANOPB_GENERATED_FILES
+    "${GENERATED_DIR}/signal.pb.c"
+    "${GENERATED_DIR}/signal.pb.h"
+    "${GENERATED_DIR}/bundle.pb.c"
+    "${GENERATED_DIR}/bundle.pb.h"
+    "${GENERATED_DIR}/proton.pb.c"
+    "${GENERATED_DIR}/proton.pb.h"
+  )
+
+  set(NANOPB_GENERATED_SRCS
+    "${GENERATED_SRC_DIR}/signal.pb.c"
+    "${GENERATED_SRC_DIR}/bundle.pb.c"
+    "${GENERATED_SRC_DIR}/proton.pb.c"
+  )
+
+  set(NANOPB_GENERATED_HEADERS
+    "${GENERATED_INC_DIR}/signal.pb.h"
+    "${GENERATED_INC_DIR}/bundle.pb.h"
+    "${GENERATED_INC_DIR}/proton.pb.h"
+  )
+
+  add_custom_command(
+    OUTPUT ${NANOPB_GENERATED_FILES}
+    COMMAND protoc
+      --proto_path=${PROTO_PATH}
+      --plugin=protoc-gen-nanopb=${NANOPB_DIR}/generator/protoc-gen-nanopb
+      --nanopb_out=${GENERATED_DIR} signal.proto bundle.proto proton.proto
+      -I${NANOPB_DIR}/generator/proto
+    DEPENDS ${PROTO_DEPENDS}
+    WORKING_DIRECTORY ${PROTO_PATH}
+    COMMENT "Generating nanopb files"
+  )
+
+  add_custom_command(
+    OUTPUT ${NANOPB_GENERATED_SRCS}
+    COMMAND sed -i 's|"bundle.pb.h"|"proton/generated/bundle.pb.h"|' ${GENERATED_DIR}/bundle.pb.c
+    COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.c
+    COMMAND sed -i 's|"proton.pb.h"|"proton/generated/proton.pb.h"|' ${GENERATED_DIR}/proton.pb.c
+    COMMAND cp ${GENERATED_DIR}/*.pb.c ${GENERATED_SRC_DIR}
+    DEPENDS ${NANOPB_GENERATED_FILES}
+  )
+
+  add_custom_command(
+    OUTPUT ${NANOPB_GENERATED_HEADERS}
+    COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
+    COMMAND sed -i 's|"bundle.pb.h"|"proton/generated/bundle.pb.h"|' ${GENERATED_DIR}/proton.pb.h
+    COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/proton.pb.h
+    COMMAND cp ${GENERATED_DIR}/*.pb.h ${GENERATED_INC_DIR}
+    DEPENDS ${NANOPB_GENERATED_FILES}
+  )
+
+  add_custom_target(generate_protoc ALL
+    DEPENDS
+    ${NANOPB_GENERATED_FILES}
+    ${NANOPB_GENERATED_SRCS}
+    ${NANOPB_GENERATED_HEADERS}
+  )
+
+  # Include path for generated headers (build dir)
+  set(PROTON_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/include)
+
+else()
+  # Use pre-committed generated files
+  set(NANOPB_GENERATED_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/generated/signal.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/generated/bundle.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/generated/proton.pb.c
+  )
+
+  # Include path for generated headers (source dir)
+  set(PROTON_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
-
-# -------------------------------
-# Proto files
-# -------------------------------
-set(PROTO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
-set(PROTO_FILES
-  ${PROTO_PATH}/signal.proto
-  ${PROTO_PATH}/bundle.proto
-  ${PROTO_PATH}/proton.proto
-)
-
-set(PROTO_OPTION_FILES
-  ${PROTO_PATH}/signal.options
-)
-
-set(PROTO_DEPENDS ${PROTO_FILES} ${PROTO_OPTION_FILES})
-
-# Generated sources go into build dir
-set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
-set(GENERATED_INC_DIR ${CMAKE_CURRENT_BINARY_DIR}/include/${PROJECT_NAME})
-set(GENERATED_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/src)
-file(MAKE_DIRECTORY ${GENERATED_DIR})
-file(MAKE_DIRECTORY ${GENERATED_INC_DIR})
-file(MAKE_DIRECTORY ${GENERATED_SRC_DIR})
-
-# -------------------------------
-# Custom command to run protoc + nanopb generator
-# -------------------------------
-set(NANOPB_GENERATED_FILES
-  "${GENERATED_DIR}/signal.pb.c"
-  "${GENERATED_DIR}/signal.pb.h"
-  "${GENERATED_DIR}/bundle.pb.c"
-  "${GENERATED_DIR}/bundle.pb.h"
-  "${GENERATED_DIR}/proton.pb.c"
-  "${GENERATED_DIR}/proton.pb.h"
-)
-
-set(NANOPB_GENERATED_SRCS
-  "${GENERATED_SRC_DIR}/signal.pb.c"
-  "${GENERATED_SRC_DIR}/bundle.pb.c"
-  "${GENERATED_SRC_DIR}/proton.pb.c"
-)
-
-set(NANOPB_GENERATED_HEADERS
-  "${GENERATED_INC_DIR}/signal.pb.h"
-  "${GENERATED_INC_DIR}/bundle.pb.h"
-  "${GENERATED_INC_DIR}/proton.pb.h"
-)
-
-add_custom_command(
-  OUTPUT ${NANOPB_GENERATED_FILES}
-  COMMAND protoc
-    --proto_path=${PROTO_PATH}
-    --plugin=protoc-gen-nanopb=${nanopb_SOURCE_DIR}/generator/protoc-gen-nanopb
-    --nanopb_out=${GENERATED_DIR} signal.proto bundle.proto proton.proto
-    -I${nanopb_SOURCE_DIR}/generator/proto
-  DEPENDS ${PROTO_DEPENDS}
-  WORKING_DIRECTORY ${PROTO_PATH}
-  COMMENT "Generating nanopb files for ${PROTO_NAME}.proto"
-)
-
-add_custom_command(
-  OUTPUT ${NANOPB_GENERATED_SRCS}
-  COMMAND sed -i 's|"bundle.pb.h"|"${PROJECT_NAME}/bundle.pb.h"|' ${GENERATED_DIR}/bundle.pb.c
-  COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.c
-  COMMAND sed -i 's|"proton.pb.h"|"${PROJECT_NAME}/proton.pb.h"|' ${GENERATED_DIR}/proton.pb.c
-  COMMAND cp ${GENERATED_DIR}/signal.pb.c ${GENERATED_SRC_DIR}
-  COMMAND cp ${GENERATED_DIR}/bundle.pb.c ${GENERATED_SRC_DIR}
-  COMMAND cp ${GENERATED_DIR}/proton.pb.c ${GENERATED_SRC_DIR}
-  DEPENDS ${PROTO_DEPENDS} ${NANOPB_GENERATED_FILES}
-)
-
-add_custom_command(
-  OUTPUT ${NANOPB_GENERATED_HEADERS}
-  COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
-  COMMAND sed -i 's|"bundle.pb.h"|"${PROJECT_NAME}/bundle.pb.h"|' ${GENERATED_DIR}/proton.pb.h
-  COMMAND sed -i 's|"signal.pb.h"|"${PROJECT_NAME}/signal.pb.h"|' ${GENERATED_DIR}/proton.pb.h
-  COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
-  COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-  COMMAND cp ${GENERATED_DIR}/proton.pb.h ${GENERATED_INC_DIR}
-  DEPENDS ${PROTO_DEPENDS} ${NANOPB_GENERATED_FILES}
-)
-
-add_custom_target(generate_protoc ALL
-  DEPENDS
-  ${NANOPB_GENERATED_FILES}
-  ${NANOPB_GENERATED_SRCS}
-  ${NANOPB_GENERATED_HEADERS}
-)
 
 # -------------------------------
 # proton_core library
@@ -121,9 +137,9 @@ add_library(${PROJECT_NAME}
   src/proton_field_callbacks.c
   src/transport/serial.c
   src/transport/udp4.c
-  ${nanopb_SOURCE_DIR}/pb_common.c
-  ${nanopb_SOURCE_DIR}/pb_decode.c
-  ${nanopb_SOURCE_DIR}/pb_encode.c
+  ${NANOPB_DIR}/pb_common.c
+  ${NANOPB_DIR}/pb_decode.c
+  ${NANOPB_DIR}/pb_encode.c
   ${NANOPB_GENERATED_SRCS}
 )
 
@@ -133,18 +149,19 @@ if(PROTON_ENABLE_ALLOC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
 endif()
 
-add_dependencies(${PROJECT_NAME} generate_protoc)
-
-target_include_directories(${PROJECT_NAME} PUBLIC)
+if(PROTON_GENERATE_PROTOS)
+  add_dependencies(${PROJECT_NAME} generate_protoc)
+endif()
 
 add_library(proton::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-    $<BUILD_INTERFACE:${nanopb_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${PROTON_GENERATED_INCLUDE_DIR}>
+    $<BUILD_INTERFACE:${NANOPB_DIR}>
     $<BUILD_INTERFACE:${PROTON_COMMON_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:include>
 )
 
 # Install
@@ -161,18 +178,26 @@ if (PROTON_INSTALL)
     DESTINATION include
   )
 
-  install(DIRECTORY
-    ${GENERATED_INC_DIR}/
-    DESTINATION include/proton_core
+  install(FILES
+    ${NANOPB_DIR}/pb.h
+    ${NANOPB_DIR}/pb_common.h
+    ${NANOPB_DIR}/pb_decode.h
+    ${NANOPB_DIR}/pb_encode.h
+    DESTINATION include
   )
 
-  install(
-    FILES
-      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonConfig.cmake
-      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonConfigVersion.cmake
-      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonCoreGenerator.cmake
-    DESTINATION lib/cmake/proton
-  )
+  # Install generated headers
+  if(PROTON_GENERATE_PROTOS)
+    install(DIRECTORY
+      ${GENERATED_INC_DIR}/
+      DESTINATION include/proton/generated
+    )
+  else()
+    install(DIRECTORY
+      ${CMAKE_CURRENT_SOURCE_DIR}/include/proton/generated/
+      DESTINATION include/proton/generated
+    )
+  endif()
 endif()
 
 # Testing
