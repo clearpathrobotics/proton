@@ -23,8 +23,8 @@ function(proton_core_generator GENERATED_FILES GENERATED_FOLDER TARGET)
 
   get_filename_component(PROTON_CORE_CMAKE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_FILE}" DIRECTORY)
   get_filename_component(PROTON_ROOT_DIR "${PROTON_CORE_CMAKE_DIR}" DIRECTORY)
-  set(PROTON_CORE_GENERATOR_SCRIPT "${PROTON_ROOT_DIR}/core/generator_scripts/generator.py")
-  set(PROTON_CORE_PYTHONPATH "$ENV{PYTHONPATH}:${PROTON_ROOT_DIR}/core/generator_scripts")
+  set(PROTON_CORE_GENERATOR_SCRIPT "${PROTON_ROOT_DIR}/generator_scripts/generator.py")
+  set(PROTON_CORE_PYTHONPATH "$ENV{PYTHONPATH}:${PROTON_ROOT_DIR}/generator_scripts")
 
 
   find_package(Python3 REQUIRED COMPONENTS Interpreter)

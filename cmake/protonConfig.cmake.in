@@ -15,8 +15,25 @@ if(NOT absl_FOUND)
   find_package(Abseil QUIET)
 endif()
 
-# yaml-cpp is required by protoncpp
-find_dependency(yaml-cpp REQUIRED)
+if (PROTON_NODE_BUILDER_JSON_PARSER OR PROTON_NODE_BUILDER_YAML_PARSER)
+  if (NOT PROTON_NODE_BUILDER)
+    message(ERROR "PROTON_NODE_BUILDER must be enabled for PROTON_NODE_BUILDER_JSON_PARSER or PROTON_NODE_BUILDER_YAML_PARSER")
+  endif()
+endif()
+
+if (PROTON_NODE_BUILDER)
+  if (NOT PROTON_ENABLE_ALLOC)
+    message(ERROR "PROTON_ENABLE_ALLOC must be enabled for PROTON_NODE_BUILDER")
+  endif()
+
+  if (PROTON_NODE_BUILDER_JSON_PARSER)
+    find_package(nlohmann_json REQUIRED)
+  endif()
+
+  if (PROTON_NODE_BUILDER_YAML_PARSER)
+    find_package(yaml-cpp REQUIRED)
+  endif()
+endif()
 
 # Include the targets file
 include("${CMAKE_CURRENT_LIST_DIR}/ProtonTargets.cmake")
