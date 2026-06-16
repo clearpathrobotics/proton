@@ -2,17 +2,19 @@
 
 include(CMakeFindDependencyMacro)
 
-# Find dependencies required by protoncpp
-find_package(PkgConfig REQUIRED)
-  if(PkgConfig_FOUND)
-    pkg_search_module(Protobuf protobuf CONFIG REQUIRED)
-  endif()
-find_dependency(Protobuf REQUIRED)
+if (PROTON_GENERATE_PROTOS)
+# Find dependencies required when regenerating proto files
+  find_package(PkgConfig REQUIRED)
+    if(PkgConfig_FOUND)
+      pkg_search_module(Protobuf protobuf CONFIG REQUIRED)
+    endif()
+  find_dependency(Protobuf REQUIRED)
 
-# Abseil may be needed for protobuf v22+
-find_dependency(absl CONFIG QUIET)
-if(NOT absl_FOUND)
-  find_package(Abseil QUIET)
+  # Abseil may be needed for protobuf v22+
+  find_dependency(absl CONFIG QUIET)
+  if(NOT absl_FOUND)
+    find_package(Abseil QUIET)
+  endif()
 endif()
 
 if (PROTON_NODE_BUILDER_JSON_PARSER OR PROTON_NODE_BUILDER_YAML_PARSER)
