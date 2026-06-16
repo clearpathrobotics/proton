@@ -65,7 +65,6 @@ jobs:
             python3-yaml \
             python3-protobuf \
             protobuf-compiler \
-            libboost-all-dev \
             libyaml-cpp-dev \
             nlohmann-json3-dev \
             libgtest-dev \
