@@ -109,7 +109,6 @@ bundle_desc_t g_bundle_table[PROTON_BUNDLE_REGISTRY_SIZE] = {
 static proton_Signal g_encode_decode_buffer[{{ max_bundle_signals.value if max_bundle_signals.value > 0 else 1 }}] = {};
 
 // Scratch buffer used as a temporary decode target for string/bytes signals
-// TODO manage the size of this buffer at build time
 static uint8_t g_signal_decode_scratch[PROTON_SCRATCH_BUFFER_SIZE];
 
 proton_registry_t g_proton_registry = {

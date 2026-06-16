@@ -1,24 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(proton_core_cpp C CXX)
-
-# Code coverage instrumentation option
-option(PROTON_BUILD_TESTS "Build unit tests" ON)
-option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
-option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
-option(PROTON_NODE_BUILDER "Enable optional runtime node generation from config file" OFF)
-option(PROTON_NODE_BUILDER_YAML_PARSER "Enable optional yaml config file parsing" OFF)
-option(PROTON_NODE_BUILDER_JSON_PARSER "Enable optional json file parsing" OFF)
-
-if (PROTON_BUILD_TESTS)
-  add_compile_options(-Werror -Wall -Wextra)
-  if(PROTON_ENABLE_TEST_COVERAGE)
-    message(STATUS "Code coverage instrumentation enabled for proton_core")
-    add_compile_options(-fprofile-arcs -ftest-coverage)
-    add_link_options(--coverage)
-  endif()
-elseif(PROTON_ENABLE_TEST_COVERAGE)
-   message(ERROR "Testing must be enabled to build test coverage")
-endif()
+project(proton_cpp C CXX)
 
 set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
@@ -81,6 +62,33 @@ endif()
 
 add_library(proton::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
+if (PROTON_INSTALL)
+  install(TARGETS ${PROJECT_NAME}
+    EXPORT ProtonTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+  )
+
+  install(DIRECTORY
+    include/
+    DESTINATION include
+  )
+
+  install(DIRECTORY
+    ${GENERATED_INC_DIR}/
+    DESTINATION include/protoncpp
+  )
+
+  install(
+    FILES
+      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonConfig.cmake
+      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonConfigVersion.cmake
+      ${CMAKE_CURRENT_LIST_DIR}/../cmake/protonCoreGenerator.cmake
+    DESTINATION lib/cmake/proton
+  )
+endif()
+
 # Testing
 if (PROTON_BUILD_TESTS)
   enable_testing()
@@ -110,7 +118,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(registry_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(registry_test_cpp PUBLIC
@@ -124,7 +132,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(lock_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(lock_test_cpp PUBLIC
@@ -138,7 +146,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(node_manager_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(node_manager_test_cpp PUBLIC
@@ -152,7 +160,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(serial_transport_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(serial_transport_test_cpp PUBLIC
@@ -165,7 +173,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(udp4_transport_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(udp4_transport_test_cpp PUBLIC
@@ -178,7 +186,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(node_builder_config_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(node_builder_config_test_cpp PUBLIC
@@ -191,7 +199,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(node_builder_config_tree_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(node_builder_config_tree_test_cpp PUBLIC
@@ -204,7 +212,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(node_builder_generator_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(node_builder_generator_test_cpp PUBLIC
@@ -217,7 +225,7 @@ if (PROTON_BUILD_TESTS)
 
   target_link_libraries(node_builder_generator_round_trip_test_cpp PUBLIC
     GTest::gtest_main
-    proton::proton_core_cpp
+    proton::proton_cpp
   )
 
   target_include_directories(node_builder_generator_round_trip_test_cpp PUBLIC

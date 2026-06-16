@@ -56,8 +56,8 @@ static bool proton_bundle_overdue_ms(
  * @return status of the operation
  */
 static proton_status_e proton_node_encode_bundle_desc(
-  proton_core_node_t * node, size_t slot_id, uint64_t uptime_ms, uint8_t * buffer,
-  size_t buffer_len, size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
+  proton_node_t * node, size_t slot_id, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,
+  size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
   size_t * num_selected_peers)
 {
   bundle_desc_t * bundle_handle = &node->registry->bundle_table[slot_id];
@@ -93,7 +93,7 @@ static proton_status_e proton_node_encode_bundle_desc(
     node->registry, bundle_handle->bundle_id, buffer, buffer_len, out_len);
 }
 
-proton_status_e proton_node_receive(proton_core_node_t * node, const uint8_t * buffer, size_t len)
+proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buffer, size_t len)
 {
   if (node == NULL || node->registry == NULL || buffer == NULL)
   {
@@ -150,9 +150,8 @@ proton_status_e proton_node_receive(proton_core_node_t * node, const uint8_t * b
 }
 
 proton_status_e proton_node_update(
-  proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,
-  size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
-  size_t * num_selected_peers)
+  proton_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len, size_t * out_len,
+  proton_endpoint_t * dest_peers, size_t num_dest_peers, size_t * num_selected_peers)
 {
   if (
     node == NULL || node->registry == NULL || buffer == NULL || out_len == NULL ||
@@ -250,7 +249,7 @@ proton_status_e proton_node_update(
   return ret;
 }
 
-proton_status_e proton_node_trigger_bundle(proton_core_node_t * node, uint32_t bundle_id)
+proton_status_e proton_node_trigger_bundle(proton_node_t * node, uint32_t bundle_id)
 {
   if (node == NULL || node->registry == NULL)
   {
@@ -297,8 +296,8 @@ proton_status_e proton_node_trigger_bundle(proton_core_node_t * node, uint32_t b
 }
 
 proton_status_e proton_node_encode_bundle(
-  proton_core_node_t * node, uint32_t bundle_id, uint64_t uptime_ms, uint8_t * buffer,
-  size_t buffer_len, size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
+  proton_node_t * node, uint32_t bundle_id, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,
+  size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
   size_t * num_selected_peers)
 {
   if (

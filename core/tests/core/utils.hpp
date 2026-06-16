@@ -53,9 +53,9 @@ extern "C"
     return copy;
   }
 
-  proton_core_node_t copy_default_node(proton_core_node_t * original_node)
+  proton_node_t copy_default_node(proton_node_t * original_node)
   {
-    proton_core_node_t copy = *original_node;
+    proton_node_t copy = *original_node;
     if (original_node->num_peers > 0)
     {
       proton_endpoint_t * peers_copy =

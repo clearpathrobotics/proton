@@ -26,7 +26,7 @@
 #include <cstring>
 
 extern proton_registry_t g_proton_registry;
-extern proton_core_node_t g_target_node;
+extern proton_node_t g_target_node;
 
 // -----------------------------------------------------------------------
 // Test fixture
@@ -84,7 +84,7 @@ protected:
   }
 
   proton_registry_t registry_;
-  proton_core_node_t node_;
+  proton_node_t node_;
 
   bool lock_called_;
   bool unlock_called_;

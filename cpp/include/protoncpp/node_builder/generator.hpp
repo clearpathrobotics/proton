@@ -90,8 +90,8 @@ public:
   GeneratedNode & operator=(GeneratedNode &&) = default;
 
   // Accessors
-  proton_core_node_t * node() { return &node_; }
-  const proton_core_node_t * node() const { return &node_; }
+  proton_node_t * node() { return &node_; }
+  const proton_node_t * node() const { return &node_; }
   proton_registry_t * registry() { return &registry_; }
   const proton_registry_t * registry() const { return &registry_; }
 
@@ -132,7 +132,7 @@ private:
   mutable std::unique_ptr<std::mutex> mtx_ = std::make_unique<std::mutex>();
 
   // The actual node and registry structs (point into owned storage above)
-  proton_core_node_t node_{};
+  proton_node_t node_{};
   proton_registry_t registry_{};
 };
 
