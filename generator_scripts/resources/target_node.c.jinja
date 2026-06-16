@@ -60,7 +60,7 @@ static const proton_endpoint_t g_target_connections[] = {
 {% endfor %}
 };
 
-proton_core_node_t g_target_node = {
+proton_node_t g_target_node = {
   .id = PROTON_NODE_{{ target | upper }}_ID,
   .destination_peers = g_target_connections,
   .num_peers = (uint8_t)(sizeof(g_target_connections) / sizeof(g_target_connections[0])),

@@ -60,7 +60,7 @@ extern "C"
     uint32_t pending_triggers[PROTON_MAX_PENDING_TRIGGERS];
     uint8_t trigger_head;
     uint8_t trigger_tail;
-  } proton_core_node_t;  // TODO change to proton_node_t as part of protonc deprecation
+  } proton_node_t;
 
   /**
    * Receive a message for a node, decode it, and update the registry and bundle callbacks as necessary
@@ -71,8 +71,7 @@ extern "C"
    * This function will decode the message, update the signal registry with new information,
    * and call the relevant bundle callback if a bundle is successfully decoded.
    */
-  proton_status_e proton_node_receive(
-    proton_core_node_t * node, const uint8_t * buffer, size_t len);
+  proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buffer, size_t len);
 
   /**
    * Update function to be called periodically by the user to check if there are any messages to send
@@ -85,20 +84,19 @@ extern "C"
    *   - "most overdue" non-triggered bundles
    */
   proton_status_e proton_node_update(
-    proton_core_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,
-    size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
-    size_t * num_selected_peers);
+    proton_node_t * node, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len, size_t * out_len,
+    proton_endpoint_t * dest_peers, size_t num_dest_peers, size_t * num_selected_peers);
 
   /**
    * Set a bundle ID to be sent at the next available node update, according to priority rules.
    */
-  proton_status_e proton_node_trigger_bundle(proton_core_node_t * node, uint32_t bundle_id);
+  proton_status_e proton_node_trigger_bundle(proton_node_t * node, uint32_t bundle_id);
 
   /**
    * Encode a bundle by ID and write it to the provided buffer
    */
   proton_status_e proton_node_encode_bundle(
-    proton_core_node_t * node, uint32_t bundle_id, uint64_t uptime_ms, uint8_t * buffer,
+    proton_node_t * node, uint32_t bundle_id, uint64_t uptime_ms, uint8_t * buffer,
     size_t buffer_len, size_t * out_len, proton_endpoint_t * dest_peers, size_t num_dest_peers,
     size_t * num_selected_peers);
 

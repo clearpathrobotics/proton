@@ -44,7 +44,7 @@ class NodeAccess
 public:
   using Endpoint = proton_endpoint_t;
 
-  explicit NodeAccess(proton_core_node_t * node) : node_(node) {}
+  explicit NodeAccess(proton_node_t * node) : node_(node) {}
 
   proton_status_e receive(const uint8_t * buffer, size_t len) noexcept
   {
@@ -144,7 +144,7 @@ public:
 #endif
 
 private:
-  proton_core_node_t * node_;
+  proton_node_t * node_;
 };
 
 }  // namespace proton
