@@ -9,7 +9,9 @@
     "**/build/**",
     ".clang-format",
     ".github/workflows/**",
-    "*.jinja"
+    "*.jinja",
+    "core/src/generated/**",
+    "core/include/proton/generated/**"
   ],
   "import": [
     "@cspell/dict-en-ca/cspell-ext.json"

@@ -9,6 +9,7 @@ option(PROTON_NODE_BUILDER "Enable optional runtime node generation from config 
 option(PROTON_NODE_BUILDER_YAML_PARSER "Enable optional yaml config file parsing" OFF)
 option(PROTON_NODE_BUILDER_JSON_PARSER "Enable optional json file parsing" OFF)
 option(PROTON_INSTALL "Install proton library" OFF)
+option(PROTON_GENERATE_PROTOS "Regenerate nanopb proto files (requires protoc + Python)" OFF)
 set(PROTON_MAX_PENDING_TRIGGERS 4 CACHE STRING "Number of allowable pending triggers in node_manager")
 
 # Code coverage instrumentation option
