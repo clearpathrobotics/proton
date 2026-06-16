@@ -219,7 +219,10 @@ jobs:
           #include <protoncpp/node_builder/generator.hpp>
           int main() { return 0; }
           EOF
-          cmake -B build -DCMAKE_PREFIX_PATH=/tmp/proton-install
+          cmake -B build \
+            -DCMAKE_CXX_STANDARD=20 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DCMAKE_PREFIX_PATH=/tmp/proton-install
           cmake --build build
 
   comment-coverage-on-pr:
