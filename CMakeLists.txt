@@ -27,25 +27,6 @@ elseif(PROTON_ENABLE_TEST_COVERAGE)
    message(ERROR "Testing must be enabled to build test coverage")
 endif()
 
-# protobuf v*.23.0+ will fail to find Abseil, which is a required dependency.
-# Using pkg-config to find protobuf config information instead of direct find_package, to get correct dependencies
-find_package(PkgConfig REQUIRED)
-if(PkgConfig_FOUND)
-  pkg_search_module(Protobuf protobuf CONFIG REQUIRED)
-endif()
-
-find_package(Protobuf REQUIRED)
-
-if (Protobuf_VERSION_MINOR GREATER_EQUAL 23)
-  find_package(absl CONFIG QUIET)
-  if(NOT absl_FOUND)
-    message(WARNING "Abseil not found via CMake config, trying pkg-config")
-    if(PkgConfig_FOUND)
-      pkg_search_module(Abseil absl)
-    endif()
-  endif()
-endif()
-
 add_subdirectory(core)
 add_subdirectory(cpp)
 
