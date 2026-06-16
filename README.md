@@ -2,9 +2,57 @@
 
 [![Proton CI](https://github.com/clearpathrobotics/proton/actions/workflows/ci.yml/badge.svg)](https://github.com/clearpathrobotics/proton/actions/workflows/ci.yml)
 
-Proton communication protocol.
+Proton communication protocol official documentation is available [here](https://docs.clearpathrobotics.com/docs_proton/)
 
-Documentation is available [here](https://docs.clearpathrobotics.com/docs_proton/)
+## Introduction
+
+Proton is a transport-agnostic peer-to-peer communication system for small devices. Internally developed at Clearpath Robotics for low-latency and low-overhead communication between a robot PC and internal embedded systems. Proton aims to reach a middle-ground where communication is simple, yet extendable; easy-to-implement, yet powerful.
+
+Internally, proton uses Google's [Protocol Buffers](https://protobuf.dev/) (aka protobuf) to encode messages sent between peers. Internally, we're using the [nanopb](https://github.com/nanopb/nanopb) library to do the encoding and decoding.
+
+Proton represents data as a `signal`. Each signal has a:
+- id
+- type
+- (optional) capacity (for types that are repeated scalars, such as a string or bytearray)
+
+Signals are organized into `bundles`. Bundles may share signals, and bundles may be sent or received to/from multiple peers
+
+Participants on the proton network are called `nodes`. Each node has a set of `endpoints` that represent the communication pathway (`serial` or `udp4`) and relevant parameters.
+
+```yaml
+nodes:
+  - name: pc
+    id: 0
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 192.168.0.1
+        port: 11416
+  - name: mcu
+    id: 1
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 192.168.0.2
+        port: 11417
+
+connections:
+  - first: {node: pc, id: 0}
+    second: {node: mcu, id: 0}
+
+signals:
+  - {name: temperature, id: 0x101, type: double}
+  - {name: speed, id: 0x102, type: int32}
+  - {name: some_text, id: 0x103, type: string, value: "foo"}
+
+bundles:
+  - name: test
+    id: 0x100
+    producers: [mcu]
+    consumers: [pc]
+    signals: [0x101, 0x102, 0x103]
+    period_ms: 100
+```
 
 ## Requirements
 
@@ -59,7 +107,7 @@ Requires:
   - `PROTON_NODE_BUILDER=ON`
   - `nlohmann-json3-dev`
 
-### Optional Features Based on C++ STD >= 20
+### Optional Features Based on C++ std >= 20
 Compiling with `-DCMAKE_CXX_STANDARD=20` or higher will enable a `std::span` API in the C++ libraries.
 
 ## Unit Testing (PROTON_BUILD_TESTS)
@@ -92,6 +140,14 @@ Enables optional code coverage metrics
 Requires:
   - `lcov`
   - `PROTON_BUILD_TESTS=ON`
+
+```
+lcov --directory build_test --capture --output-file coverage.info --ignore-errors mismatch
+
+lcov --remove coverage.info "*tests/*" "/usr/include/*" "*/_deps/*" --output-file coverage.info --ignore-errors unused
+
+genhtml coverage.info --output-directory coverage_report --title "Proton Code Coverage"
+```
 
 ## Build steps
 
