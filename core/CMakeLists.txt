@@ -1,42 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(proton_core C CXX)
 
-option(PROTON_BUILD_TESTS "Build unit tests" ON)
-option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
-option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
-set(PROTON_MAX_PENDING_TRIGGERS 4 CACHE STRING "Number of allowable pending triggers in node_manager")
-
-# Code coverage instrumentation option
-if (PROTON_BUILD_TESTS)
-  add_compile_options(-Werror -Wall -Wextra)
-  if(PROTON_ENABLE_TEST_COVERAGE)
-    message(STATUS "Code coverage instrumentation enabled for proton_core")
-    add_compile_options(-fprofile-arcs -ftest-coverage)
-    add_link_options(--coverage)
-  endif()
-elseif(PROTON_ENABLE_TEST_COVERAGE)
-   message(ERROR "Testing must be enabled to build test coverage")
-endif()
-
-# protobuf v*.23.0+ will fail to find Abseil, which is a required dependency.
-# Using pkg-config to find protobuf config information instead of direct find_package, to get correct dependencies
-find_package(PkgConfig REQUIRED)
-if(PkgConfig_FOUND)
-  pkg_search_module(Protobuf protobuf CONFIG REQUIRED)
-endif()
-
-find_package(Protobuf REQUIRED)
-
-if (Protobuf_VERSION_MINOR GREATER_EQUAL 23)
-  find_package(absl CONFIG QUIET)
-  if(NOT absl_FOUND)
-    message(WARNING "Abseil not found via CMake config, trying pkg-config")
-    if(PkgConfig_FOUND)
-      pkg_search_module(Abseil absl)
-    endif()
-  endif()
-endif()
-
 include(FetchContent)
 # -------------------------------
 # Fetch nanopb (runtime + generator)
@@ -59,7 +23,7 @@ endif()
 # -------------------------------
 # Proto files
 # -------------------------------
-set(PROTO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/proto)
+set(PROTO_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
 set(PROTO_FILES
   ${PROTO_PATH}/signal.proto
   ${PROTO_PATH}/bundle.proto
@@ -146,11 +110,6 @@ add_custom_target(generate_protoc ALL
 )
 
 # -------------------------------
-# autogen signal registry
-# -------------------------------
-set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/tests/generated)
-
-# -------------------------------
 # proton_core library
 # -------------------------------
 set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
@@ -176,9 +135,9 @@ endif()
 
 add_dependencies(${PROJECT_NAME} generate_protoc)
 
-target_include_directories(proton_core PUBLIC ${GENERATED_FOLDER} ../include)
+target_include_directories(${PROJECT_NAME} PUBLIC)
 
-add_library(proton::proton_core ALIAS proton_core)
+add_library(proton::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}
   PUBLIC
@@ -190,7 +149,7 @@ target_include_directories(${PROJECT_NAME}
 
 # Install
 if (PROTON_INSTALL)
-  install(TARGETS proton_core
+  install(TARGETS ${PROJECT_NAME}
     EXPORT ProtonTargets
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
@@ -222,6 +181,11 @@ if(PROTON_BUILD_TESTS)
   find_package(GTest REQUIRED)
   include(${CMAKE_CURRENT_LIST_DIR}/../cmake/protonCoreGenerator.cmake)
 
+  # -------------------------------
+  # autogen signal registry
+  # -------------------------------
+  set(GENERATED_FOLDER ${CMAKE_CURRENT_BINARY_DIR}/tests/generated)
+
   # autogen registry for tests
   set(GENERATED_REGISTRY_FILES
     "${GENERATED_FOLDER}/target_registry.c"
@@ -245,7 +209,7 @@ if(PROTON_BUILD_TESTS)
 
   target_link_libraries(registry_test PUBLIC
     GTest::gtest_main
-    proton::proton_core
+    proton::${PROJECT_NAME}
   )
 
   target_include_directories(registry_test PUBLIC
@@ -260,7 +224,7 @@ if(PROTON_BUILD_TESTS)
 
   target_link_libraries(encode_decode_test PUBLIC
     GTest::gtest_main
-    proton::proton_core
+    proton::${PROJECT_NAME}
   )
 
   target_include_directories(encode_decode_test PUBLIC
@@ -275,7 +239,7 @@ if(PROTON_BUILD_TESTS)
 
   target_link_libraries(serial_transport_test PUBLIC
     GTest::gtest_main
-    proton::proton_core
+    proton::${PROJECT_NAME}
   )
 
   target_include_directories(serial_transport_test PUBLIC
@@ -290,7 +254,7 @@ if(PROTON_BUILD_TESTS)
 
   target_link_libraries(udp4_transport_test PUBLIC
     GTest::gtest_main
-    proton::proton_core
+    proton::${PROJECT_NAME}
   )
 
   target_include_directories(udp4_transport_test PUBLIC
@@ -305,7 +269,7 @@ if(PROTON_BUILD_TESTS)
 
   target_link_libraries(node_manager_test PUBLIC
     GTest::gtest_main
-    proton::proton_core
+    proton::${PROJECT_NAME}
   )
 
   target_include_directories(node_manager_test PUBLIC
@@ -337,7 +301,7 @@ if(PROTON_BUILD_TESTS)
 
   target_link_libraries(multi_node_test PUBLIC
     GTest::gtest_main
-    proton::proton_core
+    proton::${PROJECT_NAME}
   )
 
   target_include_directories(multi_node_test PUBLIC
@@ -369,7 +333,7 @@ if(PROTON_BUILD_TESTS)
 
   target_link_libraries(periodic_bundle_test PUBLIC
     GTest::gtest_main
-    proton::proton_core
+    proton::${PROJECT_NAME}
   )
 
   target_include_directories(periodic_bundle_test PUBLIC
