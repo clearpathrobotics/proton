@@ -169,9 +169,8 @@ jobs:
             build-essential \
             cmake \
             pkg-config \
-            python3 \
-            python3-protobuf \
-            protobuf-compiler \
+            libyaml-cpp-dev \
+            nlohmann-json3-dev \
             git
 
       - name: Checkout repository
@@ -181,7 +180,13 @@ jobs:
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_STANDARD=20 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
             -DPROTON_BUILD_TESTS=OFF \
+            -DPROTON_ENABLE_ALLOC=ON \
+            -DPROTON_NODE_BUILDER=ON \
+            -DPROTON_NODE_BUILDER_YAML_PARSER=ON \
+            -DPROTON_NODE_BUILDER_JSON_PARSER=ON
             -DPROTON_INSTALL=ON
           cmake --build build --parallel
 
@@ -192,8 +197,10 @@ jobs:
       - name: Verify install structure
         run: |
           test -f /tmp/proton-install/lib/libproton_core.a
+          test -f /tmp/proton-install/lib/libproton_cpp.a
           test -f /tmp/proton-install/include/proton/registry.h
           test -f /tmp/proton-install/include/proton/generated/signal.pb.h
+          test -f /tmp/proton-install/include/protoncpp/node_builder/generator.hpp
           test -f /tmp/proton-install/include/pb.h
           test -f /tmp/proton-install/lib/cmake/proton/protonConfig.cmake
 
@@ -204,11 +211,12 @@ jobs:
           cmake_minimum_required(VERSION 3.20)
           project(consumer)
           find_package(proton REQUIRED)
-          add_executable(test_consumer main.c)
-          target_link_libraries(test_consumer proton::proton_core)
+          add_executable(test_consumer main.cpp)
+          target_link_libraries(test_consumer proton::proton_cpp)
           EOF
           cat > main.c << 'EOF'
           #include <proton/registry.h>
+          #include <protoncpp/node_builder/generator.hpp>
           int main() { return 0; }
           EOF
           cmake -B build -DCMAKE_PREFIX_PATH=/tmp/proton-install
