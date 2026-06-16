@@ -71,9 +71,7 @@ if(PROTON_GENERATE_PROTOS)
     COMMAND sed -i 's|"bundle.pb.h"|"proton/generated/bundle.pb.h"|' ${GENERATED_DIR}/bundle.pb.c
     COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.c
     COMMAND sed -i 's|"proton.pb.h"|"proton/generated/proton.pb.h"|' ${GENERATED_DIR}/proton.pb.c
-    COMMAND cp ${GENERATED_DIR}/signal.pb.c ${GENERATED_SRC_DIR}
-    COMMAND cp ${GENERATED_DIR}/bundle.pb.c ${GENERATED_SRC_DIR}
-    COMMAND cp ${GENERATED_DIR}/proton.pb.c ${GENERATED_SRC_DIR}
+    COMMAND cp ${GENERATED_DIR}/*.pb.c ${GENERATED_SRC_DIR}
     DEPENDS ${NANOPB_GENERATED_FILES}
   )
 
@@ -82,9 +80,7 @@ if(PROTON_GENERATE_PROTOS)
     COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
     COMMAND sed -i 's|"bundle.pb.h"|"proton/generated/bundle.pb.h"|' ${GENERATED_DIR}/proton.pb.h
     COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/proton.pb.h
-    COMMAND cp ${GENERATED_DIR}/signal.pb.h ${GENERATED_INC_DIR}
-    COMMAND cp ${GENERATED_DIR}/bundle.pb.h ${GENERATED_INC_DIR}
-    COMMAND cp ${GENERATED_DIR}/proton.pb.h ${GENERATED_INC_DIR}
+    COMMAND cp ${GENERATED_DIR}/*.pb.h ${GENERATED_INC_DIR}
     DEPENDS ${NANOPB_GENERATED_FILES}
   )
 
@@ -146,6 +142,7 @@ target_include_directories(${PROJECT_NAME}
     $<BUILD_INTERFACE:${PROTON_GENERATED_INCLUDE_DIR}>
     $<BUILD_INTERFACE:${NANOPB_DIR}>
     $<BUILD_INTERFACE:${PROTON_COMMON_INCLUDE_DIR}>
+    $<INSTALL_INTERFACE:include>
 )
 
 # Install
@@ -159,6 +156,14 @@ if (PROTON_INSTALL)
 
   install(DIRECTORY
     include/
+    DESTINATION include
+  )
+
+  install(FILES
+    ${NANOPB_DIR}/pb.h
+    ${NANOPB_DIR}/pb_common.h
+    ${NANOPB_DIR}/pb_decode.h
+    ${NANOPB_DIR}/pb_encode.h
     DESTINATION include
   )
 
