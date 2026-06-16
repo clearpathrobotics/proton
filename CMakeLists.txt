@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(proton LANGUAGES C CXX VERSION 0.0.0)
 
 # Feature flags
-option(PROTON_BUILD_TESTS "Build unit tests" ON)
+option(PROTON_BUILD_TESTS "Build unit tests" OFF)
 option(PROTON_ENABLE_TEST_COVERAGE "Enable code coverage instrumentation" OFF)
 option(PROTON_ENABLE_ALLOC "Enable heap allocation and exceptions" OFF)
 option(PROTON_NODE_BUILDER "Enable optional runtime node generation from config file" OFF)
@@ -15,6 +15,8 @@ set(PROTON_MAX_PENDING_TRIGGERS 4 CACHE STRING "Number of allowable pending trig
 # Code coverage instrumentation option
 if (PROTON_BUILD_TESTS)
   enable_testing()
+  set(CMAKE_CXX_STANDARD 23)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
   add_compile_options(-Werror -Wall -Wextra)
   if(PROTON_ENABLE_TEST_COVERAGE)
     message(STATUS "Code coverage instrumentation enabled for proton_core")
