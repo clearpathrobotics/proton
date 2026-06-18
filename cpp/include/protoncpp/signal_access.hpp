@@ -26,6 +26,19 @@
 #include <cstdint>
 #include <type_traits>
 
+#if PROTON_ENABLE_ALLOC
+
+#include <string>
+#include <vector>
+
+#endif  // PROTON_ENABLE_ALLOC
+
+#if __cplusplus >= 202002L
+
+#include <span>
+
+#endif  // __cplusplus >= 202002L
+
 namespace proton
 {
 
@@ -110,7 +123,7 @@ public:
 #else
   // No virtual destructor in embedded mode (no RTTI)
   ~SignalBase() = default;
-#endif
+#endif  // PROTON_ENABLE_ALLOC
 
   uint32_t id() const noexcept { return id_; }
 
@@ -130,6 +143,22 @@ protected:
   uint32_t id_;
 };
 
+namespace detail
+{
+// Helper trait to detect primitive signal types (types with direct SignalAccess support)
+template <typename T>
+struct is_primitive_signal_type
+: std::bool_constant<
+    std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, int32_t> ||
+    std::is_same_v<T, int64_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, uint64_t> ||
+    std::is_same_v<T, bool>>
+{
+};
+
+template <typename T>
+inline constexpr bool is_primitive_signal_type_v = is_primitive_signal_type<T>::value;
+}  // namespace detail
+
 /**
  * @class Signal typed wrapper around a SignalBase. Does not require RTTI, but if
  * RTTI is enabled, it can be safely stored as a SignalBase pointer and dynamically cast back to Signal<T>.
@@ -140,9 +169,17 @@ class Signal : public SignalBase
 public:
   constexpr explicit Signal(proton_registry_t * registry, uint32_t id) : SignalBase(registry, id) {}
 
-  proton_status_e get(T & out) const noexcept { return SignalAccess(registry_).get(id_, out); }
+  template <typename U = T, std::enable_if_t<detail::is_primitive_signal_type_v<U>, int> = 0>
+  proton_status_e get(U & out) const noexcept
+  {
+    return SignalAccess(registry_).get(id_, out);
+  }
 
-  proton_status_e set(T value) noexcept { return SignalAccess(registry_).set(id_, value); }
+  template <typename U = T, std::enable_if_t<detail::is_primitive_signal_type_v<U>, int> = 0>
+  proton_status_e set(U value) noexcept
+  {
+    return SignalAccess(registry_).set(id_, value);
+  }
 
   proton_status_e get(char * buf, size_t cap, size_t & len) const noexcept
   {
@@ -173,6 +210,79 @@ public:
       "set(const uint8_t*, size_t) is only valid for Signal<uint8_t*>");
     return SignalAccess(registry_).set(id_, buf, len);
   }
+
+#if PROTON_ENABLE_ALLOC
+
+  // Some convenience methods for STL types when allocations are allowed
+
+  proton_status_e get(std::string & str) const noexcept
+  {
+    static_assert(
+      std::is_same_v<T, std::string>,
+      "get(std::string&, size_t&) is only valid for Signal<std::string>");
+
+    size_t len;
+    const proton_status_e status =
+      SignalAccess(registry_).get(id_, str.data(), str.capacity(), len);
+
+    if (status == PROTON_OK)
+    {
+      str.resize(len);
+    }
+
+    return status;
+  }
+
+  proton_status_e set(const std::string & str) noexcept
+  {
+    static_assert(
+      std::is_same_v<T, std::string>, "set(std::string&) is only valid for Signal<std::string>");
+
+    return SignalAccess(registry_).set(id_, str.c_str(), str.size() + 1);
+  }
+
+  proton_status_e get(std::vector<uint8_t> & buf) const noexcept
+  {
+    static_assert(
+      std::is_same_v<T, std::vector<uint8_t>>,
+      "get(std::vector<uint8_t>&) is only valid for Signal<std::vector<uint8_t>>");
+
+    size_t len;
+    const proton_status_e status =
+      SignalAccess(registry_).get(id_, buf.data(), buf.capacity(), len);
+
+    if (status == PROTON_OK)
+    {
+      buf.resize(len);
+    }
+
+    return status;
+  }
+
+  proton_status_e set(const std::vector<uint8_t> & buf) noexcept
+  {
+    static_assert(
+      std::is_same_v<T, std::vector<uint8_t>>,
+      "set(std::vector<uint8_t>&) is only valid for Signal<std::vector<uint8_t>>");
+
+    return SignalAccess(registry_).set(id_, buf.data(), buf.size());
+  }
+
+#endif  // PROTON_ENABLE_ALLOC
+
+#if __cplusplus >= 202002L
+
+  proton_status_e get(std::span<uint8_t> buf, size_t & len) const noexcept
+  {
+    return get(buf.data(), buf.size(), len);
+  }
+
+  proton_status_e set(std::span<const uint8_t> buf) const noexcept
+  {
+    return set(buf.data(), buf.size());
+  }
+
+#endif  // __cplusplus >= 202002L
 };
 
 }  // namespace proton
