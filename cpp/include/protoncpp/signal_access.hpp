@@ -277,10 +277,7 @@ public:
     return get(buf.data(), buf.size(), len);
   }
 
-  proton_status_e set(std::span<const uint8_t> buf) const noexcept
-  {
-    return set(buf.data(), buf.size());
-  }
+  proton_status_e set(std::span<const uint8_t> buf) noexcept { return set(buf.data(), buf.size()); }
 
 #endif  // __cplusplus >= 202002L
 };
