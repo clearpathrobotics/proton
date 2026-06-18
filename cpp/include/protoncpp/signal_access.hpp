@@ -225,9 +225,9 @@ public:
     const proton_status_e status =
       SignalAccess(registry_).get(id_, str.data(), str.capacity(), len);
 
-    if (status == PROTON_OK)
+    if (status == PROTON_OK && len > 0)
     {
-      str.resize(len);
+      str.resize(len - 1);
     }
 
     return status;

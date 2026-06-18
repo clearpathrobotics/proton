@@ -924,7 +924,7 @@ TEST(SignalStdString, GetDefaultString)
   std::string buf(PROTON_SIGNAL_DEFAULT_STRING_CAPACITY, '\0');
   proton_status_e status = signal.get(buf);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(buf.size(), 4);  // "foo" + null terminator
+  EXPECT_EQ(buf.size(), 3);
   EXPECT_STREQ(buf.c_str(), "foo");
 
   free(registry.signal_registry);
@@ -942,7 +942,7 @@ TEST(SignalStdString, SetAndGetString)
   std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
   status = signal.get(buf);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(buf.size(), 4);  // "bar" + null terminator
+  EXPECT_EQ(buf.size(), 3);
   EXPECT_STREQ(buf.c_str(), "bar");
 
   free(registry.signal_registry);
@@ -960,7 +960,7 @@ TEST(SignalStdString, SetEmptyString)
   std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
   status = signal.get(buf);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(buf.size(), 1);  // Just null terminator
+  EXPECT_EQ(buf.size(), 0);
   EXPECT_STREQ(buf.c_str(), "");
 
   free(registry.signal_registry);
@@ -993,7 +993,7 @@ TEST(SignalStdString, SetStringAtExactCapacity)
   std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
   status = signal.get(buf);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(buf.size(), PROTON_SIGNAL_STRING_VALUE_CAPACITY);
+  EXPECT_EQ(buf.size(), PROTON_SIGNAL_STRING_VALUE_CAPACITY - 1);
   EXPECT_STREQ(buf.c_str(), at_capacity.c_str());
 
   free(registry.signal_registry);
@@ -1029,7 +1029,7 @@ TEST(SignalStdString, SetAndGetLongString)
   std::string buf(PROTON_SIGNAL_REALLY_LONG_STRING_CAPACITY, '\0');
   status = signal.get(buf);
   ASSERT_EQ(status, PROTON_OK);
-  EXPECT_EQ(buf.size(), long_value.size() + 1);  // Include null terminator
+  EXPECT_EQ(buf.size(), long_value.size());
   EXPECT_STREQ(buf.c_str(), long_value.c_str());
 
   free(registry.signal_registry);
