@@ -911,6 +911,149 @@ TEST(SignalBytes, SetInvalidSignalId)
 }
 
 // =============================================================================
+// Tests for Signal<std::string>
+// =============================================================================
+
+#if PROTON_ENABLE_ALLOC
+
+TEST(SignalStdString, GetDefaultString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_DEFAULT_STRING_ID);
+
+  std::string buf(PROTON_SIGNAL_DEFAULT_STRING_CAPACITY, '\0');
+  proton_status_e status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 4);  // "foo" + null terminator
+  EXPECT_STREQ(buf.c_str(), "foo");
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetAndGetString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  std::string new_value = "bar";
+  proton_status_e status = signal.set(new_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 4);  // "bar" + null terminator
+  EXPECT_STREQ(buf.c_str(), "bar");
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetEmptyString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  std::string empty_value;
+  proton_status_e status = signal.set(empty_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 1);  // Just null terminator
+  EXPECT_STREQ(buf.c_str(), "");
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetStringExceedsCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  // PROTON_SIGNAL_STRING_VALUE_CAPACITY is 8, so a string longer than 7 chars
+  // (plus null terminator) should fail
+  std::string too_long = "this_string_is_way_too_long_for_the_buffer";
+  proton_status_e status = signal.set(too_long);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetStringAtExactCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  // PROTON_SIGNAL_STRING_VALUE_CAPACITY is 8, so a 7-char string + null should fit exactly
+  std::string at_capacity(PROTON_SIGNAL_STRING_VALUE_CAPACITY - 1, 'x');
+  proton_status_e status = signal.set(at_capacity);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), PROTON_SIGNAL_STRING_VALUE_CAPACITY);
+  EXPECT_STREQ(buf.c_str(), at_capacity.c_str());
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, GetWithInsufficientBufferCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_REALLY_LONG_STRING_ID);
+
+  // First set a long string
+  std::string long_value = "ipsumsedolorsitametconsecteturadipiscingeaaa";
+  proton_status_e status = signal.set(long_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  // Try to read with a buffer that's too small
+  std::string small_buf(10, '\0');  // Only 10 bytes capacity, need 46
+  status = signal.get(small_buf);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetAndGetLongString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_REALLY_LONG_STRING_ID);
+
+  std::string long_value = "ipsumsedolorsitametconsecteturadipiscingeaaa";
+  proton_status_e status = signal.set(long_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::string buf(PROTON_SIGNAL_REALLY_LONG_STRING_CAPACITY, '\0');
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), long_value.size() + 1);  // Include null terminator
+  EXPECT_STREQ(buf.c_str(), long_value.c_str());
+
+  free(registry.signal_registry);
+}
+
+#endif  // PROTON_ENABLE_ALLOC
+
+// =============================================================================
+// Tests for Signal<std::vector<uint8_t>>
+// =============================================================================
+
+#if PROTON_ENABLE_ALLOC
+
+#endif  // PROTON_ENABLE_ALLOC
+
+// =============================================================================
+// Tests for Signal<std::span<uint8_t>>
+// =============================================================================
+
+#if __cplusplus >= 202002L
+
+#endif  // __cplusplus >= 202002L
+
+// =============================================================================
 // SignalBase tests (no-RTTI type checking)
 // =============================================================================
 
