@@ -33,7 +33,7 @@ repos:
     hooks:
       - id: clang-format
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v10.0.0
+    rev: v10.0.1
     hooks:
       - id: cspell # Spell check changed files
         args:
