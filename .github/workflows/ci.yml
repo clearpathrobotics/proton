@@ -100,7 +100,7 @@ jobs:
       - name: Generate core coverage report
         run: |
           lcov --directory build_core --capture --output-file core_coverage.info --ignore-errors mismatch
-          lcov --remove core_coverage.info "*tests/*" "/usr/include/*" "*/_deps/*" --output-file core_coverage.info --ignore-errors unused
+          lcov --remove core_coverage.info "*tests/*" "/usr/include/*" "*/_deps/*" "*/external/*" --output-file core_coverage.info --ignore-errors unused
           genhtml core_coverage.info --output-directory core_coverage_report --title "Proton Core Code Coverage"
 
       - name: Generate core coverage summary
