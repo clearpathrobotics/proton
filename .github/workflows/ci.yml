@@ -294,7 +294,7 @@ jobs:
             local metric="$1"
             local file="$2"
             if [[ -f "$file" ]]; then
-              grep -E "^ *${metric}\\.+:" "$file" | sed -E 's/.*: *([0-9]+(\\.[0-9]+)?)%.*/\1/' | head -1
+              grep -E "^ *${metric}\\.+:" "$file" | sed -E 's/.*: *([0-9]+(\.[0-9]+)?)%.*/\1/' | head -1
             else
               echo ""
             fi
