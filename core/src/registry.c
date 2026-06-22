@@ -406,7 +406,7 @@ proton_status_e proton_signal_get_bytes(
 proton_status_e proton_signal_set_bytes(
   const proton_registry_t * registry, uint32_t signal_id, const uint8_t * data, size_t len)
 {
-  if (registry == NULL || data == NULL)
+  if (registry == NULL || (data == NULL && len > 0))
   {
     return PROTON_NULL_PTR_ERROR;
   }
@@ -424,7 +424,16 @@ proton_status_e proton_signal_set_bytes(
   {
     return PROTON_INSUFFICIENT_BUFFER_ERROR;
   }
-  memcpy(desc->signal.signal.bytes_value, data, len);
+
+  if (len == 0)
+  {
+    memset(desc->signal.signal.bytes_value, 0, desc->capacity);
+  }
+  else
+  {
+    memcpy(desc->signal.signal.bytes_value, data, len);
+  }
+
   desc->value_size = len;
   return PROTON_OK;
 }

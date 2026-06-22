@@ -208,6 +208,25 @@ TEST(SignalRegistry, SetBytesExcessiveLength)
   free(registry.signal_registry);
 }
 
+TEST(SignalRegistry, SetEmptyBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_status_e status =
+    proton_signal_set_bytes(&registry, PROTON_SIGNAL_BYTES_VALUE_ID, nullptr, 0);
+  EXPECT_EQ(status, PROTON_OK);
+
+  uint8_t read_value[PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY] = {0xFF};
+  size_t new_len = 0xFF;
+  status = proton_signal_get_bytes(
+    &registry, PROTON_SIGNAL_BYTES_VALUE_ID, read_value, PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY,
+    &new_len);
+
+  EXPECT_EQ(status, PROTON_OK);
+  EXPECT_EQ(new_len, 0);
+
+  free(registry.signal_registry);
+}
+
 TEST(SignalRegistry, SetStringNotNullTerminated)
 {
   proton_registry_t registry = copy_default_registry(&g_proton_registry);

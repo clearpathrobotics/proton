@@ -28,6 +28,10 @@
 #include <vector>
 #endif
 
+#if __cplusplus >= 202002L
+#include <span>
+#endif  // __cplusplus >= 202002L
+
 extern proton_registry_t g_proton_registry;
 
 using namespace proton;
@@ -909,6 +913,409 @@ TEST(SignalBytes, SetInvalidSignalId)
 
   free(registry.signal_registry);
 }
+
+// =============================================================================
+// Tests for Signal<std::string>
+// =============================================================================
+
+#if PROTON_ENABLE_ALLOC
+
+TEST(SignalStdString, GetDefaultString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_DEFAULT_STRING_ID);
+
+  std::string buf(PROTON_SIGNAL_DEFAULT_STRING_CAPACITY, '\0');
+  proton_status_e status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 3);
+  EXPECT_STREQ(buf.c_str(), "foo");
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetAndGetString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  std::string new_value = "bar";
+  proton_status_e status = signal.set(new_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 3);
+  EXPECT_STREQ(buf.c_str(), "bar");
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetEmptyString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  std::string empty_value;
+  proton_status_e status = signal.set(empty_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 0);
+  EXPECT_STREQ(buf.c_str(), "");
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetStringExceedsCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  // PROTON_SIGNAL_STRING_VALUE_CAPACITY is 8, so a string longer than 7 chars
+  // (plus null terminator) should fail
+  std::string too_long = "this_string_is_way_too_long_for_the_buffer";
+  proton_status_e status = signal.set(too_long);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetStringAtExactCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID);
+
+  // PROTON_SIGNAL_STRING_VALUE_CAPACITY is 8, so a 7-char string + null should fit exactly
+  std::string at_capacity(PROTON_SIGNAL_STRING_VALUE_CAPACITY - 1, 'x');
+  proton_status_e status = signal.set(at_capacity);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::string buf(PROTON_SIGNAL_STRING_VALUE_CAPACITY, '\0');
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), PROTON_SIGNAL_STRING_VALUE_CAPACITY - 1);
+  EXPECT_STREQ(buf.c_str(), at_capacity.c_str());
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, GetWithInsufficientBufferCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_REALLY_LONG_STRING_ID);
+
+  // First set a long string
+  std::string long_value = "ipsumsedolorsitametconsecteturadipiscingeaaa";
+  proton_status_e status = signal.set(long_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  // Try to read with a buffer that's too small
+  std::string small_buf(10, '\0');  // Only 10 bytes capacity, need 46
+  status = signal.get(small_buf);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdString, SetAndGetLongString)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::string> signal(&registry, PROTON_SIGNAL_REALLY_LONG_STRING_ID);
+
+  std::string long_value = "ipsumsedolorsitametconsecteturadipiscingeaaa";
+  proton_status_e status = signal.set(long_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::string buf(PROTON_SIGNAL_REALLY_LONG_STRING_CAPACITY, '\0');
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), long_value.size());
+  EXPECT_STREQ(buf.c_str(), long_value.c_str());
+
+  free(registry.signal_registry);
+}
+
+#endif  // PROTON_ENABLE_ALLOC
+
+// =============================================================================
+// Tests for Signal<std::vector<uint8_t>>
+// =============================================================================
+
+#if PROTON_ENABLE_ALLOC
+
+TEST(SignalStdVector, GetDefaultBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::vector<uint8_t>> signal(&registry, PROTON_SIGNAL_DEFAULT_BYTES_ID);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY);
+  proton_status_e status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 3);
+  EXPECT_EQ(buf[0], 0);
+  EXPECT_EQ(buf[1], 1);
+  EXPECT_EQ(buf[2], 2);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdVector, SetAndGetBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::vector<uint8_t>> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  std::vector<uint8_t> new_value = {0xAA, 0xBB, 0xCC, 0xDD};
+  proton_status_e status = signal.set(new_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 4);
+  EXPECT_EQ(buf, new_value);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdVector, SetEmptyBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::vector<uint8_t>> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  std::vector<uint8_t> empty_value;
+  empty_value.resize(0);
+  proton_status_e status = signal.set(empty_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), 0);
+  EXPECT_TRUE(buf.empty());
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdVector, SetBytesExceedsCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::vector<uint8_t>> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  // PROTON_SIGNAL_BYTES_VALUE_CAPACITY is the max, so exceed it
+  std::vector<uint8_t> too_long(PROTON_SIGNAL_BYTES_VALUE_CAPACITY + 10, 0xFF);
+  proton_status_e status = signal.set(too_long);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdVector, SetBytesAtExactCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::vector<uint8_t>> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  std::vector<uint8_t> at_capacity(PROTON_SIGNAL_BYTES_VALUE_CAPACITY, 0xAB);
+  proton_status_e status = signal.set(at_capacity);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  EXPECT_EQ(buf, at_capacity);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdVector, GetWithInsufficientBufferCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::vector<uint8_t>> signal(&registry, PROTON_SIGNAL_REALLY_LONG_BYTES_ID);
+
+  // First set long bytes
+  std::vector<uint8_t> long_value(PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY, 0xCD);
+  proton_status_e status = signal.set(long_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  // Try to read with a buffer that's too small
+  std::vector<uint8_t> small_buf(1);  // Only 1 byte capacity
+  status = signal.get(small_buf);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalStdVector, SetAndGetLongBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<std::vector<uint8_t>> signal(&registry, PROTON_SIGNAL_REALLY_LONG_BYTES_ID);
+
+  std::vector<uint8_t> long_value(PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY, 0xEF);
+  proton_status_e status = signal.set(long_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY);
+  status = signal.get(buf);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(buf.size(), long_value.size());
+  EXPECT_EQ(buf, long_value);
+
+  free(registry.signal_registry);
+}
+
+#endif  // PROTON_ENABLE_ALLOC
+
+// =============================================================================
+// Tests for Signal<std::span<uint8_t>>
+// =============================================================================
+
+#if __cplusplus >= 202002L
+TEST(SignalSpan, GetDefaultBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_DEFAULT_BYTES_ID);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_DEFAULT_BYTES_CAPACITY);
+  size_t len;
+  std::span<uint8_t> s_buf{buf};
+  proton_status_e status = signal.get(s_buf, len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, 3);
+  EXPECT_EQ(buf[0], 0);
+  EXPECT_EQ(buf[1], 1);
+  EXPECT_EQ(buf[2], 2);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalSpan, SetAndGetBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  std::vector<uint8_t> new_value = {0xAA, 0xBB, 0xCC, 0xDD};
+  std::span<const uint8_t> new_value_span{new_value};
+  proton_status_e status = signal.set(new_value_span);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  std::span<uint8_t> s_buf{buf};
+  size_t len;
+  status = signal.get(s_buf, len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, 4);
+  buf.resize(len);
+  EXPECT_EQ(buf, new_value);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalSpan, SetEmptyBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  std::vector<uint8_t> empty_value;
+  std::span<const uint8_t> s_empty_value{empty_value};
+  proton_status_e status = signal.set(s_empty_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  std::span<uint8_t> s_buf{buf};
+  size_t len;
+  status = signal.get(s_buf, len);
+  ASSERT_EQ(status, PROTON_OK);
+  buf.resize(len);
+  EXPECT_EQ(len, 0);
+  EXPECT_TRUE(buf.empty());
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalSpan, SetBytesExceedsCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  // PROTON_SIGNAL_BYTES_VALUE_CAPACITY is the max, so exceed it
+  std::vector<uint8_t> too_long(PROTON_SIGNAL_BYTES_VALUE_CAPACITY + 10, 0xFF);
+  std::span<const uint8_t> s_too_long{too_long};
+  proton_status_e status = signal.set(s_too_long);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalSpan, SetBytesAtExactCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_BYTES_VALUE_ID);
+
+  std::vector<uint8_t> at_capacity(PROTON_SIGNAL_BYTES_VALUE_CAPACITY, 0xAB);
+  std::span<const uint8_t> s_at_capacity{at_capacity};
+  proton_status_e status = signal.set(s_at_capacity);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  std::span<uint8_t> s_buf{buf};
+  size_t len;
+  status = signal.get(s_buf, len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, PROTON_SIGNAL_BYTES_VALUE_CAPACITY);
+  buf.resize(len);
+  EXPECT_EQ(buf, at_capacity);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalSpan, GetWithInsufficientBufferCapacity)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_REALLY_LONG_BYTES_ID);
+
+  // First set long bytes
+  std::vector<uint8_t> long_value(PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY, 0xCD);
+  std::span<const uint8_t> s_long_value{long_value};
+  proton_status_e status = signal.set(s_long_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  // Try to read with a buffer that's too small
+  std::vector<uint8_t> small_buf(1);  // Only 1 byte capacity
+  std::span<uint8_t> s_small_buf{small_buf};
+  size_t len;
+  status = signal.get(s_small_buf, len);
+  EXPECT_EQ(status, PROTON_INSUFFICIENT_BUFFER_ERROR);
+
+  free(registry.signal_registry);
+}
+
+TEST(SignalSpan, SetAndGetLongBytes)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  Signal<uint8_t *> signal(&registry, PROTON_SIGNAL_REALLY_LONG_BYTES_ID);
+
+  std::vector<uint8_t> long_value(PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY, 0xEF);
+  std::span<const uint8_t> s_long_value{long_value};
+  proton_status_e status = signal.set(s_long_value);
+  ASSERT_EQ(status, PROTON_OK);
+
+  std::vector<uint8_t> buf(PROTON_SIGNAL_REALLY_LONG_BYTES_CAPACITY);
+  std::span<uint8_t> s_buf{buf};
+  size_t len;
+  status = signal.get(s_buf, len);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(len, long_value.size());
+  buf.resize(len);
+  EXPECT_EQ(buf, long_value);
+
+  free(registry.signal_registry);
+}
+
+#endif  // __cplusplus >= 202002L
 
 // =============================================================================
 // SignalBase tests (no-RTTI type checking)
