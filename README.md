@@ -144,7 +144,7 @@ Requires:
 ```
 lcov --directory build_test --capture --output-file coverage.info --ignore-errors mismatch
 
-lcov --remove coverage.info "*tests/*" "/usr/include/*" "*/_deps/*" --output-file coverage.info --ignore-errors unused
+lcov --remove coverage.info "*tests/*" "/usr/include/*" "*/_deps/*" "*/external/*" --output-file coverage.info --ignore-errors unused
 
 genhtml coverage.info --output-directory coverage_report --title "Proton Code Coverage"
 ```
@@ -181,6 +181,7 @@ A quick style note for prospective contributors: We use [pre-commit](https://pre
 
 ```bash
 $ python3 -m venv venv
+$ . venv/bin/activate
 $ pip install pre-commit
 $ pre-commit install # In the top-level dir of the repo
 ```
