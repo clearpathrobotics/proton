@@ -93,6 +93,24 @@ static proton_status_e proton_node_encode_bundle_desc(
     node->registry, bundle_handle->bundle_id, buffer, buffer_len, out_len);
 }
 
+/**
+ * @brief Determine if the node is a producer of a particular bundle
+ */
+static bool proton_node_is_producer(uint32_t node_id, const proton_id_list_t * bundle_id_list)
+{
+  bool node_is_producer = false;
+  for (uint8_t i = 0; i < bundle_id_list->count; i++)
+  {
+    if (node_id == bundle_id_list->ids[i])
+    {
+      node_is_producer = true;
+      break;
+    }
+  }
+
+  return node_is_producer;
+}
+
 proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buffer, size_t len)
 {
   if (node == NULL || node->registry == NULL || buffer == NULL)
@@ -189,16 +207,7 @@ proton_status_e proton_node_update(
     bundle_desc_t * bundle_desc = &node->registry->bundle_table[i];
 
     // Don't send bundles that aren't supposed to be sent by this node.
-    bool node_is_producer = false;
-    for (uint8_t j = 0; j < bundle_desc->producer_ids.count; j++)
-    {
-      if (node->id == bundle_desc->producer_ids.ids[j])
-      {
-        node_is_producer = true;
-        break;
-      }
-    }
-    if (!node_is_producer)
+    if (!proton_node_is_producer(node->id, &bundle_desc->producer_ids))
     {
       continue;
     }
@@ -288,17 +297,7 @@ proton_status_e proton_node_trigger_bundle(proton_node_t * node, uint32_t bundle
   }
   else
   {
-    bool node_is_producer = false;
-    for (uint8_t i = 0; i < bundle_desc->producer_ids.count; i++)
-    {
-      if (node->id == bundle_desc->producer_ids.ids[i])
-      {
-        node_is_producer = true;
-        break;
-      }
-    }
-
-    if (node_is_producer)
+    if (proton_node_is_producer(node->id, &bundle_desc->producer_ids))
     {
       size_t next_head = (node->trigger_head + 1) % PROTON_MAX_PENDING_TRIGGERS;
       if (next_head == node->trigger_tail)
