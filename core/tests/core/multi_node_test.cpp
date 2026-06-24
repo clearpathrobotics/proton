@@ -62,20 +62,10 @@ TEST(NodeManagerTest, DoNotSendBundlesWhereNodeIsNotProducer)
   proton_registry_t registry = copy_default_registry(&g_proton_registry);
   proton_node_t node = copy_default_node(&g_target_node);
   node.registry = &registry;
-  uint8_t buf[BUFFER_SIZE];
-  size_t out_len = 0;
-  static constexpr size_t num_endpoints = 2;
-  proton_endpoint_t dest[num_endpoints];
-  size_t num_peers = 0;
 
-  proton_node_trigger_bundle(&node, PROTON_BUNDLE_NODE2_HEARTBEAT_ID);
-
-  ASSERT_EQ(
-    proton_node_update(&node, 1000, buf, sizeof(buf), &out_len, dest, num_endpoints, &num_peers),
-    PROTON_OK);
-
-  EXPECT_EQ(out_len, 0);
-  EXPECT_EQ(num_peers, 0);
+  EXPECT_EQ(
+    proton_node_trigger_bundle(&node, PROTON_BUNDLE_NODE2_HEARTBEAT_ID),
+    PROTON_INCORRECT_TARGET_ERROR);
 }
 
 int main(int argc, char ** argv)

@@ -282,22 +282,39 @@ proton_status_e proton_node_trigger_bundle(proton_node_t * node, uint32_t bundle
   size_t slot_id;
   const bundle_desc_t * bundle_desc =
     proton_registry_get_bundle(node->registry, bundle_id, &slot_id);
-  if (bundle_desc == NULL)
+  if (bundle_desc == NULL || bundle_desc->producer_ids.ids == NULL)
   {
     trig_ret = PROTON_INCORRECT_TARGET_ERROR;
   }
   else
   {
-    size_t next_head = (node->trigger_head + 1) % PROTON_MAX_PENDING_TRIGGERS;
-    if (next_head == node->trigger_tail)
+    bool node_is_producer = false;
+    for (uint8_t i = 0; i < bundle_desc->producer_ids.count; i++)
     {
-      // Trigger buffer is full, cannot accept new triggers
-      trig_ret = PROTON_INSUFFICIENT_BUFFER_ERROR;
+      if (node->id == bundle_desc->producer_ids.ids[i])
+      {
+        node_is_producer = true;
+        break;
+      }
+    }
+
+    if (node_is_producer)
+    {
+      size_t next_head = (node->trigger_head + 1) % PROTON_MAX_PENDING_TRIGGERS;
+      if (next_head == node->trigger_tail)
+      {
+        // Trigger buffer is full, cannot accept new triggers
+        trig_ret = PROTON_INSUFFICIENT_BUFFER_ERROR;
+      }
+      else
+      {
+        node->pending_triggers[node->trigger_head] = slot_id;
+        node->trigger_head = next_head;
+      }
     }
     else
     {
-      node->pending_triggers[node->trigger_head] = slot_id;
-      node->trigger_head = next_head;
+      trig_ret = PROTON_INCORRECT_TARGET_ERROR;
     }
   }
 
