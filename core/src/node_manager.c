@@ -188,14 +188,19 @@ proton_status_e proton_node_update(
   {
     bundle_desc_t * bundle_desc = &node->registry->bundle_table[i];
 
+    // Don't send bundles that aren't supposed to be sent by this node.
     bool node_is_producer = false;
-    for (uint32_t j = 0; j < bundle_desc->producer_ids.count; j++)
+    for (uint8_t j = 0; j < bundle_desc->producer_ids.count; j++)
     {
       if (node->id == bundle_desc->producer_ids.ids[j])
       {
         node_is_producer = true;
         break;
       }
+    }
+    if (!node_is_producer)
+    {
+      continue;
     }
     // Check triggered bundles
     if (bundle_desc->send_now)
@@ -221,8 +226,7 @@ proton_status_e proton_node_update(
       }
     }
     // No triggered bundles, check non-triggered bundles for the most overdue bundle to send
-    // Don't send bundles that aren't supposed to be sent by this node.
-    else if (!send_now_flag && node_is_producer)
+    else if (!send_now_flag)
     {
       if (bundle_desc->period_ms != 0)
       {
