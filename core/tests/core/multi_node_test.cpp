@@ -30,18 +30,19 @@ extern proton_node_t g_target_node;
 
 TEST(NodeManagerTest, BundleForMultipleNodes)
 {
-  g_target_node.registry = &g_proton_registry;
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_node_t node = copy_default_node(&g_target_node);
+  node.registry = &registry;
   uint8_t buf[BUFFER_SIZE];
   size_t out_len = 0;
   static constexpr size_t num_endpoints = 2;
   proton_endpoint_t dest[num_endpoints];
   size_t num_peers = 0;
 
-  proton_node_trigger_bundle(&g_target_node, PROTON_BUNDLE_NODE1_HEARTBEAT_ID);
+  proton_node_trigger_bundle(&node, PROTON_BUNDLE_NODE1_HEARTBEAT_ID);
 
   ASSERT_EQ(
-    proton_node_update(
-      &g_target_node, 1000, buf, sizeof(buf), &out_len, dest, num_endpoints, &num_peers),
+    proton_node_update(&node, 1000, buf, sizeof(buf), &out_len, dest, num_endpoints, &num_peers),
     PROTON_OK);
 
   EXPECT_GT(out_len, 0);
@@ -54,6 +55,17 @@ TEST(NodeManagerTest, BundleForMultipleNodes)
   EXPECT_EQ(dest[1].node_id, static_cast<uint32_t>(PROTON_NODE_NODE3_ID));
   EXPECT_EQ(dest[1].endpoint_id, static_cast<uint32_t>(PROTON_NODE_NODE3_ENDPOINT_0_ID));
   EXPECT_EQ(dest[1].transport_type, PROTON_NODE_NODE3_ENDPOINT_0_TRANSPORT);
+}
+
+TEST(NodeManagerTest, DoNotSendBundlesWhereNodeIsNotProducer)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  proton_node_t node = copy_default_node(&g_target_node);
+  node.registry = &registry;
+
+  EXPECT_EQ(
+    proton_node_trigger_bundle(&node, PROTON_BUNDLE_NODE2_HEARTBEAT_ID),
+    PROTON_INCORRECT_TARGET_ERROR);
 }
 
 int main(int argc, char ** argv)
