@@ -86,8 +86,53 @@ public:
   // Non-copyable, move-only
   GeneratedNode(const GeneratedNode &) = delete;
   GeneratedNode & operator=(const GeneratedNode &) = delete;
-  GeneratedNode(GeneratedNode &&) = default;
-  GeneratedNode & operator=(GeneratedNode &&) = default;
+  GeneratedNode(GeneratedNode && other)
+  {
+    if (this != &other)
+    {
+      node_destination_peers_ = std::move(other.node_destination_peers_);
+      bundle_producer_ids_ = std::move(other.bundle_producer_ids_);
+      bundle_consumer_ids_ = std::move(other.bundle_consumer_ids_);
+      bundle_signal_ids_ = std::move(other.bundle_signal_ids_);
+      bundle_table_ = std::move(other.bundle_table_);
+      bundle_encode_decode_buffer_ = std::move(other.bundle_encode_decode_buffer_);
+      signal_registry_ = std::move(other.signal_registry_);
+      signal_value_buffer_storage_ = std::move(other.signal_value_buffer_storage_);
+      signal_decode_buffer_storage_ = std::move(other.signal_decode_buffer_storage_);
+      signal_scratch_buffer_ = std::move(other.signal_scratch_buffer_);
+      mtx_ = std::move(other.mtx_);
+      node_ = std::move(other.node_);
+      registry_ = std::move(other.registry_);
+      node_.registry = &registry_;
+      node_.destination_peers =
+        node_destination_peers_.empty() ? nullptr : node_destination_peers_.data();
+    }
+  }
+
+  GeneratedNode & operator=(GeneratedNode && other)
+  {
+    if (this != &other)
+    {
+      node_destination_peers_ = std::move(other.node_destination_peers_);
+      bundle_producer_ids_ = std::move(other.bundle_producer_ids_);
+      bundle_consumer_ids_ = std::move(other.bundle_consumer_ids_);
+      bundle_signal_ids_ = std::move(other.bundle_signal_ids_);
+      bundle_table_ = std::move(other.bundle_table_);
+      bundle_encode_decode_buffer_ = std::move(other.bundle_encode_decode_buffer_);
+      signal_registry_ = std::move(other.signal_registry_);
+      signal_value_buffer_storage_ = std::move(other.signal_value_buffer_storage_);
+      signal_decode_buffer_storage_ = std::move(other.signal_decode_buffer_storage_);
+      signal_scratch_buffer_ = std::move(other.signal_scratch_buffer_);
+      mtx_ = std::move(other.mtx_);
+      node_ = std::move(other.node_);
+      registry_ = std::move(other.registry_);
+      node_.registry = &registry_;
+      node_.destination_peers =
+        node_destination_peers_.empty() ? nullptr : node_destination_peers_.data();
+    }
+
+    return *this;
+  }
 
   // Accessors
   proton_node_t * node() { return &node_; }
