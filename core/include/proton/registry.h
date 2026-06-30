@@ -238,6 +238,12 @@ extern "C"
    */
   proton_signal_type_e string_to_signal_type(const char * type_str);
 
+  /**
+   * Signal type to string
+   * @return signal type as string
+   */
+  const char * signal_type_to_string(proton_signal_type_e signal_type);
+
   /*
    * Typed signal accessors.
    *

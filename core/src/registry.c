@@ -167,6 +167,35 @@ proton_signal_type_e string_to_signal_type(const char * type_str)
   }
 }
 
+const char * signal_type_to_string(proton_signal_type_e signal_type)
+{
+  switch (signal_type)
+  {
+    case PROTON_DOUBLE:
+      return "double";
+    case PROTON_FLOAT:
+      return "float";
+    case PROTON_INT32:
+      return "int32";
+    case PROTON_INT64:
+      return "int64";
+    case PROTON_UINT32:
+      return "uint32";
+    case PROTON_UINT64:
+      return "uint64";
+    case PROTON_BOOL:
+      return "bool";
+    case PROTON_STRING:
+      return "string";
+    case PROTON_BYTES:
+      return "bytes";
+    case PROTON_INVALID_TYPE:
+    default:
+      return "invalid";
+  }
+  return "invalid";
+}
+
 const bundle_desc_t * proton_registry_get_bundle(
   const proton_registry_t * registry, uint32_t bundle_id, size_t * slot_idx)
 {

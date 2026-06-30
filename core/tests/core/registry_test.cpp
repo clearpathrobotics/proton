@@ -341,6 +341,22 @@ TEST(SignalRegistry, SetBundlePeriod)
   free(registry.signal_registry);
 }
 
+TEST(SignalRegistry, SignalTypeStrings)
+{
+  std::unordered_map<proton_signal_type_e, std::string> types = {
+    {PROTON_INVALID_TYPE, "invalid"}, {PROTON_DOUBLE, "double"}, {PROTON_FLOAT, "float"},
+    {PROTON_INT32, "int32"},          {PROTON_INT64, "int64"},   {PROTON_UINT32, "uint32"},
+    {PROTON_UINT64, "uint64"},        {PROTON_BOOL, "bool"},     {PROTON_STRING, "string"},
+    {PROTON_BYTES, "bytes"},
+  };
+
+  for (const auto & [type, str] : types)
+  {
+    EXPECT_EQ(signal_type_to_string(type), str);
+    EXPECT_EQ(string_to_signal_type(str.c_str()), type);
+  }
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
