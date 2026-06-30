@@ -42,7 +42,10 @@ static SignalConfig parse_signal(const ConfigNode & node)
   bool valid_value_type = std::any_of(
     value_types::VALUE_TYPES.begin(), value_types::VALUE_TYPES.end(),
     [&signal_config](const std::string_view & val_type)
-    { return signal_config.type_string == val_type; });
+    {
+      return signal_config.type_string == val_type &&
+             signal_config.type_string != value_types::INVALID;
+    });
 
   if (!valid_value_type)
   {
