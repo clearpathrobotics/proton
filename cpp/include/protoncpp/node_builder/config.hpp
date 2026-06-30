@@ -69,6 +69,7 @@ inline constexpr std::string_view PERIOD_MS = "period_ms";
 
 namespace value_types
 {
+inline constexpr std::string_view INVALID = "invalid";
 inline constexpr std::string_view DOUBLE = "double";
 inline constexpr std::string_view FLOAT = "float";
 inline constexpr std::string_view INT32 = "int32";
@@ -79,8 +80,8 @@ inline constexpr std::string_view BOOL = "bool";
 inline constexpr std::string_view STRING = "string";
 inline constexpr std::string_view BYTES = "bytes";
 
-constexpr std::array<std::string_view, 9> VALUE_TYPES = {DOUBLE, FLOAT, INT32,  INT64, UINT32,
-                                                         UINT64, BOOL,  STRING, BYTES};
+constexpr std::array<std::string_view, 10> VALUE_TYPES = {INVALID, DOUBLE, FLOAT, INT32,  INT64,
+                                                          UINT32,  UINT64, BOOL,  STRING, BYTES};
 
 }  // namespace value_types
 
