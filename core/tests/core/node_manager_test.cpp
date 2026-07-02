@@ -697,11 +697,9 @@ TEST_F(NodeManagerTest, MutexBadLockReturnsLockError)
   registry_.mutex_handles.mutex = nullptr;
   registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
   registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
-  // set mock result to an error that's not used in proton_node_trigger_bundle
-  mock_mutex_lock_result_ = PROTON_DISCONNECT_ERROR;
+  mock_mutex_lock_result_ = PROTON_MUTEX_ERROR;
 
-  EXPECT_EQ(
-    proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_DISCONNECT_ERROR);
+  EXPECT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_MUTEX_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_FALSE(unlock_called_);
 }
@@ -712,11 +710,9 @@ TEST_F(NodeManagerTest, MutexBadUnlockReturnsUnlockError)
   registry_.mutex_handles.mutex = nullptr;
   registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
   registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
-  // set mock result to an error that's not used in proton_node_trigger_bundle
-  mock_mutex_unlock_result_ = PROTON_DISCONNECT_ERROR;
+  mock_mutex_unlock_result_ = PROTON_MUTEX_ERROR;
 
-  EXPECT_EQ(
-    proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_DISCONNECT_ERROR);
+  EXPECT_EQ(proton_node_trigger_bundle(&node_, PROTON_BUNDLE_VALUE_TEST_ID), PROTON_MUTEX_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_TRUE(unlock_called_);
 }
@@ -786,7 +782,7 @@ TEST_F(NodeManagerTest, Receive_MutexBadLockReturnsLockError)
   registry_.mutex_handles.mutex = nullptr;
   registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
   registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
-  mock_mutex_lock_result_ = PROTON_DISCONNECT_ERROR;
+  mock_mutex_lock_result_ = PROTON_MUTEX_ERROR;
 
   uint8_t buf[BUFFER_SIZE];
   size_t encoded_len = 0;
@@ -794,7 +790,7 @@ TEST_F(NodeManagerTest, Receive_MutexBadLockReturnsLockError)
     proton_encode_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID, buf, sizeof(buf), &encoded_len),
     PROTON_OK);
 
-  EXPECT_EQ(proton_node_receive(&node_, buf, encoded_len), PROTON_DISCONNECT_ERROR);
+  EXPECT_EQ(proton_node_receive(&node_, buf, encoded_len), PROTON_MUTEX_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_FALSE(unlock_called_);
 }
@@ -805,7 +801,7 @@ TEST_F(NodeManagerTest, Receive_MutexBadUnlockReturnsUnlockError)
   registry_.mutex_handles.mutex = nullptr;
   registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
   registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
-  mock_mutex_unlock_result_ = PROTON_DISCONNECT_ERROR;
+  mock_mutex_unlock_result_ = PROTON_MUTEX_ERROR;
 
   uint8_t buf[BUFFER_SIZE];
   size_t encoded_len = 0;
@@ -813,7 +809,7 @@ TEST_F(NodeManagerTest, Receive_MutexBadUnlockReturnsUnlockError)
     proton_encode_bundle(&registry_, PROTON_BUNDLE_VALUE_TEST_ID, buf, sizeof(buf), &encoded_len),
     PROTON_OK);
 
-  EXPECT_EQ(proton_node_receive(&node_, buf, encoded_len), PROTON_DISCONNECT_ERROR);
+  EXPECT_EQ(proton_node_receive(&node_, buf, encoded_len), PROTON_MUTEX_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_TRUE(unlock_called_);
 }
@@ -861,7 +857,7 @@ TEST_F(NodeManagerTest, Update_MutexBadLockReturnsLockError)
   registry_.mutex_handles.mutex = nullptr;
   registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
   registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
-  mock_mutex_lock_result_ = PROTON_DISCONNECT_ERROR;
+  mock_mutex_lock_result_ = PROTON_MUTEX_ERROR;
 
   uint8_t buf[BUFFER_SIZE];
   size_t out_len = 0;
@@ -870,7 +866,7 @@ TEST_F(NodeManagerTest, Update_MutexBadLockReturnsLockError)
 
   EXPECT_EQ(
     proton_node_update(&node_, 1000, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
-    PROTON_DISCONNECT_ERROR);
+    PROTON_MUTEX_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_FALSE(unlock_called_);
 }
@@ -881,7 +877,7 @@ TEST_F(NodeManagerTest, Update_MutexBadUnlockReturnsUnlockError)
   registry_.mutex_handles.mutex = nullptr;
   registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
   registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
-  mock_mutex_unlock_result_ = PROTON_DISCONNECT_ERROR;
+  mock_mutex_unlock_result_ = PROTON_MUTEX_ERROR;
 
   uint8_t buf[BUFFER_SIZE];
   size_t out_len = 0;
@@ -890,7 +886,7 @@ TEST_F(NodeManagerTest, Update_MutexBadUnlockReturnsUnlockError)
 
   EXPECT_EQ(
     proton_node_update(&node_, 1000, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
-    PROTON_DISCONNECT_ERROR);
+    PROTON_MUTEX_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_TRUE(unlock_called_);
 }
@@ -925,7 +921,7 @@ TEST_F(NodeManagerTest, EncodeBundle_MutexBadLockReturnsLockError)
   registry_.mutex_handles.mutex = nullptr;
   registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
   registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
-  mock_mutex_lock_result_ = PROTON_DISCONNECT_ERROR;
+  mock_mutex_lock_result_ = PROTON_MUTEX_ERROR;
 
   uint8_t buf[BUFFER_SIZE];
   size_t out_len = 0;
@@ -935,7 +931,7 @@ TEST_F(NodeManagerTest, EncodeBundle_MutexBadLockReturnsLockError)
   EXPECT_EQ(
     proton_node_encode_bundle(
       &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
-    PROTON_DISCONNECT_ERROR);
+    PROTON_MUTEX_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_FALSE(unlock_called_);
 }
@@ -946,7 +942,7 @@ TEST_F(NodeManagerTest, EncodeBundle_MutexBadUnlockReturnsUnlockError)
   registry_.mutex_handles.mutex = nullptr;
   registry_.mutex_handles.lock = NodeManagerTest::bundle_lock;
   registry_.mutex_handles.unlock = NodeManagerTest::bundle_unlock;
-  mock_mutex_unlock_result_ = PROTON_DISCONNECT_ERROR;
+  mock_mutex_unlock_result_ = PROTON_MUTEX_ERROR;
 
   uint8_t buf[BUFFER_SIZE];
   size_t out_len = 0;
@@ -956,7 +952,7 @@ TEST_F(NodeManagerTest, EncodeBundle_MutexBadUnlockReturnsUnlockError)
   EXPECT_EQ(
     proton_node_encode_bundle(
       &node_, PROTON_BUNDLE_VALUE_TEST_ID, 0, buf, sizeof(buf), &out_len, dest, 1, &num_peers),
-    PROTON_DISCONNECT_ERROR);
+    PROTON_MUTEX_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_TRUE(unlock_called_);
 }

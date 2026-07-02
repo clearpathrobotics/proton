@@ -38,10 +38,10 @@ extern "C"
 #define PROTON_FRAME_HEADER_LENGTH_OVERHEAD \
   sizeof(uint16_t)                                  // Length is sent in 2 bytes as a uint16_t
 #define PROTON_FRAME_CRC_OVERHEAD sizeof(uint16_t)  // CRC is sent in 2 bytes as a uint16_t
-#define PROTON_FRAME_HEADER_OVERHEAD                                                    \
-  sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_0) + sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_1) + \
-    PROTON_FRAME_HEADER_LENGTH_OVERHEAD
-#define PROTON_FRAME_OVERHEAD PROTON_FRAME_HEADER_OVERHEAD + PROTON_FRAME_CRC_OVERHEAD
+#define PROTON_FRAME_HEADER_OVERHEAD                                                     \
+  (sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_0) + sizeof(PROTON_FRAME_HEADER_MAGIC_BYTE_1) + \
+   PROTON_FRAME_HEADER_LENGTH_OVERHEAD)
+#define PROTON_FRAME_OVERHEAD (PROTON_FRAME_HEADER_OVERHEAD + PROTON_FRAME_CRC_OVERHEAD)
 
   /**
    * @brief Fill header of a serial frame
