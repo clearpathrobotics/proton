@@ -47,28 +47,7 @@ extern "C"
     PROTON_UNSUPPORTED_OPERATION_ERROR,  // Message is not a supported operation
   } proton_status_e;
 
-  /**
-   * @brief Proton node state enum
-   *
-   */
-  typedef enum
-  {
-    PROTON_NODE_UNCONFIGURED,  // Node is unconfigured
-    PROTON_NODE_INACTIVE,      // Node has been configured but has not started sending or receiving
-                               // bundles
-    PROTON_NODE_ACTIVE         // Node is configured and actively sending and receiving bundles
-  } proton_node_state_e;
-
-  /**
-   * @brief Proton transport state enum
-   *
-   */
-  typedef enum
-  {
-    PROTON_TRANSPORT_DISCONNECTED,  // Transport is disconnected
-    PROTON_TRANSPORT_CONNECTED,     // Transport is connected
-    PROTON_TRANSPORT_ERROR          // Transport is in an error state
-  } proton_transport_state_e;
+  const char * proton_status_to_string(proton_status_e status);
 
 #ifdef __cplusplus
 }
