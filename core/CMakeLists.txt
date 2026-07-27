@@ -131,10 +131,11 @@ endif()
 set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
 add_library(${PROJECT_NAME}
-  src/node_manager.c
+  src/common.c
   src/encode_decode.c
-  src/registry.c
+  src/node_manager.c
   src/proton_field_callbacks.c
+  src/registry.c
   src/transport/serial.c
   src/transport/udp4.c
   ${NANOPB_DIR}/pb_common.c
@@ -366,6 +367,17 @@ if(PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
   )
 
+  add_executable(status_to_string_test
+    tests/core/status_to_string_test.cpp
+  )
+  target_link_libraries(status_to_string_test PUBLIC
+    GTest::gtest_main
+    proton::${PROJECT_NAME}
+  )
+  target_include_directories(status_to_string_test PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test)
   gtest_discover_tests(encode_decode_test)
@@ -374,4 +386,5 @@ if(PROTON_BUILD_TESTS)
   gtest_discover_tests(node_manager_test)
   gtest_discover_tests(multi_node_test)
   gtest_discover_tests(periodic_bundle_test)
+  gtest_discover_tests(status_to_string_test)
 endif()
