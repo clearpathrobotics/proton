@@ -145,18 +145,24 @@ protected:
 
 namespace detail
 {
-// Helper trait to detect primitive signal types (types with direct SignalAccess support)
+// Helper trait to detect primitive signal types.
+// Uses std::integral_constant<bool, ...> and std::is_same<...>::value so the trait itself
+// compiles under C++11 (std::bool_constant and std::is_same_v require C++17).
 template <typename T>
 struct is_primitive_signal_type
-: std::bool_constant<
-    std::is_same_v<T, double> || std::is_same_v<T, float> || std::is_same_v<T, int32_t> ||
-    std::is_same_v<T, int64_t> || std::is_same_v<T, uint32_t> || std::is_same_v<T, uint64_t> ||
-    std::is_same_v<T, bool>>
+: std::integral_constant<
+    bool, std::is_same<T, double>::value || std::is_same<T, float>::value ||
+            std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+            std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value ||
+            std::is_same<T, bool>::value>
 {
 };
 
+#if __cplusplus >= 201703L
+// inline constexpr variable templates require C++17.
 template <typename T>
 inline constexpr bool is_primitive_signal_type_v = is_primitive_signal_type<T>::value;
+#endif  // __cplusplus >= 201703L
 }  // namespace detail
 
 /**
@@ -169,13 +175,19 @@ class Signal : public SignalBase
 public:
   constexpr explicit Signal(proton_registry_t * registry, uint32_t id) : SignalBase(registry, id) {}
 
-  template <typename U = T, std::enable_if_t<detail::is_primitive_signal_type_v<U>, int> = 0>
+  // std::enable_if_t is C++14 and is_primitive_signal_type_v is C++17; the underlying
+  // std::enable_if<...>::type / ::value forms work under C++11.
+  template <
+    typename U = T,
+    typename std::enable_if<detail::is_primitive_signal_type<U>::value, int>::type = 0>
   proton_status_e get(U & out) const noexcept
   {
     return SignalAccess(registry_).get(id_, out);
   }
 
-  template <typename U = T, std::enable_if_t<detail::is_primitive_signal_type_v<U>, int> = 0>
+  template <
+    typename U = T,
+    typename std::enable_if<detail::is_primitive_signal_type<U>::value, int>::type = 0>
   proton_status_e set(U value) noexcept
   {
     return SignalAccess(registry_).set(id_, value);
@@ -184,21 +196,22 @@ public:
   proton_status_e get(char * buf, size_t cap, size_t & len) const noexcept
   {
     static_assert(
-      std::is_same_v<T, char *>, "get(char*, size_t, size_t&) is only valid for Signal<char*>");
+      std::is_same<T, char *>::value,
+      "get(char*, size_t, size_t&) is only valid for Signal<char*>");
     return SignalAccess(registry_).get(id_, buf, cap, len);
   }
 
   proton_status_e set(const char * buf, size_t len) noexcept
   {
     static_assert(
-      std::is_same_v<T, char *>, "set(const char*, size_t) is only valid for Signal<char*>");
+      std::is_same<T, char *>::value, "set(const char*, size_t) is only valid for Signal<char*>");
     return SignalAccess(registry_).set(id_, buf, len);
   }
 
   proton_status_e get(uint8_t * buf, size_t cap, size_t & len) const noexcept
   {
     static_assert(
-      std::is_same_v<T, uint8_t *>,
+      std::is_same<T, uint8_t *>::value,
       "get(uint8_t*, size_t, size_t&) is only valid for Signal<uint8_t*>");
     return SignalAccess(registry_).get(id_, buf, cap, len);
   }
@@ -206,7 +219,7 @@ public:
   proton_status_e set(const uint8_t * buf, size_t len) noexcept
   {
     static_assert(
-      std::is_same_v<T, uint8_t *>,
+      std::is_same<T, uint8_t *>::value,
       "set(const uint8_t*, size_t) is only valid for Signal<uint8_t*>");
     return SignalAccess(registry_).set(id_, buf, len);
   }
@@ -218,12 +231,18 @@ public:
   proton_status_e get(std::string & str) const noexcept
   {
     static_assert(
-      std::is_same_v<T, std::string>,
+      std::is_same<T, std::string>::value,
       "get(std::string&, size_t&) is only valid for Signal<std::string>");
 
     size_t len;
-    const proton_status_e status =
-      SignalAccess(registry_).get(id_, str.data(), str.capacity(), len);
+    // std::string::data() only returns a non-const pointer as of C++17; use &str[0]
+    // (well-defined for the null terminator since C++11) as the pre-C++17 fallback.
+#if __cplusplus >= 201703L
+    char * const data_ptr = str.data();
+#else
+    char * const data_ptr = &str[0];
+#endif
+    const proton_status_e status = SignalAccess(registry_).get(id_, data_ptr, str.capacity(), len);
 
     if (status == PROTON_OK && len > 0)
     {
@@ -236,7 +255,8 @@ public:
   proton_status_e set(const std::string & str) noexcept
   {
     static_assert(
-      std::is_same_v<T, std::string>, "set(std::string&) is only valid for Signal<std::string>");
+      std::is_same<T, std::string>::value,
+      "set(std::string&) is only valid for Signal<std::string>");
 
     return SignalAccess(registry_).set(id_, str.c_str(), str.size() + 1);
   }
@@ -244,7 +264,7 @@ public:
   proton_status_e get(std::vector<uint8_t> & buf) const noexcept
   {
     static_assert(
-      std::is_same_v<T, std::vector<uint8_t>>,
+      std::is_same<T, std::vector<uint8_t>>::value,
       "get(std::vector<uint8_t>&) is only valid for Signal<std::vector<uint8_t>>");
 
     size_t len;
@@ -262,7 +282,7 @@ public:
   proton_status_e set(const std::vector<uint8_t> & buf) noexcept
   {
     static_assert(
-      std::is_same_v<T, std::vector<uint8_t>>,
+      std::is_same<T, std::vector<uint8_t>>::value,
       "set(std::vector<uint8_t>&) is only valid for Signal<std::vector<uint8_t>>");
 
     return SignalAccess(registry_).set(id_, buf.data(), buf.size());
