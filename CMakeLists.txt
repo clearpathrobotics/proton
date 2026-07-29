@@ -70,4 +70,46 @@ if (PROTON_INSTALL)
       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/protonCoreGenerator.cmake
     DESTINATION lib/cmake/proton
   )
+
+  # Ship the Python generator so that protonCoreGenerator.cmake can locate generator.py at a fixed path relative
+  # to itself in the install tree.
+  install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/generator_scripts
+    DESTINATION lib/cmake/proton
+    FILES_MATCHING
+      PATTERN "*.py"
+      PATTERN "*.jinja"
+  )
+
+  # Ship the C sources under share/proton so that embedded consumers can
+  # cross-compile proton_core with their own toolchain (rather than link the
+  # host-built libproton_core.a).  Host consumers keep using the exported
+  # proton::proton_core target as before; the two paths coexist.
+  install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/core/src
+    DESTINATION share/proton/core
+    FILES_MATCHING
+      PATTERN "*.c"
+      PATTERN "*.h"
+  )
+  install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/external/nanopb
+    DESTINATION share/proton/external
+    FILES_MATCHING
+      PATTERN "*.c"
+      PATTERN "*.h"
+  )
+
+  # Same mechanism for proton_cpp. Consumers that want cpp on an embedded
+  # target must also compile PROTON_CORE_SOURCES; proton_cpp depends on core
+  # at link time (mirrors the target_link_libraries relationship in the
+  # library form).
+  install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cpp/src
+    DESTINATION share/proton/cpp
+    FILES_MATCHING
+      PATTERN "*.cpp"
+      PATTERN "*.h"
+      PATTERN "*.hpp"
+  )
 endif()
