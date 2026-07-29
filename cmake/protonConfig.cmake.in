@@ -18,3 +18,42 @@ include("${CMAKE_CURRENT_LIST_DIR}/ProtonTargets.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/protonCoreGenerator.cmake")
 
 set(PROTONC_GENERATOR "@PROTONC_GENERATOR@")
+
+# Source-file list for embedded consumers that cross-compile proton_core with
+# their own toolchain rather than link the host-built library. Paths resolve
+# to the sources installed under <prefix>/share/proton/ by proton's CMakeLists.
+set(_proton_share "${CMAKE_CURRENT_LIST_DIR}/../../../share/proton")
+get_filename_component(_proton_share "${_proton_share}" ABSOLUTE)
+
+set(PROTON_CORE_SOURCES
+  "${_proton_share}/core/src/common.c"
+  "${_proton_share}/core/src/encode_decode.c"
+  "${_proton_share}/core/src/node_manager.c"
+  "${_proton_share}/core/src/proton_field_callbacks.c"
+  "${_proton_share}/core/src/registry.c"
+  "${_proton_share}/core/src/transport/serial.c"
+  "${_proton_share}/core/src/transport/udp4.c"
+  "${_proton_share}/core/src/generated/signal.pb.c"
+  "${_proton_share}/core/src/generated/bundle.pb.c"
+  "${_proton_share}/core/src/generated/proton.pb.c"
+  "${_proton_share}/external/nanopb/pb_common.c"
+  "${_proton_share}/external/nanopb/pb_decode.c"
+  "${_proton_share}/external/nanopb/pb_encode.c"
+)
+
+# proton_cpp sources. Consumers that use these must also compile
+# PROTON_CORE_SOURCES — proton_cpp depends on proton_core at link time.
+#
+# node_builder/*.cpp is gated behind PROTON_NODE_BUILDER at build time and
+# requires PROTON_ENABLE_ALLOC + optional yaml-cpp / nlohmann_json parsers.
+# It is exposed separately so lean embedded builds can omit it.
+set(PROTON_CPP_SOURCES
+  "${_proton_share}/cpp/src/bundle_access.cpp"
+  "${_proton_share}/cpp/src/signal_access.cpp"
+)
+
+set(PROTON_CPP_NODE_BUILDER_SOURCES
+  "${_proton_share}/cpp/src/node_builder/config.cpp"
+  "${_proton_share}/cpp/src/node_builder/config_tree.cpp"
+  "${_proton_share}/cpp/src/node_builder/generator.cpp"
+)
