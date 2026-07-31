@@ -207,6 +207,7 @@ static EndpointConfig parse_endpoint(const ConfigNode & node)
   const auto ip_node = node[keys::IP];
   const auto port_node = node[keys::PORT];
   const auto device_node = node[keys::DEVICE];
+  const auto baud_node = node[keys::BAUD];
 
   if (endpoint_config.type == transport_types::UDP4)
   {
@@ -224,6 +225,7 @@ static EndpointConfig parse_endpoint(const ConfigNode & node)
       throw NodeBuilderException("serial endpoints require a device");
     }
     endpoint_config.device = device_node.as_string();
+    endpoint_config.baud = baud_node.is_defined() ? baud_node.as_uint32() : 0;
   }
   else
   {

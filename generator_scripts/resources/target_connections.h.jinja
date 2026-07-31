@@ -38,6 +38,7 @@ extern "C" {
 #define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT TRANSPORT_TYPE_{{ ep.type | upper }}
 {% if ep.type == "serial" %}
 #define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT_DEVICE "{{ ep.device }}"
+#define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT_BAUD "{{ ep.baud }}"
 {% else %}
 #define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT_IP "{{ ep.ip }}"
 #define PROTON_NODE_{{ node.name | upper }}_ENDPOINT_{{ ep.id }}_TRANSPORT_IP_LEN {{ ep.ip | length }}
