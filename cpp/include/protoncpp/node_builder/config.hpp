@@ -54,6 +54,7 @@ inline constexpr std::string_view TYPE = "type";
 inline constexpr std::string_view IP = "ip";
 inline constexpr std::string_view PORT = "port";
 inline constexpr std::string_view DEVICE = "device";
+inline constexpr std::string_view BAUD = "baud";
 inline constexpr std::string_view CONNECTIONS = "connections";
 inline constexpr std::string_view FIRST = "first";
 inline constexpr std::string_view SECOND = "second";
@@ -139,6 +140,7 @@ struct EndpointConfig
   std::string device;
   std::string ip;
   uint32_t port;
+  uint32_t baud;
 };
 
 struct NodeConfig

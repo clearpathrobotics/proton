@@ -264,6 +264,13 @@ TEST(YamlEndpointConfigTest, SerialNoDevice)
     "test_configs/yaml/endpoint_serial_no_device.yaml", "serial endpoints require a device");
 }
 
+TEST(YamlEndpointConfigTest, SpecificBaudRate)
+{
+  Config config = Config::from_yaml("test_configs/yaml/endpoint_serial_specific_baud.yaml");
+  EXPECT_EQ(config.nodes["producer"].endpoints[0].baud, 1234);
+  EXPECT_EQ(config.nodes["consumer"].endpoints[0].baud, 5678);
+}
+
 TEST(YamlNodeConfigTest, NoId)
 {
   expect_yaml_throw_with_message(
@@ -486,6 +493,13 @@ TEST(JsonEndpointConfigTest, SerialNoDevice)
 {
   expect_yaml_throw_with_message(
     "test_configs/json/endpoint_serial_no_device.json", "serial endpoints require a device");
+}
+
+TEST(JsonEndpointConfigTest, SpecificBaudRate)
+{
+  Config config = Config::from_json("test_configs/json/endpoint_serial_specific_baud.json");
+  EXPECT_EQ(config.nodes["producer"].endpoints[0].baud, 1234);
+  EXPECT_EQ(config.nodes["consumer"].endpoints[0].baud, 5678);
 }
 
 TEST(JsonNodeConfigTest, NoId)

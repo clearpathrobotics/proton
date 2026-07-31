@@ -35,17 +35,17 @@ Config create_base_config()
   NodeConfig node_a;
   node_a.name = "node_a";
   node_a.id = 1;
-  node_a.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.1", 5000};
+  node_a.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.1", 5000, 0};
 
   NodeConfig node_b;
   node_b.name = "node_b";
   node_b.id = 2;
-  node_b.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.2", 5000};
+  node_b.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.2", 5000, 0};
 
   NodeConfig node_c;
   node_c.name = "node_c";
   node_c.id = 3;
-  node_c.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.3", 5000};
+  node_c.endpoints[0] = EndpointConfig{0, "udp4", "", "192.168.1.3", 5000, 0};
 
   config.nodes["node_a"] = node_a;
   config.nodes["node_b"] = node_b;

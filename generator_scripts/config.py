@@ -34,7 +34,7 @@ def validate_node_elements(node: dict):
     """
     required_top_level_elements = {'name': str, 'endpoints': list[dict]}
     required_endpoint_elements = {'id': str, 'type': 'str'}
-    required_endpoint_configs = {'serial': ['ip', 'port'], 'udp4': ['device']}
+    required_endpoint_configs = {'udp4': ['ip', 'port'], 'serial': ['device', 'baud']}
 
     for tl, tl_type in required_top_level_elements.items():
         if tl not in node:
