@@ -66,8 +66,8 @@ TEST(FillFrameHeader, MaxLength)
 
 TEST(FillCrc16, NullPayloadReturnsError)
 {
-  uint8_t crc[2] = {};
-  EXPECT_EQ(proton_serial_fill_crc16(nullptr, 0, crc), PROTON_NULL_PTR_ERROR);
+  uint16_t crc;
+  EXPECT_EQ(proton_serial_fill_crc16(nullptr, 0, &crc), PROTON_NULL_PTR_ERROR);
 }
 
 TEST(FillCrc16, NullCrcOutputReturnsError)
@@ -80,31 +80,28 @@ TEST(FillCrc16, EmptyPayloadCrcIsAllOnes)
 {
   // CRC initialises to 0xFFFF with no bytes processed
   const uint8_t dummy[1] = {};
-  uint8_t crc[2] = {};
-  ASSERT_EQ(proton_serial_fill_crc16(dummy, 0, crc), PROTON_OK);
-  EXPECT_EQ(crc[0], 0xFF);  // low byte
-  EXPECT_EQ(crc[1], 0xFF);  // high byte
+  uint16_t crc;
+  ASSERT_EQ(proton_serial_fill_crc16(dummy, 0, &crc), PROTON_OK);
+  EXPECT_EQ(crc, 0xFFFF);
 }
 
 TEST(FillCrc16, SingleByteKnownValue)
 {
   // CRC16-CCITT of {0xAB} starting at 0xFFFF = 0xE571
   const uint8_t payload[] = {0xAB};
-  uint8_t crc[2] = {};
-  ASSERT_EQ(proton_serial_fill_crc16(payload, 1, crc), PROTON_OK);
-  EXPECT_EQ(crc[0], 0x71);  // low byte
-  EXPECT_EQ(crc[1], 0xE5);  // high byte
+  uint16_t crc;
+  ASSERT_EQ(proton_serial_fill_crc16(payload, 1, &crc), PROTON_OK);
+  EXPECT_EQ(crc, 0xE571);
 }
 
 TEST(FillCrc16, DeterministicOutput)
 {
   const uint8_t payload[] = {0x01, 0x02, 0x03};
-  uint8_t crc_a[2] = {};
-  uint8_t crc_b[2] = {};
-  ASSERT_EQ(proton_serial_fill_crc16(payload, sizeof(payload), crc_a), PROTON_OK);
-  ASSERT_EQ(proton_serial_fill_crc16(payload, sizeof(payload), crc_b), PROTON_OK);
-  EXPECT_EQ(crc_a[0], crc_b[0]);
-  EXPECT_EQ(crc_a[1], crc_b[1]);
+  uint16_t crc_a;
+  uint16_t crc_b;
+  ASSERT_EQ(proton_serial_fill_crc16(payload, sizeof(payload), &crc_a), PROTON_OK);
+  ASSERT_EQ(proton_serial_fill_crc16(payload, sizeof(payload), &crc_b), PROTON_OK);
+  EXPECT_EQ(crc_a, crc_b);
 }
 
 TEST(FillCrc16, ByteOrderAffectsCrc)
@@ -112,11 +109,11 @@ TEST(FillCrc16, ByteOrderAffectsCrc)
   // Same bytes in different order should produce different CRCs
   const uint8_t payload_a[] = {0x01, 0x02};
   const uint8_t payload_b[] = {0x02, 0x01};
-  uint8_t crc_a[2] = {};
-  uint8_t crc_b[2] = {};
-  ASSERT_EQ(proton_serial_fill_crc16(payload_a, sizeof(payload_a), crc_a), PROTON_OK);
-  ASSERT_EQ(proton_serial_fill_crc16(payload_b, sizeof(payload_b), crc_b), PROTON_OK);
-  EXPECT_FALSE(crc_a[0] == crc_b[0] && crc_a[1] == crc_b[1]);
+  uint16_t crc_a;
+  uint16_t crc_b;
+  ASSERT_EQ(proton_serial_fill_crc16(payload_a, sizeof(payload_a), &crc_a), PROTON_OK);
+  ASSERT_EQ(proton_serial_fill_crc16(payload_b, sizeof(payload_b), &crc_b), PROTON_OK);
+  EXPECT_FALSE(crc_a == crc_b);
 }
 
 // -----------------------------------------------------------------------
@@ -229,23 +226,21 @@ TEST(SerialFraming, FillHeaderThenGetLength_RoundTrip)
 TEST(SerialFraming, FillCrcThenCheckCrc_RoundTrip)
 {
   const uint8_t payload[] = {0xDE, 0xAD, 0xBE, 0xEF};
-  uint8_t crc_bytes[2] = {};
-  ASSERT_EQ(proton_serial_fill_crc16(payload, sizeof(payload), crc_bytes), PROTON_OK);
+  uint16_t crc_bytes;
+  ASSERT_EQ(proton_serial_fill_crc16(payload, sizeof(payload), &crc_bytes), PROTON_OK);
 
-  const uint16_t crc_val = (uint16_t)crc_bytes[0] | ((uint16_t)crc_bytes[1] << 8);
-  EXPECT_EQ(proton_serial_check_framed_payload(payload, sizeof(payload), crc_val), PROTON_OK);
+  EXPECT_EQ(proton_serial_check_framed_payload(payload, sizeof(payload), crc_bytes), PROTON_OK);
 }
 
 TEST(SerialFraming, ModifiedPayloadFailsCrcCheck)
 {
   uint8_t payload[] = {0xDE, 0xAD, 0xBE, 0xEF};
-  uint8_t crc_bytes[2] = {};
-  ASSERT_EQ(proton_serial_fill_crc16(payload, sizeof(payload), crc_bytes), PROTON_OK);
+  uint16_t crc_bytes;
+  ASSERT_EQ(proton_serial_fill_crc16(payload, sizeof(payload), &crc_bytes), PROTON_OK);
 
-  const uint16_t crc_val = (uint16_t)crc_bytes[0] | ((uint16_t)crc_bytes[1] << 8);
   payload[0] ^= 0x01;  // flip one bit
   EXPECT_EQ(
-    proton_serial_check_framed_payload(payload, sizeof(payload), crc_val), PROTON_CRC16_ERROR);
+    proton_serial_check_framed_payload(payload, sizeof(payload), crc_bytes), PROTON_CRC16_ERROR);
 }
 
 int main(int argc, char ** argv)

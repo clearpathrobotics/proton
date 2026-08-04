@@ -70,8 +70,8 @@ TEST(FillFrameHeader, MaxLength)
 
 TEST(FillCrc16, NullPayloadReturnsError)
 {
-  uint8_t crc[2] = {};
-  EXPECT_EQ(fill_crc16(nullptr, 0, crc), PROTON_NULL_PTR_ERROR);
+  uint16_t crc;
+  EXPECT_EQ(fill_crc16(nullptr, 0, &crc), PROTON_NULL_PTR_ERROR);
 }
 
 TEST(FillCrc16, NullCrcOutputReturnsError)
@@ -84,31 +84,28 @@ TEST(FillCrc16, EmptyPayloadCrcIsAllOnes)
 {
   // CRC initialises to 0xFFFF with no bytes processed
   const uint8_t dummy[1] = {};
-  uint8_t crc[2] = {};
-  ASSERT_EQ(fill_crc16(dummy, 0, crc), PROTON_OK);
-  EXPECT_EQ(crc[0], 0xFF);  // low byte
-  EXPECT_EQ(crc[1], 0xFF);  // high byte
+  uint16_t crc;
+  ASSERT_EQ(fill_crc16(dummy, 0, &crc), PROTON_OK);
+  EXPECT_EQ(crc, 0xFFFF);
 }
 
 TEST(FillCrc16, SingleByteKnownValue)
 {
   // CRC16-CCITT of {0xAB} starting at 0xFFFF = 0xE571
   const uint8_t payload[] = {0xAB};
-  uint8_t crc[2] = {};
-  ASSERT_EQ(fill_crc16(payload, 1, crc), PROTON_OK);
-  EXPECT_EQ(crc[0], 0x71);  // low byte
-  EXPECT_EQ(crc[1], 0xE5);  // high byte
+  uint16_t crc;
+  ASSERT_EQ(fill_crc16(payload, 1, &crc), PROTON_OK);
+  EXPECT_EQ(crc, 0xE571);
 }
 
 TEST(FillCrc16, DeterministicOutput)
 {
   const uint8_t payload[] = {0x01, 0x02, 0x03};
-  uint8_t crc_a[2] = {};
-  uint8_t crc_b[2] = {};
-  ASSERT_EQ(fill_crc16(payload, sizeof(payload), crc_a), PROTON_OK);
-  ASSERT_EQ(fill_crc16(payload, sizeof(payload), crc_b), PROTON_OK);
-  EXPECT_EQ(crc_a[0], crc_b[0]);
-  EXPECT_EQ(crc_a[1], crc_b[1]);
+  uint16_t crc_a;
+  uint16_t crc_b;
+  ASSERT_EQ(fill_crc16(payload, sizeof(payload), &crc_a), PROTON_OK);
+  ASSERT_EQ(fill_crc16(payload, sizeof(payload), &crc_b), PROTON_OK);
+  EXPECT_EQ(crc_a, crc_b);
 }
 
 TEST(FillCrc16, ByteOrderAffectsCrc)
@@ -116,11 +113,11 @@ TEST(FillCrc16, ByteOrderAffectsCrc)
   // Same bytes in different order should produce different CRCs
   const uint8_t payload_a[] = {0x01, 0x02};
   const uint8_t payload_b[] = {0x02, 0x01};
-  uint8_t crc_a[2] = {};
-  uint8_t crc_b[2] = {};
-  ASSERT_EQ(fill_crc16(payload_a, sizeof(payload_a), crc_a), PROTON_OK);
-  ASSERT_EQ(fill_crc16(payload_b, sizeof(payload_b), crc_b), PROTON_OK);
-  EXPECT_FALSE(crc_a[0] == crc_b[0] && crc_a[1] == crc_b[1]);
+  uint16_t crc_a;
+  uint16_t crc_b;
+  ASSERT_EQ(fill_crc16(payload_a, sizeof(payload_a), &crc_a), PROTON_OK);
+  ASSERT_EQ(fill_crc16(payload_b, sizeof(payload_b), &crc_b), PROTON_OK);
+  EXPECT_FALSE(crc_a == crc_b);
 }
 
 // -----------------------------------------------------------------------
@@ -229,22 +226,19 @@ TEST(SerialFraming, FillHeaderThenGetLength_RoundTrip)
 TEST(SerialFraming, FillCrcThenCheckCrc_RoundTrip)
 {
   const uint8_t payload[] = {0xDE, 0xAD, 0xBE, 0xEF};
-  uint8_t crc_bytes[2] = {};
-  ASSERT_EQ(fill_crc16(payload, sizeof(payload), crc_bytes), PROTON_OK);
-
-  const uint16_t crc_val = (uint16_t)crc_bytes[0] | ((uint16_t)crc_bytes[1] << 8);
-  EXPECT_EQ(check_framed_payload(payload, sizeof(payload), crc_val), PROTON_OK);
+  uint16_t crc_bytes;
+  ASSERT_EQ(fill_crc16(payload, sizeof(payload), &crc_bytes), PROTON_OK);
+  EXPECT_EQ(check_framed_payload(payload, sizeof(payload), crc_bytes), PROTON_OK);
 }
 
 TEST(SerialFraming, ModifiedPayloadFailsCrcCheck)
 {
   uint8_t payload[] = {0xDE, 0xAD, 0xBE, 0xEF};
-  uint8_t crc_bytes[2] = {};
-  ASSERT_EQ(fill_crc16(payload, sizeof(payload), crc_bytes), PROTON_OK);
+  uint16_t crc_bytes;
+  ASSERT_EQ(fill_crc16(payload, sizeof(payload), &crc_bytes), PROTON_OK);
 
-  const uint16_t crc_val = (uint16_t)crc_bytes[0] | ((uint16_t)crc_bytes[1] << 8);
   payload[0] ^= 0x01;  // flip one bit
-  EXPECT_EQ(check_framed_payload(payload, sizeof(payload), crc_val), PROTON_CRC16_ERROR);
+  EXPECT_EQ(check_framed_payload(payload, sizeof(payload), crc_bytes), PROTON_CRC16_ERROR);
 }
 
 // -----------------------------------------------------------------------
@@ -258,28 +252,26 @@ TEST(SerialFraming, ModifiedPayloadFailsCrcCheck)
 TEST(FillCrc16Span, EmptyPayloadCrcIsAllOnes)
 {
   const std::array<uint8_t, 1> dummy = {};
-  std::array<uint8_t, 2> crc = {};
-  ASSERT_EQ(fill_crc16(std::span{dummy.data(), 0}, crc), PROTON_OK);
-  EXPECT_EQ(crc[0], 0xFF);
-  EXPECT_EQ(crc[1], 0xFF);
+  uint16_t crc;
+  ASSERT_EQ(fill_crc16(std::span{dummy.data(), 0}, &crc), PROTON_OK);
+  EXPECT_EQ(crc, 0xFFFF);
 }
 
 TEST(FillCrc16Span, SingleByteKnownValue)
 {
   const std::array<uint8_t, 1> payload = {0xAB};
-  std::array<uint8_t, 2> crc = {};
-  ASSERT_EQ(fill_crc16(payload, crc), PROTON_OK);
-  EXPECT_EQ(crc[0], 0x71);
-  EXPECT_EQ(crc[1], 0xE5);
+  uint16_t crc;
+  ASSERT_EQ(fill_crc16(payload, &crc), PROTON_OK);
+  EXPECT_EQ(crc, 0xE571);
 }
 
 TEST(FillCrc16Span, DeterministicOutput)
 {
   const std::array<uint8_t, 3> payload = {0x01, 0x02, 0x03};
-  std::array<uint8_t, 2> crc_a = {};
-  std::array<uint8_t, 2> crc_b = {};
-  ASSERT_EQ(fill_crc16(payload, crc_a), PROTON_OK);
-  ASSERT_EQ(fill_crc16(payload, crc_b), PROTON_OK);
+  uint16_t crc_a;
+  uint16_t crc_b;
+  ASSERT_EQ(fill_crc16(payload, &crc_a), PROTON_OK);
+  ASSERT_EQ(fill_crc16(payload, &crc_b), PROTON_OK);
   EXPECT_EQ(crc_a, crc_b);
 }
 
@@ -287,10 +279,10 @@ TEST(FillCrc16Span, ByteOrderAffectsCrc)
 {
   const std::array<uint8_t, 2> payload_a = {0x01, 0x02};
   const std::array<uint8_t, 2> payload_b = {0x02, 0x01};
-  std::array<uint8_t, 2> crc_a = {};
-  std::array<uint8_t, 2> crc_b = {};
-  ASSERT_EQ(fill_crc16(payload_a, crc_a), PROTON_OK);
-  ASSERT_EQ(fill_crc16(payload_b, crc_b), PROTON_OK);
+  uint16_t crc_a;
+  uint16_t crc_b;
+  ASSERT_EQ(fill_crc16(payload_a, &crc_a), PROTON_OK);
+  ASSERT_EQ(fill_crc16(payload_b, &crc_b), PROTON_OK);
   EXPECT_NE(crc_a, crc_b);
 }
 
@@ -374,24 +366,19 @@ TEST(GetFramedPayloadLengthSpan, WrongSecondMagicByteReturnsError)
 TEST(SerialFramingSpan, FillCrcThenCheckCrc_RoundTrip)
 {
   const std::array<uint8_t, 4> payload = {0xDE, 0xAD, 0xBE, 0xEF};
-  std::array<uint8_t, 2> crc_bytes = {};
-  ASSERT_EQ(fill_crc16(payload, crc_bytes), PROTON_OK);
-
-  const uint16_t crc_val =
-    static_cast<uint16_t>(crc_bytes[0]) | (static_cast<uint16_t>(crc_bytes[1]) << 8);
-  EXPECT_EQ(check_framed_payload(payload, crc_val), PROTON_OK);
+  uint16_t crc_bytes;
+  ASSERT_EQ(fill_crc16(payload, &crc_bytes), PROTON_OK);
+  EXPECT_EQ(check_framed_payload(payload, crc_bytes), PROTON_OK);
 }
 
 TEST(SerialFramingSpan, ModifiedPayloadFailsCrcCheck)
 {
   std::array<uint8_t, 4> payload = {0xDE, 0xAD, 0xBE, 0xEF};
-  std::array<uint8_t, 2> crc_bytes = {};
-  ASSERT_EQ(fill_crc16(payload, crc_bytes), PROTON_OK);
+  uint16_t crc_bytes;
+  ASSERT_EQ(fill_crc16(payload, &crc_bytes), PROTON_OK);
 
-  const uint16_t crc_val =
-    static_cast<uint16_t>(crc_bytes[0]) | (static_cast<uint16_t>(crc_bytes[1]) << 8);
   payload[0] ^= 0x01;  // flip one bit
-  EXPECT_EQ(check_framed_payload(payload, crc_val), PROTON_CRC16_ERROR);
+  EXPECT_EQ(check_framed_payload(payload, crc_bytes), PROTON_CRC16_ERROR);
 }
 
 int main(int argc, char ** argv)
