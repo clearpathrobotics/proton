@@ -43,7 +43,7 @@ inline proton_status_e fill_frame_header(uint8_t * header, const uint16_t payloa
 }
 
 inline proton_status_e fill_crc16(
-  const uint8_t * payload, const uint16_t payload_len, uint8_t * crc)
+  const uint8_t * payload, const uint16_t payload_len, uint16_t * crc)
 {
   return proton_serial_fill_crc16(payload, payload_len, crc);
 }
@@ -61,10 +61,9 @@ inline proton_status_e get_framed_payload_length(const uint8_t * framed_buf, uin
 
 #if __cplusplus >= 202002L
 
-inline proton_status_e fill_crc16(
-  std::span<const uint8_t> payload, std::span<uint8_t, FRAME_CRC_OVERHEAD> crc)
+inline proton_status_e fill_crc16(std::span<const uint8_t> payload, uint16_t * crc)
 {
-  return fill_crc16(payload.data(), static_cast<uint16_t>(payload.size()), crc.data());
+  return fill_crc16(payload.data(), static_cast<uint16_t>(payload.size()), crc);
 }
 
 inline proton_status_e check_framed_payload(

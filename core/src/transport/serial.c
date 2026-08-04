@@ -66,7 +66,7 @@ proton_status_e proton_serial_fill_frame_header(uint8_t * header, const uint16_t
 }
 
 proton_status_e proton_serial_fill_crc16(
-  const uint8_t * payload, const uint16_t payload_len, uint8_t * crc)
+  const uint8_t * payload, const uint16_t payload_len, uint16_t * crc)
 {
   if (!payload || !crc)
   {
@@ -78,8 +78,7 @@ proton_status_e proton_serial_fill_crc16(
 
   if (status == PROTON_OK)
   {
-    crc[0] = (uint8_t)(crc16 & 0xFF);
-    crc[1] = (uint8_t)(crc16 >> 8);
+    *crc = crc16;
   }
 
   return status;

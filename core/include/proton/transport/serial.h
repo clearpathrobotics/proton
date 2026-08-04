@@ -61,7 +61,7 @@ extern "C"
    * @return proton_status_e return status
    */
   proton_status_e proton_serial_fill_crc16(
-    const uint8_t * payload, const uint16_t payload_len, uint8_t * crc);
+    const uint8_t * payload, const uint16_t payload_len, uint16_t * crc);
 
   /**
    * @brief Check for a valid CRC16 in a framed payload
