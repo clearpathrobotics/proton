@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package proton;
+
+message Log {
+  enum Level {
+    LEVEL_TRACE = 0;
+    LEVEL_DEBUG = 1;
+    LEVEL_INFO = 2;
+    LEVEL_WARN = 3;
+    LEVEL_ERROR = 4;
+    LEVEL_FATAL = 5;
+  }
+
+  Level level = 1;
+  uint64 timestamp_ms = 2;
+  uint32 sequence = 3;
+  uint32 dropped_since_last = 4;
+  string text = 5;
+}

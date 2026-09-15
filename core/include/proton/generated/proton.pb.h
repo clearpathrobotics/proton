@@ -5,6 +5,7 @@
 #define PB_PROTON_PROTON_PB_H_INCLUDED
 #include <pb.h>
 #include "proton/generated/bundle.pb.h"
+#include "proton/generated/log.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
 #error Regenerate this file with the current version of nanopb generator.
@@ -16,7 +17,8 @@ typedef struct _proton_Proton {
     pb_callback_t cb_operation;
     pb_size_t which_operation;
     union {
-        proton_Bundle bundle; /* Reserved for future operation types */
+        proton_Bundle bundle;
+        proton_Log log; /* Reserved for future operation types */
     } operation;
 } proton_Proton;
 
@@ -31,13 +33,16 @@ extern "C" {
 
 /* Field tags (for use in manual encoding/decoding) */
 #define proton_Proton_bundle_tag                 1
+#define proton_Proton_log_tag                    2
 
 /* Struct field encoding specification for nanopb */
 #define proton_Proton_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MSG_W_CB, (operation,bundle,operation.bundle),   1)
+X(a, STATIC,   ONEOF,    MSG_W_CB, (operation,bundle,operation.bundle),   1) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (operation,log,operation.log),   2)
 #define proton_Proton_CALLBACK NULL
 #define proton_Proton_DEFAULT NULL
 #define proton_Proton_operation_bundle_MSGTYPE proton_Bundle
+#define proton_Proton_operation_log_MSGTYPE proton_Log
 
 extern const pb_msgdesc_t proton_Proton_msg;
 
@@ -46,10 +51,11 @@ extern const pb_msgdesc_t proton_Proton_msg;
 
 /* Maximum encoded size of messages (where known) */
 #if defined(proton_Bundle_size)
+union proton_Proton_operation_size_union {char f1[(6 + proton_Bundle_size)]; char f0[158];};
 #endif
 #if defined(proton_Bundle_size)
 #define PROTON_PROTON_PB_H_MAX_SIZE              proton_Proton_size
-#define proton_Proton_size                       (6 + proton_Bundle_size)
+#define proton_Proton_size                       (0 + sizeof(union proton_Proton_operation_size_union))
 #endif
 
 #ifdef __cplusplus
