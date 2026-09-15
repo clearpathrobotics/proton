@@ -21,14 +21,11 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
-#include <vector>
 
 #include "proton/log.h"
 
 namespace
 {
-
-constexpr size_t kHeaderSize = 28;
 
 struct LockCounters
 {
@@ -52,11 +49,11 @@ extern "C" bool test_unlock_fn(void * arg)
   return c->unlock_ok;
 }
 
-proton_logger_config_t make_config(uint8_t * ring, size_t ring_size)
+proton_logger_config_t make_config(proton_Log * entries, size_t capacity)
 {
   proton_logger_config_t cfg{};
-  cfg.ring_buffer = ring;
-  cfg.ring_buffer_size = ring_size;
+  cfg.entries = entries;
+  cfg.capacity = capacity;
   cfg.min_level = PROTON_LOG_LEVEL_TRACE;
   return cfg;
 }
@@ -66,17 +63,17 @@ proton_logger_config_t make_config(uint8_t * ring, size_t ring_size)
 TEST(LogRing, InitRejectsBadInputs)
 {
   proton_logger_t logger;
-  std::array<uint8_t, 128> buf{};
+  std::array<proton_Log, 4> entries{};
 
   EXPECT_EQ(proton_log_init(nullptr, nullptr), PROTON_NULL_PTR_ERROR);
 
-  proton_logger_config_t cfg = make_config(nullptr, 128);
+  proton_logger_config_t cfg = make_config(nullptr, 4);
   EXPECT_EQ(proton_log_init(&logger, &cfg), PROTON_INSUFFICIENT_BUFFER_ERROR);
 
-  cfg = make_config(buf.data(), 4);
+  cfg = make_config(entries.data(), 0);
   EXPECT_EQ(proton_log_init(&logger, &cfg), PROTON_INSUFFICIENT_BUFFER_ERROR);
 
-  cfg = make_config(buf.data(), buf.size());
+  cfg = make_config(entries.data(), entries.size());
   cfg.lock = test_lock_fn;
   cfg.unlock = nullptr;
   EXPECT_EQ(proton_log_init(&logger, &cfg), PROTON_ERROR);
@@ -85,214 +82,134 @@ TEST(LogRing, InitRejectsBadInputs)
 TEST(LogRing, PushPopRoundTrip)
 {
   proton_logger_t logger;
-  std::array<uint8_t, 256> buf{};
-  auto cfg = make_config(buf.data(), buf.size());
+  std::array<proton_Log, 4> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
 
-  const char * fmt = "hello %d";
-  const uint8_t args[] = {0x01, 0x02, 0x03, 0x04};
+  const char * text = "hello world";
   ASSERT_EQ(
-    proton_log_push_raw(&logger, PROTON_LOG_LEVEL_INFO, 12345, fmt, args, sizeof(args)), PROTON_OK);
+    proton_log_push(&logger, PROTON_LOG_LEVEL_INFO, 12345, text, std::strlen(text)), PROTON_OK);
 
-  proton_log_entry_header_t hdr{};
-  uint8_t args_out[16] = {};
-  size_t args_len = 0;
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-
-  EXPECT_EQ(hdr.level, PROTON_LOG_LEVEL_INFO);
-  EXPECT_EQ(hdr.timestamp_ms, 12345u);
-  EXPECT_EQ(hdr.sequence, 0u);
-  EXPECT_EQ(hdr.dropped_since_last, 0u);
-  EXPECT_EQ(hdr.fmt_ref, static_cast<const void *>(fmt));
-  ASSERT_EQ(args_len, sizeof(args));
-  EXPECT_EQ(std::memcmp(args_out, args, sizeof(args)), 0);
+  proton_Log out{};
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.level, proton_Log_Level_LEVEL_INFO);
+  EXPECT_EQ(out.timestamp_ms, 12345u);
+  EXPECT_EQ(out.sequence, 0u);
+  EXPECT_STREQ(out.text, text);
 }
 
 TEST(LogRing, PopEmptyReturnsEmpty)
 {
   proton_logger_t logger;
-  std::array<uint8_t, 128> buf{};
-  auto cfg = make_config(buf.data(), buf.size());
+  std::array<proton_Log, 2> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
 
-  proton_log_entry_header_t hdr{};
-  uint8_t args_out[4] = {};
-  size_t args_len = 0;
-  EXPECT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_EMPTY);
+  proton_Log out{};
+  EXPECT_EQ(proton_log_pop(&logger, &out), PROTON_EMPTY);
 }
 
-TEST(LogRing, InsufficientArgsBufferDoesNotConsume)
+TEST(LogRing, TruncatesOverlongText)
 {
   proton_logger_t logger;
-  std::array<uint8_t, 128> buf{};
-  auto cfg = make_config(buf.data(), buf.size());
+  std::array<proton_Log, 2> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
 
-  const uint8_t args[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+  const size_t max_text = sizeof(entries[0].text) - 1u;
+  std::string long_text(max_text + 20, 'x');
   ASSERT_EQ(
-    proton_log_push_raw(&logger, PROTON_LOG_LEVEL_WARN, 42, nullptr, args, sizeof(args)),
+    proton_log_push(&logger, PROTON_LOG_LEVEL_INFO, 0, long_text.data(), long_text.size()),
     PROTON_OK);
 
-  proton_log_entry_header_t hdr{};
-  uint8_t small_buf[4] = {};
-  size_t args_len = 0;
-  EXPECT_EQ(
-    proton_log_pop_raw(&logger, &hdr, small_buf, sizeof(small_buf), &args_len),
-    PROTON_INSUFFICIENT_BUFFER_ERROR);
-  EXPECT_EQ(args_len, sizeof(args));
-
-  uint8_t big_buf[16] = {};
-  EXPECT_EQ(proton_log_pop_raw(&logger, &hdr, big_buf, sizeof(big_buf), &args_len), PROTON_OK);
-  EXPECT_EQ(std::memcmp(big_buf, args, sizeof(args)), 0);
+  proton_Log out{};
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(std::strlen(out.text), max_text);
 }
 
-TEST(LogRing, DropWhenFullBumpsDroppedCounter)
+TEST(LogRing, ReturnsErrorWhenFull)
 {
   proton_logger_t logger;
-  std::array<uint8_t, 64> buf{};
-  auto cfg = make_config(buf.data(), buf.size());
+  std::array<proton_Log, 2> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
 
-  // Entries are kHeaderSize (28) + args each. With 64 bytes and args_len=4 → 32 per entry.
-  // So exactly 2 entries fit; the 3rd should drop.
-  const uint8_t args[4] = {0xAA, 0xBB, 0xCC, 0xDD};
-  ASSERT_EQ(proton_log_push_raw(&logger, 0, 1, nullptr, args, sizeof(args)), PROTON_OK);
-  ASSERT_EQ(proton_log_push_raw(&logger, 0, 2, nullptr, args, sizeof(args)), PROTON_OK);
-  EXPECT_EQ(
-    proton_log_push_raw(&logger, 0, 3, nullptr, args, sizeof(args)),
-    PROTON_INSUFFICIENT_BUFFER_ERROR);
-  EXPECT_EQ(
-    proton_log_push_raw(&logger, 0, 4, nullptr, args, sizeof(args)),
-    PROTON_INSUFFICIENT_BUFFER_ERROR);
+  ASSERT_EQ(proton_log_push(&logger, 0, 1, "a", 1), PROTON_OK);
+  ASSERT_EQ(proton_log_push(&logger, 0, 2, "b", 1), PROTON_OK);
+  EXPECT_EQ(proton_log_push(&logger, 0, 3, "c", 1), PROTON_INSUFFICIENT_BUFFER_ERROR);
 
-  // Pop one → frees space → next push carries dropped_since_last = 2.
-  proton_log_entry_header_t hdr{};
-  uint8_t args_out[16] = {};
-  size_t args_len = 0;
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-  EXPECT_EQ(hdr.timestamp_ms, 1u);
-  EXPECT_EQ(hdr.dropped_since_last, 0u);
+  proton_Log out{};
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.timestamp_ms, 1u);
 
-  ASSERT_EQ(proton_log_push_raw(&logger, 0, 5, nullptr, args, sizeof(args)), PROTON_OK);
+  ASSERT_EQ(proton_log_push(&logger, 0, 5, "e", 1), PROTON_OK);
 
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-  EXPECT_EQ(hdr.timestamp_ms, 2u);
-  EXPECT_EQ(hdr.dropped_since_last, 0u);
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.timestamp_ms, 2u);
 
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-  EXPECT_EQ(hdr.timestamp_ms, 5u);
-  EXPECT_EQ(hdr.dropped_since_last, 2u);
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.timestamp_ms, 5u);
 }
 
 TEST(LogRing, WrapAroundPreservesOrder)
 {
   proton_logger_t logger;
-  std::array<uint8_t, 96> buf{};
-  auto cfg = make_config(buf.data(), buf.size());
+  std::array<proton_Log, 3> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
 
-  const uint8_t args[4] = {0x11, 0x22, 0x33, 0x44};
-  proton_log_entry_header_t hdr{};
-  uint8_t args_out[16] = {};
-  size_t args_len = 0;
-
-  // Each entry = 32 bytes. Ring = 96 bytes → 3 entries fit.
-  // Push 3, pop 2, push 2, pop remaining 3 → wrap exercised.
-  for (uint64_t i = 0; i < 3; ++i)
+  for (uint64_t i = 1; i <= 3; ++i)
   {
-    ASSERT_EQ(proton_log_push_raw(&logger, 0, i + 1, nullptr, args, sizeof(args)), PROTON_OK);
+    ASSERT_EQ(proton_log_push(&logger, 0, i, "x", 1), PROTON_OK);
   }
 
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-  EXPECT_EQ(hdr.timestamp_ms, 1u);
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-  EXPECT_EQ(hdr.timestamp_ms, 2u);
+  proton_Log out{};
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.timestamp_ms, 1u);
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.timestamp_ms, 2u);
 
-  for (uint64_t i = 0; i < 2; ++i)
-  {
-    ASSERT_EQ(proton_log_push_raw(&logger, 0, 100 + i, nullptr, args, sizeof(args)), PROTON_OK);
-  }
+  ASSERT_EQ(proton_log_push(&logger, 0, 100, "x", 1), PROTON_OK);
+  ASSERT_EQ(proton_log_push(&logger, 0, 101, "x", 1), PROTON_OK);
 
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-  EXPECT_EQ(hdr.timestamp_ms, 3u);
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-  EXPECT_EQ(hdr.timestamp_ms, 100u);
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_OK);
-  EXPECT_EQ(hdr.timestamp_ms, 101u);
-  EXPECT_EQ(proton_log_pop_raw(&logger, &hdr, args_out, sizeof(args_out), &args_len), PROTON_EMPTY);
-}
-
-TEST(LogRing, VariableSizeEntriesWithWrap)
-{
-  proton_logger_t logger;
-  std::array<uint8_t, 128> buf{};
-  auto cfg = make_config(buf.data(), buf.size());
-  ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
-
-  auto push = [&](uint64_t ts, size_t n)
-  {
-    std::vector<uint8_t> args(n);
-    for (size_t i = 0; i < n; ++i) args[i] = static_cast<uint8_t>(ts + i);
-    ASSERT_EQ(proton_log_push_raw(&logger, 0, ts, nullptr, args.data(), n), PROTON_OK);
-  };
-
-  auto pop_expect = [&](uint64_t ts, size_t n)
-  {
-    proton_log_entry_header_t hdr{};
-    uint8_t out[64] = {};
-    size_t len = 0;
-    ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, out, sizeof(out), &len), PROTON_OK);
-    EXPECT_EQ(hdr.timestamp_ms, ts);
-    ASSERT_EQ(len, n);
-    for (size_t i = 0; i < n; ++i) EXPECT_EQ(out[i], static_cast<uint8_t>(ts + i));
-  };
-
-  push(10, 8);   // entry size 36
-  push(20, 16);  // entry size 44 → total 80
-  pop_expect(10, 8);
-  push(30, 12);  // entry size 40 → wraps
-  push(40, 4);   // entry size 32
-  pop_expect(20, 16);
-  pop_expect(30, 12);
-  pop_expect(40, 4);
-  proton_log_entry_header_t hdr{};
-  uint8_t out[4];
-  size_t len;
-  EXPECT_EQ(proton_log_pop_raw(&logger, &hdr, out, sizeof(out), &len), PROTON_EMPTY);
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.timestamp_ms, 3u);
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.timestamp_ms, 100u);
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(out.timestamp_ms, 101u);
+  EXPECT_EQ(proton_log_pop(&logger, &out), PROTON_EMPTY);
 }
 
 TEST(LogRing, LockHooksInvokedOnPushAndPop)
 {
   proton_logger_t logger;
-  std::array<uint8_t, 128> buf{};
+  std::array<proton_Log, 2> entries{};
   LockCounters counters;
-  auto cfg = make_config(buf.data(), buf.size());
+  auto cfg = make_config(entries.data(), entries.size());
   cfg.lock = test_lock_fn;
   cfg.unlock = test_unlock_fn;
   cfg.lock_arg = &counters;
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
 
-  const uint8_t args[2] = {0xAB, 0xCD};
-  ASSERT_EQ(proton_log_push_raw(&logger, 0, 1, nullptr, args, sizeof(args)), PROTON_OK);
+  ASSERT_EQ(proton_log_push(&logger, 0, 1, "x", 1), PROTON_OK);
   EXPECT_EQ(counters.lock_calls, 1);
   EXPECT_EQ(counters.unlock_calls, 1);
 
-  proton_log_entry_header_t hdr{};
-  uint8_t out[8] = {};
-  size_t len = 0;
-  ASSERT_EQ(proton_log_pop_raw(&logger, &hdr, out, sizeof(out), &len), PROTON_OK);
+  proton_Log out{};
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
   EXPECT_EQ(counters.lock_calls, 2);
   EXPECT_EQ(counters.unlock_calls, 2);
 
   counters.lock_ok = false;
-  EXPECT_EQ(proton_log_push_raw(&logger, 0, 2, nullptr, args, sizeof(args)), PROTON_MUTEX_ERROR);
+  EXPECT_EQ(proton_log_push(&logger, 0, 2, "x", 1), PROTON_MUTEX_ERROR);
 }
 
 TEST(LogRing, SetDefaultLoggerRoundTrip)
 {
   proton_logger_t logger;
-  std::array<uint8_t, 64> buf{};
-  auto cfg = make_config(buf.data(), buf.size());
+  std::array<proton_Log, 2> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
 
   proton_log_set_default(&logger);

@@ -28,11 +28,6 @@
 #define PROTON_LOG_MAX_MESSAGE_SIZE 128
 #endif
 
-// Max size (bytes) of the raw tagged-arg blob stored per ring entry before formatting.
-#ifndef PROTON_LOG_MAX_ARGS_SIZE
-#define PROTON_LOG_MAX_ARGS_SIZE 128
-#endif
-
 // Enable logging API
 #ifndef PROTON_ENABLE_LOGGING
 #define PROTON_ENABLE_LOGGING 0

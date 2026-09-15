@@ -15,6 +15,5 @@ message Log {
   Level level = 1;
   uint64 timestamp_ms = 2;
   uint32 sequence = 3;
-  uint32 dropped_since_last = 4;
-  string text = 5;
+  string text = 4;
 }
