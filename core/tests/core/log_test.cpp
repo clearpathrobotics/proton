@@ -51,7 +51,7 @@ TEST(LogMacro, PushesFormattedAndDrainsRoundTrip)
   std::array<proton_Log, 4> entries{};
   auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
-  proton_log_set_default(&logger);
+  proton_log_set_logger(&logger);
 
   g_now_ms = 9999;
   PROTON_LOG_INFO("motor %u at %d rpm", 7u, -1234);
@@ -71,7 +71,7 @@ TEST(LogMacro, PushesFormattedAndDrainsRoundTrip)
   EXPECT_EQ(msg.operation.log.sequence, 0u);
   EXPECT_STREQ(msg.operation.log.text, "motor 7 at -1234 rpm");
 
-  proton_log_set_default(nullptr);
+  proton_log_set_logger(nullptr);
 }
 
 TEST(LogMacro, RespectsRuntimeMinLevel)
@@ -81,7 +81,7 @@ TEST(LogMacro, RespectsRuntimeMinLevel)
   auto cfg = make_config(entries.data(), entries.size());
   cfg.min_level = PROTON_LOG_LEVEL_WARN;
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
-  proton_log_set_default(&logger);
+  proton_log_set_logger(&logger);
 
   PROTON_LOG_INFO("suppressed");
   PROTON_LOG_ERROR("kept %u", 42u);
@@ -96,7 +96,7 @@ TEST(LogMacro, RespectsRuntimeMinLevel)
   EXPECT_STREQ(msg.operation.log.text, "kept 42");
 
   EXPECT_EQ(proton_log_encode_next(&logger, wire.data(), wire.size(), &wire_len), PROTON_EMPTY);
-  proton_log_set_default(nullptr);
+  proton_log_set_logger(nullptr);
 }
 
 TEST(LogMacro, ZeroArgsWorks)
@@ -105,7 +105,7 @@ TEST(LogMacro, ZeroArgsWorks)
   std::array<proton_Log, 4> entries{};
   auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
-  proton_log_set_default(&logger);
+  proton_log_set_logger(&logger);
 
   PROTON_LOG_DEBUG("no args here");
 
@@ -118,7 +118,7 @@ TEST(LogMacro, ZeroArgsWorks)
   ASSERT_TRUE(pb_decode(&is, proton_Proton_fields, &msg));
   EXPECT_STREQ(msg.operation.log.text, "no args here");
 
-  proton_log_set_default(nullptr);
+  proton_log_set_logger(nullptr);
 }
 
 TEST(LogMacro, TruncatesOverlongFormattedText)
@@ -127,7 +127,7 @@ TEST(LogMacro, TruncatesOverlongFormattedText)
   std::array<proton_Log, 2> entries{};
   auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
-  proton_log_set_default(&logger);
+  proton_log_set_logger(&logger);
 
   std::string big(PROTON_LOG_MAX_MESSAGE_SIZE + 40u, 'x');
   PROTON_LOG_INFO("%s", big.c_str());
@@ -136,5 +136,5 @@ TEST(LogMacro, TruncatesOverlongFormattedText)
   ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
   EXPECT_EQ(std::strlen(out.text), PROTON_LOG_MAX_MESSAGE_SIZE - 1u);
 
-  proton_log_set_default(nullptr);
+  proton_log_set_logger(nullptr);
 }

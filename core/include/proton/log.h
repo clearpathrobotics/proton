@@ -84,15 +84,15 @@ extern "C"
   proton_status_e proton_log_init(proton_logger_t * logger, const proton_logger_config_t * config);
 
   /**
-   * Register `logger` as the process/image-wide default used by the logging macros
-   * and the decode-side dispatch path. Pass NULL to clear.
+   * Register `logger` as the storage and config used by the logging macros
+   * Pass NULL to clear.
    */
-  void proton_log_set_default(proton_logger_t * logger);
+  void proton_log_set_logger(proton_logger_t * logger);
 
   /**
    * Retrieve the current default logger, or NULL if none is set.
    */
-  proton_logger_t * proton_log_default(void);
+  proton_logger_t * proton_log_get_logger(void);
 
   proton_status_e proton_log_set_min_level(proton_logger_t * logger, proton_log_level_e level);
 
@@ -162,7 +162,7 @@ extern "C"
   } while (0)
 
 #define PROTON_LOG_D(LEVEL_, FMT_, ...) \
-  PROTON_LOG(proton_log_default(), LEVEL_, FMT_, ##__VA_ARGS__)
+  PROTON_LOG(proton_log_get_logger(), LEVEL_, FMT_, ##__VA_ARGS__)
 
 #define PROTON_LOG_TRACE(FMT_, ...) PROTON_LOG_D(PROTON_LOG_LEVEL_TRACE, FMT_, ##__VA_ARGS__)
 #define PROTON_LOG_DEBUG(FMT_, ...) PROTON_LOG_D(PROTON_LOG_LEVEL_DEBUG, FMT_, ##__VA_ARGS__)

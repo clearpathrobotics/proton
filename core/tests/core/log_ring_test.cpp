@@ -212,10 +212,10 @@ TEST(LogRing, SetDefaultLoggerRoundTrip)
   auto cfg = make_config(entries.data(), entries.size());
   ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
 
-  proton_log_set_default(&logger);
-  EXPECT_EQ(proton_log_default(), &logger);
-  proton_log_set_default(nullptr);
-  EXPECT_EQ(proton_log_default(), nullptr);
+  proton_log_set_logger(&logger);
+  EXPECT_EQ(proton_log_get_logger(), &logger);
+  proton_log_set_logger(nullptr);
+  EXPECT_EQ(proton_log_get_logger(), nullptr);
 }
 
 int main(int argc, char ** argv)

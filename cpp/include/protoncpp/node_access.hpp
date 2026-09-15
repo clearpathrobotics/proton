@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include "proton/log.h"
 #include "proton/node_manager.h"
 #include "proton/proton_config.h"
 #include "protoncpp/bundle_access.hpp"
@@ -83,11 +84,35 @@ public:
   SignalAccess signals() noexcept { return SignalAccess(node_->registry); }
   BundleAccess bundle(uint32_t id) noexcept { return BundleAccess(node_->registry, id); }
 
+  proton_status_e set_log_receive(proton_node_log_receive_fn cb, void * arg) noexcept
+  {
+    return proton_node_set_log_receive(node_, cb, arg);
+  }
+
 #if PROTON_ENABLE_ALLOC
 
   void on_bundle_update(uint32_t bundle_id, BundleAccess::CallbackType cb) noexcept
   {
     bundle(bundle_id).set_callback(cb);
+  }
+
+  using LogReceiveType = std::function<void(const proton_Log &)>;
+
+  void on_log_received(LogReceiveType cb) noexcept
+  {
+    auto wrapper = std::make_unique<LogReceiveType>(std::move(cb));
+    proton_node_set_log_receive(
+      node_,
+      [](const proton_Log * log, void * ctx)
+      {
+        auto * callback = static_cast<LogReceiveType *>(ctx);
+        if (*callback)
+        {
+          (*callback)(*log);
+        }
+      },
+      // Same known one-shot leak pattern as on_bundle_update: the wrapper lives for the process.
+      wrapper.release());
   }
 
 #endif

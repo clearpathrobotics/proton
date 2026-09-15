@@ -63,9 +63,9 @@ proton_status_e proton_log_init(proton_logger_t * logger, const proton_logger_co
   return PROTON_OK;
 }
 
-void proton_log_set_default(proton_logger_t * logger) { s_default_logger = logger; }
+void proton_log_set_logger(proton_logger_t * logger) { s_default_logger = logger; }
 
-proton_logger_t * proton_log_default(void) { return s_default_logger; }
+proton_logger_t * proton_log_get_logger(void) { return s_default_logger; }
 
 proton_status_e proton_log_set_min_level(proton_logger_t * logger, proton_log_level_e level)
 {

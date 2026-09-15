@@ -18,7 +18,9 @@
 
 #include <gtest/gtest.h>
 #include <cstring>
+#include <string>
 #include "protoncpp/bundle_access.hpp"
+#include "protoncpp/log_access.hpp"
 #include "protoncpp/node_access.hpp"
 #include "protoncpp/signal_access.hpp"
 #include "target_connections.h"
@@ -382,6 +384,72 @@ TEST_F(NodeAccessTest, InvalidRegistryReturnsNullopt)
   std::optional<BundleAccess> bundle = access[PROTON_BUNDLE_VALUE_TEST_ID];
   EXPECT_FALSE(bundle.has_value());
 }
+
+// -----------------------------------------------------------------------
+// NodeAccess::set_log_receive + on_log_received
+// -----------------------------------------------------------------------
+
+namespace
+{
+struct LogRxCapture
+{
+  int count = 0;
+  proton_Log last{};
+};
+
+extern "C" void cpp_log_rx(const proton_Log * log, void * arg)
+{
+  auto * c = static_cast<LogRxCapture *>(arg);
+  c->count++;
+  c->last = *log;
+}
+}  // namespace
+
+TEST_F(NodeAccessTest, SetLogReceive_InvokesCallbackOnDecode)
+{
+  NodeAccess access(&node_);
+  Logger<2> logger;
+  ASSERT_EQ(logger.push(PROTON_LOG_LEVEL_WARN, "boom", 4242u), PROTON_OK);
+
+  std::array<std::uint8_t, BUFFER_SIZE> buf{};
+  std::size_t out_len = 0;
+  ASSERT_EQ(logger.encode_next(buf.data(), buf.size(), out_len), PROTON_OK);
+
+  LogRxCapture cap;
+  ASSERT_EQ(access.set_log_receive(cpp_log_rx, &cap), PROTON_OK);
+
+  ASSERT_EQ(access.receive(buf.data(), out_len), PROTON_OK);
+  EXPECT_EQ(cap.count, 1);
+  EXPECT_STREQ(cap.last.text, "boom");
+}
+
+#if PROTON_ENABLE_ALLOC
+
+TEST_F(NodeAccessTest, OnLogReceived_CallbackIsInvoked)
+{
+  NodeAccess access(&node_);
+  Logger<2> logger;
+  ASSERT_EQ(logger.push(PROTON_LOG_LEVEL_ERROR, "kaboom", 7u), PROTON_OK);
+
+  std::array<std::uint8_t, BUFFER_SIZE> buf{};
+  std::size_t out_len = 0;
+  ASSERT_EQ(logger.encode_next(buf.data(), buf.size(), out_len), PROTON_OK);
+
+  bool called = false;
+  std::string received_text;
+  access.on_log_received(
+    [&](const proton_Log & log)
+    {
+      called = true;
+      received_text = log.text;
+    });
+
+  ASSERT_EQ(access.receive(buf.data(), out_len), PROTON_OK);
+  EXPECT_TRUE(called);
+  EXPECT_EQ(received_text, "kaboom");
+}
+
+#endif  // PROTON_ENABLE_ALLOC
 
 int main(int argc, char ** argv)
 {

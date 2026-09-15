@@ -220,6 +220,19 @@ if (PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
   )
 
+  add_executable(log_test_cpp
+    tests/log_test.cpp
+  )
+
+  target_link_libraries(log_test_cpp PUBLIC
+    GTest::gtest_main
+    proton::proton_cpp
+  )
+
+  target_include_directories(log_test_cpp PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test_cpp)
   gtest_discover_tests(lock_test_cpp)
@@ -238,4 +251,5 @@ if (PROTON_BUILD_TESTS)
   gtest_discover_tests(node_builder_generator_round_trip_test_cpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
   )
+  gtest_discover_tests(log_test_cpp)
 endif()
