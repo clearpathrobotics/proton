@@ -983,6 +983,8 @@ TEST_F(NodeManagerTest, EncodeBundle_MutexUnlocksOnIncorrectTarget)
 // proton_node_receive — Log tag delivers to user callback
 // -----------------------------------------------------------------------
 
+#if PROTON_ENABLE_LOGGING
+
 namespace
 {
 struct LogRxCapture
@@ -1049,6 +1051,8 @@ TEST_F(NodeManagerTest, SetLogReceive_NullNode_ReturnsNullPtrError)
 {
   EXPECT_EQ(proton_node_set_log_receive(nullptr, log_rx_capture, nullptr), PROTON_NULL_PTR_ERROR);
 }
+
+#endif  // PROTON_ENABLE_LOGGING
 
 int main(int argc, char ** argv)
 {

@@ -26,6 +26,8 @@
 #include "proton/generated/proton.pb.h"
 #include "proton/log.h"
 
+#if PROTON_ENABLE_LOGGING
+
 namespace
 {
 
@@ -138,3 +140,11 @@ TEST(LogMacro, TruncatesOverlongFormattedText)
 
   proton_log_set_logger(nullptr);
 }
+
+int main(int argc, char ** argv)
+{
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
+
+#endif  // PROTON_ENABLE_LOGGING

@@ -157,10 +157,12 @@ proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buffer
     }
     else if (msg.which_operation == proton_Proton_log_tag)
     {
+#if PROTON_ENABLE_LOGGING
       if (node->log_receive_cb != NULL)
       {
         node->log_receive_cb(&msg.operation.log, node->log_receive_arg);
       }
+#endif  // PROTON_ENABLE_LOGGING
     }
   }
 
@@ -333,6 +335,8 @@ proton_status_e proton_node_trigger_bundle(proton_node_t * node, uint32_t bundle
   return trig_ret;
 }
 
+#if PROTON_ENABLE_LOGGING
+
 proton_status_e proton_node_set_log_receive(
   proton_node_t * node, proton_node_log_receive_fn cb, void * arg)
 {
@@ -344,6 +348,8 @@ proton_status_e proton_node_set_log_receive(
   node->log_receive_arg = arg;
   return PROTON_OK;
 }
+
+#endif  // PROTON_ENABLE_LOGGING
 
 proton_status_e proton_node_encode_bundle(
   proton_node_t * node, uint32_t bundle_id, uint64_t uptime_ms, uint8_t * buffer, size_t buffer_len,

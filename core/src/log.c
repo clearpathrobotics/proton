@@ -23,6 +23,8 @@
 #include "pb_encode.h"
 #include "proton/generated/proton.pb.h"
 
+#if PROTON_ENABLE_LOGGING
+
 static proton_logger_t * s_default_logger = NULL;
 
 static proton_status_e lock_logger(const proton_logger_config_t * cfg)
@@ -167,3 +169,5 @@ proton_status_e proton_log_encode_next(
   *out_len = stream.bytes_written;
   return PROTON_OK;
 }
+
+#endif  // PROTON_ENABLE_LOGGING

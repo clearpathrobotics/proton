@@ -389,6 +389,8 @@ TEST_F(NodeAccessTest, InvalidRegistryReturnsNullopt)
 // NodeAccess::set_log_receive + on_log_received
 // -----------------------------------------------------------------------
 
+#if PROTON_ENABLE_LOGGING
+
 namespace
 {
 struct LogRxCapture
@@ -450,6 +452,8 @@ TEST_F(NodeAccessTest, OnLogReceived_CallbackIsInvoked)
 }
 
 #endif  // PROTON_ENABLE_ALLOC
+
+#endif  // PROTON_ENABLE_LOGGING
 
 int main(int argc, char ** argv)
 {

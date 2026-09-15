@@ -82,12 +82,14 @@ extern "C"
    */
   proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buffer, size_t len);
 
+#if PROTON_ENABLE_LOGGING
   /**
    * Register a callback to be invoked when proton_node_receive decodes an inbound Log message.
    * Pass NULL for `cb` to unregister.
    */
   proton_status_e proton_node_set_log_receive(
     proton_node_t * node, proton_node_log_receive_fn cb, void * arg);
+#endif  // PROTON_ENABLE_LOGGING
 
   /**
    * Update function to be called periodically by the user to check if there are any messages to send

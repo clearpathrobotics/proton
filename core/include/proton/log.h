@@ -78,6 +78,8 @@ extern "C"
     uint32_t sequence;
   } proton_logger_t;
 
+#if PROTON_ENABLE_LOGGING
+
   /**
    * Initialize a logger from user-provided config. The config is copied by value.
    */
@@ -163,6 +165,11 @@ extern "C"
 
 #define PROTON_LOG_D(LEVEL_, FMT_, ...) \
   PROTON_LOG(proton_log_get_logger(), LEVEL_, FMT_, ##__VA_ARGS__)
+
+#else  // PROTON_ENABLE_LOGGING
+#define PROTON_LOG_D(LEVEL_, FMT_, ...) ((void)0)
+
+#endif  // PROTON_ENABLE_LOGGING
 
 #define PROTON_LOG_TRACE(FMT_, ...) PROTON_LOG_D(PROTON_LOG_LEVEL_TRACE, FMT_, ##__VA_ARGS__)
 #define PROTON_LOG_DEBUG(FMT_, ...) PROTON_LOG_D(PROTON_LOG_LEVEL_DEBUG, FMT_, ##__VA_ARGS__)

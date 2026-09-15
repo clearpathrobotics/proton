@@ -158,9 +158,16 @@ add_library(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_MAX_PENDING_TRIGGERS=${PROTON_MAX_PENDING_TRIGGERS})
 
+# -------------------------------
+# feature flags
+# -------------------------------
 if(PROTON_ENABLE_ALLOC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
 endif()
+
+if(PROTON_ENABLE_LOGGING)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_LOGGING=1)
+else()
 
 if(PROTON_GENERATE_PROTOS)
   add_dependencies(${PROJECT_NAME} generate_protoc)

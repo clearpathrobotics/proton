@@ -84,10 +84,14 @@ public:
   SignalAccess signals() noexcept { return SignalAccess(node_->registry); }
   BundleAccess bundle(uint32_t id) noexcept { return BundleAccess(node_->registry, id); }
 
+#if PROTON_ENABLE_LOGGING
+
   proton_status_e set_log_receive(proton_node_log_receive_fn cb, void * arg) noexcept
   {
     return proton_node_set_log_receive(node_, cb, arg);
   }
+
+#endif  // PROTON_ENABLE_LOGGING
 
 #if PROTON_ENABLE_ALLOC
 
@@ -95,6 +99,8 @@ public:
   {
     bundle(bundle_id).set_callback(cb);
   }
+
+#if PROTON_ENABLE_LOGGING
 
   using LogReceiveType = std::function<void(const proton_Log &)>;
 
@@ -115,7 +121,9 @@ public:
       wrapper.release());
   }
 
-#endif
+#endif  // PROTON_ENABLE_LOGGING
+
+#endif  // PROTON_ENABLE_ALLOC
 
 #if __cplusplus >= 201703L
 

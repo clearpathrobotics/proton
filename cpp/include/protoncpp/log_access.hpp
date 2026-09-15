@@ -34,6 +34,8 @@
 #include <span>
 #endif
 
+#if PROTON_ENABLE_LOGGING
+
 namespace proton
 {
 
@@ -119,5 +121,7 @@ private:
 };
 
 }  // namespace proton
+
+#endif  // PROTON_ENABLE_LOGGING
 
 #endif  // PROTONCPP_LOG_ACCESS_HPP
