@@ -167,7 +167,7 @@ endif()
 
 if(PROTON_ENABLE_LOGGING)
   target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_LOGGING=1)
-else()
+endif()
 
 if(PROTON_GENERATE_PROTOS)
   add_dependencies(${PROJECT_NAME} generate_protoc)

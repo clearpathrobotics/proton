@@ -1,1 +1,2 @@
 proton.Log.text max_size:128
+proton.Log.name max_size:25

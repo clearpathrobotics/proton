@@ -96,7 +96,6 @@ TEST(LogRing, PushPopRoundTrip)
   ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
   EXPECT_EQ(out.level, proton_Log_Level_LEVEL_INFO);
   EXPECT_EQ(out.timestamp_ms, 12345u);
-  EXPECT_EQ(out.sequence, 0u);
   EXPECT_STREQ(out.text, text);
 }
 
@@ -127,6 +126,51 @@ TEST(LogRing, TruncatesOverlongText)
   proton_Log out{};
   ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
   EXPECT_EQ(std::strlen(out.text), max_text);
+}
+
+TEST(LogRing, CopiesConfigNameIntoEntry)
+{
+  proton_logger_t logger;
+  std::array<proton_Log, 2> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
+  cfg.name = "device-42";
+  ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
+
+  ASSERT_EQ(proton_log_push(&logger, PROTON_LOG_LEVEL_INFO, 0, "hi", 2), PROTON_OK);
+
+  proton_Log out{};
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_STREQ(out.name, "device-42");
+}
+
+TEST(LogRing, NullConfigNameYieldsEmptyEntryName)
+{
+  proton_logger_t logger;
+  std::array<proton_Log, 2> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
+  ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
+
+  ASSERT_EQ(proton_log_push(&logger, PROTON_LOG_LEVEL_INFO, 0, "hi", 2), PROTON_OK);
+
+  proton_Log out{};
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_STREQ(out.name, "");
+}
+
+TEST(LogRing, TruncatesOverlongName)
+{
+  proton_logger_t logger;
+  std::array<proton_Log, 2> entries{};
+  auto cfg = make_config(entries.data(), entries.size());
+  std::string long_name(sizeof(entries[0].name) + 10, 'n');
+  cfg.name = long_name.c_str();
+  ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
+
+  ASSERT_EQ(proton_log_push(&logger, PROTON_LOG_LEVEL_INFO, 0, "hi", 2), PROTON_OK);
+
+  proton_Log out{};
+  ASSERT_EQ(proton_log_pop(&logger, &out), PROTON_OK);
+  EXPECT_EQ(std::strlen(out.name), sizeof(entries[0].name) - 1u);
 }
 
 TEST(LogRing, ReturnsErrorWhenFull)

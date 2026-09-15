@@ -51,7 +51,7 @@ extern const pb_msgdesc_t proton_Proton_msg;
 
 /* Maximum encoded size of messages (where known) */
 #if defined(proton_Bundle_size)
-union proton_Proton_operation_size_union {char f1[(6 + proton_Bundle_size)]; char f0[152];};
+union proton_Proton_operation_size_union {char f1[(6 + proton_Bundle_size)]; char f0[172];};
 #endif
 #if defined(proton_Bundle_size)
 #define PROTON_PROTON_PB_H_MAX_SIZE              proton_Proton_size

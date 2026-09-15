@@ -23,7 +23,7 @@ typedef enum _proton_Log_Level {
 typedef struct _proton_Log {
     proton_Log_Level level;
     uint64_t timestamp_ms;
-    uint32_t sequence;
+    char name[25];
     char text[128];
 } proton_Log;
 
@@ -41,20 +41,20 @@ extern "C" {
 
 
 /* Initializer values for message structs */
-#define proton_Log_init_default                  {_proton_Log_Level_MIN, 0, 0, ""}
-#define proton_Log_init_zero                     {_proton_Log_Level_MIN, 0, 0, ""}
+#define proton_Log_init_default                  {_proton_Log_Level_MIN, 0, "", ""}
+#define proton_Log_init_zero                     {_proton_Log_Level_MIN, 0, "", ""}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define proton_Log_level_tag                     1
 #define proton_Log_timestamp_ms_tag              2
-#define proton_Log_sequence_tag                  3
+#define proton_Log_name_tag                      3
 #define proton_Log_text_tag                      4
 
 /* Struct field encoding specification for nanopb */
 #define proton_Log_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, UENUM,    level,             1) \
 X(a, STATIC,   SINGULAR, UINT64,   timestamp_ms,      2) \
-X(a, STATIC,   SINGULAR, UINT32,   sequence,          3) \
+X(a, STATIC,   SINGULAR, STRING,   name,              3) \
 X(a, STATIC,   SINGULAR, STRING,   text,              4)
 #define proton_Log_CALLBACK NULL
 #define proton_Log_DEFAULT NULL
@@ -66,7 +66,7 @@ extern const pb_msgdesc_t proton_Log_msg;
 
 /* Maximum encoded size of messages (where known) */
 #define PROTON_LOG_PB_H_MAX_SIZE                 proton_Log_size
-#define proton_Log_size                          149
+#define proton_Log_size                          169
 
 #ifdef __cplusplus
 } /* extern "C" */

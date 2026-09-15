@@ -106,7 +106,24 @@ proton_status_e proton_log_push(
 
   slot->level = (proton_Log_Level)level;
   slot->timestamp_ms = timestamp_ms;
-  slot->sequence = logger->sequence++;
+
+  const char * name = logger->config.name;
+  if (name != NULL)
+  {
+    const size_t max_name = sizeof(slot->name) - 1u;
+    size_t name_len = 0;
+    while (name_len < max_name && name[name_len] != '\0')
+    {
+      slot->name[name_len] = name[name_len];
+      name_len++;
+    }
+    slot->name[name_len] = '\0';
+  }
+  else
+  {
+    slot->name[0] = '\0';
+  }
+
   if (copy_len > 0)
   {
     memcpy(slot->text, text, copy_len);

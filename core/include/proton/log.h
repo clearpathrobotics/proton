@@ -53,6 +53,8 @@ extern "C"
   /**
    * User-provided logger configuration. `entries` and `capacity` are required.
    * `lock`/`unlock` must be set as a pair or both NULL (single-context caller).
+   * `name`, if non-NULL, is copied into every pushed log entry so receivers can
+   * identify the source device; truncated to fit `proton_Log.name`.
    */
   typedef struct proton_logger_config
   {
@@ -63,6 +65,7 @@ extern "C"
     proton_log_lock_fn lock;
     proton_log_unlock_fn unlock;
     void * lock_arg;
+    const char * name;
   } proton_logger_config_t;
 
   /**
@@ -75,7 +78,6 @@ extern "C"
     size_t head;
     size_t tail;
     size_t count;
-    uint32_t sequence;
   } proton_logger_t;
 
 #if PROTON_ENABLE_LOGGING

@@ -70,7 +70,6 @@ TEST(LogMacro, PushesFormattedAndDrainsRoundTrip)
 
   EXPECT_EQ(msg.operation.log.level, proton_Log_Level_LEVEL_INFO);
   EXPECT_EQ(msg.operation.log.timestamp_ms, 9999u);
-  EXPECT_EQ(msg.operation.log.sequence, 0u);
   EXPECT_STREQ(msg.operation.log.text, "motor 7 at -1234 rpm");
 
   proton_log_set_logger(nullptr);
