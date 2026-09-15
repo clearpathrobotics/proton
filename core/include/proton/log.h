@@ -81,9 +81,22 @@ extern "C"
     proton_logger_config_t config;
     size_t head;
     size_t tail;
+    size_t used_bytes;
     uint32_t sequence;
     uint32_t dropped_since_last;
   } proton_logger_t;
+
+  /**
+   * Pop-side view of a ring entry's fixed-size header (args copied separately).
+   */
+  typedef struct proton_log_entry_header
+  {
+    uint8_t level;
+    uint64_t timestamp_ms;
+    uint32_t sequence;
+    uint32_t dropped_since_last;
+    const void * fmt_ref;
+  } proton_log_entry_header_t;
 
   /**
    * Initialize a logger from user-provided config. The config is copied by value.
@@ -110,6 +123,18 @@ extern "C"
   proton_status_e proton_log_push_raw(
     proton_logger_t * logger, uint8_t level, uint64_t timestamp_ms, const void * fmt_ref,
     const uint8_t * args_blob, size_t args_len);
+
+  /**
+   * Pop the oldest ring buffer entry. Header fields are copied into `header_out`;
+   * up to `args_cap` bytes of the args blob are copied into `args_out`, and the
+   * actual arg length is written to `*args_len` (may exceed `args_cap`).
+   *
+   * Returns PROTON_EMPTY if there is no entry, PROTON_INSUFFICIENT_BUFFER_ERROR
+   * if `args_cap < *args_len` (entry not consumed), or PROTON_OK on success.
+   */
+  proton_status_e proton_log_pop_raw(
+    proton_logger_t * logger, proton_log_entry_header_t * header_out, uint8_t * args_out,
+    size_t args_cap, size_t * args_len);
 
   /**
    * Pop the oldest ring buffer entry and encode it as a Proton{Log} wire message
