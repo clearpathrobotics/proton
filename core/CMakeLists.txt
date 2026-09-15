@@ -401,6 +401,17 @@ if(PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
   )
 
+  add_executable(log_test
+    tests/core/log_test.cpp
+  )
+  target_link_libraries(log_test PUBLIC
+    GTest::gtest_main
+    proton::${PROJECT_NAME}
+  )
+  target_include_directories(log_test PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test)
   gtest_discover_tests(encode_decode_test)
@@ -411,4 +422,5 @@ if(PROTON_BUILD_TESTS)
   gtest_discover_tests(periodic_bundle_test)
   gtest_discover_tests(status_to_string_test)
   gtest_discover_tests(log_ring_test)
+  gtest_discover_tests(log_test)
 endif()

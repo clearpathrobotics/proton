@@ -18,7 +18,12 @@
 
 #include "proton/log.h"
 
+#include <inttypes.h>
+#include <stdio.h>
 #include <string.h>
+
+#include "pb_encode.h"
+#include "proton/generated/proton.pb.h"
 
 // Ring entry header layout (host-local; use memcpy, alignment-agnostic).
 //  0..1:  u16 total_len   (0 = wrap sentinel; else RING_HEADER_SIZE + args_len)
@@ -288,11 +293,233 @@ proton_status_e proton_log_pop_raw(
 proton_status_e proton_log_drain(
   proton_logger_t * logger, uint8_t * buffer, size_t buffer_len, size_t * out_len)
 {
-  (void)logger;
-  (void)buffer;
-  (void)buffer_len;
-  (void)out_len;
-  return PROTON_UNSUPPORTED_OPERATION_ERROR;
+  if (logger == NULL || buffer == NULL || out_len == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+
+  proton_log_entry_header_t hdr;
+  uint8_t args[PROTON_LOG_MAX_ARGS_SIZE];
+  size_t args_len = 0;
+  proton_status_e s = proton_log_pop_raw(logger, &hdr, args, sizeof(args), &args_len);
+  if (s != PROTON_OK)
+  {
+    return s;
+  }
+
+  proton_Log log = proton_Log_init_zero;
+  log.level = (proton_Log_Level)hdr.level;
+  log.timestamp_ms = hdr.timestamp_ms;
+  log.sequence = hdr.sequence;
+  log.dropped_since_last = hdr.dropped_since_last;
+  (void)proton_log_format_entry(
+    (const char *)hdr.fmt_ref, args, args_len, log.text, sizeof(log.text));
+
+  proton_Proton msg = proton_Proton_init_zero;
+  msg.which_operation = proton_Proton_log_tag;
+  msg.operation.log = log;
+
+  pb_ostream_t stream = pb_ostream_from_buffer((pb_byte_t *)buffer, buffer_len);
+  if (!pb_encode(&stream, proton_Proton_fields, &msg))
+  {
+    return PROTON_SERIALIZATION_ERROR;
+  }
+  *out_len = stream.bytes_written;
+  return PROTON_OK;
+}
+
+proton_status_e proton_log_note_drop(proton_logger_t * logger)
+{
+  if (logger == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+  proton_status_e s = lock_logger(&logger->config);
+  if (s != PROTON_OK)
+  {
+    return s;
+  }
+  logger->dropped_since_last++;
+  return unlock_logger(&logger->config);
+}
+
+static size_t fmt_append(char * out, size_t off, size_t cap, const char * s, size_t n)
+{
+  if (off >= cap)
+  {
+    return off;
+  }
+  size_t room = cap - off;
+  size_t copy = (n < room) ? n : room;
+  memcpy(out + off, s, copy);
+  return off + copy;
+}
+
+static size_t fmt_append_cstr(char * out, size_t off, size_t cap, const char * s)
+{
+  return fmt_append(out, off, cap, s, strlen(s));
+}
+
+static size_t fmt_one_arg(
+  char * out, size_t off, size_t cap, const uint8_t * args, size_t args_len, size_t * apos)
+{
+  if (*apos >= args_len)
+  {
+    return fmt_append_cstr(out, off, cap, "<!args>");
+  }
+  uint8_t tag = args[(*apos)++];
+  char tmp[48];
+  int written = 0;
+
+  switch (tag)
+  {
+    case PROTON_LOG_ARG_I32:
+    {
+      if (*apos + sizeof(int32_t) > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      int32_t v;
+      memcpy(&v, args + *apos, sizeof(v));
+      *apos += sizeof(v);
+      written = snprintf(tmp, sizeof(tmp), "%" PRId32, v);
+      break;
+    }
+    case PROTON_LOG_ARG_U32:
+    {
+      if (*apos + sizeof(uint32_t) > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      uint32_t v;
+      memcpy(&v, args + *apos, sizeof(v));
+      *apos += sizeof(v);
+      written = snprintf(tmp, sizeof(tmp), "%" PRIu32, v);
+      break;
+    }
+    case PROTON_LOG_ARG_I64:
+    {
+      if (*apos + sizeof(int64_t) > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      int64_t v;
+      memcpy(&v, args + *apos, sizeof(v));
+      *apos += sizeof(v);
+      written = snprintf(tmp, sizeof(tmp), "%" PRId64, v);
+      break;
+    }
+    case PROTON_LOG_ARG_U64:
+    {
+      if (*apos + sizeof(uint64_t) > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      uint64_t v;
+      memcpy(&v, args + *apos, sizeof(v));
+      *apos += sizeof(v);
+      written = snprintf(tmp, sizeof(tmp), "%" PRIu64, v);
+      break;
+    }
+    case PROTON_LOG_ARG_F64:
+    {
+      if (*apos + sizeof(double) > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      double v;
+      memcpy(&v, args + *apos, sizeof(v));
+      *apos += sizeof(v);
+      written = snprintf(tmp, sizeof(tmp), "%g", v);
+      break;
+    }
+    case PROTON_LOG_ARG_STR:
+    {
+      if (*apos + sizeof(uint16_t) > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      uint16_t n;
+      memcpy(&n, args + *apos, sizeof(n));
+      *apos += sizeof(n);
+      if (*apos + n > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      off = fmt_append(out, off, cap, (const char *)(args + *apos), n);
+      *apos += n;
+      return off;
+    }
+    case PROTON_LOG_ARG_PTR:
+    {
+      if (*apos + sizeof(uint64_t) > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      uint64_t v;
+      memcpy(&v, args + *apos, sizeof(v));
+      *apos += sizeof(v);
+      written = snprintf(tmp, sizeof(tmp), "0x%" PRIx64, v);
+      break;
+    }
+    case PROTON_LOG_ARG_CHR:
+    {
+      if (*apos + sizeof(char) > args_len)
+      {
+        return fmt_append_cstr(out, off, cap, "<!trunc>");
+      }
+      char v = (char)args[(*apos)++];
+      return fmt_append(out, off, cap, &v, 1u);
+    }
+    default:
+      return fmt_append_cstr(out, off, cap, "<!tag>");
+  }
+
+  if (written < 0)
+  {
+    return fmt_append_cstr(out, off, cap, "<!fmt>");
+  }
+  return fmt_append(out, off, cap, tmp, (size_t)written);
+}
+
+size_t proton_log_format_entry(
+  const char * fmt, const uint8_t * args, size_t args_len, char * out, size_t out_cap)
+{
+  if (out == NULL || out_cap == 0)
+  {
+    return 0;
+  }
+  const char * p = (fmt != NULL) ? fmt : "";
+  const uint8_t * a = (args != NULL) ? args : (const uint8_t *)"";
+  size_t off = 0;
+  size_t apos = 0;
+  const size_t str_cap = out_cap - 1u;
+
+  while (*p != '\0')
+  {
+    if (p[0] == '{' && p[1] == '{')
+    {
+      off = fmt_append(out, off, str_cap, "{", 1u);
+      p += 2;
+    }
+    else if (p[0] == '}' && p[1] == '}')
+    {
+      off = fmt_append(out, off, str_cap, "}", 1u);
+      p += 2;
+    }
+    else if (p[0] == '{' && p[1] == '}')
+    {
+      off = fmt_one_arg(out, off, str_cap, a, args_len, &apos);
+      p += 2;
+    }
+    else
+    {
+      off = fmt_append(out, off, str_cap, p, 1u);
+      p += 1;
+    }
+  }
+  out[off] = '\0';
+  return off;
 }
 
 proton_status_e proton_log_dispatch(proton_logger_t * logger, const proton_Log * log)
