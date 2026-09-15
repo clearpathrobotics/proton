@@ -51,12 +51,6 @@ extern "C"
   typedef uint64_t (*proton_log_now_ms_fn)(void);
 
   /**
-   * Callback invoked by the decode path when an inbound Proton{Log} message is decoded.
-   * The `log` pointer is only valid for the duration of the call.
-   */
-  typedef void (*proton_log_receive_fn)(const proton_Log * log, void * arg);
-
-  /**
    * User-provided logger configuration. `entries` and `capacity` are required.
    * `lock`/`unlock` must be set as a pair or both NULL (single-context caller).
    */
@@ -69,8 +63,6 @@ extern "C"
     proton_log_lock_fn lock;
     proton_log_unlock_fn unlock;
     void * lock_arg;
-    proton_log_receive_fn on_receive;
-    void * on_receive_arg;
   } proton_logger_config_t;
 
   /**
@@ -124,14 +116,8 @@ extern "C"
    * Pop the oldest ring buffer entry and encode it as a Proton{Log} wire message
    * into `buffer`. Returns PROTON_EMPTY if there is no entry to drain.
    */
-  proton_status_e proton_log_drain(
+  proton_status_e proton_log_encode_next(
     proton_logger_t * logger, uint8_t * buffer, size_t buffer_len, size_t * out_len);
-
-  /**
-   * Invoke the logger's on_receive callback with the given decoded Log message.
-   * No-op if the callback is not set.
-   */
-  proton_status_e proton_log_dispatch(proton_logger_t * logger, const proton_Log * log);
 
 /*
  * Compile-time floor. Any call site whose LEVEL_ < PROTON_LOG_MIN_LEVEL is

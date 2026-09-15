@@ -18,11 +18,13 @@
 
 #include "proton/node_manager.h"
 #include "proton/encode_decode.h"
+#include "proton/log.h"
 #include "target_connections.h"
 #include "target_registry_ids.h"
 #include "utils.hpp"
 
 #include <gtest/gtest.h>
+#include <array>
 #include <cstring>
 
 extern proton_registry_t g_proton_registry;
@@ -975,6 +977,77 @@ TEST_F(NodeManagerTest, EncodeBundle_MutexUnlocksOnIncorrectTarget)
     PROTON_INCORRECT_TARGET_ERROR);
   EXPECT_TRUE(lock_called_);
   EXPECT_TRUE(unlock_called_);
+}
+
+// -----------------------------------------------------------------------
+// proton_node_receive — Log tag delivers to user callback
+// -----------------------------------------------------------------------
+
+namespace
+{
+struct LogRxCapture
+{
+  int call_count = 0;
+  proton_Log last{};
+};
+
+extern "C" void log_rx_capture(const proton_Log * log, void * arg)
+{
+  auto * c = static_cast<LogRxCapture *>(arg);
+  c->call_count++;
+  c->last = *log;
+}
+}  // namespace
+
+TEST_F(NodeManagerTest, Receive_LogMessage_InvokesUserCallback)
+{
+  proton_logger_t logger;
+  std::array<proton_Log, 2> entries{};
+  proton_logger_config_t cfg{};
+  cfg.entries = entries.data();
+  cfg.capacity = entries.size();
+  cfg.min_level = PROTON_LOG_LEVEL_TRACE;
+  ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
+
+  ASSERT_EQ(proton_log_push(&logger, PROTON_LOG_LEVEL_WARN, 4242, "boom", 4), PROTON_OK);
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  ASSERT_EQ(proton_log_encode_next(&logger, buf, sizeof(buf), &out_len), PROTON_OK);
+
+  LogRxCapture cap;
+  ASSERT_EQ(proton_node_set_log_receive(&node_, log_rx_capture, &cap), PROTON_OK);
+
+  ASSERT_EQ(proton_node_receive(&node_, buf, out_len), PROTON_OK);
+  EXPECT_EQ(cap.call_count, 1);
+  EXPECT_EQ(cap.last.level, proton_Log_Level_LEVEL_WARN);
+  EXPECT_EQ(cap.last.timestamp_ms, 4242u);
+  EXPECT_STREQ(cap.last.text, "boom");
+}
+
+TEST_F(NodeManagerTest, Receive_LogMessage_NoCallbackIsNoop)
+{
+  proton_logger_t logger;
+  std::array<proton_Log, 2> entries{};
+  proton_logger_config_t cfg{};
+  cfg.entries = entries.data();
+  cfg.capacity = entries.size();
+  cfg.min_level = PROTON_LOG_LEVEL_TRACE;
+  ASSERT_EQ(proton_log_init(&logger, &cfg), PROTON_OK);
+  ASSERT_EQ(proton_log_push(&logger, PROTON_LOG_LEVEL_INFO, 1, "x", 1), PROTON_OK);
+
+  uint8_t buf[BUFFER_SIZE];
+  size_t out_len = 0;
+  ASSERT_EQ(proton_log_encode_next(&logger, buf, sizeof(buf), &out_len), PROTON_OK);
+
+  node_.log_receive_cb = nullptr;
+  node_.log_receive_arg = nullptr;
+  EXPECT_EQ(proton_node_receive(&node_, buf, out_len), PROTON_OK);
+}
+
+TEST_F(NodeManagerTest, SetLogReceive_NullNode_ReturnsNullPtrError)
+{
+  EXPECT_EQ(proton_node_set_log_receive(nullptr, log_rx_capture, nullptr), PROTON_NULL_PTR_ERROR);
 }
 
 int main(int argc, char ** argv)

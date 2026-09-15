@@ -246,6 +246,8 @@ static bool proton_operation_decode_cb(
       msg->operation.bundle.signals.funcs.decode = proton_decode_bundle_cb;
       msg->operation.bundle.signals.arg = *arg;
       return true;
+    case proton_Proton_log_tag:
+      return true;
     default:
       return false;
   }
@@ -378,6 +380,10 @@ proton_status_e proton_decode(
   {
     proton_Bundle bundle = decoded_msg->operation.bundle;
     return proton_decode_bundle(registry, &bundle, &stream);
+  }
+  else if (decoded_msg->which_operation == proton_Proton_log_tag)
+  {
+    return check_stream_bytes_left(&stream);
   }
   else
   {

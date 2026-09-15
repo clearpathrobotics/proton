@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #include "proton/common.h"
+#include "proton/generated/log.pb.h"
 #include "proton/proton_config.h"
 #include "proton/registry.h"
 #include "proton/transport.h"
@@ -47,6 +48,12 @@ extern "C"
   } proton_endpoint_t;
 
   /**
+   * Callback invoked when proton_node_receive successfully decodes an inbound Log message.
+   * The `log` pointer is only valid for the duration of the call.
+   */
+  typedef void (*proton_node_log_receive_fn)(const proton_Log * log, void * arg);
+
+  /**
    * Top-level struct for proton interaction, this is the main struct that users will interact with
    * to send and receive bundles. It contains a pointer to the registry, as well as information about
    * each peer this node can send messages to.
@@ -60,6 +67,8 @@ extern "C"
     uint32_t pending_triggers[PROTON_MAX_PENDING_TRIGGERS];
     uint8_t trigger_head;
     uint8_t trigger_tail;
+    proton_node_log_receive_fn log_receive_cb;
+    void * log_receive_arg;
   } proton_node_t;
 
   /**
@@ -72,6 +81,13 @@ extern "C"
    * and call the relevant bundle callback if a bundle is successfully decoded.
    */
   proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buffer, size_t len);
+
+  /**
+   * Register a callback to be invoked when proton_node_receive decodes an inbound Log message.
+   * Pass NULL for `cb` to unregister.
+   */
+  proton_status_e proton_node_set_log_receive(
+    proton_node_t * node, proton_node_log_receive_fn cb, void * arg);
 
   /**
    * Update function to be called periodically by the user to check if there are any messages to send

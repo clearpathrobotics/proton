@@ -58,7 +58,7 @@ TEST(LogMacro, PushesFormattedAndDrainsRoundTrip)
 
   std::array<uint8_t, 256> wire{};
   size_t wire_len = 0;
-  ASSERT_EQ(proton_log_drain(&logger, wire.data(), wire.size(), &wire_len), PROTON_OK);
+  ASSERT_EQ(proton_log_encode_next(&logger, wire.data(), wire.size(), &wire_len), PROTON_OK);
   ASSERT_GT(wire_len, 0u);
 
   proton_Proton msg = proton_Proton_init_zero;
@@ -88,14 +88,14 @@ TEST(LogMacro, RespectsRuntimeMinLevel)
 
   std::array<uint8_t, 256> wire{};
   size_t wire_len = 0;
-  ASSERT_EQ(proton_log_drain(&logger, wire.data(), wire.size(), &wire_len), PROTON_OK);
+  ASSERT_EQ(proton_log_encode_next(&logger, wire.data(), wire.size(), &wire_len), PROTON_OK);
 
   proton_Proton msg = proton_Proton_init_zero;
   pb_istream_t is = pb_istream_from_buffer(wire.data(), wire_len);
   ASSERT_TRUE(pb_decode(&is, proton_Proton_fields, &msg));
   EXPECT_STREQ(msg.operation.log.text, "kept 42");
 
-  EXPECT_EQ(proton_log_drain(&logger, wire.data(), wire.size(), &wire_len), PROTON_EMPTY);
+  EXPECT_EQ(proton_log_encode_next(&logger, wire.data(), wire.size(), &wire_len), PROTON_EMPTY);
   proton_log_set_default(nullptr);
 }
 
@@ -111,7 +111,7 @@ TEST(LogMacro, ZeroArgsWorks)
 
   std::array<uint8_t, 256> wire{};
   size_t wire_len = 0;
-  ASSERT_EQ(proton_log_drain(&logger, wire.data(), wire.size(), &wire_len), PROTON_OK);
+  ASSERT_EQ(proton_log_encode_next(&logger, wire.data(), wire.size(), &wire_len), PROTON_OK);
 
   proton_Proton msg = proton_Proton_init_zero;
   pb_istream_t is = pb_istream_from_buffer(wire.data(), wire_len);

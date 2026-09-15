@@ -143,7 +143,7 @@ proton_status_e proton_log_pop(proton_logger_t * logger, proton_Log * out)
   return unlock_logger(&logger->config);
 }
 
-proton_status_e proton_log_drain(
+proton_status_e proton_log_encode_next(
   proton_logger_t * logger, uint8_t * buffer, size_t buffer_len, size_t * out_len)
 {
   if (logger == NULL || buffer == NULL || out_len == NULL)
@@ -165,18 +165,5 @@ proton_status_e proton_log_drain(
     return PROTON_SERIALIZATION_ERROR;
   }
   *out_len = stream.bytes_written;
-  return PROTON_OK;
-}
-
-proton_status_e proton_log_dispatch(proton_logger_t * logger, const proton_Log * log)
-{
-  if (logger == NULL || log == NULL)
-  {
-    return PROTON_NULL_PTR_ERROR;
-  }
-  if (logger->config.on_receive != NULL)
-  {
-    logger->config.on_receive(log, logger->config.on_receive_arg);
-  }
   return PROTON_OK;
 }
