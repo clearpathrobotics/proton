@@ -22,6 +22,8 @@
 
 #include <gtest/gtest.h>
 
+#if PROTON_ENABLE_LOGGING
+
 using namespace proton;
 
 // -----------------------------------------------------------------------
@@ -85,3 +87,5 @@ int main(int argc, char ** argv)
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
+
+#endif  // PROTON_ENABLE_LOGGING
