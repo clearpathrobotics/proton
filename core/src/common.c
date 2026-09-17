@@ -42,6 +42,8 @@ const char * proton_status_to_string(proton_status_e status)
       return "Message has been sent to the wrong target";
     case (PROTON_UNSUPPORTED_OPERATION_ERROR):
       return "Message is not a supported operation";
+    case (PROTON_EMPTY):
+      return "Queue or ring buffer is empty";
     default:
       return "Unknown value";
   }

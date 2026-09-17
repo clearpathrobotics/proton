@@ -23,6 +23,16 @@
 #define PROTON_SCRATCH_BUFFER_SIZE 512
 #endif
 
+// Must match the max_size for `proton.Log.text` in proto/log.options; regenerate protos if changed.
+#ifndef PROTON_LOG_MAX_MESSAGE_SIZE
+#define PROTON_LOG_MAX_MESSAGE_SIZE 128
+#endif
+
+// Enable logging API
+#ifndef PROTON_ENABLE_LOGGING
+#define PROTON_ENABLE_LOGGING 0
+#endif
+
 // Default to embedded mode (no allocation/RTTI) if not specified
 #ifndef PROTON_ENABLE_ALLOC
 #define PROTON_ENABLE_ALLOC 0

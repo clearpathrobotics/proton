@@ -39,9 +39,13 @@ if(PROTON_GENERATE_PROTOS)
   set(PROTO_FILES
     ${PROTO_PATH}/signal.proto
     ${PROTO_PATH}/bundle.proto
+    ${PROTO_PATH}/log.proto
     ${PROTO_PATH}/proton.proto
   )
-  set(PROTO_OPTION_FILES ${PROTO_PATH}/signal.options)
+  set(PROTO_OPTION_FILES
+    ${PROTO_PATH}/signal.options
+    ${PROTO_PATH}/log.options
+  )
   set(PROTO_DEPENDS ${PROTO_FILES} ${PROTO_OPTION_FILES})
 
   # Generated sources go into build dir
@@ -57,6 +61,8 @@ if(PROTON_GENERATE_PROTOS)
     "${GENERATED_DIR}/signal.pb.h"
     "${GENERATED_DIR}/bundle.pb.c"
     "${GENERATED_DIR}/bundle.pb.h"
+    "${GENERATED_DIR}/log.pb.c"
+    "${GENERATED_DIR}/log.pb.h"
     "${GENERATED_DIR}/proton.pb.c"
     "${GENERATED_DIR}/proton.pb.h"
   )
@@ -64,12 +70,14 @@ if(PROTON_GENERATE_PROTOS)
   set(NANOPB_GENERATED_SRCS
     "${GENERATED_SRC_DIR}/signal.pb.c"
     "${GENERATED_SRC_DIR}/bundle.pb.c"
+    "${GENERATED_SRC_DIR}/log.pb.c"
     "${GENERATED_SRC_DIR}/proton.pb.c"
   )
 
   set(NANOPB_GENERATED_HEADERS
     "${GENERATED_INC_DIR}/signal.pb.h"
     "${GENERATED_INC_DIR}/bundle.pb.h"
+    "${GENERATED_INC_DIR}/log.pb.h"
     "${GENERATED_INC_DIR}/proton.pb.h"
   )
 
@@ -78,7 +86,7 @@ if(PROTON_GENERATE_PROTOS)
     COMMAND protoc
       --proto_path=${PROTO_PATH}
       --plugin=protoc-gen-nanopb=${NANOPB_DIR}/generator/protoc-gen-nanopb
-      --nanopb_out=${GENERATED_DIR} signal.proto bundle.proto proton.proto
+      --nanopb_out=${GENERATED_DIR} signal.proto bundle.proto log.proto proton.proto
       -I${NANOPB_DIR}/generator/proto
     DEPENDS ${PROTO_DEPENDS}
     WORKING_DIRECTORY ${PROTO_PATH}
@@ -89,6 +97,7 @@ if(PROTON_GENERATE_PROTOS)
     OUTPUT ${NANOPB_GENERATED_SRCS}
     COMMAND sed -i 's|"bundle.pb.h"|"proton/generated/bundle.pb.h"|' ${GENERATED_DIR}/bundle.pb.c
     COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/signal.pb.c
+    COMMAND sed -i 's|"log.pb.h"|"proton/generated/log.pb.h"|' ${GENERATED_DIR}/log.pb.c
     COMMAND sed -i 's|"proton.pb.h"|"proton/generated/proton.pb.h"|' ${GENERATED_DIR}/proton.pb.c
     COMMAND cp ${GENERATED_DIR}/*.pb.c ${GENERATED_SRC_DIR}
     DEPENDS ${NANOPB_GENERATED_FILES}
@@ -98,6 +107,7 @@ if(PROTON_GENERATE_PROTOS)
     OUTPUT ${NANOPB_GENERATED_HEADERS}
     COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/bundle.pb.h
     COMMAND sed -i 's|"bundle.pb.h"|"proton/generated/bundle.pb.h"|' ${GENERATED_DIR}/proton.pb.h
+    COMMAND sed -i 's|"log.pb.h"|"proton/generated/log.pb.h"|' ${GENERATED_DIR}/proton.pb.h
     COMMAND sed -i 's|"signal.pb.h"|"proton/generated/signal.pb.h"|' ${GENERATED_DIR}/proton.pb.h
     COMMAND cp ${GENERATED_DIR}/*.pb.h ${GENERATED_INC_DIR}
     DEPENDS ${NANOPB_GENERATED_FILES}
@@ -118,6 +128,7 @@ else()
   set(NANOPB_GENERATED_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/generated/signal.pb.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/generated/bundle.pb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/generated/log.pb.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/generated/proton.pb.c
   )
 
@@ -133,6 +144,7 @@ set(PROTON_COMMON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 add_library(${PROJECT_NAME}
   src/common.c
   src/encode_decode.c
+  src/log.c
   src/node_manager.c
   src/proton_field_callbacks.c
   src/registry.c
@@ -146,8 +158,15 @@ add_library(${PROJECT_NAME}
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_MAX_PENDING_TRIGGERS=${PROTON_MAX_PENDING_TRIGGERS})
 
+# -------------------------------
+# feature flags
+# -------------------------------
 if(PROTON_ENABLE_ALLOC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_ALLOC=1)
+endif()
+
+if(PROTON_ENABLE_LOGGING)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_LOGGING=1)
 endif()
 
 if(PROTON_GENERATE_PROTOS)
@@ -378,6 +397,28 @@ if(PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
   )
 
+  add_executable(log_ring_test
+    tests/core/log_ring_test.cpp
+  )
+  target_link_libraries(log_ring_test PUBLIC
+    GTest::gtest_main
+    proton::${PROJECT_NAME}
+  )
+  target_include_directories(log_ring_test PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
+
+  add_executable(log_test
+    tests/core/log_test.cpp
+  )
+  target_link_libraries(log_test PUBLIC
+    GTest::gtest_main
+    proton::${PROJECT_NAME}
+  )
+  target_include_directories(log_test PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test)
   gtest_discover_tests(encode_decode_test)
@@ -387,4 +428,6 @@ if(PROTON_BUILD_TESTS)
   gtest_discover_tests(multi_node_test)
   gtest_discover_tests(periodic_bundle_test)
   gtest_discover_tests(status_to_string_test)
+  gtest_discover_tests(log_ring_test)
+  gtest_discover_tests(log_test)
 endif()

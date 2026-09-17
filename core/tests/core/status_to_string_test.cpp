@@ -34,6 +34,7 @@ TEST(ProtonCommon, StatusToString)
     {PROTON_INSUFFICIENT_BUFFER_ERROR, "Buffer is too small to fit required data"},
     {PROTON_INCORRECT_TARGET_ERROR, "Message has been sent to the wrong target"},
     {PROTON_UNSUPPORTED_OPERATION_ERROR, "Message is not a supported operation"},
+    {PROTON_EMPTY, "Queue or ring buffer is empty"},
     {-1, "Unknown value"},
   };
 

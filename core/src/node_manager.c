@@ -155,6 +155,13 @@ proton_status_e proton_node_receive(proton_node_t * node, const uint8_t * buffer
         }
       }
     }
+    else if (msg.which_operation == proton_Proton_log_tag)
+    {
+      if (node->log_receive_cb != NULL)
+      {
+        node->log_receive_cb(&msg.operation.log, node->log_receive_arg);
+      }
+    }
   }
 
   // No unsupported operation check here, handled in proton_decode
@@ -324,6 +331,18 @@ proton_status_e proton_node_trigger_bundle(proton_node_t * node, uint32_t bundle
   }
 
   return trig_ret;
+}
+
+proton_status_e proton_node_set_log_receive(
+  proton_node_t * node, proton_node_log_receive_fn cb, void * arg)
+{
+  if (node == NULL)
+  {
+    return PROTON_NULL_PTR_ERROR;
+  }
+  node->log_receive_cb = cb;
+  node->log_receive_arg = arg;
+  return PROTON_OK;
 }
 
 proton_status_e proton_node_encode_bundle(

@@ -35,6 +35,10 @@ else()
   target_compile_options(${PROJECT_NAME} PRIVATE -fno-exceptions -fno-rtti)
 endif()
 
+if(PROTON_ENABLE_LOGGING)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC PROTON_ENABLE_LOGGING=1)
+endif()
+
 if (PROTON_NODE_BUILDER_JSON_PARSER OR PROTON_NODE_BUILDER_YAML_PARSER)
   if (NOT PROTON_NODE_BUILDER)
     message(ERROR "PROTON_NODE_BUILDER must be enabled for PROTON_NODE_BUILDER_JSON_PARSER or PROTON_NODE_BUILDER_YAML_PARSER")
@@ -220,6 +224,19 @@ if (PROTON_BUILD_TESTS)
     ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
   )
 
+  add_executable(log_test_cpp
+    tests/log_test.cpp
+  )
+
+  target_link_libraries(log_test_cpp PUBLIC
+    GTest::gtest_main
+    proton::proton_cpp
+  )
+
+  target_include_directories(log_test_cpp PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../core/tests/core
+  )
+
   include(GoogleTest)
   gtest_discover_tests(registry_test_cpp)
   gtest_discover_tests(lock_test_cpp)
@@ -238,4 +255,5 @@ if (PROTON_BUILD_TESTS)
   gtest_discover_tests(node_builder_generator_round_trip_test_cpp
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests
   )
+  gtest_discover_tests(log_test_cpp)
 endif()
