@@ -23,6 +23,7 @@
 #include "protoncpp/node_builder/generator.hpp"
 
 #include <algorithm>
+#include <cstring>
 #include <optional>
 #include <vector>
 
