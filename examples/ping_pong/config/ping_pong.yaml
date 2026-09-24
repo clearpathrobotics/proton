@@ -1,0 +1,37 @@
+nodes:
+  - name: pinger
+    id: 0
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11416
+  - name: ponger
+    id: 1
+    endpoints:
+      - id: 0
+        type: udp4
+        ip: 127.0.0.1
+        port: 11417
+
+connections:
+  - first: {node: pinger, id: 0}
+    second: {node: ponger, id: 0}
+
+signals:
+  - {name: ping, id: 0, type: int32}
+  - {name: pong, id: 1, type: int32}
+
+bundles:
+  - name: send_ping
+    id: 0x100
+    producers: [pinger]
+    consumers: [ponger]
+    signals: [0]
+    period_ms: 250
+  - name: send_pong
+    id: 0x101
+    producers: [ponger]
+    consumers: [pinger]
+    signals: [1]
+    period_ms: 500
