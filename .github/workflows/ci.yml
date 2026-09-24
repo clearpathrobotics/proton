@@ -178,6 +178,9 @@ jobs:
             nlohmann-json3-dev \
             git
 
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
       - name: Configure CMake
         run: |
           cmake -B build_ping_pong ./examples/ping_pong
