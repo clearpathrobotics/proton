@@ -122,6 +122,79 @@ jobs:
           path: core_coverage_summary.txt
           retention-days: 30
 
+  publish-coverage-badge:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-proton-core]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: coverage-badge
+      cancel-in-progress: false
+
+    steps:
+      - name: Download core coverage summary
+        uses: actions/download-artifact@v8
+        with:
+          name: core-coverage-summary
+
+      - name: Publish main coverage badge
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('core_coverage_summary.txt', 'utf8');
+            const match = summary.match(/^\s*lines\.+:\s*([0-9]+(?:\.[0-9]+)?)%/m);
+            if (!match || Number(match[1]) > 100) {
+              throw new Error('No valid line coverage percentage in lcov summary');
+            }
+
+            const coverage = Number(match[1]);
+            const color = coverage >= 90 ? '#4c1' : coverage >= 80 ? '#97ca00' : coverage >= 70 ? '#dfb317' : '#e05d44';
+            const label = `core coverage: ${match[1]}%`;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="20" role="img" aria-label="${label}">
+              <title>${label}</title>
+              <rect width="105" height="20" fill="#555"/>
+              <rect x="105" width="55" height="20" fill="${color}"/>
+              <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
+                <text x="52.5" y="14">core coverage</text>
+                <text x="132.5" y="14">${match[1]}%</text>
+              </g>
+            </svg>`;
+
+            const { owner, repo } = context.repo;
+            const branch = 'coverage-badge';
+            let previousCommit;
+            try {
+              const { data } = await github.rest.git.getRef({ owner, repo, ref: `heads/${branch}` });
+              previousCommit = data.object.sha;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+            const { data: main } = await github.rest.git.getRef({ owner, repo, ref: 'heads/main' });
+            if (main.object.sha !== context.sha) {
+              core.info('Skipping outdated main run');
+              return;
+            }
+
+            const { data: tree } = await github.rest.git.createTree({
+              owner, repo,
+              tree: [{ path: 'coverage.svg', mode: '100644', type: 'blob', content: svg }],
+            });
+            const { data: commit } = await github.rest.git.createCommit({
+              owner, repo,
+              message: `Update main coverage to ${match[1]}% (${context.sha})`,
+              tree: tree.sha,
+              parents: previousCommit ? [previousCommit] : [],
+            });
+            if (previousCommit) {
+              await github.rest.git.updateRef({ owner, repo, ref: `heads/${branch}`, sha: commit.sha });
+            } else {
+              await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${branch}`, sha: commit.sha });
+            }
+
   test-proto-generation:
     runs-on: ubuntu-latest
 

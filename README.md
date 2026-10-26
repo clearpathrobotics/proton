@@ -1,6 +1,7 @@
 # Proton
 
 [![Proton CI](https://github.com/clearpathrobotics/proton/actions/workflows/ci.yml/badge.svg)](https://github.com/clearpathrobotics/proton/actions/workflows/ci.yml)
+[![Code coverage](https://raw.githubusercontent.com/clearpathrobotics/proton/coverage-badge/coverage.svg)](https://github.com/clearpathrobotics/proton/actions/workflows/ci.yml?query=branch%3Amain)
 
 Proton communication protocol official documentation is available [here](https://docs.clearpathrobotics.com/docs_proton/)
 
