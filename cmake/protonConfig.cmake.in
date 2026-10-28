@@ -35,6 +35,7 @@ set(PROTON_CORE_SOURCES
   "${_proton_share}/core/src/transport/udp4.c"
   "${_proton_share}/core/src/generated/signal.pb.c"
   "${_proton_share}/core/src/generated/bundle.pb.c"
+  "${_proton_share}/core/src/generated/log.pb.c"
   "${_proton_share}/core/src/generated/proton.pb.c"
   "${_proton_share}/external/nanopb/pb_common.c"
   "${_proton_share}/external/nanopb/pb_decode.c"
