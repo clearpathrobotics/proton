@@ -15,6 +15,10 @@ set(PROTON_MAX_PENDING_TRIGGERS 4 CACHE STRING "Number of allowable pending trig
 # Code coverage instrumentation option
 if (PROTON_BUILD_TESTS)
   enable_testing()
+  add_test(
+    NAME exported_sources
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/exported_sources.cmake
+  )
   set(CMAKE_CXX_STANDARD 23)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
   add_compile_options(-Werror -Wall -Wextra)
