@@ -74,6 +74,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Check exported sources
+        run: cmake -P cmake/tests/exported_sources.cmake
+
       - name: Configure CMake
         run: |
           cmake -B build_core \
@@ -276,6 +279,9 @@ jobs:
             build-essential \
             cmake \
             pkg-config \
+            python3 \
+            python3-jinja2 \
+            python3-yaml \
             libyaml-cpp-dev \
             nlohmann-json3-dev \
             git
@@ -332,6 +338,19 @@ jobs:
             -DCMAKE_CXX_STANDARD_REQUIRED=ON \
             -DCMAKE_PREFIX_PATH=/tmp/proton-install
           cmake --build build
+
+      - name: Test installed sources and generator
+        run: |
+          mv /tmp/proton-install /tmp/proton-relocated
+          cp -r cmake/tests/install_consumer /tmp/source-consumer
+          cp core/tests/core/test.yaml /tmp/source-consumer/test.yaml
+          for node_builder in OFF ON; do
+            cmake -S /tmp/source-consumer -B /tmp/source-consumer/build-$node_builder \
+              -DCMAKE_PREFIX_PATH=/tmp/proton-relocated \
+              -DTEST_NODE_BUILDER=$node_builder
+            cmake --build /tmp/source-consumer/build-$node_builder --parallel
+            ctest --test-dir /tmp/source-consumer/build-$node_builder --output-on-failure
+          done
 
   comment-coverage-on-pr:
     if: github.event_name == 'pull_request'

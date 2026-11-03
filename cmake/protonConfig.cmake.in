@@ -31,6 +31,7 @@ set(PROTON_CORE_SOURCES
   "${_proton_share}/core/src/node_manager.c"
   "${_proton_share}/core/src/proton_field_callbacks.c"
   "${_proton_share}/core/src/registry.c"
+  "${_proton_share}/core/src/log.c"
   "${_proton_share}/core/src/transport/serial.c"
   "${_proton_share}/core/src/transport/udp4.c"
   "${_proton_share}/core/src/generated/signal.pb.c"
