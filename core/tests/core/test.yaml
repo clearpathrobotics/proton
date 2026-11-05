@@ -48,6 +48,7 @@ signals:
   - {name: really_long_bytes, id: 0x1014, type: bytes, value: [0, 1, 2, 3, 4, 5, 6, 7], capacity: 8}
   - {name: shared_signal, id: 0x1015, type: int32}
   - {name: unused_signal, id: 0x1111, type: float}
+  - {name: default_bool_value, id: 0x1016, type: bool, value: true}
 
 bundles:
   - name: value_test
