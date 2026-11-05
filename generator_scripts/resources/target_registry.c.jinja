@@ -59,7 +59,7 @@ signal_desc_t g_signal_registry[PROTON_SIGNAL_REGISTRY_SIZE] = {
       .len = PROTON_SIGNAL_{{ signal.name | upper }}_CAPACITY,
     },
     {% else %}
-    .signal.signal.{{ signal.type }}_value = {{ signal.value }},
+    .signal.signal.{{ signal.type }}_value = {{ signal.value | lower }},
     .value_size = sizeof({{ signal.type }}{% if "int" in signal.type %}_t{% endif %}),
     .capacity = 0,
     .signal_decode_buffer = {
