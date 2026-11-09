@@ -154,6 +154,14 @@ def filter_for_target(
     for bundle in filtered_bundles:
         filtered_signal_ids.update(bundle['signals'])
 
+    # Signals with a value and no bundle ownership are effectively globals
+    # and should be kept
+    for signal in signals:
+        if signal.get('value') is not None and not any(
+            signal['id'] in bundle['signals'] for bundle in bundles
+        ):
+            filtered_signal_ids.update([signal['id']])
+
     filtered_signals = [signal for signal in signals if signal['id'] in filtered_signal_ids]
 
     return (filtered_bundles, filtered_signals)

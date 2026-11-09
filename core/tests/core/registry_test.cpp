@@ -356,6 +356,18 @@ TEST(SignalRegistry, SignalTypeStrings)
   }
 }
 
+TEST(SignalRegistry, NonOwnedSignalInRegistry)
+{
+  // Signals that have values but aren't part of any bundles should be added anyway
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  uint32_t value = 0;
+  proton_status_e status =
+    proton_signal_get_uint32(&registry, PROTON_SIGNAL_SIGNAL_WITH_NO_OWNER_ID, &value);
+  ASSERT_EQ(status, PROTON_OK);
+  EXPECT_EQ(value, 0xF00BA4);
+  free(registry.signal_registry);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
