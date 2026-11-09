@@ -54,10 +54,6 @@ ProducerConsumerIds set_producer_consumer_ids(const Config & config)
       {
         id_list.push_back(node_id_map[name]);
       }
-      else
-      {
-        throw NodeBuilderException(std::format("Error: {} is not a node name", name));
-      }
     }
   };
 
