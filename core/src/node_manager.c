@@ -52,7 +52,7 @@ static bool proton_bundle_overdue_ms(
  * - out_len: output parameter for the number of bytes encoded into the buffer
  * - dest_peers: output parameter for the list of destination peers to send this bundle to
  * - num_dest_peers: the number of destination peers available in the dest_peers buffer
- * - num_selected_peers: output parameter for the number of peers selected for this bundle (should be >= num_dest_peers)
+ * - num_selected_peers: output parameter for the number of dest_peers entries filled (<= num_dest_peers)
  * @return status of the operation
  */
 static proton_status_e proton_node_encode_bundle_desc(
@@ -84,7 +84,7 @@ static proton_status_e proton_node_encode_bundle_desc(
       }
     }
   }
-  *num_selected_peers = bundle_handle->consumer_ids.count;
+  *num_selected_peers = dest_idx;
 
   bundle_handle->last_send_ms = uptime_ms;
   bundle_handle->send_now = false;
