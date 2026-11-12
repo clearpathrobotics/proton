@@ -100,3 +100,44 @@ def validate_ids(id_list: list, item_name: str):
     if len(duplicates) > 0:
         formatted = [f'0x{x:02X}' for x in duplicates]
         raise RuntimeError(f'Found duplicate {item_name} IDs: {formatted}')
+
+
+def validate_target_consumers_connected(
+    nodes: list[dict], connections: list[dict], bundles: list[dict], target: str
+):
+    """
+    Validate that every consumer of a bundle produced by the target is reachable from it.
+
+    Args:
+        nodes: "nodes" stanza in proton config
+        connections: "connections" stanza in proton config
+        bundles: "bundles" stanza in proton config
+        target: name of node being generated
+    Raises:
+        RuntimeError: if a target connection references an undefined endpoint, or a
+                      bundle produced by the target has a consumer with no connection
+
+    """
+    endpoints = {(node['name'], ep['id']) for node in nodes for ep in node['endpoints']}
+
+    connected = set()
+    for conn in connections:
+        for local, remote in ((conn['first'], conn['second']), (conn['second'], conn['first'])):
+            if local['node'] != target:
+                continue
+            if (remote['node'], remote['id']) not in endpoints:
+                raise RuntimeError(
+                    f'Connection from {target} references undefined endpoint '
+                    f'{remote["node"]}/{remote["id"]}'
+                )
+            connected.add(remote['node'])
+
+    for bundle in bundles:
+        if target not in bundle.get('producers', []):
+            continue
+        missing = [c for c in bundle.get('consumers', []) if c not in connected]
+        if missing:
+            raise RuntimeError(
+                f'Bundle {bundle["name"]} produced by {target} has consumers '
+                f'with no connection to {target}: {missing}'
+            )

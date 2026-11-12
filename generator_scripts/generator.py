@@ -23,7 +23,7 @@ import argparse
 import json
 from pathlib import Path
 
-from config import validate_ids
+from config import validate_ids, validate_target_consumers_connected
 from jinja2 import Template
 from normalize import (
     filter_for_target,
@@ -152,6 +152,9 @@ def main():
     normalize_signals(config['signals'])
     set_producer_consumer_ids(config['bundles'], config['nodes'])
     set_bundle_periods(config['bundles'])
+    validate_target_consumers_connected(
+        config['nodes'], config.get('connections', []), config['bundles'], target
+    )
 
     try:
         config['bundles'], config['signals'] = filter_for_target(
