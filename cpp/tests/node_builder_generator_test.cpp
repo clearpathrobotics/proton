@@ -17,7 +17,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <cstring>
 #include <functional>
 #include <sstream>
 #include <string>
@@ -86,6 +85,14 @@ Config create_base_config()
   signal3.capacity = 0;
   signal3.has_default_value = false;
   config.signals.push_back(signal3);
+
+  SignalConfig signal4;
+  signal4.name = "signal_4";
+  signal4.id = 103;
+  signal4.type_string = "string";
+  signal4.capacity = 4;
+  signal4.has_default_value = true;
+  config.signals.push_back(signal4);
 
   // Add bundles
   BundleConfig bundle1;
@@ -338,17 +345,21 @@ TEST(FilterForTarget, OnlyRelevantSignalsIncluded)
   Config filtered = filter_for_target(config, "node_a");
 
   // bundle_ab uses signal_1 (100) and signal_2 (101), not signal_3 (102)
-  EXPECT_EQ(filtered.signals.size(), 2);
+  // signal_4 (103) is included as it's effectively a global
+  EXPECT_EQ(filtered.signals.size(), 3);
 
   bool has_signal_100 = false;
   bool has_signal_101 = false;
+  bool has_signal_103 = false;
   for (const auto & sig : filtered.signals)
   {
     if (sig.id == 100) has_signal_100 = true;
     if (sig.id == 101) has_signal_101 = true;
+    if (sig.id == 103) has_signal_103 = true;
   }
   EXPECT_TRUE(has_signal_100);
   EXPECT_TRUE(has_signal_101);
+  EXPECT_TRUE(has_signal_103);
 }
 
 TEST(FilterForTarget, NodeCOnlyHasSignal3)
@@ -356,9 +367,10 @@ TEST(FilterForTarget, NodeCOnlyHasSignal3)
   Config config = create_base_config();
   Config filtered = filter_for_target(config, "node_c");
 
-  // bundle_bc only uses signal_3 (102)
-  EXPECT_EQ(filtered.signals.size(), 1);
+  // bundle_bc only uses signal_3 (102) and the global signal_4
+  EXPECT_EQ(filtered.signals.size(), 2);
   EXPECT_EQ(filtered.signals[0].id, 102);
+  EXPECT_EQ(filtered.signals[1].id, 103);
 }
 
 TEST(FilterForTarget, MiddleNodeIncludesAllSignals)
@@ -367,7 +379,7 @@ TEST(FilterForTarget, MiddleNodeIncludesAllSignals)
   Config filtered = filter_for_target(config, "node_b");
 
   // node_b uses all bundles, so all signals
-  EXPECT_EQ(filtered.signals.size(), 3);
+  EXPECT_EQ(filtered.signals.size(), 4);
 }
 
 TEST(FilterForTarget, IsolatedNodeHasNoBundles)
@@ -386,7 +398,7 @@ TEST(FilterForTarget, IsolatedNodeHasNoBundles)
   EXPECT_TRUE(filtered.nodes.contains("isolated"));
   EXPECT_EQ(filtered.connections.size(), 0);
   EXPECT_EQ(filtered.bundles.size(), 0);
-  EXPECT_EQ(filtered.signals.size(), 0);
+  EXPECT_EQ(filtered.signals.size(), 1);
 }
 
 TEST(FilterForTarget, ValidationRunsBeforeFiltering)

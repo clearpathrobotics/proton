@@ -49,6 +49,7 @@ signals:
   - {name: shared_signal, id: 0x1015, type: int32}
   - {name: unused_signal, id: 0x1111, type: float}
   - {name: default_bool_value, id: 0x1016, type: bool, value: true}
+  - {name: signal_with_no_owner, id: 0x1017, type: uint32, value: 0xF00BA4}
 
 bundles:
   - name: value_test

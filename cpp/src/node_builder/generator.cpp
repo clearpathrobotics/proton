@@ -54,10 +54,6 @@ ProducerConsumerIds set_producer_consumer_ids(const Config & config)
       {
         id_list.push_back(node_id_map[name]);
       }
-      else
-      {
-        throw NodeBuilderException(std::format("Error: {} is not a node name", name));
-      }
     }
   };
 
@@ -169,9 +165,26 @@ Config filter_for_target(const Config & config, const std::string & target_name)
 
   for (const auto & signal : config.signals)
   {
-    if (filtered_signal_ids.contains(signal.id))
+    const uint32_t signal_id = signal.id;
+    if (filtered_signal_ids.contains(signal_id))
     {
       filtered_config.signals.push_back(signal);
+    }
+    // A signal with no bundles and a default value is effectively a constant and should be kept
+    else if (signal.has_default_value)
+    {
+      const bool no_owner_signal = std::all_of(
+        config.bundles.begin(), config.bundles.end(),
+        [signal_id](const auto & bundle)
+        {
+          return std::find(bundle.signals.begin(), bundle.signals.end(), signal_id) ==
+                 bundle.signals.end();
+        });
+
+      if (no_owner_signal)
+      {
+        filtered_config.signals.push_back(signal);
+      }
     }
   }
 
