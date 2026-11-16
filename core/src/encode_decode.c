@@ -194,11 +194,19 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
           return false;
         }
         size_t capacity = registry->signal_registry[signal_registry_idx].capacity;
-        if (scratch_buf.len > capacity)
+        bool is_string = incoming.which_signal == proton_Signal_string_value_tag;
+        bool string_terminated =
+          is_string && scratch_buf.len > 0 && scratch_buf.data[scratch_buf.len - 1] == '\0';
+        size_t decoded_len = scratch_buf.len + (is_string && !string_terminated ? 1 : 0);
+        if (decoded_len > capacity)
         {
           return false;
         }
         memcpy(decode_buf->data, scratch_buf.data, scratch_buf.len);
+        if (is_string && !string_terminated)
+        {
+          decode_buf->data[scratch_buf.len] = '\0';
+        }
         if (incoming.which_signal == proton_Signal_bytes_value_tag)
         {
           signal->signal.bytes_value = decode_buf->data;
@@ -207,7 +215,7 @@ static bool proton_decode_bundle_cb(pb_istream_t * istream, const pb_field_t * f
         {
           signal->signal.string_value = decode_buf->data;
         }
-        decode_buf->len = scratch_buf.len;
+        decode_buf->len = decoded_len;
         break;
       }
 
