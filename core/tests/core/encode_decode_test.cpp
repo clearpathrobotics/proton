@@ -183,6 +183,61 @@ TEST(EncodeDecode, RoundTripDefaultValues)
   free(registry.signal_registry);
 }
 
+TEST(EncodeDecode, ShorterStringDecodeClearsStaleTail)
+{
+  proton_registry_t registry = copy_default_registry(&g_proton_registry);
+  const char maximum_string[] = "1234567";
+  const char short_string[] = "x";
+  uint8_t raw[BUFFER_SIZE];
+  size_t bytes_encoded = 0;
+
+  ASSERT_EQ(
+    proton_signal_set_string(
+      &registry, PROTON_SIGNAL_STRING_VALUE_ID, maximum_string, sizeof(maximum_string)),
+    PROTON_OK);
+  ASSERT_EQ(
+    proton_encode_bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
+    PROTON_OK);
+  proton_Proton decoded_msg = proton_Proton_init_zero;
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded, &decoded_msg), PROTON_OK);
+
+  signal_desc_t * string_signal =
+    proton_registry_get_signal(&registry, PROTON_SIGNAL_STRING_VALUE_ID, NULL);
+  ASSERT_NE(string_signal, nullptr);
+  ASSERT_EQ(string_signal->capacity, sizeof(maximum_string));
+  char decoded_string[sizeof(maximum_string)] = {};
+  size_t decoded_len = 0;
+  ASSERT_EQ(
+    proton_signal_get_string(
+      &registry, PROTON_SIGNAL_STRING_VALUE_ID, decoded_string, sizeof(decoded_string),
+      &decoded_len),
+    PROTON_OK);
+  EXPECT_STREQ(decoded_string, maximum_string);
+  EXPECT_EQ(decoded_len, sizeof(maximum_string));
+
+  ASSERT_EQ(
+    proton_signal_set_string(
+      &registry, PROTON_SIGNAL_STRING_VALUE_ID, short_string, sizeof(short_string)),
+    PROTON_OK);
+  ASSERT_EQ(
+    proton_encode_bundle(&registry, PROTON_BUNDLE_VALUE_TEST_ID, raw, sizeof(raw), &bytes_encoded),
+    PROTON_OK);
+  ASSERT_EQ(
+    proton_signal_set_string(
+      &registry, PROTON_SIGNAL_STRING_VALUE_ID, maximum_string, sizeof(maximum_string)),
+    PROTON_OK);
+  ASSERT_EQ(proton_decode(&registry, raw, bytes_encoded, &decoded_msg), PROTON_OK);
+
+  ASSERT_EQ(
+    proton_signal_get_string(
+      &registry, PROTON_SIGNAL_STRING_VALUE_ID, decoded_string, sizeof(decoded_string),
+      &decoded_len),
+    PROTON_OK);
+  EXPECT_STREQ(decoded_string, short_string);
+  EXPECT_EQ(decoded_len, sizeof(short_string));
+  free(registry.signal_registry);
+}
+
 TEST(EncodeDecode, RoundTripMutatedDoubleValue)
 {
   proton_registry_t registry = copy_default_registry(&g_proton_registry);
